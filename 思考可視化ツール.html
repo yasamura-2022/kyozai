@@ -1,0 +1,1305 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>思考可視化ツール</title>
+<style>
+/* =========================================================
+   外部読み込みゼロ（CDN・Webフォント・API 一切なし）
+   Googleサイト埋め込み／校内ネットワークでも確実に動くこと優先
+   ========================================================= */
+:root{
+  --night:#0f172a; --night2:#1e3a8a;
+  --lamp:#fbbf24; --lampLight:#fef3c7;
+  --ink:#1e293b; --line:rgba(148,163,184,.35);
+  --panel:rgba(30,41,59,.55);
+  --fs:1;           /* 文字サイズ倍率（投影用に変更可） */
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  font-family:"Hiragino Maru Gothic ProN","ヒラギノ丸ゴ ProN W4","Hiragino Kaku Gothic ProN",
+              "Yu Gothic",YuGothic,Meiryo,"MS PGothic",system-ui,sans-serif;
+  background:linear-gradient(135deg,var(--night) 0%,var(--night2) 100%);
+  color:#f8fafc; min-height:100%;
+  -webkit-text-size-adjust:100%;
+}
+.wrap{max-width:1400px;margin:0 auto;padding:14px}
+button{font-family:inherit;cursor:pointer;border:none}
+textarea,input,select{font-family:inherit}
+
+/* ---- ヘッダー ---- */
+.head{
+  display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-items:center;
+  background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px 18px;margin-bottom:12px;
+}
+.unit{font-size:12px;font-weight:700;color:var(--lamp);letter-spacing:.06em;margin-bottom:4px}
+h1{margin:0;font-size:clamp(18px,2.4vw,28px);line-height:1.35;font-weight:700}
+.headright{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.counter{
+  background:rgba(15,23,42,.6);border:1px solid var(--line);border-radius:12px;
+  padding:8px 14px;font-size:13px;display:flex;align-items:center;gap:8px;white-space:nowrap;
+}
+.counter b{font-size:20px;font-family:ui-monospace,Menlo,monospace}
+.counter .n1{color:var(--lamp)} .counter .n2{color:#cbd5e1}
+.btn{background:#2563eb;color:#fff;border-radius:12px;padding:10px 14px;font-weight:700;font-size:13px}
+.btn:hover{background:#3b82f6}
+.btn.ghost{background:rgba(148,163,184,.18);color:#e2e8f0}
+.btn.ghost:hover{background:rgba(148,163,184,.32)}
+.btn.warn{background:#b91c1c}
+
+/* ---- タブ ---- */
+.tabs{display:flex;flex-wrap:wrap;gap:6px;background:rgba(15,23,42,.55);border:1px solid var(--line);
+      border-radius:14px;padding:6px;margin-bottom:12px}
+.tab{flex:1 1 130px;padding:10px 8px;border-radius:10px;background:transparent;color:#94a3b8;
+     font-weight:700;font-size:13px;text-align:center}
+.tab:hover{background:rgba(51,65,85,.6);color:#fff}
+.tab.on{color:#0f172a;background:var(--lamp)}
+.tab.on.b{background:#3b82f6;color:#fff}
+.tab.on.g{background:#10b981;color:#052e22}
+.tab.on.p{background:#a855f7;color:#fff}
+.tab.on.r{background:#f43f5e;color:#fff}
+
+/* ---- ツールバー ---- */
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px;font-size:12px;color:#cbd5e1}
+.toolbar label{display:flex;align-items:center;gap:5px;background:rgba(15,23,42,.5);
+               border:1px solid var(--line);border-radius:10px;padding:6px 10px}
+.toolbar select{background:#0f172a;color:#e2e8f0;border:1px solid var(--line);border-radius:6px;padding:3px 6px;font-size:12px}
+
+/* ---- 付箋 ---- */
+.board{display:grid;grid-template-columns:repeat(auto-fill,minmax(calc(200px * var(--fs)),1fr));gap:12px}
+.sticky{
+  background:linear-gradient(150deg,var(--lampLight),#fffbeb);color:var(--ink);
+  border:1px solid #fcd34d;border-radius:12px;padding:11px 12px;
+  box-shadow:0 4px 10px rgba(251,191,36,.18);position:relative;
+  transition:transform .15s;
+}
+.sticky:hover{transform:translateY(-2px)}
+.sticky.empty{background:rgba(30,41,59,.5);border:1px dashed var(--line);color:#94a3b8;box-shadow:none}
+.sticky.pin{border:2px solid #f43f5e;box-shadow:0 0 0 3px rgba(244,63,94,.18)}
+.sname{font-size:calc(11px * var(--fs));font-weight:700;color:#64748b;
+       border-bottom:1px solid rgba(100,116,139,.25);padding-bottom:5px;margin-bottom:6px;
+       display:flex;justify-content:space-between;align-items:center;gap:6px}
+.sticky.empty .sname{color:#94a3b8;border-color:var(--line)}
+.stext{font-size:calc(14px * var(--fs));line-height:1.65;white-space:pre-wrap;word-break:break-word}
+.sticky.empty .stext{font-size:calc(12px * var(--fs));font-style:italic}
+.mini{background:transparent;color:#94a3b8;font-size:13px;line-height:1;padding:2px 3px;border-radius:5px}
+.mini:hover{background:rgba(100,116,139,.2);color:#334155}
+.mini.on{color:#e11d48}
+.chip{font-size:calc(10px * var(--fs));padding:1px 6px;border-radius:6px;background:rgba(59,130,246,.16);
+      color:#1d4ed8;font-weight:700;white-space:nowrap}
+/* かいけつ ○・△・まだ */
+.lv{font-size:calc(11px * var(--fs));font-weight:700;padding:1px 7px;border-radius:6px;
+    white-space:nowrap;border:1px solid}
+.lv-ok {background:#d1fae5;color:#065f46;border-color:#6ee7b7}
+.lv-mid{background:#fde68a;color:#92400e;border-color:#fbbf24}
+.lv-not{background:#ffe4e6;color:#9f1239;border-color:#fda4af}
+.sticky.empty .lv-ok{background:rgba(16,185,129,.18);color:#6ee7b7;border-color:rgba(16,185,129,.4)}
+.sticky.empty .lv-mid{background:rgba(251,191,36,.18);color:#fcd34d;border-color:rgba(251,191,36,.4)}
+.sticky.empty .lv-not{background:rgba(244,63,94,.18);color:#fda4af;border-color:rgba(244,63,94,.4)}
+.lvsum{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.lvsum .b{border:1px solid var(--line);border-radius:10px;padding:7px 12px;font-size:13px;
+          background:rgba(15,23,42,.5);display:flex;align-items:center;gap:7px}
+.lvsum .b b{font-size:17px;font-family:ui-monospace,Menlo,monospace}
+.hl-not{border-color:rgba(244,63,94,.55) !important;background:rgba(76,5,25,.35) !important}
+.movesel{width:100%;margin-top:8px;font-size:calc(11px * var(--fs));padding:3px;border-radius:6px;
+         border:1px solid #e2b95f;background:#fffdf5;color:#475569}
+
+/* ---- 構造化の列 ---- */
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;align-items:start}
+.col{background:rgba(30,41,59,.4);border:1px solid var(--line);border-radius:16px;padding:12px}
+.col h2{margin:0 0 10px;font-size:15px;color:#bfdbfe;display:flex;justify-content:space-between;
+        align-items:center;border-bottom:1px solid var(--line);padding-bottom:8px;gap:8px}
+.col h2 span.c{background:#334155;color:#e2e8f0;font-size:11px;padding:2px 8px;border-radius:99px}
+.col .stack{display:flex;flex-direction:column;gap:9px}
+.blank{color:#64748b;font-size:12px;font-style:italic;text-align:center;padding:14px 0}
+
+/* ---- 情報バナー ---- */
+.note{border-radius:12px;padding:11px 14px;font-size:13px;line-height:1.7;margin-bottom:12px;border:1px solid}
+.note.g{background:rgba(6,78,59,.35);border-color:rgba(16,185,129,.4);color:#a7f3d0}
+.note.p{background:rgba(59,7,100,.35);border-color:rgba(168,85,247,.4);color:#e9d5ff}
+.note.r{background:rgba(76,5,25,.4);border-color:rgba(244,63,94,.45);color:#fecdd3}
+.note.y{background:rgba(69,50,3,.45);border-color:rgba(251,191,36,.45);color:#fde68a}
+.note b{color:#fff}
+
+/* ---- 未提出・未照合 ---- */
+.names{display:flex;flex-wrap:wrap;gap:7px;margin-top:4px}
+.nametag{background:rgba(15,23,42,.6);border:1px solid var(--line);border-radius:8px;
+         padding:5px 10px;font-size:calc(13px * var(--fs))}
+.unmatch{background:rgba(30,41,59,.5);border:1px solid rgba(244,63,94,.35);border-radius:12px;
+         padding:10px 12px;margin-bottom:9px}
+.unmatch .un{font-size:13px;font-weight:700;color:#fda4af;margin-bottom:4px}
+.unmatch .ua{font-size:13px;color:#e2e8f0;white-space:pre-wrap;line-height:1.6;margin-bottom:8px}
+.unmatch .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:12px;color:#cbd5e1}
+.unmatch select{background:#0f172a;color:#e2e8f0;border:1px solid var(--line);border-radius:6px;padding:4px 6px}
+
+/* ---- モーダル ---- */
+.mask{position:fixed;inset:0;background:rgba(0,0,0,.65);display:flex;align-items:center;
+      justify-content:center;padding:12px;z-index:50}
+.modal{background:#1e293b;border:1px solid #475569;border-radius:16px;width:100%;max-width:960px;
+       max-height:92vh;overflow-y:auto}
+.mhead{position:sticky;top:0;background:#1e293b;border-bottom:1px solid #334155;padding:14px 18px;
+       display:flex;justify-content:space-between;align-items:center;z-index:2}
+.mhead h2{margin:0;font-size:17px}
+.mbody{padding:18px}
+.mfoot{position:sticky;bottom:0;background:#0f172a;border-top:1px solid #334155;
+       padding:12px 18px;display:flex;justify-content:flex-end;gap:10px}
+.fld{margin-bottom:16px}
+.fld>label{display:block;font-size:13px;font-weight:700;color:#cbd5e1;margin-bottom:6px}
+.hint{font-size:11.5px;color:#94a3b8;line-height:1.6;margin-top:5px}
+.inp,.ta{width:100%;background:#0f172a;border:1px solid #334155;border-radius:10px;padding:9px 11px;
+         color:#e2e8f0;font-size:13px}
+.inp:focus,.ta:focus{outline:none;border-color:#3b82f6}
+.ta{font-family:ui-monospace,Menlo,monospace;line-height:1.6;resize:vertical}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+.rowflex{display:flex;gap:8px;align-items:center;margin-bottom:6px}
+.rowflex .inp{flex:1}
+.rowflex .k{flex:2}
+.sub{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.tinybtn{font-size:11px;padding:4px 8px;border-radius:6px;background:rgba(148,163,184,.18);color:#e2e8f0}
+.tinybtn:hover{background:rgba(148,163,184,.34)}
+.tinybtn.del{background:rgba(190,18,60,.25);color:#fda4af}
+.mapgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px}
+.mapgrid label{font-size:12px;color:#cbd5e1;display:block}
+.mapgrid select{width:100%;margin-top:4px;background:#0f172a;color:#e2e8f0;border:1px solid #334155;
+                border-radius:8px;padding:7px}
+.prev{font-size:11.5px;color:#94a3b8;background:#0f172a;border:1px solid #334155;border-radius:8px;
+      padding:8px;margin-top:8px;max-height:130px;overflow:auto;white-space:pre;font-family:ui-monospace,monospace}
+.ck{display:flex;align-items:center;gap:7px;font-size:12.5px;color:#cbd5e1;margin-top:8px}
+
+/* ---- 印刷 ---- */
+@media print{
+  body{background:#fff;color:#000}
+  .no-print{display:none !important}
+  .sticky{background:#fff;border:1px solid #94a3b8;box-shadow:none;break-inside:avoid}
+  .col{background:#fff;border:1px solid #94a3b8}
+  .col h2,h1{color:#000}
+  .sname{color:#334155}
+}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+
+<script>
+"use strict";
+/* =========================================================================
+   1. 保存（Googleサイトの iframe では localStorage が使えない場合がある）
+      → 必ず try/catch。使えない時はメモリ保持に切り替え、画面で警告する。
+   ========================================================================= */
+var STORE_KEY = "thinking-board-v2";   // 汎用名 'roster'/'csv' は他アプリと衝突するため専用キー
+var store = (function () {
+  var mem = null, usable = true;
+  try { localStorage.setItem("__probe__", "1"); localStorage.removeItem("__probe__"); }
+  catch (e) { usable = false; }
+  return {
+    usable: usable,
+    load: function () {
+      try { return usable ? localStorage.getItem(STORE_KEY) : mem; } catch (e) { return mem; }
+    },
+    save: function (v) {
+      mem = v;
+      try { if (usable) localStorage.setItem(STORE_KEY, v); } catch (e) { usable = false; }
+    }
+  };
+})();
+
+/* =========================================================================
+   2. 状態
+   ========================================================================= */
+var DEFAULT_CATS = [
+  { name: "じんざのこと",  keywords: "じんざ,ライオン,サーカス,火,命,助け,願い,ねがい,走" },
+  { name: "男の子のこと",  keywords: "男の子,おとこのこ,少年,ぼく,友達,ともだち,見に来,見にき" }
+];
+
+var state = {
+  unit: "サーカスのライオン / 3年国語",
+  question: "じんざの願いはかなったのか？",
+  roster: "",
+  csv: "",
+  nameCol: null,        // null = 自動判定
+  answerCol: null,
+  // かいけつ（○△まだ）の列。既定は -1 = 使わない。
+  // 自己評価は振り返りカード側の役割なので、既定では読み取らない。
+  // 必要になったら設定画面のドロップダウンで選ぶ（自動検出した列は印が付く）。
+  levelCol: -1,         // -1 = 使わない / null = 自動判定 / 0以上 = 列指定
+  restCols: false,      // 回答列より後ろの列も結合する
+  skipHeader: null,     // null = 自動判定
+  cats: DEFAULT_CATS.slice(),
+  overrides: {},        // 正規化名 -> カテゴリ名（手動で移した分類）
+  aliases: {},          // 回答側の正規化名 -> 名簿の名前
+  pinned: {},           // 正規化名 -> true（取り上げる印）
+  view: "board",
+  hideNames: false,
+  onlyPinned: false,
+  lvFilter: "",         // "" = すべて / "ok" / "mid" / "not"
+  fs: 1,
+  sort: "roster"
+};
+
+function saveState() {
+  var copy = {}; for (var k in state) copy[k] = state[k];
+  delete copy.view; delete copy.onlyPinned; delete copy.lvFilter;
+  store.save(JSON.stringify(copy));
+}
+function loadState() {
+  var raw = store.load(); if (!raw) return;
+  try {
+    var o = JSON.parse(raw);
+    for (var k in o) if (Object.prototype.hasOwnProperty.call(state, k)) state[k] = o[k];
+    if (!Array.isArray(state.cats) || !state.cats.length) state.cats = DEFAULT_CATS.slice();
+  } catch (e) { /* 壊れた保存データは無視して初期値で起動 */ }
+}
+
+/* =========================================================================
+   3. 貼り付けデータの解析
+   ========================================================================= */
+// 区切り文字を判定する。スプレッドシートからの貼り付けはタブ区切り。
+// 元コードは「,」と「\t」を同時に区切りにしていたため、回答文に「,」が入ると
+// 列がずれていた。タブがあればタブのみを区切りとして扱う。
+function detectDelim(text) {
+  var head = text.split(/\r?\n/).slice(0, 8).join("\n");
+  return head.indexOf("\t") >= 0 ? "\t" : ",";
+}
+
+// 引用符・セル内改行に対応した表パーサ
+function parseTable(text, delim) {
+  var rows = [], row = [], cell = "", q = false;
+  for (var i = 0; i < text.length; i++) {
+    var c = text[i], n = text[i + 1];
+    if (c === '"') {
+      if (q && n === '"') { cell += '"'; i++; } else { q = !q; }
+    } else if (c === delim && !q) {
+      row.push(cell); cell = "";
+    } else if ((c === "\n" || c === "\r") && !q) {
+      if (c === "\r" && n === "\n") i++;
+      row.push(cell); rows.push(row); row = []; cell = "";
+    } else { cell += c; }
+  }
+  if (cell !== "" || row.length) { row.push(cell); rows.push(row); }
+  // 完全に空の行を捨てる
+  return rows.filter(function (r) {
+    return r.some(function (c) { return String(c).trim() !== ""; });
+  });
+}
+
+// 氏名の正規化。NFKC で全角/半角を揃え、空白を除去し、敬称を落とす。
+function norm(s) {
+  if (s == null) return "";
+  var t = String(s);
+  try { t = t.normalize("NFKC"); } catch (e) {}
+  t = t.replace(/[\s　]+/g, "");
+  t = t.replace(/(さん|ちゃん|くん|君|様)$/, "");
+  return t.toLowerCase();
+}
+
+// 名簿の1行から名前を取り出す（「1 山田太郎」「1,山田太郎」等に対応）
+function parseRoster(text) {
+  var out = [], seen = {}, dups = {};
+  text.split(/\r?\n/).forEach(function (line) {
+    var fields = line.split(/[\t,]/).map(function (f) { return f.trim(); })
+                     .filter(function (f) { return f !== "" && !/^\d{1,3}$/.test(f); });
+    var name = fields.join(" ").trim();
+    if (!name) return;
+    var key = norm(name);
+    if (seen[key]) { dups[name] = true; } else { seen[key] = true; }
+    out.push(name);
+  });
+  return { names: out, dups: Object.keys(dups) };
+}
+
+var TS_RE = /^\s*\d{4}[\/\-.]\d{1,2}[\/\-.]\d{1,2}/;          // 2026/07/31 …
+var HEADER_RE = /名前|氏名|なまえ|ネーム|name|タイムスタンプ|timestamp|メールアドレス|出席番号|番号/i;
+
+// 名前列・回答列・ヘッダー行を推定する。
+// Googleフォームの回答シートは A列がタイムスタンプなので、
+// 「1列目が名前」という前提は成り立たない。名簿との一致数で判定する。
+function analyze(rows, rosterNames) {
+  var width = rows.reduce(function (m, r) { return Math.max(m, r.length); }, 0);
+  var rosterSet = {};
+  rosterNames.forEach(function (n) { rosterSet[norm(n)] = true; });
+
+  var header = rows[0] || [];
+  var hasHeader = header.some(function (c) { return HEADER_RE.test(String(c)); });
+  var body = hasHeader ? rows.slice(1) : rows;
+
+  var stats = [];
+  for (var c = 0; c < width; c++) {
+    var hit = 0, len = 0, cnt = 0, ts = 0;
+    body.forEach(function (r) {
+      var v = String(r[c] == null ? "" : r[c]).trim();
+      if (!v) return;
+      cnt++; len += v.length;
+      if (rosterSet[norm(v)]) hit++;
+      if (TS_RE.test(v)) ts++;
+    });
+    stats.push({ i: c, hit: hit, avg: cnt ? len / cnt : 0, ts: ts, cnt: cnt,
+                 head: String(header[c] == null ? "" : header[c]).trim() });
+  }
+
+  // 名前列：名簿と一致した数が最大の列。0件ならヘッダー名で判断、最後は0列目。
+  var nameCol = 0, best = -1;
+  stats.forEach(function (s) { if (s.hit > best) { best = s.hit; nameCol = s.i; } });
+  if (best <= 0) {
+    var byHead = stats.filter(function (s) { return /名前|氏名|なまえ|name/i.test(s.head); });
+    nameCol = byHead.length ? byHead[0].i
+            : (stats.filter(function (s) { return s.ts === 0; })[0] || { i: 0 }).i;
+  }
+  // 回答列：名前列とタイムスタンプ列を除き、平均文字数が最大の列
+  var ansCol = null, bestLen = -1;
+  stats.forEach(function (s) {
+    if (s.i === nameCol) return;
+    if (s.cnt && s.ts / s.cnt > 0.5) return;
+    if (s.avg > bestLen) { bestLen = s.avg; ansCol = s.i; }
+  });
+  if (ansCol === null) ansCol = nameCol === 0 ? 1 : 0;
+
+  return { width: width, hasHeader: hasHeader, nameCol: nameCol, answerCol: ansCol, stats: stats };
+}
+
+/* =========================================================================
+   3-2. 「かいけつ ○・△・まだ」の自己評価を読む
+        振り返りカードの最下段にあたる欄。紙だと35枚めくらないと
+        「まだ」の子が分からないので、ここだけは一覧にする値がある。
+   ========================================================================= */
+// words は前方一致も許す（「○（よくわかった）」を拾うため）。
+// exact は完全一致のみ。数字を前方一致にすると出席番号の 10 や 20 を
+// 「1」「2」と誤認して、番号の列を自己評価の列と間違えるため。
+var LEVELS = [
+  { key: "ok",  short: "○",   label: "○ わかった",   cls: "lv-ok",
+    words: ["○", "◯", "〇", "まる", "できた", "よくわかった", "わかった", "だいたいわかった"],
+    exact: ["3", "◎"] },
+  { key: "mid", short: "△",   label: "△ もう少し",   cls: "lv-mid",
+    words: ["△", "▲", "さんかく", "すこし", "少し", "少しわかった", "すこしわかった"],
+    exact: ["2"] },
+  { key: "not", short: "まだ", label: "まだ",         cls: "lv-not",
+    words: ["まだ", "まだまだ", "×", "✕", "わからない", "わからなかった", "できなかった"],
+    exact: ["1"] }
+];
+function levelInfo(key) {
+  for (var i = 0; i < LEVELS.length; i++) if (LEVELS[i].key === key) return LEVELS[i];
+  return null;
+}
+// 「○」「○（よくわかった）」「まだまだ」などを3段階に寄せる
+function levelOf(raw) {
+  if (raw == null) return null;
+  var t = String(raw);
+  try { t = t.normalize("NFKC"); } catch (e) {}
+  t = t.replace(/[\s　]/g, "");
+  if (!t) return null;
+  for (var i = 0; i < LEVELS.length; i++) {
+    for (var j = 0; j < LEVELS[i].words.length; j++) {
+      var w = LEVELS[i].words[j];
+      if (t === w || t.indexOf(w) === 0) return LEVELS[i].key;
+    }
+    for (var k = 0; k < LEVELS[i].exact.length; k++) {
+      if (t === LEVELS[i].exact[k]) return LEVELS[i].key;
+    }
+  }
+  return null;
+}
+// ○△まだ が並んでいる列を探す（短い値ばかりで、7割以上が3段階に当てはまる列）
+var LV_HEAD_RE = /かいけつ|解決|わかった|理解|自己評価|たしかめ|ふりかえりの度合|できた/;
+var LV_SKIP_HEAD_RE = /出席|番号|no\.?$|組|学年|クラス|メール/i;
+function detectLevelCol(rows, hasHeader, exclude) {
+  var header = rows[0] || [];
+  var body = hasHeader ? rows.slice(1) : rows;
+  var width = rows.reduce(function (m, r) { return Math.max(m, r.length); }, 0);
+  var best = -1, bestScore = 0;
+  for (var c = 0; c < width; c++) {
+    if (exclude.indexOf(c) >= 0) continue;
+    var head = String(header[c] == null ? "" : header[c]);
+    var headHit = LV_HEAD_RE.test(head);
+    if (LV_SKIP_HEAD_RE.test(head) && !headHit) continue;   // 出席番号・組などは対象外
+    var cnt = 0, hit = 0, len = 0, kinds = {};
+    body.forEach(function (r) {
+      var v = String(r[c] == null ? "" : r[c]).trim();
+      if (!v) return;
+      cnt++; len += v.length;
+      var k = levelOf(v);
+      if (k) { hit++; kinds[k] = 1; }
+    });
+    if (!cnt) continue;
+    var ratio = hit / cnt, avg = len / cnt;
+    if (avg > 12 && !headHit) continue;                     // 長文の列は自己評価ではない
+    // 全員同じ値の列（学年「3」など）を誤検出しないよう、2種類以上あることを求める。
+    // 見出しが「かいけつ」等なら1種類でも認める。
+    if (Object.keys(kinds).length < 2 && !headHit) continue;
+    var score = ratio + (headHit ? 0.5 : 0);
+    if (ratio >= 0.6 && score > bestScore) { bestScore = score; best = c; }
+  }
+  return best;                                              // -1 = 見つからない
+}
+
+/* =========================================================================
+   4. 名簿と回答の突き合わせ
+   ========================================================================= */
+function build() {
+  var r = parseRoster(state.roster);
+  var rosterNames = r.names;
+  var result = {
+    students: [], unmatched: [], dups: r.dups, hasLevel: false,
+    auto: { width: 0, hasHeader: false, nameCol: 0, answerCol: 1, stats: [] }
+  };
+  if (!state.csv.trim()) {
+    result.students = rosterNames.map(function (n, i) {
+      return { id: "s" + i, name: n, key: norm(n), answer: "", submitted: false,
+               level: null, order: i, seq: -1 };
+    });
+    return result;
+  }
+
+  var rows = parseTable(state.csv.replace(/^﻿/, "").trim(), detectDelim(state.csv));
+  var auto = analyze(rows, rosterNames);
+  result.auto = auto;
+
+  // 保存された列番号は、貼り直したデータの列数を超えることがあるので必ず丸める
+  var lastCol   = Math.max(0, auto.width - 1);
+  var nameCol   = state.nameCol   === null ? auto.nameCol   : Math.min(state.nameCol, lastCol);
+  var answerCol = state.answerCol === null ? auto.answerCol : Math.min(state.answerCol, lastCol);
+  var skip      = state.skipHeader === null ? auto.hasHeader : state.skipHeader;
+  var body = skip ? rows.slice(1) : rows;
+
+  // かいけつ（○△まだ）の列。-1 は「使わない」
+  var lvCol = state.levelCol === null
+    ? detectLevelCol(rows, skip, [nameCol, answerCol])
+    : (state.levelCol < 0 ? -1 : Math.min(state.levelCol, lastCol));
+  result.levelCol = lvCol;
+
+  // 名簿の照合表（別名の指定も取り込む）
+  var rosterByKey = {};
+  rosterNames.forEach(function (n) { rosterByKey[norm(n)] = n; });
+
+  var map = {}, seq = {}, lv = {}, order = 0;
+  body.forEach(function (row) {
+    var rawName = String(row[nameCol] == null ? "" : row[nameCol]).trim();
+    var parts = [];
+    if (state.restCols) {
+      for (var c = answerCol; c < row.length; c++) {
+        if (c === lvCol) continue;              // 自己評価の列は本文に混ぜない
+        var v = String(row[c] == null ? "" : row[c]).trim();
+        if (v) parts.push(v);
+      }
+    } else {
+      var one = String(row[answerCol] == null ? "" : row[answerCol]).trim();
+      if (one) parts.push(one);
+    }
+    var answer = parts.join("\n");
+    var rowLevel = lvCol >= 0 ? levelOf(row[lvCol]) : null;
+    if (!rawName && !answer && !rowLevel) return;
+
+    var key = norm(rawName);
+    if (state.aliases[key]) key = norm(state.aliases[key]);   // 別名指定を適用
+
+    if (!rosterByKey[key]) {
+      // ここが元コードで消えていた回答。必ず画面に出す。
+      if (answer || rawName) result.unmatched.push({ name: rawName || "(名前なし)", answer: answer, key: norm(rawName) });
+      return;
+    }
+    // 文が空でも○△まだだけ押した子はいるので、自己評価は先に拾う（後の行＝新しい方を採用）
+    if (rowLevel) lv[key] = rowLevel;
+    if (!answer) return;
+    // 同じ子が2回出したときは両方残す（上書きしない）
+    map[key] = map[key] ? map[key] + "\n" + answer : answer;
+    if (seq[key] === undefined) seq[key] = order++;
+  });
+
+  result.students = rosterNames.map(function (n, i) {
+    var key = norm(n);
+    return {
+      id: "s" + i, name: n, key: key,
+      answer: map[key] || "", submitted: !!map[key],
+      level: lv[key] || null,
+      order: i, seq: seq[key] === undefined ? 9999 : seq[key]
+    };
+  });
+  result.hasLevel = lvCol >= 0 && result.students.some(function (s) { return s.level; });
+  return result;
+}
+
+/* =========================================================================
+   5. 分類・抽出（すべて端末内で処理。API は使わない）
+   ========================================================================= */
+function catList() {
+  return state.cats.filter(function (c) { return String(c.name).trim() !== ""; })
+    .map(function (c) {
+      return {
+        name: String(c.name).trim(),
+        words: String(c.keywords || "").split(/[,、\s]+/)
+                 .map(function (w) { return w.trim(); })
+                 .filter(function (w) { return w !== ""; })
+      };
+    });
+}
+
+// 元コードは if / else if で排他だったため、両方に触れた意見が片方に落ちていた。
+// 一致語数で最有力を決め、他に一致したカテゴリも記録して画面に出す。
+function classify(answer, cats) {
+  var scores = cats.map(function (c) {
+    var n = 0;
+    c.words.forEach(function (w) { if (answer.indexOf(w) >= 0) n++; });
+    return { name: c.name, n: n };
+  });
+  var matched = scores.filter(function (s) { return s.n > 0; })
+                      .sort(function (a, b) { return b.n - a.n; });
+  return { best: matched.length ? matched[0].name : "その他",
+           also: matched.slice(1).map(function (s) { return s.name; }) };
+}
+
+// 理由・心情を表す言葉。何種類含まれるかを数えて「濃さ」の目安にする。
+// 元コードの「18字以上なら深掘り」だと、ほぼ全員が該当して①のタブと同じになってしまう。
+// ここでは点数を付けて濃い順に並べ、教師が上から選べるようにする。
+var DEEP_WORDS = ["だから","なぜなら","ので","ため","から","けれど","けど","のに","でも",
+                  "思","考え","気持ち","命","覚悟","本当","うれし","嬉し","かなし","悲し",
+                  "勇気","やさし","優し","約束","はず","たしかに","確かに"];
+function deepScore(a) {
+  var t = a.replace(/\s/g, ""), n = 0;
+  DEEP_WORDS.forEach(function (w) { if (t.indexOf(w) >= 0) n++; });
+  var s = n * 2;
+  if (t.length >= 25) s += 1;
+  if (t.length >= 45) s += 2;
+  return s;
+}
+function isDeep(a) { return deepScore(a) >= 4; }
+
+// 「かな」をそのまま含めると「かなった」「かなわない」に反応してしまう。
+// （この単元の中心語がまさに「かなった」なので、元の条件では全員が問い扱いになる）
+// 文末の「かな」だけを拾うように限定する。
+var ASK_RE = /[？?]|なぜ|どうして|なんで|不思議|気にな|知りたい|わからな|分からな|だろうか|でしょうか|のだろう|かなあ|かなぁ|かな[ー〜]|かな[。、!！]|かな$/m;
+function isAsk(a) { return ASK_RE.test(a.replace(/[\s　]/g, "")); }
+
+/* =========================================================================
+   6. 描画ヘルパ
+   ========================================================================= */
+function el(tag, cls, text) {
+  var n = document.createElement(tag);
+  if (cls) n.className = cls;
+  if (text != null) n.textContent = text;   // ユーザー入力は必ず textContent（innerHTML は使わない）
+  return n;
+}
+function on(node, ev, fn) { node.addEventListener(ev, fn); return node; }
+function icon(sym, title, cls) {
+  var b = el("button", "mini" + (cls ? " " + cls : ""), sym);
+  b.type = "button"; b.title = title; b.setAttribute("aria-label", title);
+  return b;
+}
+
+var app = document.getElementById("app");
+var modalNode = null;
+
+function render() {
+  var data = build();
+  document.documentElement.style.setProperty("--fs", state.fs);
+  app.innerHTML = "";
+  app.appendChild(header(data));
+  app.appendChild(tabs(data));
+  if (!store.usable) {
+    app.appendChild(note("y", "この画面では設定の自動保存ができません（埋め込み枠の制限）。開いている間は保持されます。設定画面の「設定を書き出す／読み込む」でバックアップしてください。"));
+  }
+  if (data.dups.length) {
+    app.appendChild(note("r", "名簿に同じ名前が複数あります（" + data.dups.join("、") + "）。回答を区別できないため、出席番号などを付けて区別してください。"));
+  }
+  if (!state.roster.trim() && !state.csv.trim()) {
+    app.appendChild(empty());
+    return;
+  }
+  app.appendChild(toolbar(data));
+  if (state.view === "board")     app.appendChild(viewBoard(data));
+  if (state.view === "structure") app.appendChild(viewStructure(data));
+  if (state.view === "deep")      app.appendChild(viewPick(data, "deep"));
+  if (state.view === "next")      app.appendChild(viewPick(data, "next"));
+  if (state.view === "check")     app.appendChild(viewCheck(data));
+}
+
+function note(kind, text) { return el("div", "note " + kind, text); }
+
+function header(data) {
+  var sub = data.students.filter(function (s) { return s.submitted; }).length;
+  var h = el("div", "head");
+  var left = el("div");
+  left.appendChild(el("div", "unit", state.unit || "単元名（設定から変更）"));
+  left.appendChild(el("h1", null, state.question || "問い（設定から変更）"));
+  h.appendChild(left);
+
+  var right = el("div", "headright no-print");
+  var c = el("div", "counter");
+  c.appendChild(el("span", null, "回答"));
+  var b = el("b");
+  b.appendChild(el("span", "n1", String(sub)));
+  b.appendChild(document.createTextNode(" / "));
+  b.appendChild(el("span", "n2", String(data.students.length)));
+  c.appendChild(b);
+  right.appendChild(c);
+
+  // 「まだ」の子がいれば、いちばん目につくところに出す
+  if (data.hasLevel) {
+    var notN = data.students.filter(function (s) { return s.level === "not"; }).length;
+    if (notN) {
+      var cn = el("div", "counter hl-not");
+      cn.appendChild(el("span", null, "まだ"));
+      var bn = el("b"); bn.appendChild(el("span", "n1", String(notN)));
+      cn.appendChild(bn);
+      cn.appendChild(el("span", null, "人"));
+      on(cn, "click", function () { state.view = "check"; render(); });
+      cn.style.cursor = "pointer";
+      cn.title = "⑤のタブで名前を確認できます";
+      right.appendChild(cn);
+    }
+  }
+  right.appendChild(on(el("button", "btn ghost", "書き出す"), "click", function () { exportModal(data); }));
+  right.appendChild(on(el("button", "btn", "設定"), "click", function () { settingsModal(data); }));
+  h.appendChild(right);
+  return h;
+}
+
+function tabs(data) {
+  var subs = data.students.filter(function (s) { return s.submitted; });
+  var deep = subs.filter(function (s) { return isDeep(s.answer); }).length;
+  var ask  = subs.filter(function (s) { return isAsk(s.answer); }).length;
+  var un   = data.students.length - subs.length;
+  var notN = data.students.filter(function (s) { return s.level === "not"; }).length;
+  var defs = [
+    ["board",     "① 全員の黒板",        "",  ""],
+    ["structure", "② 構造化",           "b", ""],
+    ["deep",      "③ 深掘り",           "g", deep],
+    ["next",      "④ 次時への問い",      "p", ask],
+    ["check",     "⑤ 気になる子",        "r", un + data.unmatched.length + notN]
+  ];
+  var t = el("div", "tabs no-print");
+  defs.forEach(function (d) {
+    var label = d[3] === "" ? d[1] : d[1] + "（" + d[3] + "）";
+    var btn = el("button", "tab" + (state.view === d[0] ? " on " + d[2] : ""), label);
+    on(btn, "click", function () { state.view = d[0]; render(); });
+    t.appendChild(btn);
+  });
+  return t;
+}
+
+function empty() {
+  var d = el("div", "note y");
+  d.appendChild(el("div", null, "まだデータがありません。右上の「設定」から ① 児童名簿 と ② スプレッドシートからコピーした回答 を貼り付けてください。"));
+  var b = on(el("button", "btn", "設定を開く"), "click", function () { settingsModal(build()); });
+  b.style.marginTop = "10px";
+  d.appendChild(b);
+  return d;
+}
+
+function toolbar(data) {
+  var t = el("div", "toolbar no-print");
+
+  var l1 = el("label"); var cb = document.createElement("input");
+  cb.type = "checkbox"; cb.checked = state.hideNames;
+  on(cb, "change", function () { state.hideNames = cb.checked; saveState(); render(); });
+  l1.appendChild(cb); l1.appendChild(document.createTextNode("名前を隠す"));
+  t.appendChild(l1);
+
+  var l2 = el("label"); var cb2 = document.createElement("input");
+  cb2.type = "checkbox"; cb2.checked = state.onlyPinned;
+  on(cb2, "change", function () { state.onlyPinned = cb2.checked; render(); });
+  l2.appendChild(cb2); l2.appendChild(document.createTextNode("★だけ表示"));
+  t.appendChild(l2);
+
+  var l3 = el("label"); l3.appendChild(document.createTextNode("文字"));
+  var sel = document.createElement("select");
+  [["0.9","小"],["1","標準"],["1.25","大"],["1.6","特大"]].forEach(function (o) {
+    var op = document.createElement("option"); op.value = o[0]; op.textContent = o[1];
+    if (String(state.fs) === o[0]) op.selected = true; sel.appendChild(op);
+  });
+  on(sel, "change", function () { state.fs = parseFloat(sel.value); saveState(); render(); });
+  l3.appendChild(sel); t.appendChild(l3);
+
+  var l4 = el("label"); l4.appendChild(document.createTextNode("並び"));
+  var sel2 = document.createElement("select");
+  [["roster","名簿順"],["submit","提出順"],["len","長い順"],["only","回答した子だけ"]].forEach(function (o) {
+    var op = document.createElement("option"); op.value = o[0]; op.textContent = o[1];
+    if (state.sort === o[0]) op.selected = true; sel2.appendChild(op);
+  });
+  on(sel2, "change", function () { state.sort = sel2.value; saveState(); render(); });
+  l4.appendChild(sel2); t.appendChild(l4);
+
+  if (data.hasLevel) {
+    var l5 = el("label"); l5.appendChild(document.createTextNode("かいけつ"));
+    var sel3 = document.createElement("select");
+    var opts = [["", "すべて"]].concat(LEVELS.map(function (L) {
+      var n = data.students.filter(function (s) { return s.level === L.key; }).length;
+      return [L.key, L.short + "（" + n + "）"];
+    }));
+    opts.forEach(function (o) {
+      var op = document.createElement("option"); op.value = o[0]; op.textContent = o[1];
+      if (state.lvFilter === o[0]) op.selected = true; sel3.appendChild(op);
+    });
+    on(sel3, "change", function () { state.lvFilter = sel3.value; render(); });
+    l5.appendChild(sel3); t.appendChild(l5);
+  } else if (state.lvFilter) {
+    state.lvFilter = "";
+  }
+
+  t.appendChild(on(el("button", "tinybtn", "印刷"), "click", function () { window.print(); }));
+  var pins = Object.keys(state.pinned).length;
+  if (pins) {
+    t.appendChild(on(el("button", "tinybtn del", "★を全部消す（" + pins + "）"), "click", function () {
+      state.pinned = {}; saveState(); render();
+    }));
+  }
+  return t;
+}
+
+/* ---- 付箋 1枚 ---- */
+function sticky(st, opts) {
+  opts = opts || {};
+  var pinned = !!state.pinned[st.key];
+  var d = el("div", "sticky" + (st.submitted ? "" : " empty") + (pinned ? " pin" : ""));
+
+  var head = el("div", "sname");
+  head.appendChild(el("span", null, state.hideNames ? "　" : st.name));
+  var tools = el("span");
+  tools.style.display = "flex"; tools.style.gap = "4px"; tools.style.alignItems = "center";
+  // かいけつの自己評価は印刷にも残す（no-print を付けない）
+  var lvi = levelInfo(st.level);
+  if (lvi) tools.appendChild(el("span", "lv " + lvi.cls, lvi.short));
+  if (opts.chip) tools.appendChild(el("span", "chip no-print", opts.chip));
+  if (st.submitted) {
+    tools.appendChild(on(icon("★", "取り上げる印", (pinned ? "on " : "") + "no-print"), "click", function () {
+      if (pinned) delete state.pinned[st.key]; else state.pinned[st.key] = true;
+      saveState(); render();
+    }));
+  }
+  head.appendChild(tools);
+  d.appendChild(head);
+  d.appendChild(el("div", "stext", st.submitted ? st.answer : "考え中…"));
+
+  if (opts.move) {
+    var cats = catList().map(function (c) { return c.name; }).concat(["その他"]);
+    var sel = el("select", "movesel no-print");
+    var auto = el("option"); auto.value = "__auto__"; auto.textContent = "自動分類にもどす";
+    sel.appendChild(auto);
+    cats.forEach(function (n) {
+      var op = document.createElement("option"); op.value = n; op.textContent = "→ " + n;
+      if (state.overrides[st.key] === n) op.selected = true;
+      sel.appendChild(op);
+    });
+    on(sel, "change", function () {
+      if (sel.value === "__auto__") delete state.overrides[st.key];
+      else state.overrides[st.key] = sel.value;
+      saveState(); render();
+    });
+    d.appendChild(sel);
+  }
+  return d;
+}
+
+function sortStudents(list) {
+  var a = list.slice();
+  if (state.sort === "submit") a.sort(function (x, y) { return x.seq - y.seq || x.order - y.order; });
+  if (state.sort === "len")    a.sort(function (x, y) { return y.answer.length - x.answer.length; });
+  if (state.sort === "only")   a = a.filter(function (s) { return s.submitted; });
+  return a;
+}
+function applyPinFilter(list) {
+  var a = state.onlyPinned ? list.filter(function (s) { return state.pinned[s.key]; }) : list;
+  if (state.lvFilter) a = a.filter(function (s) { return s.level === state.lvFilter; });
+  return a;
+}
+
+/* ---- ① 全員の黒板 ---- */
+function viewBoard(data) {
+  var wrapEl = el("div");
+  var list = applyPinFilter(sortStudents(data.students));
+  if (!list.length) { wrapEl.appendChild(el("div", "blank", "表示できる付箋がありません")); return wrapEl; }
+  var g = el("div", "board");
+  list.forEach(function (s) { g.appendChild(sticky(s)); });
+  wrapEl.appendChild(g);
+  return wrapEl;
+}
+
+/* ---- ② 構造化 ---- */
+function viewStructure(data) {
+  var wrapEl = el("div");
+  var cats = catList();
+  var names = cats.map(function (c) { return c.name; }).concat(["その他"]);
+  var groups = {}; names.forEach(function (n) { groups[n] = []; });
+
+  applyPinFilter(sortStudents(data.students.filter(function (s) { return s.submitted; })))
+    .forEach(function (s) {
+      var r = classify(s.answer, cats);
+      var target = state.overrides[s.key] && groups[state.overrides[s.key]] ? state.overrides[s.key] : r.best;
+      if (!groups[target]) target = "その他";
+      groups[target].push({ st: s, also: r.also, manual: !!state.overrides[s.key] });
+    });
+
+  wrapEl.appendChild(note("p", "キーワードで自動的に分けています（端末内の文字照合のみ／外部送信なし）。ずれていたら付箋下のメニューで動かせます。分類の名前とキーワードは設定画面で単元ごとに変えられます。"));
+  var cols = el("div", "cols");
+  names.forEach(function (n) {
+    var col = el("div", "col");
+    var h = el("h2");
+    h.appendChild(el("span", null, n));
+    h.appendChild(el("span", "c", String(groups[n].length)));
+    col.appendChild(h);
+    var stack = el("div", "stack");
+    groups[n].forEach(function (item) {
+      var chip = item.manual ? "手動" : (item.also.length ? "＋" + item.also.join("・") : null);
+      stack.appendChild(sticky(item.st, { move: true, chip: chip }));
+    });
+    if (!groups[n].length) stack.appendChild(el("div", "blank", "該当なし"));
+    col.appendChild(stack);
+    cols.appendChild(col);
+  });
+  wrapEl.appendChild(cols);
+  return wrapEl;
+}
+
+/* ---- ③ 深掘り / ④ 次時への問い ---- */
+function viewPick(data, kind) {
+  var wrapEl = el("div");
+  var subs = data.students.filter(function (s) { return s.submitted; });
+  var list = applyPinFilter(
+    subs.filter(function (s) { return kind === "deep" ? isDeep(s.answer) : isAsk(s.answer); })
+  );
+  // 深掘りは「濃い順」に並べる（名簿順だと選びにくいため）
+  if (kind === "deep" && state.sort === "roster") {
+    list = list.slice().sort(function (a, b) { return deepScore(b.answer) - deepScore(a.answer); });
+  } else {
+    list = sortStudents(list);
+  }
+  wrapEl.appendChild(kind === "deep"
+    ? note("g", "理由や気持ちを表す言葉（〜だから、〜のに、思う、命、約束 など）が多い意見を、濃い順に並べています。数字はその目安です。目安にすぎないので、★を付けて取り上げる意見を決めてください。")
+    : note("p", "「〜かな？」「なぜ」「どうして」などの問いを含む意見です。振り返りや次のめあて作りに使えます。"));
+  if (!list.length) { wrapEl.appendChild(el("div", "blank", "該当する意見はまだありません")); return wrapEl; }
+  var g = el("div", "board");
+  list.forEach(function (s) {
+    g.appendChild(sticky(s, { chip: kind === "deep" ? "濃さ " + deepScore(s.answer) : "問い" }));
+  });
+  wrapEl.appendChild(g);
+  return wrapEl;
+}
+
+/* ---- ⑤ 気になる子（かいけつ・未提出・未照合） ---- */
+function viewCheck(data) {
+  var wrapEl = el("div");
+  var un = data.students.filter(function (s) { return !s.submitted; });
+
+  var notN = data.students.filter(function (s) { return s.level === "not"; }).length;
+  wrapEl.appendChild(note("r",
+    (data.hasLevel ? "「まだ」：" + notN + "人　／　" : "") +
+    "未提出：" + un.length + "人　／　名簿と一致しなかった回答：" + data.unmatched.length + "件"));
+
+  // --- かいけつ（○・△・まだ）の自己評価 ---
+  if (data.hasLevel) {
+    var box0 = el("div", "col"); box0.style.marginBottom = "14px";
+    var h0 = el("h2"); h0.appendChild(el("span", null, "かいけつ（自分での たしかめ）"));
+    box0.appendChild(h0);
+
+    var sum = el("div", "lvsum");
+    LEVELS.forEach(function (L) {
+      var n = data.students.filter(function (s) { return s.level === L.key; }).length;
+      var b = el("div", "b" + (L.key === "not" && n ? " hl-not" : ""));
+      b.appendChild(el("span", "lv " + L.cls, L.short));
+      b.appendChild(el("b", null, String(n)));
+      b.appendChild(el("span", null, "人"));
+      sum.appendChild(b);
+    });
+    var noAns = data.students.filter(function (s) { return !s.level; }).length;
+    if (noAns) {
+      var bx = el("div", "b");
+      bx.appendChild(el("span", null, "未記入"));
+      bx.appendChild(el("b", null, String(noAns)));
+      bx.appendChild(el("span", null, "人"));
+      sum.appendChild(bx);
+    }
+    box0.appendChild(sum);
+
+    // 「まだ」「△」の子は名前と振り返り本文をそのまま出す（次の時間の手当てに直結する）
+    ["not", "mid"].forEach(function (k) {
+      var L = levelInfo(k);
+      var list = data.students.filter(function (s) { return s.level === k; });
+      if (!list.length) return;
+      var sub = el("div"); sub.style.marginTop = "10px";
+      var lab = el("div", "hint");
+      lab.textContent = (k === "not" ? "「まだ」と答えた子（" : "「△ もう少し」と答えた子（") + list.length + "人）";
+      sub.appendChild(lab);
+      var g = el("div", "board"); g.style.marginTop = "6px";
+      list.forEach(function (s) { g.appendChild(sticky(s)); });
+      sub.appendChild(g);
+      box0.appendChild(sub);
+    });
+    if (!notN && !data.students.some(function (s) { return s.level === "mid"; })) {
+      box0.appendChild(el("div", "blank", "「まだ」「△」の子はいません"));
+    }
+    wrapEl.appendChild(box0);
+  }
+
+  var box1 = el("div", "col");
+  var h1 = el("h2"); h1.appendChild(el("span", null, "まだ回答が届いていない子"));
+  h1.appendChild(el("span", "c", String(un.length))); box1.appendChild(h1);
+  if (un.length) {
+    var ns = el("div", "names");
+    un.forEach(function (s) { ns.appendChild(el("span", "nametag", state.hideNames ? "　　　" : s.name)); });
+    box1.appendChild(ns);
+  } else box1.appendChild(el("div", "blank", "全員そろいました"));
+  wrapEl.appendChild(box1);
+
+  var box2 = el("div", "col"); box2.style.marginTop = "14px";
+  var h2 = el("h2"); h2.appendChild(el("span", null, "名簿と一致しなかった回答"));
+  h2.appendChild(el("span", "c", String(data.unmatched.length))); box2.appendChild(h2);
+  if (!data.unmatched.length) {
+    box2.appendChild(el("div", "blank", "ありません"));
+  } else {
+    box2.appendChild(el("div", "hint", "名前の書き方が名簿と違う回答です。ここに出しておかないと、その子の振り返りが画面のどこにも出ません。名簿の誰かに割り当てるか、名簿に追加してください。"));
+    data.unmatched.forEach(function (u) {
+      var d = el("div", "unmatch");
+      d.appendChild(el("div", "un", "回答された名前：" + u.name));
+      d.appendChild(el("div", "ua", u.answer || "（回答が空です）"));
+      var row = el("div", "row no-print");
+      row.appendChild(el("span", null, "名簿の"));
+      var sel = document.createElement("select");
+      var op0 = document.createElement("option"); op0.value = ""; op0.textContent = "— 選ぶ —";
+      sel.appendChild(op0);
+      data.students.forEach(function (s) {
+        var op = document.createElement("option"); op.value = s.name; op.textContent = s.name;
+        sel.appendChild(op);
+      });
+      row.appendChild(sel);
+      row.appendChild(el("span", null, "として扱う"));
+      row.appendChild(on(el("button", "tinybtn", "割り当て"), "click", function () {
+        if (!sel.value) return;
+        state.aliases[u.key] = sel.value; saveState(); render();
+      }));
+      row.appendChild(on(el("button", "tinybtn", "この名前を名簿に追加"), "click", function () {
+        state.roster = (state.roster.replace(/\s*$/, "") + "\n" + u.name).replace(/^\n/, "");
+        saveState(); render();
+      }));
+      d.appendChild(row);
+      box2.appendChild(d);
+    });
+  }
+  wrapEl.appendChild(box2);
+
+  var al = Object.keys(state.aliases);
+  if (al.length) {
+    var box3 = el("div", "col"); box3.style.marginTop = "14px";
+    var h3 = el("h2"); h3.appendChild(el("span", null, "名前の読み替え設定"));
+    h3.appendChild(el("span", "c", String(al.length))); box3.appendChild(h3);
+    al.forEach(function (k) {
+      var row = el("div", "row"); row.style.marginBottom = "6px";
+      row.appendChild(el("span", "nametag", k + " → " + state.aliases[k]));
+      row.appendChild(on(el("button", "tinybtn del", "解除"), "click", function () {
+        delete state.aliases[k]; saveState(); render();
+      }));
+      box3.appendChild(row);
+    });
+    wrapEl.appendChild(box3);
+  }
+  return wrapEl;
+}
+
+/* =========================================================================
+   7. モーダル（設定・書き出し）
+   ========================================================================= */
+function openModal(title, buildBody, buildFoot) {
+  closeModal();
+  var mask = el("div", "mask no-print");
+  var m = el("div", "modal");
+  var mh = el("div", "mhead");
+  mh.appendChild(el("h2", null, title));
+  mh.appendChild(on(el("button", "tinybtn", "閉じる"), "click", closeModal));
+  m.appendChild(mh);
+  var body = el("div", "mbody"); buildBody(body); m.appendChild(body);
+  if (buildFoot) { var f = el("div", "mfoot"); buildFoot(f); m.appendChild(f); }
+  mask.appendChild(m);
+  on(mask, "click", function (e) { if (e.target === mask) closeModal(); });
+  document.body.appendChild(mask);
+  modalNode = mask;
+  document.addEventListener("keydown", escClose);
+}
+function escClose(e) { if (e.key === "Escape") closeModal(); }
+function closeModal() {
+  if (modalNode && modalNode.parentNode) modalNode.parentNode.removeChild(modalNode);
+  modalNode = null;
+  document.removeEventListener("keydown", escClose);
+}
+
+function settingsModal() {
+  openModal("設定", function (body) {
+    // --- 単元・問い ---
+    var g0 = el("div", "grid2");
+    var f1 = el("div", "fld"); f1.appendChild(el("label", null, "単元名"));
+    var iUnit = el("input", "inp"); iUnit.value = state.unit; f1.appendChild(iUnit);
+    f1.appendChild(el("div", "hint", "例：サーカスのライオン / 3年国語"));
+    var f2 = el("div", "fld"); f2.appendChild(el("label", null, "今日の問い"));
+    var iQ = el("input", "inp"); iQ.value = state.question; f2.appendChild(iQ);
+    f2.appendChild(el("div", "hint", "画面の見出しになります。単元が変わってもコードを触らずに使えます。"));
+    g0.appendChild(f1); g0.appendChild(f2);
+    body.appendChild(g0);
+
+    // --- 名簿・回答 ---
+    var g1 = el("div", "grid2");
+    var fr = el("div", "fld");
+    var sr = el("div", "sub");
+    sr.appendChild(el("label", null, "① 児童名簿（1行に1名）"));
+    var clrR = el("button", "tinybtn del", "クリア"); sr.appendChild(clrR);
+    fr.appendChild(sr);
+    var taR = el("textarea", "ta"); taR.rows = 12; taR.value = state.roster;
+    taR.placeholder = "山田太郎\n佐藤花子\n鈴木一郎";   // 元コードは &#10; を書いていたため文字化けしていた
+    fr.appendChild(taR);
+    fr.appendChild(el("div", "hint", "「1　山田太郎」のように番号付きで貼っても大丈夫です。名簿順に付箋が並びます。"));
+    on(clrR, "click", function () { taR.value = ""; });
+
+    var fc = el("div", "fld");
+    var sc = el("div", "sub");
+    sc.appendChild(el("label", null, "② 回答（スプレッドシートから貼り付け）"));
+    var clrC = el("button", "tinybtn del", "クリア"); sc.appendChild(clrC);
+    fc.appendChild(sc);
+    var taC = el("textarea", "ta"); taC.rows = 12; taC.value = state.csv;
+    taC.placeholder = "タイムスタンプ\t名前\t振り返り\n2026/07/31 9:05\t山田太郎\tじんざの願いはかなったと思う。…";
+    fc.appendChild(taC);
+    fc.appendChild(el("div", "hint", "見出し行やタイムスタンプ列が入ったままでも大丈夫です。下の欄で列を確認してください。"));
+    on(clrC, "click", function () { taC.value = ""; mapBox.innerHTML = ""; });
+    g1.appendChild(fr); g1.appendChild(fc);
+    body.appendChild(g1);
+
+    // --- 列の割り当て ---
+    var fm = el("div", "fld");
+    fm.appendChild(el("label", null, "③ どの列を使うか"));
+    var mapBox = el("div"); fm.appendChild(mapBox);
+    body.appendChild(fm);
+
+    var pick = { nameCol: state.nameCol, answerCol: state.answerCol, levelCol: state.levelCol,
+                 skipHeader: state.skipHeader, restCols: state.restCols };
+
+    function refreshMap() {
+      mapBox.innerHTML = "";
+      var text = taC.value.replace(/^﻿/, "").trim();
+      if (!text) { mapBox.appendChild(el("div", "hint", "回答を貼り付けると、名前の列と回答の列を自動で判定します。")); return; }
+      var rows = parseTable(text, detectDelim(text));
+      var roster = parseRoster(taR.value).names;
+      var auto = analyze(rows, roster);
+      var nameCol = pick.nameCol === null ? auto.nameCol : Math.min(pick.nameCol, auto.width - 1);
+      var ansCol  = pick.answerCol === null ? auto.answerCol : Math.min(pick.answerCol, auto.width - 1);
+      var skip    = pick.skipHeader === null ? auto.hasHeader : pick.skipHeader;
+
+      var grid = el("div", "mapgrid");
+      function colSelect(labelText, current, setter) {
+        var l = el("label", null, labelText);
+        var s = document.createElement("select");
+        for (var i = 0; i < auto.width; i++) {
+          var head = auto.stats[i] && auto.stats[i].head ? auto.stats[i].head : "";
+          var op = document.createElement("option");
+          op.value = String(i);
+          op.textContent = (i + 1) + "列目" + (head ? "（" + head.slice(0, 14) + "）" : "");
+          if (i === current) op.selected = true;
+          s.appendChild(op);
+        }
+        on(s, "change", function () { setter(parseInt(s.value, 10)); refreshMap(); });
+        l.appendChild(s); grid.appendChild(l);
+      }
+      colSelect("名前の列", nameCol, function (v) { pick.nameCol = v; });
+      colSelect("回答の列", ansCol,  function (v) { pick.answerCol = v; });
+
+      // かいけつ（○・△・まだ）の列。自動で探し、無ければ「使わない」
+      var lvAuto = detectLevelCol(rows, skip, [nameCol, ansCol]);
+      var lvCol  = pick.levelCol === null ? lvAuto
+                 : (pick.levelCol < 0 ? -1 : Math.min(pick.levelCol, auto.width - 1));
+      var lLv = el("label", null, "かいけつの列（○・△・まだ）");
+      var sLv = document.createElement("select");
+      var opN = document.createElement("option");
+      opN.value = "-1"; opN.textContent = "使わない";
+      if (lvCol < 0) opN.selected = true;
+      sLv.appendChild(opN);
+      for (var li = 0; li < auto.width; li++) {
+        var lh = auto.stats[li] && auto.stats[li].head ? auto.stats[li].head : "";
+        var lop = document.createElement("option");
+        lop.value = String(li);
+        lop.textContent = (li + 1) + "列目" + (lh ? "（" + lh.slice(0, 14) + "）" : "")
+                        + (li === lvAuto ? " ← 自動検出" : "");
+        if (li === lvCol) lop.selected = true;
+        sLv.appendChild(lop);
+      }
+      on(sLv, "change", function () { pick.levelCol = parseInt(sLv.value, 10); refreshMap(); });
+      lLv.appendChild(sLv); grid.appendChild(lLv);
+      mapBox.appendChild(grid);
+
+      var ck1 = el("label", "ck");
+      var c1 = document.createElement("input"); c1.type = "checkbox"; c1.checked = skip;
+      on(c1, "change", function () { pick.skipHeader = c1.checked; refreshMap(); });
+      ck1.appendChild(c1);
+      ck1.appendChild(document.createTextNode("1行目は見出しなので使わない" + (auto.hasHeader ? "（見出しを検出しました）" : "")));
+      mapBox.appendChild(ck1);
+
+      var ck2 = el("label", "ck");
+      var c2 = document.createElement("input"); c2.type = "checkbox"; c2.checked = !!pick.restCols;
+      on(c2, "change", function () { pick.restCols = c2.checked; refreshMap(); });
+      ck2.appendChild(c2);
+      ck2.appendChild(document.createTextNode("回答の列より後ろの列もまとめて表示する（質問が複数あるとき）"));
+      mapBox.appendChild(ck2);
+
+      // プレビュー：思った通りに読めているか教師が確認できるようにする
+      var body2 = skip ? rows.slice(1) : rows;
+      var lines = body2.slice(0, 4).map(function (r) {
+        var nm = String(r[nameCol] == null ? "" : r[nameCol]).trim();
+        var an = pick.restCols
+          ? r.slice(ansCol).map(function (v, k) {
+              return (ansCol + k) === lvCol ? "" : String(v == null ? "" : v).trim();
+            }).filter(Boolean).join(" ")
+          : String(r[ansCol] == null ? "" : r[ansCol]).trim();
+        var lk = lvCol >= 0 ? levelOf(r[lvCol]) : null;
+        var lvs = lvCol < 0 ? "" : "[" + (lk ? levelInfo(lk).short : "?") + "]";
+        return "【" + (nm || "?") + "】" + lvs + an.replace(/\n/g, " ").slice(0, 56);
+      });
+      var pv = el("div", "prev", lines.join("\n") || "（読み取れる行がありません）");
+      mapBox.appendChild(el("div", "hint", "読み取り結果（先頭4件）："));
+      mapBox.appendChild(pv);
+
+      var rosterSet = {}; roster.forEach(function (n) { rosterSet[norm(n)] = 1; });
+      var miss = 0;
+      body2.forEach(function (r) {
+        var nm = norm(String(r[nameCol] == null ? "" : r[nameCol]).trim());
+        if (nm && !rosterSet[nm] && !state.aliases[nm]) miss++;
+      });
+      if (miss) mapBox.appendChild(el("div", "hint", "※ 名簿に見つからない名前が " + miss + " 件あります。保存後、⑤のタブで確認できます。"));
+    }
+    on(taC, "input", refreshMap);
+    on(taR, "input", refreshMap);
+    refreshMap();
+
+    // --- 分類カテゴリ ---
+    var fcat = el("div", "fld");
+    fcat.appendChild(el("label", null, "④ 構造化の分け方（単元ごとに変えられます）"));
+    var catBox = el("div"); fcat.appendChild(catBox);
+    var addBtn = el("button", "tinybtn", "＋ 分類を追加");
+    fcat.appendChild(addBtn);
+    fcat.appendChild(el("div", "hint", "キーワードは「,」で区切ります。回答文にその言葉が含まれていれば、その分類に入ります。どれにも当てはまらない意見は「その他」に入ります。"));
+    body.appendChild(fcat);
+
+    var catRows = [];
+    function addCatRow(c) {
+      var row = el("div", "rowflex");
+      var n = el("input", "inp"); n.placeholder = "分類の名前"; n.value = c ? c.name : "";
+      var k = el("input", "inp k"); k.placeholder = "キーワード（例：じんざ,ライオン,火）"; k.value = c ? c.keywords : "";
+      var del = el("button", "tinybtn del", "削除");
+      row.appendChild(n); row.appendChild(k); row.appendChild(del);
+      catBox.appendChild(row);
+      var rec = { n: n, k: k, row: row };
+      catRows.push(rec);
+      on(del, "click", function () {
+        catBox.removeChild(row);
+        catRows = catRows.filter(function (r) { return r !== rec; });
+      });
+    }
+    state.cats.forEach(addCatRow);
+    on(addBtn, "click", function () { addCatRow(null); });
+
+    // --- 設定の書き出し／読み込み（保存が効かない環境の保険） ---
+    var fio = el("div", "fld");
+    fio.appendChild(el("label", null, "⑤ 設定のバックアップ"));
+    var ioRow = el("div", "rowflex");
+    ioRow.appendChild(on(el("button", "tinybtn", "設定を書き出す"), "click", function () {
+      taIO.value = JSON.stringify({
+        unit: iUnit.value, question: iQ.value, roster: taR.value, csv: taC.value,
+        cats: catRows.map(function (r) { return { name: r.n.value, keywords: r.k.value }; }),
+        overrides: state.overrides, aliases: state.aliases, pinned: state.pinned,
+        nameCol: pick.nameCol, answerCol: pick.answerCol, levelCol: pick.levelCol,
+        skipHeader: pick.skipHeader, restCols: pick.restCols
+      });
+      taIO.select();
+    }));
+    ioRow.appendChild(on(el("button", "tinybtn", "貼り付けた設定を読み込む"), "click", function () {
+      try {
+        var o = JSON.parse(taIO.value);
+        for (var k in o) if (Object.prototype.hasOwnProperty.call(state, k)) state[k] = o[k];
+        saveState(); closeModal(); render();
+      } catch (e) { alert("設定の形式が読み取れませんでした。"); }
+    }));
+    fio.appendChild(ioRow);
+    var taIO = el("textarea", "ta"); taIO.rows = 3;
+    taIO.placeholder = "ここに書き出した文字列が入ります。メモ帳などに控えておけば、別の端末でも同じ設定に戻せます。";
+    fio.appendChild(taIO);
+    body.appendChild(fio);
+
+    body.__collect = function () {
+      // 問いが変わったら別の授業なので、★と手動分類は持ち越さない
+      if (iQ.value.trim() !== String(state.question).trim()) {
+        state.pinned = {}; state.overrides = {};
+      }
+      state.unit = iUnit.value;
+      state.question = iQ.value;
+      state.roster = taR.value;
+      state.csv = taC.value;
+      state.nameCol = pick.nameCol; state.answerCol = pick.answerCol;
+      state.levelCol = pick.levelCol;
+      state.skipHeader = pick.skipHeader; state.restCols = !!pick.restCols;
+      var cs = catRows.map(function (r) { return { name: r.n.value.trim(), keywords: r.k.value.trim() }; })
+                      .filter(function (c) { return c.name !== ""; });
+      state.cats = cs.length ? cs : DEFAULT_CATS.slice();
+    };
+    settingsModal.__body = body;
+  }, function (foot) {
+    foot.appendChild(on(el("button", "btn ghost", "キャンセル"), "click", closeModal));
+    foot.appendChild(on(el("button", "btn", "黒板に反映して保存"), "click", function () {
+      settingsModal.__body.__collect();
+      saveState(); closeModal(); render();
+    }));
+  });
+}
+
+/* ---- 書き出し（クリップボード権限に頼らずテキストで渡す） ---- */
+function exportModal(data) {
+  var cats = catList();
+  var lines = [];
+  lines.push(state.unit);
+  lines.push("問い：" + state.question);
+  var subs = data.students.filter(function (s) { return s.submitted; });
+  lines.push("回答 " + subs.length + " / " + data.students.length + "人");
+  lines.push("");
+  var names = cats.map(function (c) { return c.name; }).concat(["その他"]);
+  var groups = {}; names.forEach(function (n) { groups[n] = []; });
+  subs.forEach(function (s) {
+    var r = classify(s.answer, cats);
+    var t = state.overrides[s.key] && groups[state.overrides[s.key]] ? state.overrides[s.key] : r.best;
+    if (!groups[t]) t = "その他";
+    groups[t].push(s);
+  });
+  names.forEach(function (n) {
+    lines.push("■ " + n + "（" + groups[n].length + "人）");
+    groups[n].forEach(function (s) {
+      var lvi = levelInfo(s.level);
+      lines.push("・" + s.name + (state.pinned[s.key] ? "★" : "")
+               + (lvi ? "[" + lvi.short + "]" : "") + "：" + s.answer.replace(/\n/g, " "));
+    });
+    lines.push("");
+  });
+  if (data.hasLevel) {
+    lines.push("■ かいけつ（自分でのたしかめ）");
+    LEVELS.forEach(function (L) {
+      var ls = data.students.filter(function (s) { return s.level === L.key; });
+      lines.push("・" + L.label + "：" + ls.length + "人"
+               + (ls.length ? "　" + ls.map(function (s) { return s.name; }).join("、") : ""));
+    });
+    lines.push("");
+  }
+  var un = data.students.filter(function (s) { return !s.submitted; });
+  if (un.length) lines.push("■ 未提出：" + un.map(function (s) { return s.name; }).join("、"));
+  if (data.unmatched.length) {
+    lines.push("■ 名簿と一致しなかった回答：");
+    data.unmatched.forEach(function (u) { lines.push("・" + u.name + "：" + u.answer.replace(/\n/g, " ")); });
+  }
+
+  openModal("書き出す", function (body) {
+    body.appendChild(el("div", "hint", "下のテキストを全部選んでコピーし、記録や指導案に貼り付けてください。（外部への送信は行いません）"));
+    var ta = el("textarea", "ta"); ta.rows = 18; ta.value = lines.join("\n");
+    body.appendChild(ta);
+    setTimeout(function () { ta.focus(); ta.select(); }, 30);
+  }, function (foot) {
+    foot.appendChild(on(el("button", "btn ghost", "閉じる"), "click", closeModal));
+    foot.appendChild(on(el("button", "btn", "印刷する"), "click", function () { closeModal(); window.print(); }));
+  });
+}
+
+/* =========================================================================
+   8. 起動
+   ========================================================================= */
+loadState();
+render();
+</script>
+</body>
+</html>

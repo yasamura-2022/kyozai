@@ -1,0 +1,1428 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>水のすがたと温度ラボ</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Hiragino Kaku Gothic ProN", "Hiragino Sans", "BIZ UDPGothic", Meiryo, sans-serif;
+    background: #f1f5f9;
+    color: #1e293b;
+    min-height: 100vh;
+    padding: 16px;
+  }
+  .card {
+    max-width: 900px;
+    margin: 0 auto;
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 20px 25px -5px rgba(0,0,0,.1), 0 8px 10px -6px rgba(0,0,0,.1);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ヘッダー */
+  .header {
+    background: #2563eb;
+    padding: 16px;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .header-left { display: flex; align-items: center; gap: 8px; }
+  .header h1 { font-size: 20px; font-weight: bold; }
+  .badge {
+    font-size: 13px;
+    background: #1d4ed8;
+    padding: 4px 12px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .spin-slow { animation: spin 3s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* タブ */
+  .tabs { display: flex; border-bottom: 1px solid #e2e8f0; }
+  .tab {
+    flex: 1;
+    padding: 12px 0;
+    font-weight: bold;
+    font-size: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border: none;
+    border-bottom: 2px solid transparent;
+    background: #f8fafc;
+    color: #64748b;
+    cursor: pointer;
+    transition: background .15s, color .15s;
+    font-family: inherit;
+  }
+  .tab:hover { background: #f1f5f9; }
+  .tab.active-heat { background: #fff; color: #dc2626; border-bottom-color: #dc2626; }
+  .tab.active-cool { background: #fff; color: #0891b2; border-bottom-color: #0891b2; }
+
+  /* 本体レイアウト */
+  .main { display: flex; flex-direction: column; }
+  @media (min-width: 768px) {
+    .main { flex-direction: row; }
+    .header h1 { font-size: 24px; }
+  }
+
+  .stage {
+    position: relative;
+    flex: 1;
+    background: #f1f5f9;
+    display: flex;
+    justify-content: center;
+    padding: 16px;
+  }
+  #labCanvas {
+    background: #334155;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,.15);
+    cursor: pointer;
+    max-width: 100%;
+    height: auto;
+    touch-action: manipulation;
+  }
+  .hint-overlay {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    background: rgba(255,255,255,.88);
+    padding: 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    color: #475569;
+    pointer-events: none;
+    box-shadow: 0 1px 2px rgba(0,0,0,.08);
+    line-height: 1.5;
+  }
+  .qmark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 15px;
+    height: 15px;
+    border-radius: 999px;
+    border: 1.5px solid #2563eb;
+    color: #2563eb;
+    font-weight: bold;
+    font-size: 10px;
+    margin-right: 3px;
+    background: #fff;
+  }
+
+  /* 絵の上に重ねる加熱開始ボタン(スクロールしなくても押せる) */
+  .stage-start {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-family: inherit;
+    font-weight: bold;
+    font-size: 19px;
+    color: #fff;
+    background: #dc2626;
+    border: none;
+    border-radius: 999px;
+    padding: 16px 30px;
+    cursor: pointer;
+    box-shadow: 0 10px 22px rgba(220,38,38,.45);
+    z-index: 5;
+    transition: background .15s, transform .1s;
+  }
+  .stage-start:hover { background: #b91c1c; }
+  .stage-start:active { transform: translate(-50%, -50%) scale(.96); }
+  /* 加熱中は小さく右上へ(沸騰のようすを隠さない) */
+  .stage-start.is-heating {
+    top: 14px;
+    right: 14px;
+    left: auto;
+    transform: none;
+    font-size: 13px;
+    padding: 8px 14px;
+    background: rgba(71,85,105,.92);
+    box-shadow: 0 2px 6px rgba(0,0,0,.3);
+  }
+  .stage-start.is-heating:hover { background: rgba(51,65,85,.96); }
+  .stage-start.is-heating:active { transform: scale(.96); }
+  @media (prefers-reduced-motion: reduce) {
+    .stage-start { transition: none; }
+  }
+
+  /* 右パネル */
+  .panel {
+    width: 100%;
+    background: #fff;
+    border-left: 1px solid #e2e8f0;
+    display: flex;
+    flex-direction: column;
+  }
+  @media (min-width: 768px) { .panel { width: 320px; flex-shrink: 0; } }
+
+  .controls { padding: 20px 24px; border-bottom: 1px solid #f1f5f9; }
+  .controls > * + * { margin-top: 10px; }
+  .row { display: flex; justify-content: space-between; align-items: center; }
+  .control-label {
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #334155;
+    font-size: 15px;
+  }
+  .value {
+    font-size: 13px;
+    font-family: ui-monospace, monospace;
+    background: #f1f5f9;
+    padding: 2px 8px;
+    border-radius: 4px;
+  }
+  input[type=range] {
+    width: 100%;
+    height: 8px;
+    cursor: pointer;
+  }
+  #heatSlider { accent-color: #ef4444; }
+  #coolSlider { accent-color: #06b6d4; }
+  .caption { font-size: 12px; color: #64748b; line-height: 1.6; }
+
+  /* 火の強さ 弱火・強火の2択 */
+  .fire-toggle { display: flex; gap: 8px; }
+  .fire-btn {
+    flex: 1;
+    font-family: inherit;
+    font-weight: bold;
+    font-size: 15px;
+    color: #64748b;
+    background: #f1f5f9;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 10px 0;
+    cursor: pointer;
+    transition: background .15s, color .15s, border-color .15s;
+  }
+  .fire-btn:hover { background: #e2e8f0; }
+  #fireLow.is-on  { color: #fff; background: #fb923c; border-color: #fb923c; }
+  #fireHigh.is-on { color: #fff; background: #ef4444; border-color: #ef4444; }
+
+  /* 加熱開始ボタン */
+  .start-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 15px;
+    font-weight: bold;
+    color: #fff;
+    background: #dc2626;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 0;
+    cursor: pointer;
+    transition: background .15s;
+    font-family: inherit;
+  }
+  .start-btn:hover { background: #b91c1c; }
+  .start-btn.is-heating { background: #64748b; }
+  .start-btn.is-heating:hover { background: #475569; }
+
+  .reset-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: bold;
+    color: #475569;
+    background: #f1f5f9;
+    border: none;
+    border-radius: 8px;
+    padding: 9px 0;
+    cursor: pointer;
+    transition: background .15s;
+    font-family: inherit;
+  }
+  .reset-btn:hover { background: #e2e8f0; }
+
+  .graph-box { padding: 16px 24px 10px; border-bottom: 1px solid #f1f5f9; }
+  #graphCanvas { width: 100%; border-radius: 8px; border: 1px solid #e2e8f0; display: block; }
+  .graph-caption { font-size: 12px; color: #64748b; margin-top: 8px; }
+
+  .info {
+    flex: 1;
+    padding: 20px 24px;
+    background: #f8fafc;
+    overflow-y: auto;
+    min-height: 220px;
+  }
+  .info-title {
+    font-weight: bold;
+    color: #334155;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 14px;
+    font-size: 15px;
+  }
+  .zone-card {
+    padding: 16px;
+    border-radius: 8px;
+    border-left: 4px solid;
+    box-shadow: 0 1px 2px rgba(0,0,0,.06);
+    animation: fadeIn .3s ease-out;
+  }
+  .zone-card h4 { font-size: 17px; margin-bottom: 8px; }
+  .zone-card p { font-size: 13px; line-height: 1.8; color: #334155; }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .spin-slow { animation: none; }
+    .zone-card { animation: none; }
+  }
+  .c-blue   { background: #eff6ff; border-color: #bfdbfe; }
+  .c-gray   { background: #ffffff; border-color: #d1d5db; }
+  .c-red    { background: #fef2f2; border-color: #fecaca; }
+  .c-orange { background: #fff7ed; border-color: #fed7aa; }
+  .c-cyan   { background: #ecfeff; border-color: #a5f3fc; }
+  .c-slate  { background: #f8fafc; border-color: #cbd5e1; }
+  .c-teal   { background: #f0fdfa; border-color: #99f6e4; }
+  .c-indigo { background: #eef2ff; border-color: #c7d2fe; }
+
+  .hint-text { font-size: 13px; color: #475569; line-height: 1.7; }
+  .hint-list {
+    margin-top: 12px;
+    background: #fff;
+    padding: 12px 14px;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 2px rgba(0,0,0,.05);
+    list-style: disc inside;
+    font-size: 13px;
+    color: #475569;
+  }
+  .hint-list li + li { margin-top: 4px; }
+  .hidden { display: none !important; }
+
+  svg.icon { flex-shrink: 0; }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <header class="header">
+    <div class="header-left">
+      <svg class="icon spin-slow" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+      <h1>水のすがたと温度ラボ</h1>
+    </div>
+    <div class="badge">小学4年生 理科</div>
+  </header>
+
+  <div class="tabs">
+    <button id="tabHeat" class="tab active-heat">
+      <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
+      熱する実験
+    </button>
+    <button id="tabCool" class="tab">
+      <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="2" x2="22" y1="12" y2="12"/><line x1="12" x2="12" y1="2" y2="22"/><path d="m20 16-4-4 4-4"/><path d="m4 8 4 4-4 4"/><path d="m16 4-4 4-4-4"/><path d="m8 20 4-4 4 4"/></svg>
+      冷やす実験
+    </button>
+  </div>
+
+  <div class="main">
+    <div class="stage">
+      <canvas id="labCanvas" width="400" height="560"></canvas>
+      <div class="hint-overlay"><span class="qmark">?</span>マークをタップして<br>解説を見よう</div>
+      <button class="stage-start" id="stageStartBtn">
+        <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
+        加熱を開始する
+      </button>
+    </div>
+
+    <div class="panel">
+      <!-- 熱する実験のコントロール -->
+      <div id="controlsHeat" class="controls">
+        <div class="row">
+          <label class="control-label">
+            <svg class="icon" id="flameIcon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
+            火の強さ
+          </label>
+        </div>
+        <div class="fire-toggle">
+          <button type="button" class="fire-btn" id="fireLow">弱火</button>
+          <button type="button" class="fire-btn is-on" id="fireHigh">強火</button>
+        </div>
+        <p class="caption">絵の上の「加熱を開始する」を押して、温度計を観察しましょう。</p>
+        <button class="reset-btn" id="resetBtn">
+          <svg class="icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+          はじめからやり直す
+        </button>
+      </div>
+
+      <!-- 冷やす実験のコントロール -->
+      <div id="controlsCool" class="controls hidden">
+        <div class="row">
+          <label class="control-label" for="coolSlider">
+            <svg class="icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="2" x2="22" y1="12" y2="12"/><line x1="12" x2="12" y1="2" y2="22"/><path d="m20 16-4-4 4-4"/><path d="m4 8 4 4-4 4"/><path d="m16 4-4 4-4-4"/><path d="m8 20 4-4 4 4"/></svg>
+            冷やす時間
+          </label>
+          <span class="value" id="coolValue">短い</span>
+        </div>
+        <input type="range" id="coolSlider" min="0" max="100" value="0">
+        <p class="caption">氷に食塩をまぜた「寒剤(かんざい)」で、0℃より低い温度まで冷やして水をこおらせます。</p>
+      </div>
+
+      <!-- 温度グラフ -->
+      <div class="graph-box">
+        <canvas id="graphCanvas" width="272" height="190"></canvas>
+      </div>
+
+      <!-- 解説 -->
+      <div class="info">
+        <h3 class="info-title">
+          <svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+          <span id="infoTitle">観察のヒント</span>
+        </h3>
+        <div id="infoContent"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+
+// ============================================================
+// 定数
+// ============================================================
+const CANVAS_W = 400, CANVAS_H = 560;
+
+// 熱する実験のレイアウト
+const FLASK_X = 200;
+const FLASK_Y = 350;          // フラスコ球体の中心
+const FLASK_R = 75;
+const NECK_HALF = 20;
+const FLASK_TOP_Y = 180;      // フラスコの口
+const WATER_BASE_Y = 335;     // はじめの水面
+const ZONE_YUGE_TOP = 60;     // これより上 → 再び水蒸気
+const ZONE_YUGE_BOTTOM = 140; // 湯気が見える帯(60〜140)
+
+// 冷やす実験は描画時に (0, +55) 平行移動して中央寄せ
+const COOL_OFFSET_Y = 55;
+
+// あわのしきい値(科学的な区別)
+const AIR_BUBBLE_TEMP = 90;   // これ以上:水にとけていた空気の小さなあわ
+
+// ============================================================
+// 状態
+// ============================================================
+const state = {
+  tab: 'heat',        // 'heat' | 'cool'
+  heating: false,     // 加熱中かどうか(開始ボタンで切りかえ)
+  heatLevel: 90,      // 火の強さ(弱火=30 / 強火=90)
+  coolLevel: 0,
+  selectedZone: null,
+  temp: 20,           // 水温(℃)
+  waterLoss: 0,       // 蒸発で下がった水面(px)
+  simTime: 0,
+  history: [],        // {t, temp}
+  lastSample: 0,
+  flash: null,        // {zone, shape, tab, until}
+};
+
+const canvas = document.getElementById('labCanvas');
+const ctx = canvas.getContext('2d');
+const gCanvas = document.getElementById('graphCanvas');
+const gctx = gCanvas.getContext('2d');
+
+const currentWaterY = () => WATER_BASE_Y + state.waterLoss;
+const isBoiling = () => state.temp >= 99.5 && state.heatLevel > 0;
+
+// 冷やす実験:スライダー位置 → 温度・凍結率・水面
+function coolState(level) {
+  let temp, freeze;
+  if (level <= 10) {
+    temp = 20 - level * 2;                     // 20℃ → 0℃
+    freeze = 0;
+  } else {
+    freeze = Math.min((level - 10) / 80, 1);   // 0〜1(90で全部凍る)
+    temp = level < 90 ? 0 : -((level - 90) / 10) * 4;
+  }
+  const waterTopY = 250 - freeze * 30;         // 凍ると体積が増える
+  const iceTopY = 400 - freeze * (400 - 220);  // 下から上へ凍る
+  return { temp, freeze, waterTopY, iceTopY };
+}
+
+// ============================================================
+// パーティクル(湯気)・泡
+// ============================================================
+class Particle {
+  constructor() { this.reset(); }
+  reset() {
+    this.x = FLASK_X + (Math.random() - 0.5) * 30;
+    this.y = currentWaterY() + Math.random() * 10;
+    this.vx = (Math.random() - 0.5) * 0.5;
+    this.vy = -1 - Math.random() * 2;
+    this.size = 20 + Math.random() * 20;
+    this.alpha = 0;
+    this.targetAlpha = 0;
+    this.life = 0;
+    this.maxLife = 200 + Math.random() * 100;
+  }
+  update(level) {
+    this.life++;
+    const speed = 0.5 + (level / 50);
+    this.y += this.vy * speed;
+    this.x += this.vx * speed;
+
+    if (this.y > FLASK_TOP_Y) {
+      this.targetAlpha = 0;                  // フラスコ内(水蒸気:見えない)
+    } else if (this.y > ZONE_YUGE_BOTTOM) {
+      this.vx += (Math.random() - 0.5) * 0.2;
+      this.targetAlpha = 0;                  // 口のすぐ上(水蒸気:見えない)
+    } else if (this.y > ZONE_YUGE_TOP) {
+      this.vx += (Math.random() - 0.5) * 0.1;
+      this.vy *= 0.99;
+      this.targetAlpha = 0.15;               // 湯気(白く見える)
+    } else {
+      this.vx += (Math.random() - 0.5) * 0.8;
+      this.targetAlpha = 0;                  // 再び水蒸気に戻る
+    }
+    this.alpha += (this.targetAlpha - this.alpha) * 0.1;
+
+    if (this.y < -50 || this.x < 0 || this.x > CANVAS_W || this.life > this.maxLife) {
+      this.reset();
+    }
+  }
+  draw(c) {
+    if (this.alpha < 0.01) return;
+    const g = c.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.size);
+    g.addColorStop(0, 'rgba(255,255,255,' + this.alpha + ')');
+    g.addColorStop(1, 'rgba(255,255,255,0)');
+    c.fillStyle = g;
+    c.beginPath();
+    c.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+    c.fill();
+  }
+}
+
+class Bubble {
+  constructor() { this.reset(); }
+  reset() {
+    this.x = FLASK_X + (Math.random() - 0.5) * 90;
+    while (Math.abs(this.x - FLASK_X) > 55) {
+      this.x = FLASK_X + (Math.random() - 0.5) * 90;
+    }
+    this.y = FLASK_Y + 55 + Math.random() * 10;
+    this.size = 2 + Math.random() * 4;
+    this.speed = 1 + Math.random() * 2;
+    this.active = false;
+    this.state = 'rising';
+    this.alpha = 1.0;
+  }
+  update(intensity, waterY) {
+    if (!this.active) {
+      if (Math.random() < intensity * 0.001) this.active = true;
+      return;
+    }
+    if (this.state === 'rising') {
+      this.y -= this.speed * Math.max(intensity / 50, 0.3);
+      this.x += Math.sin(this.y * 0.1) * 0.5;
+      if (this.y <= waterY) { this.state = 'popping'; this.y = waterY; }
+    } else {
+      this.size += 0.5;
+      this.alpha -= 0.15;
+      if (this.alpha <= 0) this.reset();
+    }
+  }
+  draw(c) {
+    if (!this.active || this.alpha <= 0) return;
+    c.beginPath();
+    c.fillStyle = 'rgba(255,255,255,' + (this.alpha * 0.15) + ')';
+    c.strokeStyle = 'rgba(255,255,255,' + (this.alpha * 0.8) + ')';
+    c.lineWidth = 1.5;
+    c.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+    c.fill();
+    c.stroke();
+    c.beginPath();
+    c.fillStyle = 'rgba(255,255,255,' + (this.alpha * 0.8) + ')';
+    c.arc(this.x - this.size * 0.3, this.y - this.size * 0.3, this.size * 0.25, 0, Math.PI * 2);
+    c.fill();
+  }
+}
+
+const particles = [];
+const bubbles = [];
+const drops = [];
+const salts = [];
+for (let i = 0; i < 250; i++) particles.push(new Particle());
+for (let i = 0; i < 20; i++) bubbles.push(new Bubble());
+for (let i = 0; i < 60; i++) {
+  const isLeft = Math.random() > 0.5;
+  drops.push({
+    x: isLeft ? 110 - Math.random() * 8 : 290 + Math.random() * 8,
+    y: 280 + Math.random() * 150,
+    size: 2 + Math.random() * 3
+  });
+}
+// 氷の上にまいた食塩のつぶ(位置は固定)
+[[140,415],[195,420],[255,410],[130,370],[270,365],[140,325],[260,320],[135,285],[180,275],[230,280],[275,278]]
+  .forEach(([sx, sy]) => {
+    for (let i = 0; i < 7; i++) {
+      salts.push({
+        x: sx - 15 + ((i * 53 + sx) % 30),
+        y: sy - 14 + ((i * 37 + sy) % 14),
+        size: 1.5 + ((i * 29) % 10) / 8
+      });
+    }
+  });
+
+// ============================================================
+// 描画ヘルパー
+// ============================================================
+function rr(c, x, y, w, h, r) {
+  c.beginPath();
+  c.moveTo(x + r, y);
+  c.lineTo(x + w - r, y);
+  c.quadraticCurveTo(x + w, y, x + w, y + r);
+  c.lineTo(x + w, y + h - r);
+  c.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  c.lineTo(x + r, y + h);
+  c.quadraticCurveTo(x, y + h, x, y + h - r);
+  c.lineTo(x, y + r);
+  c.quadraticCurveTo(x, y, x + r, y);
+  c.closePath();
+}
+
+function drawMarker(c, x, y, ts) {
+  const pulse = 1 + Math.sin(ts / 400) * 0.08;
+  c.save();
+  c.translate(x, y);
+  c.scale(pulse, pulse);
+  c.beginPath();
+  c.arc(0, 0, 11, 0, Math.PI * 2);
+  c.fillStyle = 'rgba(255,255,255,0.92)';
+  c.fill();
+  c.strokeStyle = '#2563eb';
+  c.lineWidth = 2;
+  c.stroke();
+  c.fillStyle = '#2563eb';
+  c.font = 'bold 14px sans-serif';
+  c.textAlign = 'center';
+  c.textBaseline = 'middle';
+  c.fillText('?', 0, 1);
+  c.restore();
+}
+
+function drawFlash(c, shape) {
+  c.save();
+  c.fillStyle = 'rgba(255,255,150,0.18)';
+  c.strokeStyle = 'rgba(255,255,150,0.9)';
+  c.lineWidth = 2;
+  c.setLineDash([6, 4]);
+  if (shape.type === 'rect') {
+    c.fillRect(shape.x, shape.y, shape.w, shape.h);
+    c.strokeRect(shape.x, shape.y, shape.w, shape.h);
+  } else {
+    c.beginPath();
+    c.arc(shape.x, shape.y, shape.r, 0, Math.PI * 2);
+    c.fill();
+    c.stroke();
+  }
+  c.restore();
+}
+
+function drawThermometer(c, x, topY, bulbY, temp, minT, maxT, marks) {
+  const stemW = 5;
+  const frac = Math.max(0, Math.min(1, (temp - minT) / (maxT - minT)));
+  c.fillStyle = 'rgba(255,255,255,0.75)';
+  c.strokeStyle = '#cbd5e1';
+  c.lineWidth = 1.5;
+  rr(c, x - stemW / 2, topY, stemW, bulbY - topY, 2);
+  c.fill();
+  c.stroke();
+  c.beginPath();
+  c.arc(x, bulbY, 7, 0, Math.PI * 2);
+  c.fill();
+  c.stroke();
+  c.fillStyle = '#ef4444';
+  c.beginPath();
+  c.arc(x, bulbY, 4.5, 0, Math.PI * 2);
+  c.fill();
+  const colTop = bulbY - frac * (bulbY - topY - 6);
+  c.fillRect(x - 1.5, colTop, 3, bulbY - colTop);
+  c.strokeStyle = '#94a3b8';
+  c.fillStyle = '#e2e8f0';
+  c.font = '9px sans-serif';
+  c.textAlign = 'left';
+  c.textBaseline = 'middle';
+  marks.forEach(m => {
+    const my = bulbY - ((m - minT) / (maxT - minT)) * (bulbY - topY - 6);
+    c.beginPath();
+    c.moveTo(x + stemW / 2, my);
+    c.lineTo(x + stemW / 2 + 4, my);
+    c.stroke();
+    c.fillText(String(m), x + stemW / 2 + 6, my);
+  });
+}
+
+// ============================================================
+// 熱する実験の描画
+// ============================================================
+function drawHeatScene(ts) {
+  const level = state.heatLevel;
+  const waterY = currentWaterY();
+
+  // 実験用ガスコンロ
+  ctx.save();
+  ctx.fillStyle = '#475569';
+  ctx.strokeStyle = '#94a3b8';
+  ctx.lineWidth = 2;
+  rr(ctx, 105, 436, 190, 70, 10);
+  ctx.fill();
+  ctx.stroke();
+  // ごとく(五徳)
+  ctx.strokeStyle = '#1e293b';
+  ctx.lineWidth = 4;
+  [140, 200, 260].forEach(gx => {
+    ctx.beginPath();
+    ctx.moveTo(gx, 436);
+    ctx.lineTo(gx, 426);
+    ctx.stroke();
+  });
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(125, 427);
+  ctx.lineTo(275, 427);
+  ctx.stroke();
+  // つまみ(火の強さと連動して回る。ただし加熱していないときは0の位置)
+  const knobA = state.heating ? (-0.7 + (level / 100) * 2.2) : -0.7;
+  ctx.save();
+  ctx.translate(265, 472);
+  ctx.rotate(knobA);
+  ctx.fillStyle = '#e2e8f0';
+  ctx.beginPath();
+  ctx.arc(0, 0, 13, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = '#ef4444';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(0, -11);
+  ctx.stroke();
+  ctx.restore();
+  ctx.restore();
+
+  // 炎(青いガスの炎・火の強さに連動。加熱中だけ表示)
+  if (state.heating && level > 0) {
+    const h = 8 + (level / 100) * 26;
+    for (let fx = 150; fx <= 250; fx += 12) {
+      const flick = Math.sin(ts / 90 + fx) * 2;
+      const fh = h + flick;
+      const g = ctx.createLinearGradient(fx, 432, fx, 432 - fh);
+      g.addColorStop(0, 'rgba(96,165,250,0.9)');
+      g.addColorStop(0.6, 'rgba(59,130,246,0.55)');
+      g.addColorStop(1, 'rgba(147,197,253,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.moveTo(fx - 5, 432);
+      ctx.quadraticCurveTo(fx, 432 - fh, fx + 5, 432);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(224,242,254,0.7)';
+      ctx.beginPath();
+      ctx.moveTo(fx - 2, 432);
+      ctx.quadraticCurveTo(fx, 432 - fh * 0.4, fx + 2, 432);
+      ctx.fill();
+    }
+  }
+
+  // フラスコ
+  const neckH = Math.sqrt(FLASK_R * FLASK_R - NECK_HALF * NECK_HALF);
+  const angle = Math.asin(NECK_HALF / FLASK_R);
+  ctx.strokeStyle = '#e2e8f0';
+  ctx.lineWidth = 3;
+  ctx.fillStyle = 'rgba(255,255,255,0.1)';
+  ctx.beginPath();
+  ctx.moveTo(FLASK_X - NECK_HALF, FLASK_TOP_Y);
+  ctx.lineTo(FLASK_X - NECK_HALF, FLASK_Y - neckH);
+  ctx.arc(FLASK_X, FLASK_Y, FLASK_R, -Math.PI / 2 - angle, -Math.PI / 2 + angle, true);
+  ctx.lineTo(FLASK_X + NECK_HALF, FLASK_TOP_Y);
+  ctx.stroke();
+  ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(FLASK_X, FLASK_TOP_Y, NECK_HALF, 4, 0, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(255,255,255,0.2)';
+  ctx.fill();
+  ctx.stroke();
+
+  // フラスコ内側(クリップして水を描く)
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(FLASK_X - NECK_HALF + 2, FLASK_TOP_Y);
+  ctx.lineTo(FLASK_X - NECK_HALF + 2, FLASK_Y - neckH);
+  ctx.arc(FLASK_X, FLASK_Y, FLASK_R - 3, -Math.PI / 2 - angle, -Math.PI / 2 + angle, true);
+  ctx.lineTo(FLASK_X + NECK_HALF - 2, FLASK_TOP_Y);
+  ctx.closePath();
+  ctx.clip();
+
+  // 水
+  ctx.fillStyle = 'rgba(100,200,255,0.8)';
+  ctx.fillRect(FLASK_X - FLASK_R, waterY, FLASK_R * 2, FLASK_R * 2);
+
+  // はじめの水面(赤い点線)— 蒸発で水が減ったのが分かる
+  if (state.waterLoss > 2) {
+    ctx.strokeStyle = 'rgba(239,68,68,0.9)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([5, 3]);
+    ctx.beginPath();
+    ctx.moveTo(FLASK_X - FLASK_R, WATER_BASE_Y);
+    ctx.lineTo(FLASK_X + FLASK_R, WATER_BASE_Y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // 沸騰石
+  ctx.fillStyle = '#94a3b8';
+  ctx.strokeStyle = '#64748b';
+  ctx.lineWidth = 1;
+  [[186, 416, 5], [203, 419, 6], [196, 411, 4]].forEach(([px, py, pr]) => {
+    ctx.beginPath();
+    ctx.arc(px, py, pr, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+  });
+
+  // あわ
+  //  ・沸騰前(90℃〜):水にとけていた「空気」の小さなあわ(ごく少量)
+  //  ・100℃で沸騰:「水蒸気」の大きなあわ(さかんに出る)
+  if (isBoiling()) {
+    bubbles.forEach(b => { b.update(level, waterY); b.draw(ctx); });
+  } else if (state.temp > AIR_BUBBLE_TEMP) {
+    const intensity = (state.temp - AIR_BUBBLE_TEMP) * 1.2; // 空気の小さなあわ:ひかえめ
+    bubbles.forEach(b => { b.update(intensity, waterY); b.draw(ctx); });
+  }
+  ctx.restore();
+
+  // 温度計(フラスコの口から差し込む)
+  drawThermometer(ctx, 210, 125, 380, state.temp, 0, 110, [0, 50, 100]);
+}
+
+// ============================================================
+// 冷やす実験の描画
+// ============================================================
+function drawCooling(ts) {
+  const level = state.coolLevel;
+  const cs = coolState(level);
+
+  ctx.save();
+  ctx.translate(0, COOL_OFFSET_Y);
+
+  // ビーカーの中の氷水
+  ctx.fillStyle = 'rgba(150,200,255,0.3)';
+  ctx.beginPath();
+  ctx.moveTo(113, 280);
+  ctx.lineTo(113, 440);
+  ctx.quadraticCurveTo(113, 447, 120, 447);
+  ctx.lineTo(280, 447);
+  ctx.quadraticCurveTo(287, 447, 287, 440);
+  ctx.lineTo(287, 280);
+  ctx.fill();
+
+  // 氷
+  const cube = (x, y, w, h, a) => {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(a);
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.fillRect(-w / 2, -h / 2, w, h);
+    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(-w / 2, -h / 2, w, h);
+    ctx.restore();
+  };
+  cube(140, 425, 40, 35, 0.2);  cube(195, 430, 45, 30, -0.1); cube(255, 420, 35, 40, 0.3);
+  cube(130, 380, 30, 40, -0.3); cube(270, 375, 35, 35, 0.4);
+  cube(140, 335, 40, 35, 0.2);  cube(260, 330, 35, 40, -0.4);
+  cube(135, 295, 35, 35, -0.1); cube(180, 285, 40, 35, 0.3);
+  cube(230, 290, 35, 30, -0.2); cube(275, 285, 25, 30, 0.1);
+
+  // 食塩(氷にふりかけた白いつぶ)
+  ctx.fillStyle = 'rgba(255,255,255,0.95)';
+  salts.forEach(s => ctx.fillRect(s.x, s.y, s.size, s.size));
+
+  // ビーカー
+  ctx.strokeStyle = '#e2e8f0';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(110, 250);
+  ctx.lineTo(110, 440);
+  ctx.quadraticCurveTo(110, 450, 120, 450);
+  ctx.lineTo(280, 450);
+  ctx.quadraticCurveTo(290, 450, 290, 440);
+  ctx.lineTo(290, 250);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(110, 250);
+  ctx.lineTo(100, 240);
+  ctx.stroke();
+
+  // 「氷＋食塩」ラベル
+  ctx.fillStyle = 'rgba(255,255,255,0.92)';
+  ctx.strokeStyle = '#0891b2';
+  ctx.lineWidth = 1.5;
+  rr(ctx, 8, 258, 84, 40, 6);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = '#0e7490';
+  ctx.font = 'bold 13px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('氷＋食塩', 50, 272);
+  ctx.font = '10px sans-serif';
+  ctx.fillText('(寒剤)', 50, 287);
+  ctx.strokeStyle = '#0891b2';
+  ctx.beginPath();
+  ctx.moveTo(92, 285);
+  ctx.lineTo(122, 300);
+  ctx.stroke();
+
+  // 試験管
+  const tX = 175, tW = 50;
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(tX + 2, 150);
+  ctx.lineTo(tX + 2, 400);
+  ctx.arc(200, 400, 23, Math.PI, 0, true);
+  ctx.lineTo(tX + tW - 2, 150);
+  ctx.closePath();
+  ctx.clip();
+
+  // 試験管内の氷
+  if (level > 10) {
+    ctx.fillStyle = 'rgba(210,240,255,0.95)';
+    ctx.fillRect(tX, cs.iceTopY, tW, 425 - cs.iceTopY);
+    ctx.beginPath();
+    ctx.ellipse(tX + tW / 2, cs.iceTopY, tW / 2, 5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // ひび
+    ctx.strokeStyle = 'rgba(255,255,255,0.8)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (let y = 220; y < 410; y += 25) {
+      if (y >= cs.iceTopY) {
+        ctx.moveTo(180, y + 5); ctx.lineTo(190, y + 15); ctx.lineTo(185, y + 25);
+        ctx.moveTo(215, y + 10); ctx.lineTo(205, y + 20); ctx.lineTo(215, y + 30);
+      }
+    }
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.fillRect(tX + 6, cs.iceTopY + 6, 8, Math.max(0, 410 - cs.iceTopY));
+  }
+
+  // 試験管内の水
+  if (cs.freeze < 1) {
+    ctx.fillStyle = 'rgba(100,200,255,0.6)';
+    ctx.fillRect(tX, cs.waterTopY, tW, cs.iceTopY - cs.waterTopY);
+    ctx.beginPath();
+    ctx.ellipse(tX + tW / 2, cs.waterTopY, tW / 2, 4, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+
+  // 試験管の枠
+  ctx.strokeStyle = '#e2e8f0';
+  ctx.lineWidth = 3;
+  ctx.fillStyle = 'rgba(255,255,255,0.1)';
+  ctx.beginPath();
+  ctx.moveTo(tX, 150);
+  ctx.lineTo(tX, 400);
+  ctx.arc(200, 400, 25, Math.PI, 0, true);
+  ctx.lineTo(tX + tW, 150);
+  ctx.stroke();
+  ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(200, 150, 25, 5, 0, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // はじめの水面(赤いテープ)
+  ctx.fillStyle = 'rgba(239,68,68,0.9)';
+  ctx.fillRect(tX - 4, 250, tW + 8, 4);
+  ctx.fillStyle = '#fca5a5';
+  ctx.font = '10px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('はじめの水面', 234, 243);
+
+  // 温度計(試験管の中)
+  drawThermometer(ctx, 190, 105, 370, cs.temp, -10, 30, [0]);
+
+  // ビーカー外側の水滴(結露)
+  if (level > 10) {
+    const dropCount = Math.floor(((level - 10) / 90) * drops.length);
+    for (let i = 0; i < dropCount; i++) {
+      const d = drops[i];
+      ctx.fillStyle = 'rgba(180,230,255,0.8)';
+      ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(d.x, d.y, d.size, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(255,255,255,0.8)';
+      ctx.beginPath();
+      ctx.arc(d.x - d.size * 0.3, d.y - d.size * 0.3, d.size * 0.3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // ?マーカー(冷やす)
+  drawMarker(ctx, 140, 310, ts);                                        // 寒剤
+  if (level > 10) drawMarker(ctx, 98, 345, ts);                         // 水滴
+  if (cs.freeze < 1) drawMarker(ctx, 212, (cs.waterTopY + cs.iceTopY) / 2, ts); // 水
+  if (level > 10) drawMarker(ctx, 212, Math.min((cs.iceTopY + 408) / 2, 400), ts); // 氷
+
+  // ハイライト
+  if (state.flash && performance.now() < state.flash.until && state.flash.tab === 'cool') {
+    drawFlash(ctx, state.flash.shape);
+  }
+
+  ctx.restore();
+}
+
+// ============================================================
+// 温度グラフ
+// ============================================================
+function drawGraph() {
+  const W = 272, H = 190;
+  gctx.clearRect(0, 0, W, H);
+  gctx.fillStyle = '#f8fafc';
+  gctx.fillRect(0, 0, W, H);
+
+  const isHeat = state.tab === 'heat';
+  const temp = isHeat ? state.temp : coolState(state.coolLevel).temp;
+
+  // 温度の読み(大きく表示)
+  gctx.fillStyle = isHeat ? '#dc2626' : '#0891b2';
+  gctx.font = 'bold 26px sans-serif';
+  gctx.textAlign = 'left';
+  gctx.textBaseline = 'middle';
+  gctx.fillText(Math.round(temp) + '℃', 12, 20);
+  gctx.fillStyle = '#64748b';
+  gctx.font = '11px sans-serif';
+  gctx.textAlign = 'right';
+  gctx.fillText(isHeat ? '水の温度と時間' : '水の温度と冷やす時間', W - 8, 20);
+
+  // プロット領域
+  const px0 = 34, px1 = W - 12, py0 = 44, py1 = H - 22;
+  const minT = isHeat ? 0 : -10;
+  const maxT = isHeat ? 110 : 30;
+  const ty = t => py1 - ((t - minT) / (maxT - minT)) * (py1 - py0);
+
+  gctx.strokeStyle = '#cbd5e1';
+  gctx.lineWidth = 1;
+  gctx.strokeRect(px0, py0, px1 - px0, py1 - py0);
+
+  // 基準線(100℃ / 0℃)
+  const refT = isHeat ? 100 : 0;
+  gctx.strokeStyle = isHeat ? '#f87171' : '#38bdf8';
+  gctx.setLineDash([4, 3]);
+  gctx.beginPath();
+  gctx.moveTo(px0, ty(refT));
+  gctx.lineTo(px1, ty(refT));
+  gctx.stroke();
+  gctx.setLineDash([]);
+  gctx.fillStyle = isHeat ? '#dc2626' : '#0284c7';
+  gctx.font = '10px sans-serif';
+  gctx.textAlign = 'right';
+  gctx.fillText(refT + '℃', px0 - 3, ty(refT));
+  gctx.fillStyle = '#94a3b8';
+  if (!isHeat) {
+    gctx.fillText('20', px0 - 3, ty(20));
+    gctx.fillText('-10', px0 - 3, ty(-10));
+  } else {
+    gctx.fillText('0', px0 - 3, ty(0));
+  }
+  gctx.fillStyle = '#94a3b8';
+  gctx.textAlign = 'center';
+  gctx.fillText('→ 時間', (px0 + px1) / 2, H - 8);
+
+  if (isHeat) {
+    // シミュレーションの記録を折れ線で(直近60秒)
+    const hist = state.history;
+    if (hist.length > 1) {
+      const t1 = hist[hist.length - 1].t;
+      const t0 = Math.max(0, t1 - 60);
+      gctx.strokeStyle = '#dc2626';
+      gctx.lineWidth = 2;
+      gctx.beginPath();
+      let started = false;
+      hist.forEach(pt => {
+        if (pt.t < t0) return;
+        const x = px0 + ((pt.t - t0) / 60) * (px1 - px0);
+        const y = ty(pt.temp);
+        if (!started) { gctx.moveTo(x, y); started = true; }
+        else gctx.lineTo(x, y);
+      });
+      gctx.stroke();
+    }
+  } else {
+    // 理論曲線 + 現在位置
+    gctx.strokeStyle = '#0891b2';
+    gctx.lineWidth = 2;
+    gctx.beginPath();
+    for (let lv = 0; lv <= 100; lv += 2) {
+      const x = px0 + (lv / 100) * (px1 - px0);
+      const y = ty(coolState(lv).temp);
+      if (lv === 0) gctx.moveTo(x, y);
+      else gctx.lineTo(x, y);
+    }
+    gctx.stroke();
+    const cx = px0 + (state.coolLevel / 100) * (px1 - px0);
+    gctx.fillStyle = '#0e7490';
+    gctx.beginPath();
+    gctx.arc(cx, ty(temp), 5, 0, Math.PI * 2);
+    gctx.fill();
+  }
+}
+
+// ============================================================
+// メインループ
+// ============================================================
+let lastTs = null;
+function render(ts) {
+  const dt = lastTs ? Math.min((ts - lastTs) / 1000, 0.05) : 0.016;
+  lastTs = ts;
+
+  ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
+  ctx.fillStyle = '#64748b';
+  ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+
+  if (state.tab === 'heat') {
+    // --- 温度シミュレーション(加熱中だけ進む)---
+    const level = state.heatLevel;
+    if (state.heating) {
+      state.simTime += dt;
+      let temp = state.temp;
+      // 火の強さは「温度の上がる速さ」を決める。行き着く先はどの火でも100℃。
+      // 火を強くするほど早く、弱くするほどゆっくり100℃に近づく。
+      temp += (level / 100) * 8 * dt;
+      if (temp >= 100) {
+        temp = 100;
+        // 沸騰中は水が蒸発して減る(温度は100℃のまま)
+        state.waterLoss = Math.min(state.waterLoss + (level / 100) * 0.8 * dt, 30);
+      }
+      state.temp = temp;
+
+      // グラフ用に記録(0.3秒ごと)
+      if (state.simTime - state.lastSample > 0.3) {
+        state.history.push({ t: state.simTime, temp: temp });
+        if (state.history.length > 600) state.history.shift();
+        state.lastSample = state.simTime;
+      }
+    }
+
+    drawHeatScene(ts);
+
+    // 湯気(沸騰しているときだけ・量は火の強さに比例)
+    if (isBoiling()) {
+      const activeCount = Math.floor(particles.length * (level / 100));
+      ctx.globalCompositeOperation = 'screen';
+      for (let i = 0; i < activeCount; i++) {
+        particles[i].update(level);
+        particles[i].draw(ctx);
+      }
+      ctx.globalCompositeOperation = 'source-over';
+    }
+
+    // ?マーカー(熱する)
+    drawMarker(ctx, 170, 40, ts);   // 上:水蒸気
+    drawMarker(ctx, 170, 100, ts);  // 湯気
+    drawMarker(ctx, 155, 160, ts);  // 口の上:水蒸気
+    drawMarker(ctx, 152, 372, ts);  // 水・あわ
+    drawMarker(ctx, 240, 408, ts);  // 沸騰石
+
+    if (state.flash && performance.now() < state.flash.until && state.flash.tab === 'heat') {
+      drawFlash(ctx, state.flash.shape);
+    }
+  } else {
+    drawCooling(ts);
+  }
+
+  drawGraph();
+  requestAnimationFrame(render);
+}
+requestAnimationFrame(render);
+
+// ============================================================
+// 解説データ
+// ============================================================
+const zoneInfo = {
+  zone_heat_3: {
+    title: "水蒸気(気体)",
+    desc: "湯気の粒が空気中に広がり、再びバラバラの「水蒸気(気体)」に戻りました。水蒸気は目に見えません。",
+    color: "c-blue"
+  },
+  zone_heat_2: {
+    title: "湯気(液体)",
+    desc: "外の空気に冷やされて、水蒸気が集まり「小さな水の粒(液体)」になりました。光を反射するので白く見えます。",
+    color: "c-gray"
+  },
+  zone_heat_1: {
+    title: "水蒸気(気体)",
+    desc: "フラスコの水面より上と、口から出たばかりの所は、とても熱い「水蒸気(気体)」で満たされています。水蒸気は透明なので、目には見えません。",
+    color: "c-red"
+  },
+  zone_heat_bubble: {
+    title: "あわの正体は水蒸気",
+    desc: "水が100℃になって沸騰(ふっとう)すると、水の中からブクブクと大きなあわがさかんに出ます。このあわの正体は、目に見えない「水蒸気(気体)」です。沸騰している間、水の温度は100℃のまま変わりません。",
+    color: "c-orange"
+  },
+  zone_heat_air: {
+    title: "小さなあわ(空気)",
+    desc: "沸騰する前に出る小さなあわは、水にとけていた「空気」です。まだ水蒸気ではありません。100℃になって沸騰すると、水蒸気の大きなあわに変わります。",
+    color: "c-slate"
+  },
+  zone_heat_water: {
+    title: "水(液体)",
+    desc: "まだ沸騰していない「水(液体)」です。熱すると温度がどんどん上がり、100℃になると沸騰が始まります。温度計を見てみましょう。",
+    color: "c-cyan"
+  },
+  zone_heat_stone: {
+    title: "沸騰石(ふっとうせき)",
+    desc: "急に沸騰して熱い湯がふき出すのを防ぐために、水を熱するときは必ず「沸騰石」を入れます。実験の安全のための大切な道具です。",
+    color: "c-slate"
+  },
+  zone_cool_salt: {
+    title: "氷＋食塩(寒剤)",
+    desc: "氷に食塩をまぜると、0℃よりずっと低い温度(およそ−20℃)まで下がります。氷水だけでは0℃までしか下がらないので、水をこおらせることはできません。だから食塩をまぜるのです。",
+    color: "c-teal"
+  },
+  zone_cool_drops: {
+    title: "水滴(液体)",
+    desc: "ビーカーの周りの空気が冷やされて、空気中にふくまれていた目に見えない「水蒸気(気体)」が「水(液体)」になってくっついたものです。",
+    color: "c-blue"
+  },
+  zone_cool_water: {
+    title: "水(液体)",
+    desc: "まだ凍っていない「水(液体)」です。温度が0℃になるまでは、液体のままです。",
+    color: "c-cyan"
+  },
+  zone_cool_ice: {
+    title: "氷(固体)",
+    desc: "水が0℃まで冷やされて、「氷(固体)」になりました。全部凍り終わるまで、温度は0℃のまま変わりません。水は氷になると体積(かさ)が増えるので、赤いテープ(はじめの水面)より上にふくらんでいます。",
+    color: "c-indigo"
+  }
+};
+
+// ============================================================
+// UI更新
+// ============================================================
+const infoTitle = document.getElementById('infoTitle');
+const infoContent = document.getElementById('infoContent');
+
+function renderInfo() {
+  const info = state.selectedZone ? zoneInfo[state.selectedZone] : null;
+  if (info) {
+    infoTitle.textContent = '場所の解説';
+    infoContent.innerHTML =
+      '<div class="zone-card ' + info.color + '">' +
+      '<h4>' + info.title + '</h4>' +
+      '<p>' + info.desc + '</p>' +
+      '</div>';
+  } else {
+    infoTitle.textContent = '観察のヒント';
+    if (state.tab === 'heat') {
+      infoContent.innerHTML =
+        '<p class="hint-text"><span class="qmark">?</span>マークをタップして、それぞれの場所で水がどんなすがたをしているか調べましょう。</p>' +
+        '<ul class="hint-list">' +
+        '<li>沸騰する前の小さいあわの正体は?</li>' +
+        '<li>フラスコの中の大きいあわの正体は?</li>' +
+        '<li>白く見えるものの正体は?</li>' +
+        '<li>沸騰中、温度計は何℃のまま?</li>' +
+        '</ul>';
+    } else {
+      infoContent.innerHTML =
+        '<p class="hint-text"><span class="qmark">?</span>マークをタップして、それぞれの場所で水がどんなすがたをしているか調べましょう。</p>' +
+        '<ul class="hint-list">' +
+        '<li>なぜ氷に食塩をまぜるの?</li>' +
+        '<li>氷になると体積はどうなる?</li>' +
+        '<li>凍っている間、温度は何℃?</li>' +
+        '<li>ビーカーの外側の水滴はどこから?</li>' +
+        '</ul>';
+    }
+  }
+}
+
+function selectZone(zone, shape) {
+  state.selectedZone = zone;
+  if (zone && shape) {
+    state.flash = { zone: zone, shape: shape, tab: state.tab, until: performance.now() + 800 };
+  }
+  renderInfo();
+}
+
+// タブ切り替え
+const tabHeat = document.getElementById('tabHeat');
+const tabCool = document.getElementById('tabCool');
+const controlsHeat = document.getElementById('controlsHeat');
+const controlsCool = document.getElementById('controlsCool');
+
+function setTab(tab) {
+  state.tab = tab;
+  state.selectedZone = null;
+  state.flash = null;
+  tabHeat.className = 'tab' + (tab === 'heat' ? ' active-heat' : '');
+  tabCool.className = 'tab' + (tab === 'cool' ? ' active-cool' : '');
+  controlsHeat.classList.toggle('hidden', tab !== 'heat');
+  controlsCool.classList.toggle('hidden', tab !== 'cool');
+  stageStartBtn.classList.toggle('hidden', tab !== 'heat');
+  renderInfo();
+}
+tabHeat.addEventListener('click', () => setTab('heat'));
+tabCool.addEventListener('click', () => setTab('cool'));
+
+// 火の強さ(弱火・強火の2択)
+const fireLow = document.getElementById('fireLow');
+const fireHigh = document.getElementById('fireHigh');
+const flameIcon = document.getElementById('flameIcon');
+const FIRE_LOW = 30, FIRE_HIGH = 90;
+function setFire(level) {
+  state.heatLevel = level;
+  const strong = level >= FIRE_HIGH;
+  fireHigh.classList.toggle('is-on', strong);
+  fireLow.classList.toggle('is-on', !strong);
+  flameIcon.setAttribute('stroke', strong ? '#ef4444' : '#fb923c');
+}
+fireLow.addEventListener('click', () => setFire(FIRE_LOW));
+fireHigh.addEventListener('click', () => setFire(FIRE_HIGH));
+
+const coolSlider = document.getElementById('coolSlider');
+const coolValue = document.getElementById('coolValue');
+coolSlider.addEventListener('input', () => {
+  state.coolLevel = Number(coolSlider.value);
+  coolValue.textContent = state.coolLevel < 30 ? '短い' : state.coolLevel < 80 ? '長い' : 'とても長い';
+});
+
+// 加熱を開始する / 止める(絵の上のボタン)
+const stageStartBtn = document.getElementById('stageStartBtn');
+const FLAME_SVG = '<svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>';
+const STOP_SVG = '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>';
+function updateStartBtn() {
+  if (state.heating) {
+    stageStartBtn.innerHTML = STOP_SVG + '止める';
+    stageStartBtn.classList.add('is-heating');
+  } else {
+    stageStartBtn.innerHTML = FLAME_SVG + '加熱を開始する';
+    stageStartBtn.classList.remove('is-heating');
+  }
+}
+function toggleHeating() {
+  state.heating = !state.heating;
+  updateStartBtn();
+}
+stageStartBtn.addEventListener('click', toggleHeating);
+
+// リセット
+document.getElementById('resetBtn').addEventListener('click', () => {
+  state.heating = false;
+  state.temp = 20;
+  state.waterLoss = 0;
+  state.simTime = 0;
+  state.lastSample = 0;
+  state.history = [];
+  state.selectedZone = null;
+  updateStartBtn();
+  renderInfo();
+});
+
+// ============================================================
+// タップ判定
+// ============================================================
+canvas.addEventListener('click', (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const y = (e.clientY - rect.top) * (CANVAS_H / rect.height);
+  const x = (e.clientX - rect.left) * (CANVAS_W / rect.width);
+
+  if (state.tab === 'heat') {
+    const waterY = currentWaterY();
+    const inFlask = Math.abs(x - FLASK_X) < FLASK_R + 10;
+    const inSteam = Math.abs(x - FLASK_X) < 150;
+
+    if (y < ZONE_YUGE_TOP && inSteam) {
+      selectZone('zone_heat_3', { type: 'rect', x: 90, y: 0, w: 220, h: 60 });
+    } else if (y < ZONE_YUGE_BOTTOM && inSteam) {
+      selectZone('zone_heat_2', { type: 'rect', x: 90, y: 60, w: 220, h: 80 });
+    } else if (y < FLASK_TOP_Y + 5 && inSteam) {
+      selectZone('zone_heat_1', { type: 'rect', x: 150, y: 140, w: 100, h: 45 });
+    } else if (y < waterY && inFlask && y >= FLASK_TOP_Y) {
+      // フラスコ内・水面より上 → 水蒸気(あわではない)
+      selectZone('zone_heat_1', { type: 'rect', x: 165, y: FLASK_TOP_Y, w: 70, h: waterY - FLASK_TOP_Y - 5 });
+    } else if (y >= waterY && y < 402 && inFlask) {
+      // 水の中:沸騰なら水蒸気のあわ、沸騰前で90℃超なら空気の小さなあわ、それ以外は水
+      const shape = { type: 'circle', x: 190, y: 375, r: 45 };
+      if (isBoiling()) selectZone('zone_heat_bubble', shape);
+      else if (state.temp > AIR_BUBBLE_TEMP) selectZone('zone_heat_air', shape);
+      else selectZone('zone_heat_water', shape);
+    } else if (y >= 402 && y < 428 && inFlask) {
+      selectZone('zone_heat_stone', { type: 'circle', x: 205, y: 415, r: 20 });
+    } else {
+      selectZone(null);
+    }
+  } else {
+    const sy = y - COOL_OFFSET_Y; // 平行移動分を戻す
+    const level = state.coolLevel;
+    const cs = coolState(level);
+
+    // 結露の水滴(判定を広めに)
+    const isDropZone = (x > 78 && x < 132) || (x > 268 && x < 322);
+    if (isDropZone && sy > 250 && sy < 455 && level > 10) {
+      selectZone('zone_cool_drops', { type: 'rect', x: 82, y: 255, w: 44, h: 195 });
+      return;
+    }
+
+    // 試験管の中
+    const inTube = Math.abs(x - 200) < 32;
+    if (inTube && sy > 150 && sy < 425) {
+      if (level > 10 && sy >= cs.iceTopY) {
+        selectZone('zone_cool_ice', { type: 'rect', x: 172, y: cs.iceTopY, w: 56, h: 415 - cs.iceTopY });
+      } else if (cs.freeze < 1 && sy >= cs.waterTopY - 8 && sy < cs.iceTopY) {
+        selectZone('zone_cool_water', { type: 'rect', x: 172, y: cs.waterTopY, w: 56, h: cs.iceTopY - cs.waterTopY });
+      } else {
+        selectZone(null);
+      }
+      return;
+    }
+
+    // ビーカーの中の氷＋食塩
+    if (x > 112 && x < 288 && sy > 262 && sy < 448 && !inTube) {
+      selectZone('zone_cool_salt', { type: 'rect', x: 115, y: 265, w: 170, h: 180 });
+      return;
+    }
+    selectZone(null);
+  }
+});
+
+// 初期表示
+setFire(state.heatLevel);
+updateStartBtn();
+renderInfo();
+</script>
+</body>
+</html>

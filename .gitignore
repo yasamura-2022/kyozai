@@ -1,0 +1,10 @@
+# macOS
+.DS_Store
+
+# Claude Code のローカル設定・メモ（公開しない）
+.claude/settings.local.json
+CLAUDE.md
+
+# 作業用
+venv/
+*.tmp

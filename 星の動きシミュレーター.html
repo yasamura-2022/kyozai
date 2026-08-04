@@ -1,0 +1,1134 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>星の動きシミュレーター（夏・秋・冬）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --panel:#141b36;
+  --panel-line:rgba(255,255,255,.12);
+  --ink:#f3f2ec;
+  --ink-dim:rgba(243,242,236,.65);
+  --gold:#ffd98e;
+  --star-blue:#5bc0eb;
+  --tri-pink:#f47bb0;
+  --play:#57b660;
+  --stop:#e05d55;
+}
+*{box-sizing:border-box;}
+html{overflow-y:scroll;}  /* スクロールバーの出入りで幅が変わり、がたつくのを防ぐ */
+body{
+  margin:0;
+  padding:16px;
+  font-family:'Zen Maru Gothic','Hiragino Maru Gothic ProN','Hiragino Sans',Meiryo,sans-serif;
+  background:radial-gradient(120% 120% at 50% -10%, #24356b 0%, #0d1230 60%, #070a1d 100%);
+  color:var(--ink);
+  min-height:100vh;
+}
+.container{
+  max-width:900px;
+  margin:0 auto;
+  background:var(--panel);
+  border:1px solid var(--panel-line);
+  border-radius:24px;
+  padding:14px 22px 22px;
+  box-shadow:0 14px 50px rgba(0,0,0,.55);
+}
+.title{margin:0;text-align:center;font-size:1.45rem;font-weight:900;letter-spacing:.04em;}
+.subtitle{
+  text-align:center;color:var(--gold);font-size:.95rem;font-weight:700;margin:6px 0 16px;
+}
+/* ---- 季節タブ ---- */
+.season-tabs{display:flex;gap:8px;justify-content:center;margin:10px 0 8px;flex-wrap:wrap;}
+.season-tab{
+  font-family:inherit;font-size:1rem;font-weight:900;color:var(--ink-dim);
+  background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.2);
+  border-radius:14px;padding:8px 18px;min-height:44px;cursor:pointer;
+}
+.season-tab.active{color:#1a2145;background:#fff;border-color:#fff;}
+.season-tab:focus-visible{outline:3px solid var(--gold);outline-offset:2px;}
+/* ---- コントロール ---- */
+.controls{
+  display:flex;gap:10px;flex-wrap:wrap;justify-content:center;align-items:center;margin-bottom:8px;
+}
+select{
+  font-family:inherit;font-size:1rem;font-weight:700;color:var(--ink);
+  background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.25);
+  border-radius:12px;padding:10px 14px;min-height:44px;cursor:pointer;
+}
+select:hover{background:rgba(255,255,255,.18);}
+.btn{
+  font-family:inherit;font-size:.95rem;font-weight:700;color:#fff;border:none;
+  border-radius:14px;padding:10px 16px;min-height:44px;cursor:pointer;
+  background:#3f5fbf;transition:transform .08s, filter .2s;
+}
+.btn:hover{filter:brightness(1.12);}
+.btn:active{transform:scale(.97);}
+.btn:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid var(--gold);outline-offset:2px;}
+.btn.play{background:var(--play);min-width:104px;}
+.btn.play.active{background:var(--stop);}
+.btn.ghost{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);}
+.btn.record{background:#b8862f;}
+/* ---- 空タブ ---- */
+.view-tabs{display:flex;gap:8px;justify-content:center;}
+.tab{
+  font-family:inherit;font-size:.95rem;font-weight:900;color:var(--ink-dim);
+  background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.2);
+  border-radius:999px;padding:8px 18px;min-height:44px;cursor:pointer;
+}
+.tab.active{color:#1a2145;background:var(--gold);border-color:var(--gold);}
+.view-note{
+  text-align:center;font-size:.85rem;font-weight:700;color:var(--ink-dim);margin:0 0 6px;
+}
+/* ---- キャンバス ---- */
+.canvas-wrap{
+  position:relative;border-radius:18px;overflow:hidden;
+  border:2px solid rgba(255,255,255,.28);
+}
+canvas{display:block;width:100%;}
+/* ---- 時間コントロール ---- */
+.time-controls{
+  display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:14px;
+}
+.time-display{
+  font-size:1.5rem;font-weight:900;font-variant-numeric:tabular-nums;
+  background:rgba(0,0,0,.45);border-radius:12px;padding:8px 16px;text-align:center;letter-spacing:.03em;
+}
+.speed{display:flex;align-items:center;gap:8px;font-size:.85rem;font-weight:700;color:var(--ink-dim);}
+input[type="range"]{
+  -webkit-appearance:none;appearance:none;width:130px;height:10px;border-radius:5px;
+  background:rgba(0,0,0,.5);cursor:pointer;
+}
+input[type="range"]::-webkit-slider-thumb{
+  -webkit-appearance:none;appearance:none;width:26px;height:26px;border-radius:50%;
+  background:var(--gold);border:3px solid #fff;box-shadow:0 0 6px rgba(0,0,0,.5);cursor:pointer;
+}
+/* ---- 記録コントロール ---- */
+.record-controls{
+  display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:12px;
+}
+.record-hint{font-size:.85rem;font-weight:700;color:var(--ink-dim);}
+/* ---- 発展 ---- */
+details.space-section{margin-top:18px;}
+details.space-section summary{
+  cursor:pointer;font-weight:900;font-size:1rem;color:var(--gold);
+  background:rgba(0,0,0,.35);border:1px solid var(--panel-line);
+  border-radius:14px;padding:12px 16px;list-style:none;user-select:none;
+}
+details.space-section summary::-webkit-details-marker{display:none;}
+details.space-section summary::before{content:'▶ ';}
+details.space-section[open] summary::before{content:'▼ ';}
+details .inner{padding-top:12px;}
+.space-caption{font-size:.85rem;color:var(--ink-dim);margin:8px 2px 0;}
+/* ---- まとめカード ---- */
+.info-panel{margin-top:18px;display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.card{
+  background:rgba(0,0,0,.35);border:1px solid var(--panel-line);
+  border-radius:16px;padding:14px 16px;
+}
+.card h3{margin:0 0 6px;font-size:.8rem;font-weight:700;color:var(--ink-dim);letter-spacing:.06em;}
+.card p{margin:0;font-size:.95rem;font-weight:700;line-height:1.7;}
+.card p b{color:var(--gold);}
+.note{margin-top:10px;font-size:.78rem;color:var(--ink-dim);text-align:right;}
+@media (max-width:640px){
+  body{padding:8px;}
+  .container{padding:16px 14px 20px;border-radius:18px;}
+  .title{font-size:1.4rem;}
+  .time-display{font-size:1.2rem;}
+  .info-panel{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <h1 class="title">⭐ 星の動きシミュレーター</h1>
+
+  <div class="season-tabs" role="tablist" aria-label="季節">
+    <button class="season-tab" id="seasonSummer">🌻 夏の星</button>
+    <button class="season-tab" id="seasonAutumn">🍂 秋の星</button>
+    <button class="season-tab" id="seasonWinter">❄️ 冬の星</button>
+  </div>
+
+  <!-- 日時と、見る方角。1行にまとめて上のあきをへらす -->
+  <div class="controls">
+    <select id="presetSelect" aria-label="日時をえらぶ"></select>
+    <div class="view-tabs">
+      <button class="tab active" id="tabSouth">🧭 南の空</button>
+      <button class="tab" id="tabNorth">🧭 北の空</button>
+    </div>
+  </div>
+  <p class="view-note" id="viewNote"></p>
+
+  <div class="canvas-wrap">
+    <canvas id="skyCanvas"></canvas>
+  </div>
+
+  <div class="time-controls">
+    <button class="btn ghost" id="backBtn">⏪ 1時間もどす</button>
+    <button class="btn play" id="playBtn">▶️ 再生</button>
+    <button class="btn ghost" id="fwdBtn">1時間すすめる ⏩</button>
+    <div class="time-display" id="timeLabel">--月--日 --:--</div>
+    <label class="speed">はやさ
+      <input type="range" id="speedSlider" min="1" max="10" step="1" value="2">
+      <span id="speedLabel">1秒で60分</span>
+    </label>
+  </div>
+
+  <div class="record-controls">
+    <button class="btn record" id="recordBtn">📝 いまの星を記録する</button>
+    <button class="btn ghost" id="clearBtn">記録を消す</button>
+    <span class="record-hint" id="recordHint">時間をすすめて記録をくらべてみよう（8回まで）</span>
+  </div>
+
+  <details class="space-section">
+    <summary>はってん：どうして星は動いて見えるの？（宇宙から見た地球）</summary>
+    <div class="inner">
+      <div class="canvas-wrap" style="background:#000;">
+        <canvas id="spaceCanvas"></canvas>
+      </div>
+      <p class="space-caption">
+        🔴 赤い点が観察者（日本）、黄色い扇形が <b>いま見えている空</b> です。星は止まったままなのに、
+        地球が1日に1回コマのように回る（自転）ので、地球にいるわたしたちには星のほうが動いて見えます。くわしくは中学校で学びます。
+      </p>
+    </div>
+  </details>
+
+  <div class="info-panel">
+    <div class="card">
+      <h3>南の空のポイント</h3>
+      <p id="cardSouth"></p>
+    </div>
+    <div class="card">
+      <h3>北の空のポイント</h3>
+      <p id="cardNorth">北斗七星やカシオペヤ座は、<b>北極星を中心に</b> 回るように動く。北極星は <b>ほとんど動かない</b>。</p>
+    </div>
+  </div>
+  <p class="note">※ 星の位置は、日時から計算した本当の星空です（山口県・北緯34.2°／東経131.5°）。</p>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const DEG = Math.PI/180, RAD = 180/Math.PI;
+  const LAT = 34.2, LON = 131.5;   // 山口県（山口市あたり）
+  const SKY_K_RATIO = 1/6.2;       // 空の写し方の大きさ（下の geomOf でつかう）
+  const GROUND_H = 56;
+
+  /* ================================================================
+     星のデータ（J2000概算）
+     形がくずれないように、たがいに星を共有する星座は
+     「ひとつのまとまり（グループ）」にまとめて持たせる。
+     グループ内の星は、いつでも同じならび方で描かれる。
+     ================================================================ */
+
+  /* --- 夏：こと座・はくちょう座・わし座・夏の大三角 --- */
+  const summerMain = {
+    stars:[
+      /* 0 */ {name:'ベガ',       ra:18.62, dec:38.78, mag:0.0, color:'#eaf4ff', label:true},
+      /* 1 */ {name:'シェリアク', ra:18.83, dec:33.36, mag:3.5},
+      /* 2 */ {name:'スラファト', ra:18.98, dec:32.69, mag:3.3},
+      /* 3 */ {name:'デネブ',     ra:20.69, dec:45.28, mag:1.3, color:'#ffffff', label:true},
+      /* 4 */ {name:'サドル',     ra:20.37, dec:40.26, mag:2.2},
+      /* 5 */ {name:'アルビレオ', ra:19.51, dec:27.96, mag:3.1},
+      /* 6 */ {name:'ギェナー',   ra:20.77, dec:33.97, mag:2.5},
+      /* 7 */ {name:'ファワリス', ra:19.75, dec:45.13, mag:2.9},
+      /* 8 */ {name:'アルタイル', ra:19.85, dec:8.87,  mag:0.8, color:'#fff4dd', label:true},
+      /* 9 */ {name:'タラゼド',   ra:19.77, dec:10.61, mag:2.7},
+      /*10 */ {name:'アルシャイン',ra:19.92, dec:6.41, mag:3.7}
+    ],
+    figures:[
+      {name:'こと座',       lines:[[0,1],[1,2],[2,0]],           anchor:0, dx:12, dy:-16},
+      {name:'はくちょう座', lines:[[3,4],[4,5],[4,6],[4,7]],     anchor:4, dx:12, dy:-16},
+      {name:'わし座',       lines:[[9,8],[8,10]],                anchor:8, dx:12, dy:22},
+      {special:true, color:'#f47bb0', lines:[[0,3],[3,8],[8,0]],
+       centerIdx:[0,3,8], centerLabel:['夏の大三角']}
+    ]
+  };
+  const scorpius = {
+    stars:[
+      {name:'アンタレス', ra:16.49, dec:-26.43, mag:1.1, color:'#ff9a76', label:true},
+      {name:'ジュバ',     ra:16.01, dec:-22.62, mag:2.3},
+      {name:'アルニヤト', ra:16.35, dec:-25.59, mag:2.9},
+      {name:'パイカウハレ',ra:16.60, dec:-28.22, mag:2.8},
+      {name:'ウェイ',     ra:16.84, dec:-34.29, mag:2.3},
+      {name:'シャウラ',   ra:17.56, dec:-37.10, mag:1.6}
+    ],
+    figures:[
+      {name:'さそり座', lines:[[1,2],[2,0],[0,3],[3,4],[4,5]], anchor:0, dx:12, dy:22}
+    ]
+  };
+
+  /* --- 秋 --- */
+  const fomalhautSet = {
+    stars:[{name:'フォーマルハウト', ra:22.96, dec:-29.62, mag:1.2, color:'#ffffff', label:true}],
+    figures:[{name:'みなみのうお座', lines:[], anchor:0, dx:14, dy:22}]
+  };
+  const capricorn = {
+    stars:[
+      {name:'アルゲディ', ra:20.30, dec:-12.54, mag:3.6},
+      {name:'ダビー',     ra:20.35, dec:-14.78, mag:3.1},
+      {name:'デネブ・アルゲディ', ra:21.78, dec:-16.13, mag:2.9}
+    ],
+    figures:[{name:'やぎ座', lines:[[0,1],[1,2]], anchor:1, dx:10, dy:24}]
+  };
+  const autumnSquare = {
+    stars:[
+      {name:'マルカブ',    ra:23.08, dec:15.21, mag:2.5},
+      {name:'シェアト',    ra:23.06, dec:28.08, mag:2.4},
+      {name:'アルフェラツ',ra:0.14,  dec:29.09, mag:2.1},
+      {name:'アルゲニブ',  ra:0.22,  dec:15.18, mag:2.8}
+    ],
+    figures:[
+      {special:true, color:'#ffd98e', lines:[[0,1],[1,2],[2,3],[3,0]],
+       centerIdx:[0,1,2,3], centerLabel:['秋の四辺形','（ペガスス座）']}
+    ]
+  };
+
+  /* --- 冬：オリオン座・おおいぬ座・こいぬ座・冬の大三角 --- */
+  const winterMain = {
+    stars:[
+      /* 0 */ {name:'ベテルギウス', ra:5.92, dec:7.41,  mag:0.4, color:'#ffb08a', label:true},
+      /* 1 */ {name:'リゲル',       ra:5.24, dec:-8.20, mag:0.1, color:'#aee2f5', label:true},
+      /* 2 */ {name:'ベラトリックス',ra:5.42, dec:6.35, mag:1.6},
+      /* 3 */ {name:'サイフ',       ra:5.80, dec:-9.67, mag:2.1},
+      /* 4 */ {name:'アルニタク',   ra:5.68, dec:-1.94, mag:1.7},
+      /* 5 */ {name:'アルニラム',   ra:5.60, dec:-1.20, mag:1.7},
+      /* 6 */ {name:'ミンタカ',     ra:5.53, dec:-0.30, mag:2.2},
+      /* 7 */ {name:'シリウス',     ra:6.75, dec:-16.72,mag:-1.5,color:'#ffffff', label:true},
+      /* 8 */ {name:'ムルジム',     ra:6.38, dec:-17.96,mag:2.0},
+      /* 9 */ {name:'ウェズン',     ra:7.14, dec:-26.39,mag:1.8},
+      /*10 */ {name:'プロキオン',   ra:7.66, dec:5.22,  mag:0.3, color:'#ffeecc', label:true},
+      /*11 */ {name:'ゴメイサ',     ra:7.45, dec:8.29,  mag:2.9}
+    ],
+    figures:[
+      {name:'オリオン座', lines:[[2,0],[0,4],[4,3],[3,1],[1,6],[6,2],[6,5],[5,4]], anchor:5, dx:14, dy:-14},
+      {name:'おおいぬ座', lines:[[7,8],[7,9]],  anchor:7, dx:14, dy:22},
+      {name:'こいぬ座',   lines:[[10,11]],      anchor:10, dx:14, dy:22},
+      {special:true, color:'#f47bb0', lines:[[0,7],[7,10],[10,0]],
+       centerIdx:[0,7,10], centerLabel:['冬の大三角']}
+    ]
+  };
+
+  /* --- 北の空（一年中共通） ---
+     北斗七星・カシオペヤ座・北極星を ひとつのまとまり にしている。
+     こうすると 北の空ぜんたいが 北極星を中心に そのまま回るので、
+     北極星からのきょりも かたむき も 正しくなる。 */
+  const northSky = {
+    stars:[
+      /* 0 */ {name:'ドゥーベ',  ra:11.06, dec:61.75, mag:1.8},
+      /* 1 */ {name:'メラク',    ra:11.03, dec:56.38, mag:2.4},
+      /* 2 */ {name:'フェクダ',  ra:11.90, dec:53.69, mag:2.4},
+      /* 3 */ {name:'メグレズ',  ra:12.26, dec:57.03, mag:3.3},
+      /* 4 */ {name:'アリオト',  ra:12.90, dec:55.96, mag:1.8},
+      /* 5 */ {name:'ミザール',  ra:13.42, dec:54.93, mag:2.2},
+      /* 6 */ {name:'アルカイド',ra:13.79, dec:49.31, mag:1.9},
+      /* 7 */ {name:'カフ',      ra:0.15, dec:59.15, mag:2.3},
+      /* 8 */ {name:'シェダル',  ra:0.68, dec:56.54, mag:2.2},
+      /* 9 */ {name:'ツィー',    ra:0.95, dec:60.72, mag:2.4},
+      /*10 */ {name:'ルクバー',  ra:1.43, dec:60.24, mag:2.7},
+      /*11 */ {name:'セギン',    ra:1.91, dec:63.67, mag:3.4},
+      /*12 */ {name:'北極星',    ra:2.53, dec:89.26, mag:2.0, color:'#ffd98e', polaris:true}
+    ],
+    figures:[
+      {name:'北斗七星（おおぐま座）', lines:[[0,1],[1,2],[2,3],[3,0],[3,4],[4,5],[5,6]],
+       anchor:1, dx:-10, dy:26},
+      {name:'カシオペヤ座', lines:[[7,8],[8,9],[9,10],[10,11]], anchor:9, dx:12, dy:-16}
+    ],
+    refStar:12   // 北極星を基準にして、そのまわりを回るようにする
+  };
+  const NORTH_SETS = [northSky];
+
+  /* ================= 季節の設定 ================= */
+  const SEASONS = {
+    summer:{
+      ground:{top:'#22391c', bottom:'#101f0c', sil:'#0e1a0a'},   // 夏の草の色
+      space:{shape:'tri', color:'#f47bb0', label:'夏の大三角'},
+      southSets:[summerMain, scorpius],
+      southGhost:{set:0, star:0},   // 記録ラベルはベガのそば
+      southNote:'夏の大三角（ベガ・デネブ・アルタイル）が目印。東からのぼり、南の空を通って、西へしずむよ。',
+      northNote:'夏は北斗七星が北西の空に見えるよ。北の空の星は、北極星を中心に回るように動くよ。',
+      cardSouth:'<b>夏の大三角</b> は、ベガ（こと座）・デネブ（はくちょう座）・アルタイル（わし座）。南のひくい空には、赤い一等星 <b>アンタレス</b>（さそり座）。星は <b>東 → 南 → 西</b> へ動く。',
+      presets:[
+        {m:6,d:15,h:20,label:'7月15日 20時（日ぐれのあと）'},
+        {m:6,d:15,h:21,label:'7月15日 21時（夜）',sel:true},
+        {m:6,d:16,h:0, label:'7月16日 0時（真夜中）'},
+        {m:7,d:15,h:21,label:'8月15日 21時（お盆のころ）'},
+        {m:8,d:1, h:21,label:'9月1日 21時（夏の終わり）'}
+      ]
+    },
+    autumn:{
+      ground:{top:'#3a3220', bottom:'#1c180d', sil:'#14100a'},   // 秋の枯れ草の色
+      space:{shape:'sq', color:'#ffd98e', label:'秋の四辺形'},
+      southSets:[fomalhautSet, capricorn, autumnSquare],
+      southGhost:{set:2, star:0},   // 記録ラベルはマルカブのそば
+      southNote:'秋の四辺形（ペガスス座）が目印。東からのぼり、南の空を通って、西へしずむよ。',
+      northNote:'秋はカシオペヤ座が見つけやすいよ。北の空の星は、北極星を中心に回るように動くよ。',
+      cardSouth:'ペガスス座の <b>秋の四辺形</b> が星をさがす目印。<b>フォーマルハウト</b> は、秋の空でただ一つの一等星だよ。星は <b>東 → 南 → 西</b> へ動く。',
+      presets:[
+        {m:8,d:15,h:21,label:'9月15日 21時（初秋）'},
+        {m:9,d:15,h:18,label:'10月15日 18時（夕方）'},
+        {m:9,d:15,h:20,label:'10月15日 20時（夜）',sel:true},
+        {m:9,d:16,h:0, label:'10月16日 0時（真夜中）'},
+        {m:10,d:15,h:20,label:'11月15日 20時（晩秋）'}
+      ]
+    },
+    winter:{
+      ground:{top:'#2b3b3f', bottom:'#121e21', sil:'#0c1416'},   // 冬の冷たい地面の色
+      space:{shape:'tri', color:'#f47bb0', label:'冬の大三角'},
+      southSets:[winterMain],
+      southGhost:{set:0, star:0},   // 記録ラベルはベテルギウスのそば
+      southNote:'オリオン座と冬の大三角。東からのぼり、南の高い空を通って、西へしずむよ。',
+      northNote:'北斗七星とカシオペヤ座。北極星を中心に、回るように動くよ。',
+      cardSouth:'オリオン座は <b>東 → 南 → 西</b> へ動く。ベテルギウス・シリウス・プロキオンをむすんだ三角形が <b>冬の大三角</b>。',
+      presets:[
+        {m:11,d:15,h:21,label:'12月15日 21時（初冬）'},
+        {m:0,d:15,h:18, label:'1月15日 18時（夕方）'},
+        {m:0,d:15,h:21, label:'1月15日 21時（夜）',sel:true},
+        {m:0,d:16,h:0,  label:'1月16日 0時（真夜中）'},
+        {m:1,d:15,h:21, label:'2月15日 21時（晩冬）'}
+      ]
+    }
+  };
+  /* pri … 場所がせまいときに どれを のこすかの ゆうせん順（小さいほど のこる） */
+  const DIRS_S = [
+    {az:180,k:'南',f:'みなみ',pri:0},
+    {az:90,k:'東',f:'ひがし',pri:1},{az:270,k:'西',f:'にし',pri:1},
+    {az:135,k:'南東',f:'',pri:2},{az:225,k:'南西',f:'',pri:2},
+    {az:45,k:'北東',f:'',pri:3},{az:315,k:'北西',f:'',pri:3}
+  ];
+  const DIRS_N = [
+    {az:0,k:'北',f:'きた',pri:0},
+    {az:270,k:'西',f:'にし',pri:1},{az:90,k:'東',f:'ひがし',pri:1},
+    {az:315,k:'北西',f:'',pri:2},{az:45,k:'北東',f:'',pri:2},
+    {az:225,k:'南西',f:'',pri:3},{az:135,k:'南東',f:'',pri:3}
+  ];
+
+  /* 背景のこまかい星 */
+  const bgStars = [];
+  for(let i=0;i<220;i++){
+    bgStars.push({ ra:Math.random()*24, dec:Math.random()*180-90, b:Math.random()*0.5+0.15 });
+  }
+  /* 宇宙ビューの背景の星（動かないことを見せるので位置は固定） */
+  const spaceBgStars = [];
+  for(let i=0;i<110;i++){
+    spaceBgStars.push({ x:Math.random(), y:Math.random(), b:Math.random()*0.5+0.2 });
+  }
+
+  /* ================= 状態 ================= */
+  const state = {
+    season:'summer',
+    playing:false,
+    speed:2,
+    elapsedHours:0,
+    startDate:new Date(),
+    lastTs:0,
+    view:'south',
+    records:[]
+  };
+
+  function currentView(){
+    const se = SEASONS[state.season];
+    if(state.view === 'south'){
+      return { center:180, sets:se.southSets, dirs:DIRS_S,
+               ghostAnchor:se.southGhost, note:se.southNote };
+    }
+    return { center:0, sets:NORTH_SETS, dirs:DIRS_N,
+             ghostAnchor:{set:0, star:9},   // カシオペヤ座のツィー（一年中しずまない）
+             note:se.northNote };
+  }
+
+  /* ================= DOM ================= */
+  const $ = id => document.getElementById(id);
+  const skyCv = $('skyCanvas'), spaceCv = $('spaceCanvas');
+  const timeLabel = $('timeLabel'), playBtn = $('playBtn');
+  const speedSlider = $('speedSlider'), speedLabel = $('speedLabel');
+  const recordHint = $('recordHint'), viewNote = $('viewNote');
+  const presetSelect = $('presetSelect');
+  const spaceSection = document.querySelector('.space-section');
+  const dims = { sky:{w:0,h:0}, space:{w:0,h:0} };
+
+  function sizeCanvas(cv, key, w, h){
+    if(Math.abs(w - dims[key].w) < 20 && Math.abs(h - dims[key].h) < 20) return;
+    const dpr = window.devicePixelRatio || 1;
+    cv.width = w*dpr; cv.height = h*dpr;
+    cv.style.height = h+'px';
+    cv.getContext('2d').setTransform(dpr,0,0,dpr,0,0);
+    dims[key].w = w; dims[key].h = h;
+  }
+  function fitAll(){
+    // 空の高さは、投影のしかた（下の geomOf）に合わせて決める
+    const w = skyCv.parentElement.clientWidth;
+    sizeCanvas(skyCv, 'sky', w, Math.round(SKY_K_RATIO*w*2.6) + GROUND_H);
+
+    const sw = spaceCv.parentElement.clientWidth;
+    sizeCanvas(spaceCv, 'space', sw, Math.round(sw * (window.innerWidth < 640 ? 0.7 : 0.5)));
+    drawAll();
+  }
+
+  /* ================= 天文計算 ================= */
+  const toJD = d => d.getTime()/86400000 + 2440587.5;
+  function gmstDeg(d){
+    const JD = toJD(d), T = (JD-2451545.0)/36525.0;
+    const g = 280.46061837 + 360.98564736629*(JD-2451545.0) + 0.000387933*T*T;
+    return ((g%360)+360)%360;
+  }
+  const lstDeg = d => (gmstDeg(d) + LON + 360) % 360;
+
+  function raDecToAltAz(raH, decD, d){
+    const H = ((lstDeg(d) - raH*15) % 360 + 360) % 360;
+    const la = LAT*DEG, de = decD*DEG, Hr = H*DEG;
+    const sinAlt = Math.sin(de)*Math.sin(la) + Math.cos(de)*Math.cos(la)*Math.cos(Hr);
+    const alt = Math.asin(Math.max(-1,Math.min(1,sinAlt)));
+    const cosAz = (Math.sin(de) - Math.sin(alt)*Math.sin(la)) / (Math.cos(alt)*Math.cos(la));
+    let az = Math.acos(Math.max(-1,Math.min(1,cosAz)));
+    if(Math.sin(Hr) > 0) az = 2*Math.PI - az;
+    return { alt: alt*RAD, az: az*RAD };   // az: 北=0, 東=90, 南=180, 西=270
+  }
+
+  /* 日本時間で見た「月・日・時・分」。端末の時計の設定に left されないようにする */
+  const jstParts = d => {
+    const j = new Date(d.getTime() + 9*3600000);
+    return { mon:j.getUTCMonth()+1, day:j.getUTCDate(),
+             hour:j.getUTCHours(), min:j.getUTCMinutes(),
+             year:j.getUTCFullYear(),
+             doy: Math.floor((Date.UTC(j.getUTCFullYear(), j.getUTCMonth(), j.getUTCDate())
+                              - Date.UTC(j.getUTCFullYear(),0,0)) / 86400000) };
+  };
+  // 太陽の高さ（近似）
+  // 日本時間は東経135°が基準。山口県は西にあるので、南中は少しおそくなる（その分を足す）
+  function sunAltDeg(d){
+    const p = jstParts(d);
+    const dec = -23.44*Math.cos(2*Math.PI*(p.doy+10)/365) * DEG;
+    const hours = p.hour + p.min/60 + (LON - 135)/15;   // その土地の太陽の時刻
+    const H = (hours-12)*15*DEG;
+    const la = LAT*DEG;
+    return Math.asin(Math.sin(dec)*Math.sin(la)+Math.cos(dec)*Math.cos(la)*Math.cos(H)) * RAD;
+  }
+
+  const currentDate = () => new Date(state.startDate.getTime() + state.elapsedHours*3600000);
+  const fmtDT = d => {
+    const p = jstParts(d);
+    return `${p.mon}月${p.day}日 ${String(p.hour).padStart(2,'0')}:${String(p.min).padStart(2,'0')}`;
+  };
+
+  /* ================= 画面への うつしかた =================
+     見ている方角（南 または 北）の地平線の点を中心にした「ステレオ投影」。
+     この写し方なら
+       ・地平線は まっすぐな横線のまま（方位のラベルもそのまま使える）
+       ・星のならび（かたち）は くずれない
+       ・天頂の近くを通る星でも、画面の真ん中で急に速くならない
+     方位をそのまま横じくにすると、天頂近くを通る星は真ん中で
+     方位が急に変わるため、何倍もの速さで横切って見えてしまう。
+  =========================================================== */
+  function geomOf(view, w, horizonY){
+    const c = view.center*DEG;
+    return {
+      k: SKY_K_RATIO*w, cx: w/2, horizonY, w,
+      C: [Math.sin(c),  Math.cos(c), 0],   // 見ている方向（地平線の上の点）
+      R: [Math.cos(c), -Math.sin(c), 0]    // 画面の右向き
+    };
+  }
+  function projectAltAz(alt, az, g){
+    const a = alt*DEG, z = az*DEG, ca = Math.cos(a);
+    const P = [ca*Math.sin(z), ca*Math.cos(z), Math.sin(a)];   // x:東 y:北 z:上
+    const f = P[0]*g.C[0] + P[1]*g.C[1];                       // 見ている方向とのむき
+    const s = 2/(1 + Math.max(f, -0.62));                      // 後ろがわは のびすぎないように
+    const x = g.cx + s*(P[0]*g.R[0] + P[1]*g.R[1])*g.k;
+    const y = g.horizonY - s*P[2]*g.k;
+    // 夏の大三角のデネブのように、ななめ後ろの高い空にある星も入るようにしている
+    const on = alt >= 0 && f > -0.55 &&
+               x > -60 && x < g.w + 60 && y > -60;
+    return { x, y, alt, on };
+  }
+  function project(star, date, g){
+    const p = raDecToAltAz(star.ra, star.dec, date);
+    return projectAltAz(p.alt, p.az, g);
+  }
+  /* 星のならびは一つ一つ写すだけでくずれない（ステレオ投影は角度を変えないため） */
+  function projectGroup(group, date, g){
+    return group.stars.map(s => project(s, date, g));
+  }
+
+  /* ================= 星空の描画 ================= */
+  function mix(a,b,f){ return a.map((v,i)=>Math.round(v+(b[i]-v)*f)); }
+
+  function drawSky(){
+    const c = skyCv.getContext('2d');
+    const w = dims.sky.w, h = dims.sky.h;
+    const horizonY = h - GROUND_H;
+    const view = currentView();
+    const geo = geomOf(view, w, horizonY);
+    const date = currentDate();
+
+    // --- 空の色と星の見えやすさ（太陽の高さと連動） ---
+    const sAlt = sunAltDeg(date);
+    const darkness = Math.max(0, Math.min(1, -sAlt/8));  // 昼=0 夜=1
+    const top = mix([111,180,232],[6,10,30], darkness);
+    const bottom = mix([207,233,247],[24,36,84], darkness);
+    const g = c.createLinearGradient(0,0,0,horizonY);
+    g.addColorStop(0, `rgb(${top.join(',')})`);
+    g.addColorStop(1, `rgb(${bottom.join(',')})`);
+    c.fillStyle = g;
+    c.fillRect(0,0,w,horizonY);
+
+    // --- 背景の星 ---
+    if(darkness > 0.05){
+      c.fillStyle = '#fff';
+      bgStars.forEach(s => {
+        const p = project(s, date, geo);
+        if(p.on){
+          c.globalAlpha = s.b * darkness;
+          c.beginPath(); c.arc(p.x, p.y, 1, 0, Math.PI*2); c.fill();
+        }
+      });
+      c.globalAlpha = 1;
+    }
+
+    // --- 記録（うすい色の星座＋時刻） ---
+    state.records.forEach(recDate => {
+      drawFigures(c, recDate, view, geo, {
+        ghost:true, alpha:0.4*Math.max(darkness,0.3),
+        label: `${jstParts(recDate).hour}時`
+      });
+    });
+
+    // --- いまの星座 ---
+    // 地面・木・家のシルエットにも文字がかからないようにしておく
+    drawFigures(c, date, view, geo, { ghost:false, alpha:darkness, placed:[
+      { x:0,        y:horizonY,    w:w,        h:GROUND_H },
+      { x:w*0.12-4, y:horizonY-28, w:w*0.06+8, h:28 },
+      { x:w*0.78-4, y:horizonY-22, w:w*0.05+8, h:22 },
+      { x:w*0.46-8, y:horizonY-30, w:50,       h:30 }
+    ] });
+
+    // --- 昼のメッセージ ---
+    if(darkness < 0.25){
+      c.fillStyle = 'rgba(20,30,60,.75)';
+      c.font = `900 ${Math.max(15, w*0.022)}px 'Zen Maru Gothic', sans-serif`;
+      c.textAlign = 'center';
+      c.fillText('☀️ 昼間は空が明るいので、星は見えないよ。時間をすすめてみよう', w/2, 44);
+      c.textAlign = 'left';
+    }
+
+    // --- 地面と方角（地面の色は季節ごとに変える） ---
+    const gr = SEASONS[state.season].ground;
+    const gg = c.createLinearGradient(0,horizonY,0,h);
+    gg.addColorStop(0,gr.top); gg.addColorStop(1,gr.bottom);
+    c.fillStyle = gg;
+    c.fillRect(0,horizonY,w,GROUND_H);
+    c.fillStyle = gr.sil;
+    c.beginPath(); c.moveTo(w*0.12,horizonY); c.lineTo(w*0.15,horizonY-26); c.lineTo(w*0.18,horizonY); c.fill();
+    c.beginPath(); c.moveTo(w*0.78,horizonY); c.lineTo(w*0.805,horizonY-20); c.lineTo(w*0.83,horizonY); c.fill();
+    c.fillRect(w*0.46, horizonY-16, 34, 16);
+    c.beginPath(); c.moveTo(w*0.46-4,horizonY-16); c.lineTo(w*0.46+17,horizonY-28); c.lineTo(w*0.46+38,horizonY-16); c.fill();
+
+    // 方角のラベル。せまい画面では 重なるものを とばして、読めるようにする
+    const placed = [];
+    [...view.dirs].sort((a,b) => a.pri - b.pri).forEach(dEnt => {
+      // 星と同じ写し方で位置を決める（地平線の上の点として）
+      const dp = projectAltAz(0, dEnt.az, geo);
+      if(dp.x < -20 || dp.x > w + 20) return;
+      const halfW = dEnt.k.length*10 + 5;
+      // 画面のはしの方角は、はみ出して欠けないように内がわへ寄せる
+      let x = dp.x, align = 'center';
+      if(x - halfW < 2){ x = 4; align = 'left'; }
+      else if(x + halfW > w - 2){ x = w - 4; align = 'right'; }
+      const left = align === 'left' ? x : (align === 'right' ? x - 2*halfW : x - halfW);
+      const right = left + 2*halfW;
+      if(placed.some(p => right > p.left - 8 && left < p.right + 8)) return;  // 重なるならとばす
+      placed.push({left, right});
+
+      c.textAlign = align;
+      c.fillStyle = '#fffbe8';
+      c.font = `900 20px 'Zen Maru Gothic', sans-serif`;
+      c.fillText(dEnt.k, x, horizonY+28);
+      if(dEnt.f){
+        c.fillStyle = 'rgba(255,251,232,.7)';
+        c.font = `700 11px 'Zen Maru Gothic', sans-serif`;
+        c.fillText(dEnt.f, x, horizonY+44);
+      }
+      c.textAlign = 'left';
+    });
+  }
+
+  /* ---- ラベルが重ならないように置くしくみ ----
+     大事な順（一等星の名前 → 大三角など → 星座名）に場所をとり、
+     どうしても空きがない星座名は表示しない。 */
+  function rectsHit(a, b){
+    return !(a.x + a.w < b.x - 2 || b.x + b.w < a.x - 2 ||
+             a.y + a.h < b.y - 2 || b.y + b.h < a.y - 2);
+  }
+  /* ラベルごとに「前のコマで使った場所」をおぼえておく。
+     毎回いちからさがすと、星が動くたびに名前が右へ左へ飛んでしまうため、
+     まず前と同じ場所を試し、そこがふさがっているときだけ別をさがす。 */
+  const labelSlot = new Map();
+
+  function putLabel(c, text, px, py, placed, w, font, color, force){
+    c.font = font;
+    c.textAlign = 'left';
+    const tw = c.measureText(text).width, th = 14;
+    // 星の右上 → 右下 → 左上 → 左下 → 真上 → 真下 …の順にあいている所をさがす
+    // （近い場所から順に、だんだん遠くまで）
+    const cands = [
+      [10,-6],[10,17],[-tw-10,-6],[-tw-10,17],[-tw/2,-16],[-tw/2,26],
+      [18,-24],[18,34],[-tw-18,-24],[-tw-18,34],[-tw/2,-32],[-tw/2,42]
+    ];
+    const prev = labelSlot.get(text);
+    const order = [];
+    if(prev != null && prev < cands.length) order.push(prev);       // まず前と同じ場所
+    cands.forEach((_, i) => { if(i !== prev) order.push(i); });
+    for(const i of order){
+      const x = px + cands[i][0], y = py + cands[i][1];
+      if(x < 2 || x + tw > w - 2 || y < 12) continue;
+      const rect = { x, y:y - th + 3, w:tw, h:th };
+      if(placed.some(r => rectsHit(r, rect))) continue;
+      placed.push(rect);
+      labelSlot.set(text, i);
+      c.fillStyle = color;
+      c.fillText(text, x, y);
+      return true;
+    }
+    if(force){                       // 一等星の名前は重なっても必ず出す
+      const x = Math.min(Math.max(px + 10, 2), w - tw - 2), y = Math.max(py - 6, 14);
+      placed.push({ x, y:y - th + 3, w:tw, h:th });
+      labelSlot.set(text, 0);
+      c.fillStyle = color;
+      c.fillText(text, x, y);
+      return true;
+    }
+    return false;
+  }
+  /* 大三角・四辺形の名前は、図形にかぶらないよう「図形の外がわ」に置く */
+  function putCenterLabel(c, lines, vs, placed, w, color, horizonY){
+    const fontOf = i => (i === 0 ? '900 14px' : '700 11px') + " 'Zen Maru Gothic', sans-serif";
+    let maxW = 0;
+    lines.forEach((t,i) => { c.font = fontOf(i); maxW = Math.max(maxW, c.measureText(t).width); });
+    const totalH = lines.length * 16 + 4;
+    const xs = vs.map(p => p.x), ys = vs.map(p => p.y);
+    const bb = { l:Math.min(...xs), r:Math.max(...xs), t:Math.min(...ys), b:Math.max(...ys) };
+    const mx = (bb.l + bb.r)/2, my = (bb.t + bb.b)/2;
+    const spots = [
+      { x:mx - maxW/2,      y:bb.b + 12 },            // 図形の下
+      { x:mx - maxW/2,      y:bb.t - 14 - totalH },   // 図形の上
+      { x:bb.r + 14,        y:my - totalH/2 },        // 右
+      { x:bb.l - 14 - maxW, y:my - totalH/2 },        // 左
+      { x:mx - maxW/2,      y:my - totalH/2 }         // 中（最後の手段）
+    ];
+    // 前のコマで使った場所を先に試す（名前が飛びまわらないように）
+    const key = lines.join('');
+    const prev = labelSlot.get(key);
+    const order = [];
+    if(prev != null && prev < spots.length) order.push(prev);
+    spots.forEach((_, i) => { if(i !== prev) order.push(i); });
+    let chosen = null;
+    for(const si of order){
+      if(chosen) break;
+      const s = spots[si];
+      const x = Math.min(Math.max(s.x, 2), w - maxW - 2);
+      const rect = { x, y:s.y, w:maxW, h:totalH };
+      if(rect.y < 12 || rect.y + rect.h > horizonY - 2) continue;    // 画面の外に出さない
+      if(si < spots.length - 1 && placed.some(r => rectsHit(r, rect))) continue;
+      chosen = rect;
+      labelSlot.set(key, si);
+    }
+    if(!chosen){   // どこにも入らないときは、画面内に収まる位置へ
+      chosen = { x:Math.min(Math.max(mx - maxW/2, 2), w - maxW - 2),
+                 y:Math.min(Math.max(my - totalH/2, 12), horizonY - totalH - 4),
+                 w:maxW, h:totalH };
+    }
+    placed.push(chosen);
+    c.fillStyle = color;
+    c.textAlign = 'left';
+    lines.forEach((t,i) => {
+      c.font = fontOf(i);
+      c.fillText(t, chosen.x + (maxW - c.measureText(t).width)/2, chosen.y + 13 + i*16);
+    });
+  }
+
+  function drawFigures(c, date, view, geo, opt){
+    const alpha = Math.max(0, Math.min(1, opt.alpha));
+    if(alpha <= 0.02) return;
+    const w = geo.w, horizonY = geo.horizonY;
+    let ghostLabelDone = false;
+    const placed = opt.placed || [];
+    const starLabels = [], centerLabels = [], figNames = [];
+
+    view.sets.forEach((group, gi) => {
+      const pts = projectGroup(group, date, geo);
+
+      // ---- 線 ----
+      group.figures.forEach(fig => {
+        if(!fig.lines || !fig.lines.length) return;
+        c.lineWidth = fig.special ? 3 : 1.6;
+        if(opt.ghost){
+          c.strokeStyle = `rgba(160,175,215,${alpha})`;
+          c.setLineDash(fig.special ? [5,5] : []);
+        } else {
+          c.strokeStyle = fig.special ? hexToRgba(fig.color, alpha)
+                                      : `rgba(91,192,235,${0.5*alpha})`;
+          c.setLineDash(fig.special ? [6,6] : []);
+        }
+        c.beginPath();
+        fig.lines.forEach(([a,b]) => {
+          if(pts[a].on && pts[b].on){
+            c.moveTo(pts[a].x, pts[a].y);
+            c.lineTo(pts[b].x, pts[b].y);
+          }
+        });
+        c.stroke();
+        c.setLineDash([]);
+      });
+
+      // ---- 星 ----
+      group.stars.forEach((s,i) => {
+        const p = pts[i];
+        if(!p.on) return;
+        const size = Math.max(2.2, 5.5 - (s.mag ?? 2)*1.4);
+        if(opt.ghost){
+          c.fillStyle = `rgba(180,195,230,${alpha})`;
+          c.beginPath(); c.arc(p.x,p.y,size*0.85,0,Math.PI*2); c.fill();
+          return;
+        }
+        c.fillStyle = s.color || '#ffffff';
+        c.globalAlpha = alpha;
+        c.shadowBlur = 9;
+        c.shadowColor = s.color || '#fff';
+        c.beginPath(); c.arc(p.x,p.y,size,0,Math.PI*2); c.fill();
+        c.shadowBlur = 0;
+        c.globalAlpha = 1;
+        // 星そのものにも文字がかぶらないようにする
+        placed.push({ x:p.x-size, y:p.y-size, w:size*2, h:size*2 });
+
+        if(s.polaris){
+          c.strokeStyle = `rgba(255,217,142,${alpha})`;
+          c.lineWidth = 1.5;
+          c.beginPath(); c.arc(p.x,p.y,size+6,0,Math.PI*2); c.stroke();
+          starLabels.push({ text:'北極星（ほとんど動かない）', p,
+            font:`900 14px 'Zen Maru Gothic', sans-serif`,
+            color:`rgba(255,217,142,${alpha})` });
+        } else if(s.label){
+          starLabels.push({ text:s.name, p,
+            font:`700 12px 'Zen Maru Gothic', sans-serif`,
+            color:`rgba(255,217,142,${alpha})` });
+        }
+      });
+
+      // ---- 星座の名前・大三角のラベル（あとでまとめて置く） ----
+      if(!opt.ghost){
+        group.figures.forEach(fig => {
+          if(fig.name){
+            const a = pts[fig.anchor];
+            if(a && a.on){
+              // 最初の候補（+10,-6）がもとの位置と重なるようにずらしておく
+              figNames.push({ text:fig.name, p:{ x:a.x + fig.dx - 10, y:a.y + fig.dy + 6 },
+                font:`700 13px 'Zen Maru Gothic', sans-serif`,
+                color:`rgba(200,210,235,${0.85*alpha})` });
+            }
+          }
+          if(fig.centerLabel && fig.centerIdx){
+            const vs = fig.centerIdx.map(i => pts[i]);
+            if(vs.every(p => p.on)){
+              centerLabels.push({
+                lines: fig.centerLabel, vs,
+                color: hexToRgba(fig.color, 0.9*alpha)
+              });
+            }
+          }
+        });
+      }
+
+      // ---- 記録の時刻ラベル ----
+      if(opt.ghost && !ghostLabelDone && gi === view.ghostAnchor.set){
+        const p = pts[view.ghostAnchor.star];
+        if(p && p.on){
+          c.fillStyle = `rgba(230,238,255,${Math.min(1, alpha+0.35)})`;
+          c.font = `900 13px 'Zen Maru Gothic', sans-serif`;
+          c.fillText(opt.label, p.x+8, p.y-10);
+          ghostLabelDone = true;
+        }
+      }
+    });
+
+    // ---- ラベルを大事な順に、重ならない場所へ置く ----
+    starLabels.forEach(L =>
+      putLabel(c, L.text, L.p.x, L.p.y, placed, w, L.font, L.color, true));
+    centerLabels.forEach(L =>
+      putCenterLabel(c, L.lines, L.vs, placed, w, L.color, horizonY));
+    figNames.forEach(L =>            // 星座名は場所がなければ出さない
+      putLabel(c, L.text, L.p.x, L.p.y, placed, w, L.font, L.color, false));
+    c.textAlign = 'left';
+  }
+
+  function hexToRgba(hex, a){
+    const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+    return `rgba(${r},${g},${b},${a})`;
+  }
+
+  /* ================= 宇宙ビュー =================
+     北極の上から見た地球。星は止まっていて、地球が回っている。
+     赤い点が観察者（日本）、黄色い扇形が「いま見えている空」。 */
+  function drawSpace(){
+    if(!spaceSection.open) return;
+    const c = spaceCv.getContext('2d');
+    const w = dims.space.w, h = dims.space.h;
+    c.clearRect(0,0,w,h);
+    c.fillStyle = '#000'; c.fillRect(0,0,w,h);
+
+    // 動かない背景の星
+    c.fillStyle = '#fff';
+    spaceBgStars.forEach(s => {
+      c.globalAlpha = s.b;
+      c.beginPath(); c.arc(s.x*w, s.y*h, 1, 0, Math.PI*2); c.fill();
+    });
+    c.globalAlpha = 1;
+
+    const r  = Math.min(w*0.22, h*0.30);
+    const cx = w*0.44, cy = h*0.52;
+    const p = jstParts(currentDate());
+    const hours = p.hour + p.min/60;
+    const spread = 65*DEG;                                  // 見えている空のひろがり
+    const th = Math.PI - ((hours-12)/24)*2*Math.PI;         // 観察者の位置（正午＝太陽がわ）
+    const facing = Math.cos(th) >= Math.cos(spread);        // 季節の星が扇形の中に入っているか
+
+    // --- 太陽（左に固定）と、平行な光 ---
+    const sunR = Math.min(30, r*0.5);
+    const sunX = Math.max(sunR + 6, w*0.08), sunY = cy;
+    c.fillStyle = '#ffd23e';
+    c.shadowBlur = 28; c.shadowColor = '#ffd23e';
+    c.beginPath(); c.arc(sunX, sunY, sunR, 0, Math.PI*2); c.fill();
+    c.shadowBlur = 0;
+    c.fillStyle = '#ffd98e';
+    c.font = `900 14px 'Zen Maru Gothic', sans-serif`;
+    c.textAlign = 'center';
+    c.fillText('太陽', sunX, sunY + sunR + 20);
+    c.textAlign = 'left';
+    c.strokeStyle = 'rgba(255,210,62,.55)';
+    c.fillStyle   = 'rgba(255,210,62,.55)';
+    c.lineWidth = 2;
+    [-r*0.8, 0, r*0.8].forEach(dy => {
+      const y = cy + dy, x1 = sunX + sunR + 10, x2 = cx - r - 22;
+      if(x2 - x1 < 20) return;
+      c.beginPath(); c.moveTo(x1,y); c.lineTo(x2,y); c.stroke();
+      c.beginPath(); c.moveTo(x2,y); c.lineTo(x2-9,y-5); c.lineTo(x2-9,y+5); c.closePath(); c.fill();
+    });
+
+    // --- 季節の星（太陽の反対がわに固定。動かない） ---
+    const sp = SEASONS[state.season].space;
+    const clX = cx + r*2.1, clY = cy;
+    const shape = sp.shape === 'sq'
+      ? [[-16,-14],[16,-18],[20,10],[-12,14]]      // 四辺形
+      : [[0,-18],[19,10],[-19,12]];                // 三角形
+    const ca = facing ? 1 : 0.32;
+    c.strokeStyle = hexToRgba(sp.color, 0.8*ca);
+    c.lineWidth = 2;
+    c.setLineDash([5,5]);
+    c.beginPath();
+    shape.forEach((q,i) => i===0 ? c.moveTo(clX+q[0], clY+q[1]) : c.lineTo(clX+q[0], clY+q[1]));
+    c.closePath(); c.stroke();
+    c.setLineDash([]);
+    shape.forEach(q => {
+      c.fillStyle = hexToRgba(sp.color, ca);
+      c.shadowBlur = facing ? 10 : 0; c.shadowColor = sp.color;
+      c.beginPath(); c.arc(clX+q[0], clY+q[1], 4, 0, Math.PI*2); c.fill();
+      c.shadowBlur = 0;
+    });
+    const clLabelX = Math.min(Math.max(clX, 70), w - 70);
+    c.fillStyle = hexToRgba(sp.color, ca);
+    c.font = `700 12px 'Zen Maru Gothic', sans-serif`;
+    c.textAlign = 'center';
+    c.fillText(sp.label + '（動かない）', clLabelX, clY + 38);
+    if(facing){
+      c.fillStyle = '#fff';
+      c.font = `900 13px 'Zen Maru Gothic', sans-serif`;
+      c.fillText('いま見えている！', clLabelX, clY - 32);
+    }
+    c.textAlign = 'left';
+
+    // --- 地球（左半分＝昼、右半分＝夜） ---
+    c.fillStyle = '#0d1c36';
+    c.beginPath(); c.arc(cx,cy,r,0,Math.PI*2); c.fill();
+    c.fillStyle = '#2d74c4';
+    c.beginPath(); c.arc(cx,cy,r, Math.PI/2, Math.PI*1.5); c.fill();
+    c.strokeStyle = 'rgba(255,255,255,.35)'; c.lineWidth = 1.5;
+    c.beginPath(); c.arc(cx,cy,r,0,Math.PI*2); c.stroke();
+    c.fillStyle = 'rgba(255,255,255,.85)';
+    c.font = `700 13px 'Zen Maru Gothic', sans-serif`;
+    c.textAlign = 'center';
+    c.fillText('昼', cx - r*0.5, cy+5);
+    c.fillText('夜', cx + r*0.5, cy+5);
+    c.textAlign = 'left';
+
+    // --- 自転の向き（反時計回り） ---
+    c.strokeStyle = 'rgba(120,230,140,.85)'; c.lineWidth = 2.5;
+    c.setLineDash([6,6]);
+    c.beginPath(); c.arc(cx,cy,r+20, -0.5, 0.8); c.stroke();
+    c.setLineDash([]);
+    const aEnd = -0.5;
+    const ax = cx + Math.cos(aEnd)*(r+20), ay = cy + Math.sin(aEnd)*(r+20);
+    c.fillStyle = 'rgba(120,230,140,.9)';
+    c.beginPath();
+    c.moveTo(ax, ay);
+    c.lineTo(ax+4, ay+12); c.lineTo(ax-9, ay+7);
+    c.closePath(); c.fill();
+    c.font = `700 12px 'Zen Maru Gothic', sans-serif`;
+    c.fillStyle = 'rgba(120,230,140,.9)';
+    c.textAlign = 'center';
+    c.fillText('自転の向き', cx, cy - r - 30);
+    c.textAlign = 'left';
+
+    // --- 観察者（日本）と「見えている空」の扇形 ---
+    const oX = cx + Math.cos(th)*r, oY = cy + Math.sin(th)*r;
+    c.fillStyle = 'rgba(255,217,142,.12)';
+    c.strokeStyle = 'rgba(255,217,142,.38)';
+    c.lineWidth = 1.2;
+    c.beginPath();
+    c.moveTo(oX, oY);
+    c.arc(oX, oY, r*1.6, th - spread, th + spread);
+    c.closePath();
+    c.fill(); c.stroke();
+
+    c.fillStyle = '#ff4b4b';
+    c.beginPath(); c.arc(oX,oY,7,0,Math.PI*2); c.fill();
+    c.strokeStyle = '#fff'; c.lineWidth = 2; c.stroke();
+    c.fillStyle = '#fff';
+    c.font = `900 13px 'Zen Maru Gothic', sans-serif`;
+    c.textAlign = 'center';
+    c.fillText('日本', cx + Math.cos(th)*(r+26), cy + Math.sin(th)*(r+26) + 5);
+    c.textAlign = 'left';
+
+    // --- 時刻の目やす（観察者と近いところは、かさなるので出さない） ---
+    c.fillStyle = 'rgba(200,210,235,.6)';
+    c.font = `700 12px 'Zen Maru Gothic', sans-serif`;
+    c.textAlign = 'center';
+    [ {t:'正午',   a:Math.PI,    x:cx - r - 26, y:cy + 4},
+      {t:'真夜中', a:0,          x:cx + r + 30, y:cy + 4},
+      {t:'朝6時',  a:-Math.PI/2, x:cx,          y:cy - r - 10},
+      {t:'夕方6時',a:Math.PI/2,  x:cx,          y:cy + r + 18}
+    ].forEach(L => {
+      const diff = Math.abs(((th - L.a + Math.PI*3) % (Math.PI*2)) - Math.PI);
+      if(diff > Math.PI - 0.55) return;      // 観察者が近いときは出さない
+      c.fillText(L.t, L.x, L.y);
+    });
+    c.textAlign = 'left';
+    c.fillStyle = 'rgba(200,210,235,.5)';
+    c.fillText('※北極の上から見た図。星は止まっていて、地球が回っているよ', 12, h-12);
+  }
+
+  function drawAll(){
+    timeLabel.textContent = fmtDT(currentDate());
+    drawSky();
+    drawSpace();
+  }
+
+  /* ================= 再生 ================= */
+  function tick(ts){
+    if(!state.playing) return;
+    if(!state.lastTs) state.lastTs = ts;
+    const dt = (ts - state.lastTs)/1000;
+    state.lastTs = ts;
+    state.elapsedHours += dt * 0.5 * state.speed;
+    drawAll();
+    requestAnimationFrame(tick);
+  }
+  function setPlaying(on){
+    state.playing = on;
+    playBtn.textContent = on ? '⏸️ 停止' : '▶️ 再生';
+    playBtn.classList.toggle('active', on);
+    if(on){ state.lastTs = 0; requestAnimationFrame(tick); }
+  }
+
+  /* ================= 季節・日時 ================= */
+  function buildPresets(){
+    const se = SEASONS[state.season];
+    presetSelect.innerHTML = '';
+    se.presets.forEach(p => {
+      const opt = document.createElement('option');
+      opt.value = JSON.stringify({m:p.m, d:p.d, h:p.h});
+      opt.textContent = p.label;
+      if(p.sel) opt.selected = true;
+      presetSelect.appendChild(opt);
+    });
+    applyPreset();
+  }
+  function applyPreset(){
+    const v = JSON.parse(presetSelect.value);
+    const y = new Date().getFullYear();
+    // 日本時間として組み立てる（端末の時計の地いきに関係なく同じ星空になる）
+    state.startDate = new Date(Date.UTC(y, v.m, v.d, v.h - 9, 0, 0));
+    state.elapsedHours = 0;
+    state.records = [];
+    updateHint();
+  }
+  function setSeason(s){
+    setPlaying(false);
+    state.season = s;
+    $('seasonSummer').classList.toggle('active', s==='summer');
+    $('seasonAutumn').classList.toggle('active', s==='autumn');
+    $('seasonWinter').classList.toggle('active', s==='winter');
+    $('cardSouth').innerHTML = SEASONS[s].cardSouth;
+    buildPresets();
+    viewNote.textContent = currentView().note;
+    drawAll();
+  }
+
+  /* ================= イベント ================= */
+  playBtn.addEventListener('click', () => setPlaying(!state.playing));
+  $('backBtn').addEventListener('click', () => { setPlaying(false); state.elapsedHours -= 1; drawAll(); });
+  $('fwdBtn').addEventListener('click', () => { setPlaying(false); state.elapsedHours += 1; drawAll(); });
+
+  speedSlider.addEventListener('input', e => {
+    state.speed = parseFloat(e.target.value);
+    speedLabel.textContent = `1秒で${state.speed*30}分`;
+  });
+
+  presetSelect.addEventListener('change', () => { applyPreset(); drawAll(); });
+
+  $('recordBtn').addEventListener('click', () => {
+    state.records.push(currentDate());
+    if(state.records.length > 8) state.records.shift();
+    updateHint();
+    drawAll();
+  });
+  $('clearBtn').addEventListener('click', () => {
+    state.records = [];
+    updateHint();
+    drawAll();
+  });
+  function updateHint(){
+    recordHint.textContent = state.records.length
+      ? `記録：${state.records.length}回（うすい星が記録した位置だよ）`
+      : '時間をすすめて記録をくらべてみよう（8回まで）';
+  }
+
+  function setView(v){
+    state.view = v;
+    $('tabSouth').classList.toggle('active', v==='south');
+    $('tabNorth').classList.toggle('active', v==='north');
+    viewNote.textContent = currentView().note;
+    drawAll();
+  }
+  $('tabSouth').addEventListener('click', () => setView('south'));
+  $('tabNorth').addEventListener('click', () => setView('north'));
+  $('seasonSummer').addEventListener('click', () => setSeason('summer'));
+  $('seasonAutumn').addEventListener('click', () => setSeason('autumn'));
+  $('seasonWinter').addEventListener('click', () => setSeason('winter'));
+
+  spaceSection.addEventListener('toggle', () => { fitAll(); });
+  let resizeRaf = 0;
+  new ResizeObserver(() => {
+    cancelAnimationFrame(resizeRaf);
+    resizeRaf = requestAnimationFrame(fitAll);
+  }).observe(document.querySelector('.container'));
+
+  /* テスト用に内部を見えるようにしておく（画面には影ひびしない） */
+  window.__sim = { state, currentView, currentDate, projectGroup, raDecToAltAz, dims, jstParts, SEASONS };
+
+  /* ================= 初期化 ================= */
+  setSeason('summer');
+  fitAll();
+});
+</script>
+</body>
+</html>
