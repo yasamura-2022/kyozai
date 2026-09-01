@@ -44,7 +44,7 @@
     -webkit-touch-callout:none;
   }
   .app{width:100%;max-width:560px;height:100%;display:flex;flex-direction:column;gap:6px;min-height:0}
-  #viewFind,#viewDrill{flex:1;min-height:0;display:flex;flex-direction:column;gap:6px}
+  #viewFind,#viewDrill,#viewMix{flex:1;min-height:0;display:flex;flex-direction:column;gap:6px}
 
   header{text-align:center}
   h1{font-size:clamp(17px,4.6vw,24px);letter-spacing:.04em}
@@ -55,7 +55,8 @@
   .tab{
     flex:1;border:2px solid var(--line);border-radius:14px;background:var(--card);
     padding:10px 6px;cursor:pointer;color:#8a7a5f;font-weight:800;
-    font-size:clamp(14px,3.9vw,17px);display:flex;flex-direction:column;align-items:center;gap:1px;
+    font-size:clamp(12px,3.2vw,16px);display:flex;flex-direction:column;align-items:center;gap:1px;
+    line-height:1.15;word-break:keep-all;
     transition:transform .08s;
   }
   .tab .step{font-size:11px;font-weight:700;opacity:.7}
@@ -86,6 +87,7 @@
   .chip:active{transform:scale(.94)}
   .chip.on{color:#fff;border-color:var(--accent);background:var(--accent);box-shadow:0 3px 0 var(--accent-dark)}
   .chip .arw{opacity:.6;margin:0 2px}
+  .chip .stamp.mx{left:-7px;right:auto;background:#7a5ea8}
   .chip .stamp{
     position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;
     background:var(--gold);color:#fff;font-size:12px;display:flex;align-items:center;justify-content:center;
@@ -112,6 +114,19 @@
   .verdict.ok{color:var(--ok)}
   .verdict.ng{color:var(--ng)}
   .verdict em{font-style:normal;color:var(--accent-dark)}
+
+  /* ===== ふたつの たんい（1km500m の かたち）ビュー ===== */
+  .eq.mix{flex-wrap:wrap;white-space:normal;gap:4px 8px;
+    font-size:calc(clamp(18px, min(6.2vw, calc(var(--fh,100vh) * 0.05)), 38px) * var(--shrink,1))}
+  .eq.mix .grp{display:flex;align-items:center}
+  /* 数を入れる わく。いま入れる わくだけ 光る */
+  .fld{min-width:2.2ch;padding:2px 7px;border-radius:10px;border:3px dashed var(--line);
+    background:#fff;color:var(--ink);font-weight:800;font-size:inherit;cursor:pointer;line-height:1.05}
+  .fld.empty{color:#c7b891}
+  .fld.on{border-style:solid;border-color:var(--accent);background:var(--flash);animation:glow 1.2s infinite}
+  @keyframes glow{0%,100%{box-shadow:0 0 0 0 rgba(0,0,0,0)}50%{box-shadow:0 0 0 5px var(--accent-soft)}}
+  .fld.fixed{border:none;background:transparent;padding:0 3px;cursor:default}
+  .tapnote{margin-top:6px;min-height:1.1em;font-size:clamp(11px,3vw,14px);color:#8a7a5f}
 
   /* ===== はっけんビュー ===== */
   /* たんいの かんけい（◯◯ばい）を、やじるしで見せる */
@@ -178,14 +193,14 @@
   @media(max-height:560px){
     header{display:none}
     .app{gap:5px}
-    #viewFind,#viewDrill{gap:5px}
+    #viewFind,#viewDrill,#viewMix{gap:5px}
     .chip{min-height:36px;padding:4px 9px;font-size:14px}
   }
   /* 横向き（iPad横など）：式とテンキーを左右2列に */
   @media(orientation:landscape) and (max-height:820px){
     header{display:none}
     .app{gap:5px}
-    #viewDrill{gap:5px}
+    #viewDrill,#viewMix{gap:5px}
     .drill-main{flex-direction:row;gap:10px;align-items:stretch}
     .drill-main .stage{flex:1 1 60%;min-width:0;padding:10px 14px}
     .drill-main .pad{flex:0 0 auto;width:min(40%,300px);align-content:center}
@@ -208,6 +223,7 @@
   <div class="tabs">
     <button class="tab on" data-v="find"><span class="step">ステップ１</span>きまり はっけん！</button>
     <button class="tab" data-v="drill"><span class="step">ステップ２</span>ドリル</button>
+    <button class="tab" data-v="mix"><span class="step">ステップ３</span>ふたつの たんい</button>
   </div>
 
   <div class="modes">
@@ -245,6 +261,23 @@
         <div class="eq" id="dEq"></div><div class="verdict" id="dVerdict"></div>
       </div>
       <div class="pad" id="pad"></div>
+    </div>
+  </div>
+
+  <!-- ふたつの たんいビュー（1500m ＝ 1km 500m） -->
+  <div id="viewMix" class="hidden">
+    <div class="score">
+      <div class="box correct"><div class="n" id="mCorrect">0</div><div class="t">正かい</div></div>
+      <div class="box"><div class="n" id="mTotal">0</div><div class="t">といた数</div></div>
+      <div class="box streak"><div class="n" id="mStreak">0/10</div><div class="t">スタンプまで</div></div>
+    </div>
+    <div class="drill-main">
+      <div class="stage" id="mStage" style="flex:1;display:flex;flex-direction:column;justify-content:center">
+        <div class="eq mix" id="mEq"></div>
+        <div class="tapnote" id="mNote"></div>
+        <div class="verdict" id="mVerdict"></div>
+      </div>
+      <div class="pad" id="padMix"></div>
     </div>
   </div>
 </div>
@@ -481,6 +514,141 @@ function buildPad(){
 }
 
 /* =========================================================
+   ステップ３：ふたつの たんい（1500m ＝ 1km 500m）
+   ・むきA  1km 500m ＝ □m      （あわせる）
+   ・むきB  1500m ＝ □km □m    （わける）
+   ・むきBは 大きいたんいの わくが うまったら つぎの わくへ すすむ
+========================================================= */
+const M={dir:'b',a:0,b:0,f:['',''],act:0,locked:false};
+let mQueue=[];
+const mEq=document.getElementById('mEq'),mVerdict=document.getElementById('mVerdict'),
+      mStage=document.getElementById('mStage'),mNote=document.getElementById('mNote'),
+      padMixEl=document.getElementById('padMix');
+const mel={c:document.getElementById('mCorrect'),t:document.getElementById('mTotal'),s:document.getElementById('mStreak')};
+
+function mKey(){return 'm:'+pkey();}
+function mTotalVal(){return M.a*pair().r+M.b;}
+/* のこりの数：くみあわせによって、きりのよい数だけを出す */
+function mRests(){
+  const r=pair().r;
+  if(r===10) return [1,2,3,4,5,6,7,8,9];
+  if(r===100)return [5,10,20,25,30,40,50,60,70,75,80,90];
+  return [50,100,200,250,300,400,500,600,700,750,800,900];
+}
+function mNew(){
+  M.f=['',''];M.act=0;M.locked=false;
+  mStage.className='stage';mVerdict.className='verdict';mVerdict.textContent='';
+  const q=mQueue.length?mQueue.shift():null;
+  if(q){M.a=q.a;M.b=q.b;M.dir=q.dir;}
+  else{
+    const rests=mRests();
+    M.a=1+Math.floor(Math.random()*9);
+    M.b=rests[Math.floor(Math.random()*rests.length)];
+    M.dir=Math.random()<0.5?'a':'b';
+  }
+  mRender();buildPadM();mScore();
+}
+function mMax(i){
+  if(M.dir==='a')return String(mTotalVal()).length;
+  return i===0?1:String(pair().r-1).length;   // 大きいたんいは1けた・のこりは たんいのけた数まで
+}
+function mRender(){
+  const p=pair(),big=unitHTML(p.big),small=unitHTML(p.small);
+  const fld=(i,val)=>M.locked
+    ? '<span class="fld fixed">'+val+'</span>'
+    : '<span class="fld'+((M.act===i)?' on':'')+(M.f[i]?'':' empty')+'" data-i="'+i+'">'+(M.f[i]||'?')+'</span>';
+  if(M.dir==='a'){        // 1km 500m ＝ □m
+    mEq.innerHTML='<span class="grp">'+M.a+big+'</span><span class="grp">'+M.b+small+'</span>'+
+      '<span class="op">＝</span><span class="grp">'+fld(0,mTotalVal())+small+'</span>';
+    mNote.textContent='';
+  }else{                  // 1500m ＝ □km □m
+    mEq.innerHTML='<span class="grp">'+mTotalVal()+small+'</span><span class="op">＝</span>'+
+      '<span class="grp">'+fld(0,M.a)+big+'</span><span class="grp">'+fld(1,M.b)+small+'</span>';
+    mNote.textContent=M.locked?'':'わくを おすと、入れるところが かわるよ';
+  }
+  if(!M.locked){
+    mEq.querySelectorAll('.fld[data-i]').forEach(el=>{
+      bindTap(el,()=>{M.act=Number(el.dataset.i);mRender();});
+    });
+  }
+}
+function mScore(){
+  mel.c.textContent=correct;mel.t.textContent=total;
+  const k=mKey();
+  mel.s.textContent=stamps[k]?'🏅':((setStreak[k]||0)+'/'+GOAL);
+}
+function mHint(){
+  const p=pair();
+  return (M.dir==='a')
+    ? '1'+p.big+' は <em>'+p.r+p.small+'</em>。あわせて かんがえるよ'
+    : '<em>'+p.r+p.small+'</em> で 1'+p.big+'。のこりが '+p.small+' だよ';
+}
+function mCheck(){
+  if(M.locked)return;
+  if(M.f[0]===''||(M.dir==='b'&&M.f[1]==='')){
+    mVerdict.className='verdict ng';
+    mVerdict.textContent=(M.dir==='b')?'りょうほうの わくに 数を いれよう':'こたえを いれよう';
+    return;
+  }
+  M.locked=true;total++;
+  const p=pair(),k=mKey();
+  const ok=(M.dir==='a')
+    ? Number(M.f[0])===mTotalVal()
+    : (Number(M.f[0])===M.a&&Number(M.f[1])===M.b);
+  if(ok){
+    correct++;mStage.classList.add('correct');mVerdict.className='verdict ok';
+    setStreak[k]=(setStreak[k]||0)+1;
+    if(!stamps[k]&&setStreak[k]>=GOAL){
+      stamps[k]=true;saveStamps();buildChips();
+      mVerdict.innerHTML='スタンプ ゲット！ 🏅 １０もん せいかい！';
+      setStreak[k]=0;
+    }else if(stamps[k]){mVerdict.textContent='せいかい！ 🎉';}
+    else{mVerdict.textContent='せいかい！ 🎉（あと '+(GOAL-setStreak[k])+'もん で スタンプ）';}
+    saveStreak();
+  }else{
+    if(!stamps[k])mQueue.push({a:M.a,b:M.b,dir:M.dir});   // まちがえた もんだいは もう一度
+    setStreak[k]=0;saveStreak();
+    mStage.classList.add('wrong');mVerdict.className='verdict ng';
+    const ansTxt=(M.dir==='a')
+      ? mTotalVal()+p.small
+      : M.a+p.big+' '+M.b+p.small;
+    mVerdict.innerHTML='おしい！ こたえは '+ansTxt+'　'+mHint();
+  }
+  saveScore();
+  mRender();mScore();buildPadM();
+}
+function mPress(v){
+  if(M.locked)return;
+  const i=M.act;
+  if(v==='del'){M.f[i]=M.f[i].slice(0,-1);}
+  else if(M.f[i].length<mMax(i)){
+    M.f[i]+=v;
+    if(M.dir==='b'&&i===0&&M.f[0].length>=mMax(0))M.act=1;  // 大きいたんいが うまったら つぎのわくへ
+  }
+  mRender();
+}
+function buildPadM(){
+  padMixEl.innerHTML='';
+  for(let i=1;i<=9;i++)addKeyM(String(i),'key',()=>mPress(String(i)),false);
+  addKeyM('けす','key del',()=>mPress('del'),false);
+  addKeyM('0','key',()=>mPress('0'),false);
+  if(M.locked)addKeyM('つぎ →','key next',mNew,true);
+  else addKeyM('こたえ','key enter',mCheck,true);
+  function addKeyM(label,cls,fn,guard){
+    const b=document.createElement('button');b.className=cls;b.textContent=label;b.type='button';
+    bindTap(b,()=>{
+      if(guard){
+        const now=Date.now();
+        if(now-lastAction<450)return;
+        lastAction=now;
+      }
+      fn();
+    });
+    padMixEl.appendChild(b);
+  }
+}
+
+/* =========================================================
    共通コントロール（タブ・ながさ/おもさ/かさ・くみあわせ）
 ========================================================= */
 function buildChips(){
@@ -489,18 +657,21 @@ function buildChips(){
     const b=document.createElement('button');
     b.className='chip'+(i===S.pi?' on':'');
     b.innerHTML=p.big+'<span class="arw">⇄</span>'+p.small+
-      (stamps[S.cat+':'+i]?'<span class="stamp">⭐</span>':'');
+      (stamps[S.cat+':'+i]?'<span class="stamp">⭐</span>':'')+
+      (stamps['m:'+S.cat+':'+i]?'<span class="stamp mx">🏅</span>':'');
     bindTap(b,()=>{
       if(i===S.pi)return;               // 同じくみあわせの再タップでは何もしない
       S.pi=i;
-      refillQueue();buildChips();refreshView();
+      refillQueue();mQueue=[];buildChips();refreshView();
     });
     chips.appendChild(b);
   });
 }
+const VIEWS={find:'viewFind',drill:'viewDrill',mix:'viewMix'};
 function refreshView(){
   if(S.view==='find')fReset();
-  else dNew();
+  else if(S.view==='drill')dNew();
+  else mNew();
   fitShrink();
 }
 document.querySelectorAll('.tab').forEach(t=>{
@@ -508,8 +679,9 @@ document.querySelectorAll('.tab').forEach(t=>{
     if(S.view===t.dataset.v)return;     // 同じタブの再タップでは作り直さない
     S.view=t.dataset.v;
     document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x===t));
-    document.getElementById('viewFind').classList.toggle('hidden',S.view!=='find');
-    document.getElementById('viewDrill').classList.toggle('hidden',S.view!=='drill');
+    Object.keys(VIEWS).forEach(k=>{
+      document.getElementById(VIEWS[k]).classList.toggle('hidden',S.view!==k);
+    });
     refreshView();
   });
 });
@@ -519,18 +691,25 @@ document.querySelectorAll('.mode-btn').forEach(btn=>{
     S.cat=btn.dataset.c;body.dataset.cat=S.cat;
     S.pi=CATS[S.cat].length-1;          // いちばん大きいくみあわせ（1000ばい）から
     document.querySelectorAll('.mode-btn').forEach(b=>b.classList.toggle('active',b===btn));
-    refillQueue();buildChips();refreshView();
+    refillQueue();mQueue=[];buildChips();refreshView();
   });
 });
 document.addEventListener('keydown',e=>{
-  if(S.view!=='drill'||e.repeat)return; // キー押しっぱなしの連続入力を防ぐ
-  if(e.key.length===1&&e.key>='0'&&e.key<='9')dPress(e.key);
-  else if(e.key==='Backspace')dPress('del');
+  if(e.repeat)return;                   // キー押しっぱなしの連続入力を防ぐ
+  const mix=(S.view==='mix');
+  if(S.view!=='drill'&&!mix)return;
+  const press=mix?mPress:dPress;
+  if(e.key.length===1&&e.key>='0'&&e.key<='9')press(e.key);
+  else if(e.key==='Backspace')press('del');
+  else if(e.key==='Tab'&&mix&&!M.locked&&M.dir==='b'){
+    e.preventDefault();M.act=M.act?0:1;mRender();   // わくの いどう
+  }
   else if(e.key==='Enter'){
     const now=Date.now();
     if(now-lastAction<450)return;
     lastAction=now;
-    D.locked?dNew():dCheck();
+    if(mix)M.locked?mNew():mCheck();
+    else D.locked?dNew():dCheck();
   }
 });
 
@@ -570,7 +749,7 @@ window.addEventListener('orientationchange',()=>setTimeout(fitToFrame,200));
 window.addEventListener('load',fitToFrame);
 
 /* ---------- はじめの表示 ---------- */
-refillQueue();buildChips();fRender();dNew();fitToFrame();
+refillQueue();buildChips();fRender();dNew();mNew();fitToFrame();
 </script>
 </body>
 </html>
