@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>あまりのある わり算</title>
+<style>
+:root{
+  --bg:#EDF3FA;
+  --paper:#FFFFFF;
+  --line:#C3D2E4;
+  --line2:#9CB2CE;
+  --ink:#16304E;
+  --muted:#5E7692;
+  --gold:#D69A22;
+  --gold-l:#FCEFD2;
+  --gold-d:#A9760E;
+  --ok:#1F8A54;
+  --ok-l:#DFF4E8;
+  --amari:#E2621C;
+  --amari-l:#FDE7D8;
+  --f-round:"Zen Maru Gothic","Hiragino Maru Gothic ProN","ヒラギノ丸ゴ ProN W4","Klee One","BIZ UDPGothic","Yu Gothic UI",sans-serif;
+  --f-text:"UD デジタル 教科書体 NP-R","UDデジタル教科書体 NP-R","BIZ UDPGothic","Hiragino Maru Gothic ProN","Zen Maru Gothic","Yu Gothic UI",sans-serif;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);
+  font-family:var(--f-round);overflow:hidden;overscroll-behavior:none}
+button{font-family:inherit;color:inherit;cursor:pointer;touch-action:manipulation;user-select:none}
+button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+
+#app{display:flex;flex-direction:column;height:100vh;height:var(--appH,100vh);padding:8px 14px 12px;gap:8px}
+
+/* ---- ヘッダー ---- */
+#top{display:flex;align-items:center;gap:8px}
+#tabs{display:flex;gap:4px;background:#DCE7F4;border-radius:12px;padding:4px}
+.tab{border:0;background:transparent;border-radius:9px;padding:7px 15px;
+  font-size:clamp(13px,1.35vw,18px);color:#42618A}
+.tab[aria-selected="true"]{background:var(--paper);color:var(--ink);font-weight:700;
+  box-shadow:0 1px 3px rgba(22,48,78,.18)}
+#top .spacer{flex:1}
+
+#mondai{margin:0;font-family:var(--f-text);font-size:clamp(15px,1.95vw,30px);
+  line-height:1.4;letter-spacing:.02em}
+#mondai b{color:var(--gold-d);font-weight:700}
+
+/* ---- 設定 ---- */
+#settings{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;
+  background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:8px 12px}
+#settings.hide{display:none}
+.grp{display:flex;align-items:center;gap:6px}
+.grp.k{display:none}
+body.kimari .grp.w{display:none}
+body.kimari .grp.k{display:flex}
+.glab{font-size:12px;color:var(--muted);letter-spacing:.06em}
+.num{min-width:2.1em;text-align:center;font-size:clamp(16px,1.6vw,22px);font-weight:700;color:var(--gold-d)}
+.step{border:1px solid var(--line2);background:var(--paper);border-radius:9px;
+  width:2em;height:2em;font-size:clamp(14px,1.4vw,19px);line-height:1;display:grid;place-items:center}
+.step:active{background:#E7EEF7}
+.sep{width:1px;align-self:stretch;background:var(--line)}
+select{font-family:inherit;font-size:14px;background:var(--paper);color:var(--ink);
+  border:1px solid var(--line2);border-radius:9px;padding:6px 8px}
+
+/* ---- 本体 ---- */
+#main{flex:1;min-height:0;display:flex;gap:12px}
+.pane{flex:1;min-width:0;position:relative;background:var(--paper);
+  border:1px solid var(--line);border-radius:16px;overflow:hidden}
+body.kimari #stage{display:none}
+body:not(.kimari) #ktable{display:none}
+
+/* ---- わけて みる ---- */
+.band{position:absolute;left:0;right:0;pointer-events:none}
+.band .bl{position:absolute;left:12px;top:4px;font-size:13px;color:var(--muted);letter-spacing:.08em}
+#bandPool{background:#F7FAFD;border-bottom:1px dashed var(--line2)}
+#bandAmari{border-top:1px dashed var(--amari);background:var(--amari-l)}
+#bandAmari .bl{color:var(--amari);font-weight:700}
+
+#conts,#items,#ghosts{position:absolute;inset:0;pointer-events:none}
+#items{z-index:3}
+#ghosts{z-index:2}
+
+.cont{position:absolute;border:2px solid var(--line2);background:#FAFCFE;
+  transition:border-color .3s,background .3s,opacity .3s;opacity:0}
+.cont.on{opacity:1}
+.cont.bag{border-radius:12px 12px 22px 22px}
+.cont.plate{border-radius:14px 14px 34% 34%}
+.cont.done{border-color:var(--ok);background:var(--ok-l)}
+.cont .clab{position:absolute;left:0;right:0;top:-1.35em;text-align:center;
+  font-size:13px;color:var(--muted);white-space:nowrap}
+.cont.done .clab{color:var(--ok);font-weight:700}
+
+.item{position:absolute;left:0;top:0;display:flex;align-items:center;justify-content:center;
+  background:#FFFFFF;border:1px solid var(--line);border-radius:50%;
+  transition:transform .45s cubic-bezier(.22,.75,.3,1);will-change:transform}
+.item.noanim{transition:none}
+.item.amari{background:#FFF;border-color:var(--amari);box-shadow:0 0 0 2px var(--amari)}
+.ghost{position:absolute;left:0;top:0;border:2px dashed var(--amari);
+  border-radius:50%;opacity:0;transition:opacity .3s}
+.ghost.on{opacity:1}
+
+/* ---- くらべて みる ---- */
+#ktable{padding:10px 14px;overflow:auto}
+#krows{display:flex;flex-direction:column;gap:5px}
+.krow{display:grid;align-items:center;gap:0 .1em;
+  grid-template-columns:2.4em .9em 1.7em 1.1em 1.7em 3.4em 1.7em 1fr;
+  font-size:clamp(16px,1.9vw,27px);padding:4px 8px;border-radius:10px;
+  background:#F7FAFD;border:1px solid transparent}
+.krow > span{text-align:center}
+.krow .n{font-weight:700}
+.krow .q{color:var(--gold-d);font-weight:700}
+.krow .am{font-size:.62em;color:var(--muted)}
+.krow .r{color:var(--amari);font-weight:700}
+.krow.zero{background:var(--ok-l);border-color:#B6E2C9}
+.krow.zero .r{color:var(--ok)}
+.krow.zero .am{color:var(--ok)}
+.krow.new{border-color:var(--gold);background:var(--gold-l)}
+.strip{display:flex;align-items:center;gap:7px;justify-self:start;padding-left:12px;flex-wrap:wrap}
+.grpx{display:flex;gap:2px;padding:2px 3px;border-radius:5px;background:#E3EDF7;border:1px solid #CBDCEC}
+.grpx.rem{background:var(--amari-l);border-color:var(--amari)}
+.grpx i{display:block;width:.42em;height:.42em;border-radius:2px;background:#7C9CBE;font-size:inherit}
+.grpx.rem i{background:var(--amari)}
+#kend{margin-top:10px;font-family:var(--f-text);font-size:clamp(13px,1.4vw,20px);color:var(--muted)}
+
+/* ---- 右パネル ---- */
+#rail{flex:none;width:clamp(210px,23%,320px);display:flex;flex-direction:column;gap:10px}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:10px 12px}
+.ctitle{font-size:12px;color:var(--muted);letter-spacing:.1em;margin-bottom:6px}
+body.kimari .wcard{display:none}
+body:not(.kimari) .kcard{display:none}
+
+#shikiRow{display:flex;align-items:flex-end;justify-content:center;gap:.18em;flex-wrap:wrap;padding-bottom:2px;
+  font-size:clamp(19px,2.3vw,34px);line-height:1.1}
+.slot{display:inline-flex;flex-direction:column;align-items:center;min-width:1.5em}
+.slot.op{min-width:.7em}
+.slot .v{font-weight:700}
+.slot .u{font-size:.42em;color:var(--muted);margin-top:.25em}
+.slot.q .v{color:var(--gold-d)}
+.slot.r .v{color:var(--amari)}
+.slot .v.blank{color:var(--line2)}
+#kotae{margin-top:8px;text-align:center;font-family:var(--f-text);
+  font-size:clamp(13px,1.35vw,19px);min-height:1.4em;line-height:1.4}
+#tashikame{margin-top:6px;text-align:center;font-size:clamp(12px,1.2vw,17px);
+  color:var(--ok);opacity:0;transition:opacity .4s;min-height:1.4em;line-height:1.4}
+#tashikame.on{opacity:1}
+
+#kukuCard{flex:1;min-height:0;display:flex;flex-direction:column}
+#kukuCard.off{display:none}
+body.kimari #kukuCard{display:none}
+#kukuList{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:3px}
+.kk{display:flex;align-items:center;gap:8px;padding:2px 8px;border-radius:8px;
+  font-size:clamp(13px,1.35vw,20px);background:#F2F6FB;color:var(--muted)}
+.kk.done{background:var(--ok-l);color:var(--ink)}
+.kk.over{background:var(--amari-l);color:var(--amari);font-weight:700}
+.kk .mk{font-size:.85em;flex:none;width:1.4em;text-align:center}
+.kk .nt{margin-left:auto;font-size:.62em;font-weight:400}
+#kukuEmpty{font-size:13px;color:var(--muted);padding:4px 8px}
+
+#ringRow{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+.ring{width:2.1em;height:2.1em;border-radius:50%;display:grid;place-items:center;
+  font-size:clamp(15px,1.55vw,21px);font-weight:700;border:2px solid var(--line2);
+  color:var(--muted);background:#F7FAFD;transition:background .25s,color .25s,border-color .25s}
+.ring.seen{border-color:var(--amari);color:var(--amari);background:var(--amari-l)}
+.ring.zero.seen{border-color:var(--ok);color:var(--ok);background:var(--ok-l)}
+.ring.now{transform:scale(1.12);box-shadow:0 0 0 3px var(--gold-l)}
+.ring.no{border-style:dashed;border-color:var(--line2);color:var(--line2);background:transparent;position:relative}
+.ring.no::after{content:"";position:absolute;left:8%;right:8%;top:48%;height:2px;
+  background:var(--line2);transform:rotate(-38deg)}
+#ringNote{margin-top:9px;font-family:var(--f-text);font-size:clamp(12px,1.3vw,18px);
+  line-height:1.45;color:var(--ink)}
+#ringNote .hot{color:var(--amari);font-weight:700}
+
+/* ---- メッセージ ---- */
+#msg{font-family:var(--f-text);font-size:clamp(14px,1.7vw,26px);line-height:1.4;
+  min-height:3.6em;display:flex;align-items:center;padding:8px 14px;border-radius:12px;
+  background:var(--gold-l);border:1px solid #EBD49A}
+#msgIn{width:100%}
+#msg em{font-style:normal;color:var(--gold-d);font-weight:700}
+#msg .hot{color:var(--amari);font-weight:700}
+
+/* ---- そうさ ---- */
+#ctrl{display:flex;gap:8px;align-items:stretch;flex-wrap:wrap}
+.btn{border:1px solid var(--line2);background:var(--paper);border-radius:12px;
+  padding:10px 16px;font-size:clamp(14px,1.5vw,20px);transition:transform .08s,background .2s}
+.btn:active{transform:translateY(2px);background:#E7EEF7}
+.btn:disabled{opacity:.38;cursor:default}
+.btn.main{background:var(--gold);color:#3A2600;border-color:var(--gold-d);font-weight:700;flex:1;min-width:180px}
+.btn.main:active{background:var(--gold-d);color:#fff}
+.btn.sm{padding:7px 11px;font-size:clamp(12px,1.15vw,15px)}
+.btn.tog[aria-pressed="true"]{background:var(--gold);color:#3A2600;border-color:var(--gold-d);font-weight:700}
+body.kimari .wbtn{display:none}
+body:not(.kimari) .kbtn{display:none}
+
+@media (max-width:820px){
+  #main{flex-direction:column;overflow:hidden}
+  #rail{width:auto;flex-direction:row;flex:none;min-height:0}
+  #rail .card{min-width:0;overflow:hidden}
+  #kukuCard{display:none}
+  /* せまい画面では ステージを ちぢめて、しきカードが かくれないように */
+  .pane{min-height:120px}
+  #settings{gap:6px 10px;padding:6px 10px}
+  #mondai{font-size:clamp(14px,3.4vw,20px)}
+}
+@media (prefers-reduced-motion:reduce){
+  .item,.cont,.ghost,#tashikame,.ring{transition:none!important}
+}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div id="top">
+    <div id="tabs" role="tablist">
+      <button class="tab" id="tabW" role="tab" aria-selected="true">わけて みる</button>
+      <button class="tab" id="tabK" role="tab" aria-selected="false">くらべて みる</button>
+    </div>
+    <div class="spacer"></div>
+    <button class="btn sm tog" id="bFocus" aria-pressed="true">とじる</button>
+  </div>
+
+  <p id="mondai"></p>
+
+  <div id="settings">
+    <div class="grp w">
+      <span class="glab">わけかた</span>
+      <button class="btn sm tog" id="mZutsu" aria-pressed="true">3こずつ ふくろに</button>
+      <button class="btn sm tog" id="mNin" aria-pressed="false">3人で 同じ数ずつ</button>
+    </div>
+    <div class="sep"></div>
+    <div class="grp w">
+      <span class="glab">ぜんぶの数</span>
+      <button class="step" id="nDown">−</button><span class="num" id="nVal">13</span><button class="step" id="nUp">＋</button>
+    </div>
+    <div class="grp">
+      <span class="glab" id="dLab">1ふくろの数</span>
+      <button class="step" id="dDown">−</button><span class="num" id="dVal">3</span><button class="step" id="dUp">＋</button>
+    </div>
+    <div class="grp w">
+      <span class="glab">もの</span>
+      <select id="itemSel">
+        <option value="candy">あめ 🍬</option>
+        <option value="mikan">みかん 🍊</option>
+        <option value="cookie">クッキー 🍪</option>
+        <option value="ichigo">いちご 🍓</option>
+        <option value="ball">ボール ⚽</option>
+      </select>
+    </div>
+    <div class="grp k">
+      <span class="glab">はじめの数</span>
+      <button class="step" id="sDown">−</button><span class="num" id="sVal">12</span><button class="step" id="sUp">＋</button>
+    </div>
+    <div class="grp k">
+      <button class="btn sm tog" id="bStrip" aria-pressed="true">ブロックを 見せる</button>
+    </div>
+    <div class="sep"></div>
+    <div class="grp w">
+      <button class="btn sm" id="p1">あめ13こ・3こずつ</button>
+      <button class="btn sm" id="p2">みかん16こ・3人</button>
+    </div>
+    <div class="grp k">
+      <button class="btn sm" id="p3">4でわる（12・13・14…）</button>
+      <button class="btn sm" id="p4">3でわる（9・10・11…）</button>
+    </div>
+    <div class="sep"></div>
+    <div class="grp w">
+      <button class="btn sm tog" id="bHide" aria-pressed="false">しきを かくす</button>
+      <button class="btn sm tog" id="bKuku" aria-pressed="true">九九</button>
+    </div>
+  </div>
+
+  <div id="main">
+    <section id="stage" class="pane">
+      <div class="band" id="bandPool"><span class="bl" id="poolLab">のこり</span></div>
+      <div class="band" id="bandAmari"><span class="bl" id="amariLab">あまり</span></div>
+      <div id="conts"></div>
+      <div id="ghosts"></div>
+      <div id="items"></div>
+    </section>
+
+    <section id="ktable" class="pane">
+      <div id="krows"></div>
+      <div id="kend"></div>
+    </section>
+
+    <aside id="rail">
+      <div class="card wcard">
+        <div class="ctitle">しき</div>
+        <div id="shikiRow"></div>
+        <div id="kotae"></div>
+        <div id="tashikame"></div>
+      </div>
+      <div class="card wcard" id="kukuCard">
+        <div class="ctitle" id="kukuTitle">3のだん</div>
+        <div id="kukuList"></div>
+      </div>
+      <div class="card kcard">
+        <div class="ctitle" id="ringTitle">出てきた あまり</div>
+        <div id="ringRow"></div>
+        <div id="ringNote"></div>
+      </div>
+    </aside>
+  </div>
+
+  <div id="msg"><div id="msgIn"></div></div>
+
+  <footer id="ctrl">
+    <button class="btn wbtn" id="bBack">◀ もどる</button>
+    <button class="btn main wbtn" id="bNext">1つ すすむ ▶</button>
+    <button class="btn wbtn" id="bAuto">じどう</button>
+    <button class="btn wbtn" id="bReset">はじめから</button>
+
+    <button class="btn kbtn" id="kBack">◀ もどす</button>
+    <button class="btn main kbtn" id="kNext">つぎの しき ▶</button>
+    <button class="btn kbtn" id="kAll">ぜんぶ 出す</button>
+    <button class="btn kbtn" id="kReset">はじめから</button>
+  </footer>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+var ITEMS = {
+  candy :{e:"🍬",name:"あめ",   c:"こ"},
+  mikan :{e:"🍊",name:"みかん", c:"こ"},
+  cookie:{e:"🍪",name:"クッキー",c:"まい"},
+  ichigo:{e:"🍓",name:"いちご", c:"こ"},
+  ball  :{e:"⚽",name:"ボール", c:"こ"}
+};
+
+var S = {view:"wake", mode:"zutsu", N:13, D:3, item:"candy", step:0,
+         hide:false, kuku:true, focus:false,
+         kStart:12, kCount:1, kStrip:true};
+var timer=null, L=null;
+var $=function(id){return document.getElementById(id);};
+var stage=$("stage"), contsEl=$("conts"), itemsEl=$("items"), ghostsEl=$("ghosts");
+var itemEls=[], ghostEls=[], contEls=[];
+
+function save(){ try{ localStorage.setItem("warizan2", JSON.stringify(
+  {mode:S.mode,N:S.N,D:S.D,item:S.item,kuku:S.kuku,kStrip:S.kStrip})); }catch(e){} }
+function load(){ try{ var o=JSON.parse(localStorage.getItem("warizan2")||"null");
+  if(o&&o.N){ S.mode=o.mode||S.mode; S.N=o.N; S.D=o.D; S.item=o.item||S.item;
+    if(typeof o.kuku==="boolean") S.kuku=o.kuku;
+    if(typeof o.kStrip==="boolean") S.kStrip=o.kStrip; } }catch(e){} }
+
+function setH(){ document.documentElement.style.setProperty("--appH", window.innerHeight+"px"); }
+
+function q(){ return Math.floor(S.N/S.D); }
+function r(){ return S.N-q()*S.D; }
+function inf(){ return ITEMS[S.item]; }
+function nCont(){ return S.mode==="zutsu" ? Math.max(q(),1) : S.D; }
+function slotsPer(){ return S.mode==="zutsu" ? S.D : Math.max(q(),1); }
+
+function destOf(i){
+  var Q=q();
+  if(i>=Q*S.D) return {a:true, idx:i-Q*S.D};
+  if(S.mode==="zutsu") return {a:false, ci:Math.floor(i/S.D), slot:i%S.D};
+  return {a:false, ci:i%S.D, slot:Math.floor(i/S.D)};
+}
+function grid(n){
+  var m={1:1,2:2,3:3,4:2,5:3,6:3,7:4,8:4,9:3,10:5,11:4,12:4,13:5,14:5,15:5,16:4,17:5,18:5,19:5,20:5};
+  var c=m[n]||Math.ceil(Math.sqrt(n)); return {cols:c, rows:Math.ceil(n/c)};
+}
+
+/* ================= わけて みる ================= */
+function tryLayout(sz,oneRow,loose){
+  var W=stage.clientWidth, H=stage.clientHeight;
+  if(W<80||H<80) return null;
+  var pad=14, lab=Math.max(15,Math.min(22,H*0.038)), cell=sz*1.14;
+  var poolH=H*0.255, amariH=H*0.235, workY=poolH+2, workH=H-poolH-amariH-4;
+
+  var pc=Math.max(1,Math.floor((W-2*pad)/cell)); pc=Math.min(pc,Math.max(S.N,1));
+  var pr=Math.ceil(Math.max(S.N,1)/pc);
+  if(pr*cell>poolH-lab-4 && !loose) return null;
+  var pX=Math.max(0,(W-pc*cell)/2), pY=lab+Math.max(0,(poolH-lab-pr*cell)/2);
+
+  var g=grid(slotsPer()), cp=Math.max(7,sz*0.20);
+  var botPad=(S.mode==="nin")?cp+sz*0.30:cp;   /* おさらの丸みぶん 下を広く */
+  var cw=g.cols*cell+2*cp, ch=g.rows*cell+cp+botPad;
+  var gap=Math.max(10,sz*0.30), n=nCont();
+  var perRow=Math.max(1,Math.floor((W-2*pad+gap)/(cw+gap)));
+  if(S.mode==="nin"&&oneRow){ if(perRow<S.D) return null; perRow=S.D; }
+  perRow=Math.min(perRow,n);
+  var rows=Math.ceil(n/perRow), totH=rows*(ch+lab+gap)-gap;
+  if(totH>workH-4 && !loose) return null;
+
+  var conts=[], k=0, y0=workY+lab+Math.max(0,(workH-totH)/2);
+  for(var ro=0;ro<rows;ro++){
+    var inRow=Math.min(perRow,n-ro*perRow);
+    var x0=(W-(inRow*cw+(inRow-1)*gap))/2;
+    for(var co=0;co<inRow;co++,k++){
+      var cx=Math.max(0,x0)+co*(cw+gap), cy=y0+ro*(ch+lab+gap), slots=[];
+      for(var s=0;s<slotsPer();s++){
+        slots.push({x:cx+cp+(s%g.cols)*cell+(cell-sz)/2,
+                    y:cy+cp+Math.floor(s/g.cols)*cell+(cell-sz)/2});
+      }
+      conts.push({x:cx,y:cy,w:cw,h:ch,slots:slots});
+    }
+  }
+  var R=r(), aCells=R>0?S.D:1;
+  if(aCells*cell>W-2*pad && !loose) return null;
+  var aX=Math.max(0,(W-aCells*cell)/2), aY=H-amariH+lab+Math.max(0,(amariH-lab-cell)/2);
+
+  return {sz:sz,cell:cell,W:W,H:H,lab:lab,poolH:poolH,amariH:amariH,
+    pool:function(i){ return {x:pX+(i%pc)*cell+(cell-sz)/2, y:pY+Math.floor(i/pc)*cell+(cell-sz)/2}; },
+    conts:conts,
+    amari:function(i){ return {x:aX+i*cell+(cell-sz)/2, y:aY}; }};
+}
+function relayout(){
+  var sz,L2;
+  /* まずは 人を1れつに ならべる形で さがす */
+  for(sz=76;sz>=16;sz-=2){ L2=tryLayout(sz,true,false);  if(L2){ L=L2; return; } }
+  /* せまいときは おさらを 2れつに おりかえす */
+  for(sz=76;sz>=10;sz-=2){ L2=tryLayout(sz,false,false); if(L2){ L=L2; return; } }
+  /* とても みじかい画面でも、かならず ならびを つくる（古いならびを 残さない） */
+  L2=tryLayout(10,false,true); if(L2){ L=L2; return; }
+}
+function unfreeze(){ requestAnimationFrame(function(){ requestAnimationFrame(function(){
+  for(var i=0;i<itemEls.length;i++) itemEls[i].classList.remove("noanim"); }); }); }
+
+function buildItems(){
+  itemsEl.innerHTML=""; ghostsEl.innerHTML=""; itemEls=[]; ghostEls=[];
+  var e=inf().e,i,d,gd;
+  for(i=0;i<S.N;i++){ d=document.createElement("div"); d.className="item noanim";
+    d.textContent=e; itemsEl.appendChild(d); itemEls.push(d); }
+  for(i=0;i<12;i++){ gd=document.createElement("div"); gd.className="ghost";
+    ghostsEl.appendChild(gd); ghostEls.push(gd); }
+}
+function buildConts(){
+  contsEl.innerHTML=""; contEls=[];
+  for(var i=0;i<nCont();i++){
+    var c=document.createElement("div");
+    c.className="cont "+(S.mode==="zutsu"?"bag":"plate");
+    var l=document.createElement("span"); l.className="clab";
+    l.textContent=S.mode==="zutsu"?(i+1)+"ふくろめ":(i+1)+"人め";
+    c.appendChild(l); contsEl.appendChild(c); contEls.push(c);
+  }
+}
+function paint(){
+  if(!L) return;
+  /* しきカードが のびて ステージが せまくなることがあるので、ずれたら ならべ直す */
+  if(L.W!==stage.clientWidth||L.H!==stage.clientHeight){ relayout(); if(!L) return; }
+  var sz=L.sz,i,p,Q=q();
+  $("bandPool").style.height=L.poolH+"px"; $("bandPool").style.top="0";
+  $("bandAmari").style.height=L.amariH+"px"; $("bandAmari").style.top=(L.H-L.amariH)+"px";
+  $("poolLab").textContent="のこりの"+inf().name+"　"+(S.N-S.step)+inf().c;
+
+  for(i=0;i<contEls.length;i++){
+    var c=contEls[i], g=L.conts[i]; if(!g) continue;
+    c.style.width=g.w+"px"; c.style.height=g.h+"px";
+    c.style.transform="translate("+g.x+"px,"+g.y+"px)";
+    c.classList.toggle("on", S.mode==="nin" ? true : (i<Q && S.step>i*S.D));
+    var full=(S.mode==="zutsu") ? (S.step>=(i+1)*S.D && i<Q)
+                                : (Math.floor(S.step/S.D)>=slotsPer() && Q>0);
+    c.classList.toggle("done", !!full);
+    var lb=c.querySelector(".clab");
+    if(S.mode==="zutsu") lb.textContent=(i+1)+"ふくろめ"+(full?" ✓":"");
+    else{
+      var have=Math.floor(S.step/S.D)+((S.step%S.D)>i?1:0);
+      have=Math.min(have,Q);
+      lb.textContent=(i+1)+"人め　"+have+inf().c;
+    }
+  }
+  for(i=0;i<itemEls.length;i++){
+    var el=itemEls[i];
+    el.style.width=sz+"px"; el.style.height=sz+"px"; el.style.fontSize=(sz*0.70)+"px";
+    if(i>=S.step){ p=L.pool(i); el.classList.remove("amari"); }
+    else{
+      var d=destOf(i);
+      if(d.a){ p=L.amari(d.idx); el.classList.add("amari"); }
+      else{ var cc=L.conts[d.ci]; p=cc?cc.slots[d.slot]:L.pool(i); el.classList.remove("amari"); }
+    }
+    el.style.transform="translate("+p.x+"px,"+p.y+"px)";
+  }
+  var R=r(), done=(S.step>=S.N), need=(done&&R>0)?(S.D-R):0;
+  for(i=0;i<ghostEls.length;i++){
+    var ge=ghostEls[i];
+    if(i<need){ var gp=L.amari(R+i);
+      ge.style.width=sz+"px"; ge.style.height=sz+"px";
+      ge.style.transform="translate("+gp.x+"px,"+gp.y+"px)"; ge.classList.add("on");
+    } else ge.classList.remove("on");
+  }
+  $("amariLab").textContent = done ? ("あまり　"+R+inf().c+(R===0?"（ぴったり！）":"")) : "あまり";
+}
+function slotHTML(cls,val,unit){
+  var v=(val===null)?'<span class="v blank">?</span>':'<span class="v">'+val+'</span>';
+  return '<span class="slot '+cls+'">'+v+'<span class="u">'+unit+'</span></span>';
+}
+function paintShiki(){
+  var Q=q(),R=r(),c=inf().c;
+  var qs=Math.min(Math.floor(S.step/S.D),Q);
+  var showQ=(S.hide||S.step===0)?null:qs;
+  var showR=(S.hide||S.step<S.N)?null:R;
+  var uq=S.mode==="zutsu"?"ふくろ":c;
+  $("shikiRow").innerHTML=
+    slotHTML("n",S.N,c)+'<span class="slot op"><span class="v">÷</span><span class="u">&nbsp;</span></span>'+
+    slotHTML("n",S.D,S.mode==="zutsu"?(c+"ずつ"):"人")+
+    '<span class="slot op"><span class="v">＝</span><span class="u">&nbsp;</span></span>'+
+    slotHTML("q",showQ,uq)+'<span style="flex-basis:100%;height:0"></span>'+
+    '<span class="slot op" style="min-width:2.6em"><span class="v" style="font-size:.62em">あまり</span><span class="u">&nbsp;</span></span>'+
+    slotHTML("r",showR,c);
+  var k="";
+  if(S.step>=S.N&&!S.hide){
+    k=(S.mode==="zutsu")?Q+"ふくろ できて、"+R+c+" あまる"
+                        :"1人分は "+Q+c+" で、"+R+c+" あまる";
+  }
+  $("kotae").textContent=k;
+  var t=$("tashikame");
+  if(S.step>=S.N&&!S.hide){ t.textContent="たしかめ　"+S.D+" × "+Q+" ＋ "+R+" ＝ "+S.N; t.classList.add("on"); }
+  else t.classList.remove("on");
+}
+function paintKuku(){
+  $("kukuCard").classList.toggle("off", !S.kuku);
+  if(!S.kuku) return;
+  $("kukuTitle").textContent=S.D+"のだん";
+  var Q=q(), qs=Math.min(Math.floor(S.step/S.D),Q), done=(S.step>=S.N), h="";
+  for(var k=1;k<=qs;k++){
+    h+='<div class="kk done"><span class="mk">✓</span>'+S.D+' × '+k+' ＝ '+(S.D*k)+
+       '<span class="nt">'+(S.mode==="zutsu"?k+"ふくろ":"1人"+k+inf().c)+'</span></div>';
+  }
+  if(done&&S.D*(Q+1)>S.N){
+    h+='<div class="kk over"><span class="mk">×</span>'+S.D+' × '+(Q+1)+' ＝ '+(S.D*(Q+1))+
+       '<span class="nt">'+S.N+'より 大きい</span></div>';
+  }
+  var box=$("kukuList");
+  box.innerHTML=h||'<div id="kukuEmpty">すすめると、ふえていきます</div>';
+  requestAnimationFrame(function(){ box.scrollTop=box.scrollHeight; });
+}
+function paintMsgW(){
+  var c=inf().c,nm=inf().name,Q=q(),R=r(),m="";
+  if(S.step===0){
+    m=(S.mode==="zutsu")
+      ?"「1つ すすむ」を おして、<em>"+S.D+c+"ずつ</em> ふくろに 入れていこう。"
+      :"「1つ すすむ」を おして、<em>1"+c+"ずつ じゅんばんに</em> "+S.D+"人に くばっていこう。";
+  } else if(S.step<S.N){
+    if(S.mode==="zutsu"){
+      var inBag=S.step%S.D, bags=Math.floor(S.step/S.D);
+      if(inBag===0&&bags<=Q) m="<em>"+bags+"ふくろめ</em>が できた。つかった"+nm+"は "+(bags*S.D)+c+"。";
+      else if(bags>=Q) m="のこりの "+(S.N-Q*S.D)+c+" は、"+S.D+c+" そろわない。";
+      else m="いま "+(bags+1)+"ふくろめに "+inBag+c+"。あと <em>"+(S.D-inBag)+c+"</em> で ふくろが できる。";
+    } else {
+      var rd=Math.floor(S.step/S.D), pos=S.step%S.D;
+      if(pos===0) m="1人 <em>"+rd+c+"</em>ずつに なった。";
+      else m=pos+"人めまで くばった。あと "+(S.D-pos)+"人 くばると、みんな "+(rd+1)+c+"。";
+    }
+  } else {
+    if(Q===0){
+      m=(S.mode==="zutsu")
+        ?"1ふくろも できない。<em>"+S.D+c+"</em> そろわないから、"+S.N+c+" ぜんぶが <span class='hot'>あまり</span>。"
+        :S.D+"人に 1"+c+"ずつ くばることも できない。"+S.N+c+" ぜんぶが <span class='hot'>あまり</span>。";
+    } else if(R===0){
+      m=(S.mode==="zutsu")
+        ?"ちょうど <em>"+Q+"ふくろ</em>。あまりは <span class='hot'>0</span>。ぴったり わりきれた。"
+        :"1人 <em>"+Q+c+"</em>ずつ。あまりは <span class='hot'>0</span>。ぴったり わりきれた。";
+    } else if(S.mode==="zutsu"){
+      m="<em>"+Q+"ふくろ</em> できた。のこりは <span class='hot'>"+R+c+"</span>。あと "+(S.D-R)+c+
+        " ないと ふくろに できないから、これが <span class='hot'>あまり</span>。";
+    } else {
+      m="1人 <em>"+Q+c+"</em>ずつ。のこりは <span class='hot'>"+R+c+"</span>。"+S.D+"人に 1"+c+
+        "ずつ くばるには あと "+(S.D-R)+c+" いるから、これが <span class='hot'>あまり</span>。";
+    }
+    if(R>0&&Q>0) m+="　→ あまりは いつも わる数（"+S.D+"）より 小さい。";
+  }
+  $("msgIn").innerHTML=m;
+}
+
+/* ================= くらべて みる ================= */
+function kRows(){
+  var a=[];
+  for(var i=0;i<S.kCount;i++){
+    var n=S.kStart+i, qq=Math.floor(n/S.D);
+    a.push({n:n,q:qq,r:n-qq*S.D});
+  }
+  return a;
+}
+function stripHTML(n){
+  if(!S.kStrip) return "";
+  var D=S.D, full=Math.floor(n/D), rem=n-full*D, h='<span class="strip">', i, j;
+  for(i=0;i<full;i++){
+    h+='<span class="grpx">';
+    for(j=0;j<D;j++) h+='<i></i>';
+    h+='</span>';
+  }
+  if(rem>0){ h+='<span class="grpx rem">'; for(j=0;j<rem;j++) h+='<i></i>'; h+='</span>'; }
+  return h+'</span>';
+}
+function paintK(){
+  var rows=kRows(), h="", i;
+  for(i=0;i<rows.length;i++){
+    var w=rows[i];
+    h+='<div class="krow'+(w.r===0?" zero":"")+(i===rows.length-1?" new":"")+'">'+
+       '<span class="n">'+w.n+'</span><span>÷</span><span class="n">'+S.D+'</span>'+
+       '<span>＝</span><span class="q">'+w.q+'</span>'+
+       '<span class="am">あまり</span><span class="r">'+w.r+'</span>'+
+       stripHTML(w.n)+'</div>';
+  }
+  $("krows").innerHTML=h;
+  var last=rows[rows.length-1];
+  $("kend").innerHTML = (S.kCount>=14) ? "" :
+    '<div style="opacity:.6">つぎは '+(last.n+1)+' ÷ '+S.D+' … あまりは いくつ？</div>';
+  var pane=$("ktable");
+  requestAnimationFrame(function(){ pane.scrollTop=pane.scrollHeight; });
+
+  /* あまりの輪 */
+  var seen={}, j;
+  for(j=0;j<rows.length;j++) seen[rows[j].r]=true;
+  var rh="";
+  for(j=0;j<S.D;j++){
+    rh+='<span class="ring'+(j===0?" zero":"")+(seen[j]?" seen":"")+
+        (last.r===j?" now":"")+'">'+j+'</span>';
+  }
+  rh+='<span class="ring no">'+S.D+'</span>';
+  $("ringRow").innerHTML=rh;
+  $("ringTitle").textContent=S.D+"で わったときの あまり";
+
+  var note="";
+  if(S.kCount<=2) note="つぎの あまりは いくつに なるかな。";
+  else if(S.kCount<=S.D) note="あまりが 1ずつ ふえている。";
+  else note="あまりは <span class='hot'>0 から "+(S.D-1)+"</span> の くりかえし。わる数の "+
+            S.D+" には <span class='hot'>ならない</span>。";
+  $("ringNote").innerHTML=note;
+
+  /* メッセージ */
+  var m;
+  if(S.kCount===1){
+    m="わられる数を 1ずつ 大きく していくよ。あまりは どう かわるかな。";
+  } else if(last.r===0){
+    m="あまりが <em>0</em> に もどった。"+last.n+" は "+S.D+"で <em>わりきれる</em>。";
+  } else {
+    m="あまりが <em>"+last.r+"</em>。あと "+(S.D-last.r)+" ふえると どうなる？";
+  }
+  if(S.kCount>S.D){
+    m+="　→ あまりは <span class='hot'>0,1,…,"+(S.D-1)+"</span> の くりかえし。"+
+       "<span class='hot'>わる数より 小さい</span>。";
+  }
+  $("msgIn").innerHTML=m;
+
+  $("kBack").disabled=(S.kCount<=1);
+  $("kNext").disabled=(S.kCount>=14);
+  $("sVal").textContent=S.kStart;
+}
+
+/* ================= 共通 ================= */
+function paintModeBtn(){
+  $("mZutsu").textContent=S.D+inf().c+"ずつ ふくろに";
+  $("mNin").textContent=S.D+"人で 同じ数ずつ";
+}
+function paintMondai(){
+  var f=inf();
+  paintModeBtn();
+  if(S.view==="kimari"){
+    $("mondai").innerHTML="わられる数を 1ずつ 大きく すると、<b>"+S.D+"</b>で わった あまりは どう かわりますか。";
+  } else {
+    $("mondai").innerHTML=(S.mode==="zutsu")
+      ?"<b>"+S.N+f.c+"</b>の"+f.name+"を、1ふくろに <b>"+S.D+f.c+"</b>ずつ 入れていきます。何ふくろ できて、何"+f.c+" あまりますか。"
+      :f.name+" <b>"+S.N+f.c+"</b>を、<b>"+S.D+"人</b>で 同じ数ずつ 分けます。1人分は 何"+f.c+"に なって、何"+f.c+" あまりますか。";
+  }
+  $("dLab").textContent=(S.view==="kimari")?"わる数":((S.mode==="zutsu")?"1ふくろの数":"分ける人数");
+}
+function renderAll(){
+  paintMondai();
+  $("nVal").textContent=S.N; $("dVal").textContent=S.D;
+  if(S.view==="kimari"){ paintK(); }
+  else{
+    relayout(); drawW();
+    $("bBack").disabled=(S.step===0); $("bNext").disabled=(S.step>=S.N);
+  }
+}
+function rebuild(){ S.step=0; stopAuto(); buildItems(); buildConts(); renderAll(); unfreeze(); save(); }
+
+function setView(v){
+  S.view=v; stopAuto();
+  document.body.classList.toggle("kimari", v==="kimari");
+  $("tabW").setAttribute("aria-selected", v==="wake");
+  $("tabK").setAttribute("aria-selected", v==="kimari");
+  requestAnimationFrame(function(){ renderAll(); if(v==="wake") unfreeze(); });
+}
+
+var fixT=0;
+function drawW(){
+  paint(); paintShiki(); paintKuku(); paintMsgW();
+  /* メッセージの 行数で ステージの 高さが かわるので、1フレームあとに ならべ直す */
+  if(fixT) cancelAnimationFrame(fixT);
+  fixT=requestAnimationFrame(function(){ fixT=0; relayout(); paint(); });
+}
+function next(){ if(S.step<S.N){ S.step++; drawW();
+  $("bBack").disabled=false; $("bNext").disabled=(S.step>=S.N); } if(S.step>=S.N) stopAuto(); }
+function back(){ if(S.step>0){ S.step--; stopAuto(); drawW();
+  $("bBack").disabled=(S.step===0); $("bNext").disabled=false; } }
+function reset(){ S.step=0; stopAuto(); drawW();
+  $("bBack").disabled=true; $("bNext").disabled=false; }
+function stopAuto(){ if(timer){ clearInterval(timer); timer=null; $("bAuto").textContent="じどう"; } }
+function toggleAuto(){
+  if(timer){ stopAuto(); return; }
+  if(S.step>=S.N) S.step=0;
+  $("bAuto").textContent="とめる";
+  timer=setInterval(function(){ if(S.step>=S.N){ stopAuto(); return; } next(); },850);
+}
+
+function tap(id,fn){ var el=$(id); if(el) el.addEventListener("click",function(e){ e.preventDefault(); fn(); }); }
+
+tap("tabW",function(){ setView("wake"); });
+tap("tabK",function(){ setView("kimari"); });
+
+tap("bNext",next); tap("bBack",back); tap("bReset",reset); tap("bAuto",toggleAuto);
+tap("kNext",function(){ if(S.kCount<14){ S.kCount++; paintK(); } });
+tap("kBack",function(){ if(S.kCount>1){ S.kCount--; paintK(); } });
+tap("kAll", function(){ S.kCount=Math.min(14,S.D+3); paintK(); });
+tap("kReset",function(){ S.kCount=1; paintK(); });
+
+tap("nUp",  function(){ if(S.N<40){ S.N++; rebuild(); } });
+tap("nDown",function(){ if(S.N>2 ){ S.N--; rebuild(); } });
+tap("dUp",  function(){ if(S.D<9 ){ S.D++; onD(); } });
+tap("dDown",function(){ if(S.D>2 ){ S.D--; onD(); } });
+tap("sUp",  function(){ if(S.kStart<50){ S.kStart++; paintK(); } });
+tap("sDown",function(){ if(S.kStart>0 ){ S.kStart--; paintK(); } });
+
+function onD(){
+  if(S.view==="kimari"){ S.kStart=S.D*3; S.kCount=1; $("dVal").textContent=S.D;
+    paintMondai(); paintK(); save(); }
+  else rebuild();
+}
+function setMode(m){
+  S.mode=m;
+  $("mZutsu").setAttribute("aria-pressed",m==="zutsu");
+  $("mNin").setAttribute("aria-pressed",m==="nin");
+  rebuild();
+}
+tap("mZutsu",function(){ setMode("zutsu"); });
+tap("mNin",  function(){ setMode("nin"); });
+$("itemSel").addEventListener("change",function(){ S.item=this.value; rebuild(); });
+
+tap("p1",function(){ S.item="candy"; $("itemSel").value="candy"; S.N=13; S.D=3; setMode("zutsu"); });
+tap("p2",function(){ S.item="mikan"; $("itemSel").value="mikan"; S.N=16; S.D=3; setMode("nin"); });
+tap("p3",function(){ S.D=4; S.kStart=12; S.kCount=1; setView("kimari"); });
+tap("p4",function(){ S.D=3; S.kStart=9;  S.kCount=1; setView("kimari"); });
+
+tap("bHide",function(){ S.hide=!S.hide; $("bHide").setAttribute("aria-pressed",S.hide);
+  $("bHide").textContent=S.hide?"しきを 見せる":"しきを かくす"; paintShiki(); });
+tap("bKuku",function(){ S.kuku=!S.kuku; $("bKuku").setAttribute("aria-pressed",S.kuku); paintKuku(); save(); });
+tap("bStrip",function(){ S.kStrip=!S.kStrip; $("bStrip").setAttribute("aria-pressed",S.kStrip);
+  paintK(); save(); });
+tap("bFocus",function(){ S.focus=!S.focus;
+  $("bFocus").setAttribute("aria-pressed",!S.focus);
+  $("bFocus").textContent=S.focus?"せってい":"とじる";
+  $("settings").classList.toggle("hide",S.focus);
+  setTimeout(function(){ if(S.view==="wake"){ relayout(); paint(); } },30); });
+
+document.addEventListener("keydown",function(e){
+  if(e.target.tagName==="SELECT") return;
+  if(e.target.tagName==="BUTTON"&&(e.key===" "||e.key==="Enter")) return;
+  var K=(S.view==="kimari");
+  if(e.key==="ArrowRight"||e.key===" "||e.key==="Enter"){ e.preventDefault();
+    if(K){ if(S.kCount<14){ S.kCount++; paintK(); } } else next(); }
+  else if(e.key==="ArrowLeft"){ e.preventDefault();
+    if(K){ if(S.kCount>1){ S.kCount--; paintK(); } } else back(); }
+  else if(e.key==="r"||e.key==="R"){ if(K){ S.kCount=1; paintK(); } else reset(); }
+  else if(e.key==="p"||e.key==="P"){ if(!K) toggleAuto(); }
+});
+
+if(window.ResizeObserver){
+  new ResizeObserver(function(){
+    if(S.view==="wake"){ relayout(); paint(); }
+  }).observe(stage);
+}
+
+var rt=null;
+window.addEventListener("resize",function(){
+  clearTimeout(rt); rt=setTimeout(function(){ setH();
+    if(S.view==="wake"){ relayout(); paint(); } },90);
+});
+
+load(); setH();
+S.kStart=S.D*3;
+$("itemSel").value=S.item;
+$("mZutsu").setAttribute("aria-pressed",S.mode==="zutsu");
+$("mNin").setAttribute("aria-pressed",S.mode==="nin");
+$("bKuku").setAttribute("aria-pressed",S.kuku);
+$("bStrip").setAttribute("aria-pressed",S.kStrip);
+$("sVal").textContent=S.kStart;
+buildItems(); buildConts();
+requestAnimationFrame(function(){ renderAll(); unfreeze(); });
+
+})();
+</script>
+</body>
+</html>
