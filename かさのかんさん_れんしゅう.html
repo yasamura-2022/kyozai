@@ -525,8 +525,9 @@ const mel={c:document.getElementById('mCorrect'),t:document.getElementById('mTot
 
 function mKey(){return 'm:'+pkey();}
 function mTotalVal(){return M.a*pair().r+M.b;}
-/* のこりの数。うしろのグループは「0の ばしょ」でつまずきやすい形。
-   3km50m＝3050m、2080m＝2km80m、305cm＝3m5cm のような問題を わざと入れている */
+/* ステップ３（かんさん）で使う数。うしろのグループは「0の ばしょ」で
+   つまずきやすい形。2km30m＝2030m、2080m＝2km80m、305cm＝3m5cm を わざと入れている。
+   ステップ４は これを使わない（pRests を見る） */
 function mRests(){
   const r=pair().r;
   if(r===10) return [1,2,3,4,5,6,7,8,9];
@@ -662,9 +663,18 @@ const cEq=document.getElementById('cEq'),cVerdict=document.getElementById('cVerd
 const cel={c:document.getElementById('cCorrect'),t:document.getElementById('cTotal'),s:document.getElementById('cStreak')};
 
 function pKey(){return 'p:'+pkey();}
+/* ステップ４で使う数。1km400m ＋ 800m のように、下のけたが 0 の数だけにする。
+   くりあがり・くりさがりに集中させたいので、ここでは「0の ばしょ」の
+   難しさ（2km30m のような形）を重ねない。それはステップ３で練習する */
+function pRests(){
+  const r=pair().r;
+  if(r===10) return [1,2,3,4,5,6,7,8,9];
+  if(r===100)return [10,20,30,40,50,60,70,80,90];
+  return [100,200,300,400,500,600,700,800,900];
+}
 /* こたえの 小さいたんいが 0 にならず、大きいたんいが 1〜9 におさまる数だけを出す */
 function pNums(){
-  const r=pair().r,rests=mRests();
+  const r=pair().r,rests=pRests();
   for(let t=0;t<300;t++){
     const op=Math.random()<0.5?'+':'-';
     const a1=1+Math.floor(Math.random()*8);
@@ -719,15 +729,14 @@ function pScore(){
 }
 function pHint(){
   const p=pair();
-  const care=isHardRest(P.ans%p.r,p.r)?'。0の ばしょに 気をつけて':'';
   if(P.op==='+'){
-    return ((P.b1+P.b2>=p.r)
+    return (P.b1+P.b2>=p.r)
       ? '<em>'+P.b1+p.small+' と '+P.b2+p.small+' で '+(P.b1+P.b2)+p.small+'</em>。'+p.r+p.small+' を 1'+p.big+' に くりあげるよ'
-      : p.small+' どうしを たすよ。'+p.big+' は そのまま')+care;
+      : p.small+' どうしを たすよ。'+p.big+' は そのまま';
   }
-  return ((P.b2>P.b1)
+  return (P.b2>P.b1)
     ? '<em>1'+p.big+' を '+p.r+p.small+' に かえて</em>、'+(p.r+P.b1)+p.small+' から '+P.b2+p.small+' を ひくよ'
-    : p.small+' どうしを ひくよ。'+p.big+' は そのまま')+care;
+    : p.small+' どうしを ひくよ。'+p.big+' は そのまま';
 }
 function pCheck(){
   if(P.locked)return;
