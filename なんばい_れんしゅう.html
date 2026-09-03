@@ -609,7 +609,9 @@ try{const sc=JSON.parse(sessionStorage.getItem('nanbaiZScore')||'null');
   if(sc){Z.correct=sc.c|0;Z.total=sc.t|0;}}catch(e){}
 function zSaveScore(){try{sessionStorage.setItem('nanbaiZScore',JSON.stringify({c:Z.correct,t:Z.total}));}catch(e){}}
 
-function zKey(){return 'z:'+Z.blank;}
+/* れんぞくと ⭐ の かぞえかたは、いま えらんでいる ボタンごと。
+   「まぜる」は まぜたまま 10もん つづけて 正かいで ⭐（型ごとに 分けない） */
+function zKey(){return 'z:'+((Z.sel==='mix')?'mix':Z.blank);}
 function zOps(){
   const box=$('zOps');box.innerHTML='';
   ZTYPES.forEach(t=>{
@@ -915,6 +917,14 @@ function motoHint(p){
     return '「<em>'+p.A+'を もとにすると</em>」と 書いてあるね。もとにする数は <em>'+p.A+'</em>';
   return '「'+p.A+'<em>の</em> '+(p.ask==='rate'?'何':p.n)+'倍」と 書いてあるね。「<em>の</em>」の まえの <em>'+p.A+'</em>が もとにする数';
 }
+/* どの数が どの はこに 入ったのかを、その もんだいの 数で 言う */
+function numHint(p){
+  if(p.ask==='cmp')
+    return p.a+p.u+' は もとにする数の はこ。くらべる数は これから もとめる';
+  if(p.ask==='base')
+    return p.b+p.u+' は くらべる数の はこ。もとにする数は これから もとめる';
+  return p.a+p.u+' が もとにする数、'+p.b+p.u+' が くらべる数の はこに 入る';
+}
 function motoNg(p){
   return (p.cueKind==='moto')
     ? '「<em>もとにすると</em>」の まえを 見てみよう'
@@ -1006,7 +1016,7 @@ function mJudge(){
     $('mZu').innerHTML=filledZuHTML(p,'blank');
     $('mVerdict').className='verdict ok';
     $('mVerdict').innerHTML='せいかい！ 🎉　'+motoHint(p)+
-      '。はこが きまると 数も きまる';
+      '<br>'+numHint(p);
     $('mNext').disabled=false;
   }else{
     M.slots={base:null,cmp:null};       // ふだを もどして もう一回
