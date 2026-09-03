@@ -125,14 +125,21 @@
     background:#fff;color:var(--ink);font-weight:800;font-size:inherit;line-height:1.1}
   .fld.empty{color:#c7b891}
   .fld.on{border-style:solid;border-color:var(--accent);background:var(--flash);animation:glow 1.2s infinite}
+  /* 入れる わくの 色を、その はこ（もとにする数＝むらさき／くらべる数＝金／何倍＝赤）に そろえる。
+     問いの ことばの 色と つながるようにする */
+  .zubox.cmp .fld.on{border-color:var(--gold)}
+  .zuarr .fld.on{border-color:#c0392b}
   .fld.done{border-style:solid;border-color:var(--ok);background:#eaf5e4}
   @keyframes glow{0%,100%{box-shadow:0 0 0 0 rgba(0,0,0,0)}50%{box-shadow:0 0 0 5px var(--accent-soft)}}
-  .zuarr .fld{padding:0 3px;border-width:2px}
+  .zuarr .fld{padding:0 4px;border-width:2px;font-size:1.35em}
 
   /* ===== ステップ１：テープ ===== */
   .tapes{display:flex;flex-direction:column;gap:9px;text-align:left}
   .tline{display:flex;flex-direction:column;gap:3px}
   .tlab{color:#6f5d3d;font-weight:800;font-size:calc(clamp(12px,3.4vw,16px) * var(--shrink,1))}
+  /* テープの 見出しも はこと 同じ 色に そろえる */
+  .tlab.b{color:var(--accent-dark)}
+  .tlab.c{color:#8a6a10}
   .tlab .big{color:var(--accent-dark);font-size:1.15em}
   .tlab .cnt{color:var(--ng)}
   .trow{display:flex;width:100%}
@@ -183,6 +190,13 @@
   .mondai.hi .cue b{color:#c0392b;font-weight:800}
   .ask{font-weight:800;color:#8a7a5f;font-size:calc(clamp(12px,3.4vw,16px) * var(--shrink,1))}
   .askrow{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap}
+  /* ステップ２の 問いは 大きく 出す。ことばの 色を はこの 色に そろえて、
+     どこを きかれているのかが 色で つながるようにする */
+  #zStage .askrow{background:#fff8e6;border:2px solid var(--line);border-radius:12px;padding:6px 10px}
+  #zStage .ask{color:var(--ink);font-size:calc(clamp(14px,3.9vw,21px) * var(--shrink,1))}
+  .ask .wbase{color:var(--accent-dark)}
+  .ask .wcmp{color:#8a6a10}
+  .ask .wrate{color:#c0392b}
   /* 上が テープ図、下が 関係図。同じことを 2つの 見方で 出す */
   .sect{text-align:left;font-weight:800;letter-spacing:.08em;color:#a99a7c;margin-bottom:-2px;
     font-size:calc(clamp(10px,2.8vw,13px) * var(--shrink,1))}
@@ -286,7 +300,7 @@
 
   <div class="tabs">
     <button class="tab on" data-v="tape"><span class="step">ステップ１</span>何倍って なに？</button>
-    <button class="tab" data-v="zu"><span class="step">ステップ２</span>かんけいず</button>
+    <button class="tab" data-v="zu"><span class="step">ステップ２</span>関係図</button>
     <button class="tab" data-v="moto"><span class="step">ステップ３</span>どっちが もと？</button>
     <button class="tab" data-v="word"><span class="step">ステップ４</span>ぶんしょうだい</button>
   </div>
@@ -298,16 +312,18 @@
       <div class="chips" id="tChips"></div>
     </div>
     <div class="stage" id="tStage">
+      <div class="sect">テープ図</div>
       <div class="tapes">
         <div class="tline">
-          <span class="tlab">もとにする数</span>
+          <span class="tlab b">もとにする数</span>
           <div class="trow" id="tBaseRow"></div>
         </div>
         <div class="tline">
-          <span class="tlab">くらべる数　<span class="cnt" id="tCntLab"></span></span>
+          <span class="tlab c">くらべる数　<span class="cnt" id="tCntLab"></span></span>
           <div class="trow" id="tRow"></div>
         </div>
       </div>
+      <div class="sect">関係図</div>
       <div id="tZu"></div>
     </div>
     <div class="table" id="tTable"></div>
@@ -318,7 +334,7 @@
     </div>
   </div>
 
-  <!-- ============ ステップ２：かんけいず ============ -->
+  <!-- ============ ステップ２：関係図 ============ -->
   <div id="viewZu" class="hidden">
     <div class="ops" id="zOps"></div>
     <div class="score">
@@ -334,7 +350,7 @@
         </div>
         <div class="sect">テープ図</div>
         <div class="tapes" id="zTape"></div>
-        <div class="sect">かんけいず</div>
+        <div class="sect">関係図</div>
         <div id="zZu"></div>
         <div class="shiki" id="zShiki"></div>
         <div class="verdict" id="zVerdict"></div>
@@ -352,7 +368,7 @@
     </div>
     <div class="stage" id="mStage">
       <p class="mondai" id="mText"></p>
-      <div class="sect">かんけいず</div>
+      <div class="sect">関係図</div>
       <div id="mZu"></div>
       <div class="ask" id="mAsk">もとにする数の はこに 入るのは どっち？</div>
       <div class="chips pick" id="mPick"></div>
@@ -373,7 +389,7 @@
     <div class="drill-main">
       <div class="stage" id="wStage">
         <p class="mondai" id="wText"></p>
-        <div class="sect">かんけいず</div>
+        <div class="sect">関係図</div>
         <div id="wZu"></div>
         <div class="ask" id="wAsk"></div>
         <div class="chips pick" id="wPick"></div>
@@ -448,8 +464,9 @@ function tapeBar(o){
 /* ---------- 関係図 ---------- */
 function unitHTML(u){return '<span class="unit">'+u+'</span>';}
 function valHTML(n,u){return n+unitHTML(u);}
-function fldHTML(txt,on){
-  return '<span class="fld'+(on?' on':'')+(txt?'':' empty')+'">'+(txt||'?')+'</span>';
+function fldHTML(txt,on,u){
+  return '<span class="fld'+(on?' on':'')+(txt?'':' empty')+'">'+(txt||'?')+'</span>'+
+    (u?unitHTML(u):'');
 }
 /* 答えあわせのあとの わく。たんいまで 入れて 図を かんせいさせる */
 function doneHTML(v,u){return '<span class="fld done">'+(u?valHTML(v,u):v)+'</span>';}
@@ -486,7 +503,7 @@ function litOf(ask){return (ask==='base')?'dn':'up';}
 function emptyZuHTML(p){
   const r=(p.ask==='rate')?'?':String(p.n);
   return zuHTML({
-    base:fldHTML('',false), rate:r, cmp:fldHTML('',false),
+    base:fldHTML('',false,p.u), rate:r, cmp:fldHTML('',false,p.u),
     baseName:'<span class="qn">？</span>', cmpName:'<span class="qn">？</span>',
     rateBack:r, lit:litOf(p.ask), target:true});
 }
@@ -496,7 +513,7 @@ function emptyZuHTML(p){
    mode 'done'  … 答えあわせがすんだ（たんいまで 入れる） */
 function filledZuHTML(p,mode,shown){
   const slot=(v,u)=>(mode==='done')?doneHTML(v,u)
-    :(mode==='live')?fldHTML(shown,true):fldHTML('',false);
+    :(mode==='live')?fldHTML(shown,true,u):fldHTML('',false,u);
   return zuHTML({
     base:(p.ask==='base')?slot(p.a,p.u):valHTML(p.a,p.u),
     rate:(p.ask==='rate')?slot(p.n,'')  :String(p.n),
@@ -550,7 +567,7 @@ bindTap($('tBack'),()=>{if(T.n>1){T.n--;tRender();}});
 bindTap($('tReset'),()=>{T.n=1;tRender();});
 
 /* =========================================================
-   ステップ２：かんけいず
+   ステップ２：関係図
    図の どこが □ かを 入れかえて、図の 読み方に なれる
 ========================================================= */
 const UNITBASE={
@@ -612,13 +629,13 @@ function zTapeHTML(){
      そのときだけ 数を テープの上（ラベル）に 書く */
   const inside=(n<=4);
   return '<div class="tline">'+
-      '<span class="tlab">もとにする数'+
+      '<span class="tlab b">もとにする数'+
         (inside?'':'　<span class="big">'+valHTML(dA,u)+'</span>')+'</span>'+
       '<div class="trow">'+tapeBar({parts:1,width:'calc(100% / '+n+')',cls:'base',
         q:(dA==='?'),val:inside?valHTML(dA,u):''})+'</div>'+
     '</div>'+
     '<div class="tline">'+
-      '<span class="tlab">くらべる数　<span class="cnt">'+dN+'倍</span></span>'+
+      '<span class="tlab c">くらべる数　<span class="cnt">'+dN+'倍</span></span>'+
       '<div class="trow">'+tapeBar({parts:split?n:1,width:'100%',cls:'cmp',
         q:(dB==='?'),val:valHTML(dB,u)})+'</div>'+
     '</div>';
@@ -636,15 +653,17 @@ function zRender(){
   const shown=Z.locked?String(Z.ans):Z.input;
   $('zTape').innerHTML=zTapeHTML();
   $('zZu').innerHTML=zuHTML({
-    base:(Z.blank==='base')?(Z.locked?doneHTML(Z.a,Z.u):fldHTML(shown,true)):valHTML(Z.a,Z.u),
+    base:(Z.blank==='base')?(Z.locked?doneHTML(Z.a,Z.u):fldHTML(shown,true,Z.u)):valHTML(Z.a,Z.u),
     rate:(Z.blank==='rate')?(Z.locked?doneHTML(Z.n,''):fldHTML(shown,true)):String(Z.n),
-    cmp :(Z.blank==='cmp') ?(Z.locked?doneHTML(Z.b,Z.u):fldHTML(shown,true)):valHTML(Z.b,Z.u),
+    cmp :(Z.blank==='cmp') ?(Z.locked?doneHTML(Z.b,Z.u):fldHTML(shown,true,Z.u)):valHTML(Z.b,Z.u),
     rateBack:(Z.blank==='rate')?(Z.locked?String(Z.ans):'?'):String(Z.n),
     lit:litOf(Z.blank)});
   $('zShiki').innerHTML=zShikiHTML();
-  $('zAsk').innerHTML=(Z.blank==='cmp')?'くらべる数は 何'+Z.u+'？'
-    :(Z.blank==='rate')?'くらべる数は もとにする数の 何倍？'
-    :'もとにする数は 何'+Z.u+'？';
+  $('zAsk').innerHTML=(Z.blank==='cmp')
+      ?'<b class="wcmp">くらべる数</b>は 何'+Z.u+'？'
+    :(Z.blank==='rate')
+      ?'<b class="wcmp">くらべる数</b>は <b class="wbase">もとにする数</b>の <b class="wrate">何倍</b>？'
+      :'<b class="wbase">もとにする数</b>は 何'+Z.u+'？';
 }
 function zHint(){
   if(Z.blank==='cmp')return 'もとにする数の <em>'+Z.n+'つぶん</em> だから　'+Z.a+'×'+Z.n+'＝'+Z.b;
