@@ -107,11 +107,23 @@
   .zubox .zlab{font-size:.46em;font-weight:800;letter-spacing:.02em;color:var(--accent-dark)}
   .zubox.cmp .zlab{color:#8a6a10}
   .zubox .zname{font-size:.44em;color:#6f5d3d;line-height:1.15;word-break:keep-all}
-  .zubox .zname .qn{display:inline-block;min-width:3.4em;border-bottom:2px dashed #b9a67f;
-    color:#b9a67f;font-weight:800}
-  .zubox .zname .named{animation:pop .35s}
+  .zubox .zname .qn{display:inline-block;min-width:4.2em;border:2px dashed #b9a67f;border-radius:8px;
+    color:#b9a67f;font-weight:800;padding:1px 4px}
+  /* はこに 入った ことば */
+  .zubox .zname .named{display:inline-block;background:#fff;border:2px solid currentColor;
+    border-radius:8px;padding:1px 8px;font-weight:800;animation:pop .3s}
   /* いま 入れる はこを 光らせる */
   .zubox.target{animation:glow 1.2s infinite}
+  /* ことばを 入れる さきの はこ（ドラッグの おとしどころ）。
+     はこ ぜんたいが あたり判定なので 指でも おとしやすい */
+  .zu.names .zubox .zname{font-size:.56em}
+  .zubox.drop{cursor:pointer}
+  .zubox.drop.over{box-shadow:0 0 0 5px var(--flash)}
+  .chip.picked{box-shadow:0 0 0 4px var(--flash)}
+  .chip.dragging{opacity:.3}
+  .dghost{position:fixed;z-index:60;transform:translate(-50%,-50%);pointer-events:none;
+    opacity:.95;box-shadow:0 6px 14px rgba(0,0,0,.25)}
+  .traynote{font-size:calc(clamp(10px,2.7vw,13px) * var(--shrink,1));color:#a99a7c}
   .zubox .zval{font-weight:800;font-variant-numeric:tabular-nums;line-height:1.1}
   .zuarr{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
     padding:0 2px;color:#6f5d3d}
@@ -476,11 +488,16 @@ function doneHTML(v,u){return '<span class="fld done">'+(u?valHTML(v,u):v)+'</sp
    o.lit … 'up'（×を つかう）／'dn'（÷を つかう）。どちらの やじるしかを 光らせる */
 function zuHTML(o){
   const back=(o.rateBack!==undefined&&o.rateBack!=='')?o.rateBack:o.rate;
-  const tg=o.target?' target':'';
+  const t=o.target;
+  const tgB=(t===true||t==='base'||t==='both')?' target':'';
+  const tgC=(t==='cmp'||t==='both')?' target':'';
+  const dp=o.drop?' drop':'';
+  const ds=o.drop?' data-slot="base"':'', dc=o.drop?' data-slot="cmp"':'';
+  const nm=(o.baseName||o.cmpName)?' names':'';
   const upC='up'+(o.lit==='up'?' lit':(o.lit==='dn'?' dim':''));
   const dnC='dn'+(o.lit==='dn'?' lit':(o.lit==='up'?' dim':''));
-  return '<div class="zu">'+
-    '<div class="zubox base'+tg+'">'+
+  return '<div class="zu'+nm+'">'+
+    '<div class="zubox base'+tgB+dp+'"'+ds+'>'+
       (o.baseName?'<span class="zname">'+o.baseName+'</span>':'')+
       '<span class="zlab">もとにする数</span>'+
       '<span class="zval">'+o.base+'</span>'+
@@ -489,7 +506,7 @@ function zuHTML(o){
       '<span class="'+upC+'">─ ×'+o.rate+' →</span>'+
       '<span class="'+dnC+'">← ÷'+back+' ─</span>'+
     '</div>'+
-    '<div class="zubox cmp">'+
+    '<div class="zubox cmp'+tgC+dp+'"'+dc+'>'+
       (o.cmpName?'<span class="zname">'+o.cmpName+'</span>':'')+
       '<span class="zlab">くらべる数</span>'+
       '<span class="zval">'+o.cmp+'</span>'+
@@ -500,12 +517,15 @@ function zuHTML(o){
 function litOf(ask){return (ask==='base')?'dn':'up';}
 /* まだ どちらが もとにする数か 決まっていない 関係図。
    名前が 入らないと 数も 入れられない、というのが 目で わかる */
-function emptyZuHTML(p){
+function emptyZuHTML(p,slots){
   const r=(p.ask==='rate')?'?':String(p.n);
+  const sl=slots||{base:null,cmp:null};
+  /* 名前が 入った はこだけ 数を 見せる。どちらが どっちか きまらないと 数も きまらない */
+  const tg=(!sl.base&&!sl.cmp)?'both':(!sl.base?'base':(!sl.cmp?'cmp':''));
   return zuHTML({
     base:fldHTML('',false,p.u), rate:r, cmp:fldHTML('',false,p.u),
-    baseName:'<span class="qn">？</span>', cmpName:'<span class="qn">？</span>',
-    rateBack:r, lit:litOf(p.ask), target:true});
+    baseName:nameSlotHTML(sl.base), cmpName:nameSlotHTML(sl.cmp),
+    rateBack:r, lit:litOf(p.ask), target:tg, drop:true});
 }
 /* 名前と 数を 入れた 関係図（もとにする数が 決まったあと）
    mode 'blank' … もとめる ところは ? のまま（ステップ３）
@@ -738,6 +758,107 @@ bindTap($('zHintBtn'),()=>{
 });
 
 /* =========================================================
+   ことばを はこに 入れる（ゆびで ドラッグ／タップでも できる）
+   ・おとしどころは はこ ぜんたい（小さい ？ を ねらわなくてよい）
+   ・うごかさずに タップした ときは「えらんだ」あつかい。つぎに はこを タップ
+========================================================= */
+let dragSel=null;                     // タップで えらんだ ことば
+function dropZones(){
+  return [].filter.call(document.querySelectorAll('.zubox.drop'),z=>z.offsetParent!==null);
+}
+function zoneAt(x,y){
+  const zs=dropZones();
+  for(let i=0;i<zs.length;i++){
+    const r=zs[i].getBoundingClientRect();
+    if(x>=r.left&&x<=r.right&&y>=r.top&&y<=r.bottom)return zs[i].dataset.slot;
+  }
+  return null;
+}
+function markOver(slot){
+  dropZones().forEach(z=>z.classList.toggle('over',z.dataset.slot===slot));
+}
+function clearOver(){dropZones().forEach(z=>z.classList.remove('over'));}
+function clearSel(){
+  dragSel=null;
+  document.querySelectorAll('.chip.picked').forEach(c=>c.classList.remove('picked'));
+}
+/* ことばの ふだを ドラッグできるようにする。place(name,slot) で はこに 入れる
+   ・8px 以上 うごかしたら ドラッグ。うごかさなければ「えらぶ」（タップで 入れる）
+   ・ゆびが はなれる前に 中だんされても のこらないように かたづける */
+let dragCleanup=null;
+function bindDrag(el,name,place){
+  el.style.touchAction='none';
+  el.addEventListener('pointerdown',function(ev){
+    if(ev.pointerType==='mouse'&&ev.button!==0)return;
+    ev.preventDefault();
+    if(dragCleanup)dragCleanup();          // 前の ドラッグが のこっていたら やめる
+    const sx=ev.clientX,sy=ev.clientY;
+    let moved=false,ghost=null;
+    const stop=function(){
+      window.removeEventListener('pointermove',move);
+      window.removeEventListener('pointerup',up);
+      window.removeEventListener('pointercancel',cancel);
+      if(ghost&&ghost.parentNode)ghost.parentNode.removeChild(ghost);
+      ghost=null;
+      el.classList.remove('dragging');
+      clearOver();
+      dragCleanup=null;
+    };
+    const move=function(e){
+      const dx=e.clientX-sx,dy=e.clientY-sy;
+      if(!moved&&(dx*dx+dy*dy)<64)return;   // 8px 動いたら ドラッグ
+      if(!moved){
+        moved=true;clearSel();
+        ghost=el.cloneNode(true);
+        ghost.className='chip dghost';
+        ghost.style.width=el.offsetWidth+'px';
+        document.body.appendChild(ghost);
+        el.classList.add('dragging');
+      }
+      ghost.style.left=e.clientX+'px';
+      ghost.style.top=e.clientY+'px';
+      markOver(zoneAt(e.clientX,e.clientY));
+    };
+    const up=function(e){
+      const wasMoved=moved,x=e.clientX,y=e.clientY;
+      stop();
+      if(wasMoved){
+        const slot=zoneAt(x,y);
+        if(slot)place(name,slot);
+      }else{                                // うごかさなければ「えらぶ」
+        const was=(dragSel===name);
+        clearSel();
+        if(!was){dragSel=name;el.classList.add('picked');}
+      }
+    };
+    const cancel=function(){stop();};
+    dragCleanup=stop;
+    /* ゆびや マウスが ふだから はずれても ついてくるように window で ひろう */
+    window.addEventListener('pointermove',move);
+    window.addEventListener('pointerup',up);
+    window.addEventListener('pointercancel',cancel);
+  });
+}
+/* その図の 中の はこ ぜんぶに ハンドラを つける
+   （まだ 表示されていない ステップでも つけておく） */
+function bindZonesIn(root,place,take){
+  [].forEach.call(root.querySelectorAll('.zubox.drop'),function(z){
+    bindZone(z,z.dataset.slot,place,take);
+  });
+}
+/* はこ（または 入っている ことば）を タップしたときの うごき */
+function bindZone(el,slot,place,take){
+  bindTap(el,function(){
+    if(dragSel){const n=dragSel;clearSel();place(n,slot);}
+    else take(slot);
+  });
+}
+/* 名前の ところ：入っていれば ふだ、入っていなければ ？ */
+function nameSlotHTML(name){
+  return name?'<span class="named">'+name+'</span>':'<span class="qn">？</span>';
+}
+
+/* =========================================================
    もんだい文づくり（ステップ３・４で 使う）
    ・「〜の ○倍」の 〜の の前が もとにする数
    ・出てくる じゅんばんを かえて、場所で おぼえないようにする
@@ -811,33 +932,59 @@ function mSaveScore(){try{sessionStorage.setItem('nanbaiMScore',JSON.stringify({
 
 function mNew(){
   M.p=makeWord();M.done=false;M.tried=false;
+  M.slots={base:null,cmp:null};
+  clearSel();
   $('mStage').className='stage';
   $('mText').className='mondai';
   $('mText').innerHTML=M.p.html;
   $('mVerdict').className='verdict';$('mVerdict').textContent='';
-  $('mZu').innerHTML=emptyZuHTML(M.p);   // 名前が 入るまで 数も 入れられない
   $('mAsk').classList.remove('hidden');
+  $('mAsk').innerHTML='ことばを うごかして、２つの はこに 入れよう';
   $('mNext').disabled=true;
-  mChips();mScore();refit();
+  mDraw();mScore();refit();
 }
-function mChips(){
-  const box=$('mPick');box.innerHTML='';
-  box.classList.remove('hidden');
+/* 図と ふだを かきなおす */
+function mDraw(){
+  $('mZu').innerHTML=emptyZuHTML(M.p,M.slots);
+  /* はこ（おとしどころ）… タップでも 入れられる。入っている ふだは タップで もどる */
+  bindZonesIn($('mZu'),mPlace,mTake);
+  const box=$('mPick');box.innerHTML='';box.classList.remove('hidden');
   M.p.chips.forEach(name=>{
+    if(M.slots.base===name||M.slots.cmp===name)return;   // はこに 入っている ふだは 出さない
     const b=document.createElement('button');
     b.type='button';b.className='chip';b.textContent=name;
-    bindTap(b,()=>mAnswer(name));
+    bindDrag(b,name,mPlace);
     box.appendChild(b);
   });
+  if(!box.children.length){
+    const n=document.createElement('span');
+    n.className='traynote';n.textContent='はこの ことばを タップすると もどせます';
+    box.appendChild(n);
+  }
+}
+function mPlace(name,slot){
+  if(M.done)return;
+  const other=(slot==='base')?'cmp':'base';
+  if(M.slots[other]===name)M.slots[other]=null;   // 同じ ふだの ひっこし
+  M.slots[slot]=name;
+  $('mVerdict').className='verdict';$('mVerdict').textContent='';
+  $('mStage').className='stage';
+  mDraw();refit();
+  if(M.slots.base&&M.slots.cmp)setTimeout(mJudge,350);
+}
+function mTake(slot){
+  if(M.done||!M.slots[slot])return;
+  M.slots[slot]=null;mDraw();refit();
 }
 function mScore(){
   $('mCorrect').textContent=M.correct;
   $('mTotal').textContent=M.total;
   $('mStreak').textContent=stamps['moto']?'⭐':((streaks['moto']||0)+'/'+GOAL);
 }
-function mAnswer(name){
+function mJudge(){
   if(M.done)return;
-  const p=M.p,ok=(name===p.A);
+  if(!(M.slots.base&&M.slots.cmp))return;   // まつ間に もどしたら 見ない
+  const p=M.p,ok=(M.slots.base===p.A&&M.slots.cmp===p.B);
   if(!M.tried){
     M.total++;
     if(ok){
@@ -852,19 +999,21 @@ function mAnswer(name){
   M.tried=true;
   $('mText').classList.add('hi');       // 手がかりの ことばを 光らせる
   if(ok){
-    M.done=true;
+    M.done=true;clearSel();
     $('mStage').className='stage correct';
     $('mPick').classList.add('hidden');
     $('mAsk').classList.add('hidden');
     $('mZu').innerHTML=filledZuHTML(p,'blank');
     $('mVerdict').className='verdict ok';
     $('mVerdict').innerHTML='せいかい！ 🎉　'+motoHint(p)+
-      '。'+p.A+'が はこに 入ると 数も きまる';
+      '。はこが きまると 数も きまる';
     $('mNext').disabled=false;
   }else{
+    M.slots={base:null,cmp:null};       // ふだを もどして もう一回
+    mDraw();
     $('mStage').className='stage wrong';
     $('mVerdict').className='verdict ng';
-    $('mVerdict').innerHTML='その はこには 入らないよ。'+motoNg(p);
+    $('mVerdict').innerHTML='はんたいだね。もう一回！　'+motoNg(p);
   }
   mScore();refit();
 }
@@ -881,40 +1030,65 @@ function wSaveScore(){try{sessionStorage.setItem('nanbaiWScore',JSON.stringify({
 
 function wNew(){
   W.p=makeWord();W.stage=1;W.input='';W.locked=false;W.tried=false;
+  W.slots={base:null,cmp:null};
+  clearSel();
   $('wStage').className='stage';
   $('wText').className='mondai';
   $('wText').innerHTML=W.p.html;
   $('wVerdict').className='verdict';$('wVerdict').textContent='';
-  $('wZu').innerHTML=emptyZuHTML(W.p);
-  $('wAsk').textContent='まず もとにする数の はこに 入るのは どっち？';
+  $('wAsk').innerHTML='まず ことばを うごかして、２つの はこに 入れよう';
   $('wPad').classList.add('hidden');
-  wChips();wScore();refit();
+  wDraw();wScore();refit();
 }
-function wChips(){
+function wDraw(){
+  $('wZu').innerHTML=emptyZuHTML(W.p,W.slots);
+  bindZonesIn($('wZu'),wPlace,wTake);
   const box=$('wPick');box.innerHTML='';box.classList.remove('hidden');
   W.p.chips.forEach(name=>{
+    if(W.slots.base===name||W.slots.cmp===name)return;
     const b=document.createElement('button');
     b.type='button';b.className='chip';b.textContent=name;
-    bindTap(b,()=>wPickBase(name));
+    bindDrag(b,name,wPlace);
     box.appendChild(b);
   });
+  if(!box.children.length){
+    const n=document.createElement('span');
+    n.className='traynote';n.textContent='はこの ことばを タップすると もどせます';
+    box.appendChild(n);
+  }
+}
+function wPlace(name,slot){
+  if(W.stage!==1)return;
+  const other=(slot==='base')?'cmp':'base';
+  if(W.slots[other]===name)W.slots[other]=null;
+  W.slots[slot]=name;
+  $('wVerdict').className='verdict';$('wVerdict').textContent='';
+  $('wStage').className='stage';
+  wDraw();refit();
+  if(W.slots.base&&W.slots.cmp)setTimeout(wJudgeNames,350);
+}
+function wTake(slot){
+  if(W.stage!==1||!W.slots[slot])return;
+  W.slots[slot]=null;wDraw();refit();
 }
 function wScore(){
   $('wCorrect').textContent=W.correct;
   $('wTotal').textContent=W.total;
   $('wStreak').textContent=stamps['word']?'⭐':((streaks['word']||0)+'/'+GOAL);
 }
-function wPickBase(name){
+function wJudgeNames(){
   if(W.stage!==1)return;
-  const p=W.p;
+  if(!(W.slots.base&&W.slots.cmp))return;
+  const p=W.p,ok=(W.slots.base===p.A&&W.slots.cmp===p.B);
   $('wText').classList.add('hi');
-  if(name!==p.A){
+  if(!ok){
+    W.slots={base:null,cmp:null};wDraw();
     $('wStage').className='stage wrong';
     $('wVerdict').className='verdict ng';
-    $('wVerdict').innerHTML='その はこには 入らないよ。'+motoNg(p);
-    return;
+    $('wVerdict').innerHTML='はんたいだね。もう一回！　'+motoNg(p);
+    refit();return;
   }
-  W.stage=2;
+  W.stage=2;clearSel();
   $('wStage').className='stage';
   $('wPick').classList.add('hidden');
   $('wPad').classList.remove('hidden');
