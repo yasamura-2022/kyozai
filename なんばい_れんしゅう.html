@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>なんばい</title>
+<title>何倍</title>
 <style>
   :root{
     --ink:#2b2118;
@@ -15,7 +15,7 @@
     --ng:#d34b4b;
     --flash:#ffe14d;
   }
-  /* このアプリの色（なんばい） */
+  /* このアプリの色（何倍） */
   body{--accent:#7a5ea8;--accent-dark:#5d4685;--accent-soft:#efe8f7}
 
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}
@@ -107,6 +107,11 @@
   .zubox .zlab{font-size:.46em;font-weight:800;letter-spacing:.02em;color:var(--accent-dark)}
   .zubox.cmp .zlab{color:#8a6a10}
   .zubox .zname{font-size:.44em;color:#6f5d3d;line-height:1.15;word-break:keep-all}
+  .zubox .zname .qn{display:inline-block;min-width:3.4em;border-bottom:2px dashed #b9a67f;
+    color:#b9a67f;font-weight:800}
+  .zubox .zname .named{animation:pop .35s}
+  /* いま 入れる はこを 光らせる */
+  .zubox.target{animation:glow 1.2s infinite}
   .zubox .zval{font-weight:800;font-variant-numeric:tabular-nums;line-height:1.1}
   .zuarr{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
     padding:0 2px;color:#6f5d3d}
@@ -277,16 +282,16 @@
 </head>
 <body>
 <div class="app">
-  <header><h1><span class="em">なんばい</span></h1></header>
+  <header><h1><span class="em">何倍</span></h1></header>
 
   <div class="tabs">
-    <button class="tab on" data-v="tape"><span class="step">ステップ１</span>ばいって なに？</button>
+    <button class="tab on" data-v="tape"><span class="step">ステップ１</span>何倍って なに？</button>
     <button class="tab" data-v="zu"><span class="step">ステップ２</span>かんけいず</button>
     <button class="tab" data-v="moto"><span class="step">ステップ３</span>どっちが もと？</button>
     <button class="tab" data-v="word"><span class="step">ステップ４</span>ぶんしょうだい</button>
   </div>
 
-  <!-- ============ ステップ１：ばいって なに？ ============ -->
+  <!-- ============ ステップ１：何倍って なに？ ============ -->
   <div id="viewTape">
     <div class="picker">
       <span class="lbl">もとにする ながさ</span>
@@ -347,9 +352,10 @@
     </div>
     <div class="stage" id="mStage">
       <p class="mondai" id="mText"></p>
-      <div class="ask" id="mAsk">もとにする数は どっち？</div>
-      <div class="chips pick" id="mPick"></div>
+      <div class="sect">かんけいず</div>
       <div id="mZu"></div>
+      <div class="ask" id="mAsk">もとにする数の はこに 入るのは どっち？</div>
+      <div class="chips pick" id="mPick"></div>
       <div class="verdict" id="mVerdict"></div>
     </div>
     <div class="actions">
@@ -367,9 +373,10 @@
     <div class="drill-main">
       <div class="stage" id="wStage">
         <p class="mondai" id="wText"></p>
+        <div class="sect">かんけいず</div>
+        <div id="wZu"></div>
         <div class="ask" id="wAsk"></div>
         <div class="chips pick" id="wPick"></div>
-        <div id="wZu"></div>
         <div class="verdict" id="wVerdict"></div>
       </div>
       <div class="pad hidden" id="wPad"></div>
@@ -379,7 +386,7 @@
 
 <script>
 /* =========================================================
-   なんばい（3年・倍の考え）
+   何倍（3年・倍の考え）
    ねらい
    ・関係図（もとにする数 ─×□→ くらべる数）に なれる
    ・もんだい文を 読んで どちらが もとにする数か 見つける
@@ -452,10 +459,11 @@ function doneHTML(v,u){return '<span class="fld done">'+(u?valHTML(v,u):v)+'</sp
    o.lit … 'up'（×を つかう）／'dn'（÷を つかう）。どちらの やじるしかを 光らせる */
 function zuHTML(o){
   const back=(o.rateBack!==undefined&&o.rateBack!=='')?o.rateBack:o.rate;
+  const tg=o.target?' target':'';
   const upC='up'+(o.lit==='up'?' lit':(o.lit==='dn'?' dim':''));
   const dnC='dn'+(o.lit==='dn'?' lit':(o.lit==='up'?' dim':''));
   return '<div class="zu">'+
-    '<div class="zubox base">'+
+    '<div class="zubox base'+tg+'">'+
       (o.baseName?'<span class="zname">'+o.baseName+'</span>':'')+
       '<span class="zlab">もとにする数</span>'+
       '<span class="zval">'+o.base+'</span>'+
@@ -473,10 +481,35 @@ function zuHTML(o){
 }
 /* □を もとめる むきから、つかう やじるしを きめる */
 function litOf(ask){return (ask==='base')?'dn':'up';}
+/* まだ どちらが もとにする数か 決まっていない 関係図。
+   名前が 入らないと 数も 入れられない、というのが 目で わかる */
+function emptyZuHTML(p){
+  const r=(p.ask==='rate')?'?':String(p.n);
+  return zuHTML({
+    base:fldHTML('',false), rate:r, cmp:fldHTML('',false),
+    baseName:'<span class="qn">？</span>', cmpName:'<span class="qn">？</span>',
+    rateBack:r, lit:litOf(p.ask), target:true});
+}
+/* 名前と 数を 入れた 関係図（もとにする数が 決まったあと）
+   mode 'blank' … もとめる ところは ? のまま（ステップ３）
+   mode 'live'  … いま 数を 入れている（ステップ４）
+   mode 'done'  … 答えあわせがすんだ（たんいまで 入れる） */
+function filledZuHTML(p,mode,shown){
+  const slot=(v,u)=>(mode==='done')?doneHTML(v,u)
+    :(mode==='live')?fldHTML(shown,true):fldHTML('',false);
+  return zuHTML({
+    base:(p.ask==='base')?slot(p.a,p.u):valHTML(p.a,p.u),
+    rate:(p.ask==='rate')?slot(p.n,'')  :String(p.n),
+    cmp :(p.ask==='cmp') ?slot(p.b,p.u):valHTML(p.b,p.u),
+    baseName:'<span class="named">'+p.A+'</span>',
+    cmpName:'<span class="named">'+p.B+'</span>',
+    rateBack:(p.ask==='rate')?((mode==='done')?String(p.n):'?'):String(p.n),
+    lit:litOf(p.ask)});
+}
 
 /* =========================================================
-   ステップ１：ばいって なに？
-   もとにする テープを ならべて、「○つぶん＝○ばい」を 見せる
+   ステップ１：何倍って なに？
+   もとにする テープを ならべて、「○つぶん＝○倍」を 見せる
 ========================================================= */
 const T={base:4,n:1};
 const MAXN=6;
@@ -495,7 +528,7 @@ function tChips(){
 }
 function tRender(){
   const b=T.base,n=T.n,sum=b*n;
-  $('tCntLab').textContent=n+'ばい';
+  $('tCntLab').textContent=n+'倍';
   /* もとにする数を 1つぶんとして、6つぶんまで 入る ものさしで ならべる */
   $('tBaseRow').innerHTML=tapeBar({parts:1,width:'calc(100% / 6)',cls:'base',val:valHTML(b,'cm')});
   $('tRow').innerHTML=tapeBar({parts:n,width:'calc(100% / 6 * '+n+')',cls:'cmp',
@@ -504,7 +537,7 @@ function tRender(){
   let rows='';
   for(let i=1;i<=n;i++){
     rows+='<div class="row'+(i===n?' new':'')+'">'+
-      b+'cm の '+i+'ばい は '+(b*i)+'cm'+
+      b+'cm の '+i+'倍 は '+(b*i)+'cm'+
       '<span class="sh">'+b+'×'+i+'＝'+(b*i)+'</span></div>';
   }
   $('tTable').innerHTML=rows;
@@ -532,7 +565,7 @@ const UNITBASE={
 };
 /* テープ図と あう cm を 多めに 出す */
 const UNITKEYS=['cm','cm','cm','m','dL','円','こ','まい','g','kg'];
-const ZTYPES=[{k:'cmp',t:'くらべる数'},{k:'rate',t:'なんばい'},{k:'base',t:'もとにする数'},{k:'mix',t:'まぜる'}];
+const ZTYPES=[{k:'cmp',t:'くらべる数'},{k:'rate',t:'何倍'},{k:'base',t:'もとにする数'},{k:'mix',t:'まぜる'}];
 const Z={sel:'cmp',blank:'cmp',a:0,n:0,b:0,u:'cm',input:'',locked:false,correct:0,total:0};
 try{const s=localStorage.getItem('nanbaiZSel');if(s&&ZTYPES.some(x=>x.k===s))Z.sel=s;}catch(e){}
 try{const sc=JSON.parse(sessionStorage.getItem('nanbaiZScore')||'null');
@@ -561,13 +594,13 @@ function zNew(){
   Z.a=pick(UNITBASE[Z.u]);
   Z.b=Z.a*Z.n;
   Z.ans=(Z.blank==='cmp')?Z.b:(Z.blank==='rate')?Z.n:Z.a;
-  Z.ansUnit=(Z.blank==='rate')?'ばい':Z.u;
+  Z.ansUnit=(Z.blank==='rate')?'倍':Z.u;
   zRender();zPad();zScore();refit();
 }
 /* ステップ２の テープ図
    ・もとにする数 … くらべる数の 1つぶんの はば
    ・くらべる数   … 全体で 1本。中を n こに 分けて 見せる
-   　（なんばいを もとめるときは、ヒントか 答えあわせまで 切れ目を 見せない）
+   　（何倍を もとめるときは、ヒントか 答えあわせまで 切れ目を 見せない）
    どちらの テープも のせる数は じぶんの 数（60の ならびでは なく 480） */
 function zTapeHTML(){
   const n=Z.n,u=Z.u;
@@ -575,7 +608,7 @@ function zTapeHTML(){
   const dB=(Z.blank==='cmp' &&!Z.locked)?'?':Z.b;
   const dN=(Z.blank==='rate'&&!Z.locked)?'?':Z.n;
   const split=(Z.blank!=='rate')||Z.hint||Z.locked;   // 切れ目を 見せるか
-  /* もとにする数の テープは ばいが 大きいと ほそくなるので、
+  /* もとにする数の テープは 倍が 大きいと ほそくなるので、
      そのときだけ 数を テープの上（ラベル）に 書く */
   const inside=(n<=4);
   return '<div class="tline">'+
@@ -585,7 +618,7 @@ function zTapeHTML(){
         q:(dA==='?'),val:inside?valHTML(dA,u):''})+'</div>'+
     '</div>'+
     '<div class="tline">'+
-      '<span class="tlab">くらべる数　<span class="cnt">'+dN+'ばい</span></span>'+
+      '<span class="tlab">くらべる数　<span class="cnt">'+dN+'倍</span></span>'+
       '<div class="trow">'+tapeBar({parts:split?n:1,width:'100%',cls:'cmp',
         q:(dB==='?'),val:valHTML(dB,u)})+'</div>'+
     '</div>';
@@ -610,7 +643,7 @@ function zRender(){
     lit:litOf(Z.blank)});
   $('zShiki').innerHTML=zShikiHTML();
   $('zAsk').innerHTML=(Z.blank==='cmp')?'くらべる数は 何'+Z.u+'？'
-    :(Z.blank==='rate')?'くらべる数は もとにする数の 何ばい？'
+    :(Z.blank==='rate')?'くらべる数は もとにする数の 何倍？'
     :'もとにする数は 何'+Z.u+'？';
 }
 function zHint(){
@@ -687,7 +720,7 @@ bindTap($('zHintBtn'),()=>{
 
 /* =========================================================
    もんだい文づくり（ステップ３・４で 使う）
-   ・「〜の ○ばい」の 〜の の前が もとにする数
+   ・「〜の ○倍」の 〜の の前が もとにする数
    ・出てくる じゅんばんを かえて、場所で おぼえないようにする
 ========================================================= */
 const CTX=[
@@ -703,7 +736,7 @@ const CTX=[
   {a:'あさがお',        b:'とうもろこし',    u:'cm', base:[15,20,25,30],           maxN:6}
 ];
 function cueNo(name,rateTxt){
-  return '<span class="cue">'+name+'<b>の</b> '+rateTxt+'ばい</span>';
+  return '<span class="cue">'+name+'<b>の</b> '+rateTxt+'倍</span>';
 }
 function makeWord(){
   const c=pick(CTX);
@@ -728,24 +761,24 @@ function makeWord(){
     q=A+'は 何'+u+' ですか。';ask='base';
   }else{
     state=A+'は '+a+u+' です。'+B+'は '+b+u+' です。';
-    q='<span class="cue">'+A+'を もとにする</span>と、'+B+'は 何ばい ですか。';
+    q='<span class="cue">'+A+'を もとにする</span>と、'+B+'は 何倍 ですか。';
     ask='rate';cueKind='moto';
   }
   const ans=(ask==='cmp')?b:(ask==='rate')?n:a;
   return {A:A,B:B,a:a,b:b,n:n,u:u,ask:ask,cueKind:cueKind,
     html:state+'<span class="q">'+q+'</span>',
-    ans:ans,ansUnit:(ask==='rate')?'ばい':u,
+    ans:ans,ansUnit:(ask==='rate')?'倍':u,
     chips:shuffle([A,B])};
 }
 function motoHint(p){
   if(p.cueKind==='moto')
     return '「<em>'+p.A+'を もとにすると</em>」と 書いてあるね。もとにする数は <em>'+p.A+'</em>';
-  return '「'+p.A+'<em>の</em> '+(p.ask==='rate'?'何':p.n)+'ばい」と 書いてあるね。<em>の</em>の まえの <em>'+p.A+'</em>が もとにする数';
+  return '「'+p.A+'<em>の</em> '+(p.ask==='rate'?'何':p.n)+'倍」と 書いてあるね。「<em>の</em>」の まえの <em>'+p.A+'</em>が もとにする数';
 }
 function motoNg(p){
   return (p.cueKind==='moto')
     ? '「<em>もとにすると</em>」の まえを 見てみよう'
-    : '「〜<em>の</em> ○ばい」の　<em>の</em>の まえを さがしてみよう';
+    : '「〜<em>の</em> ○倍」の　「<em>の</em>」の まえを さがしてみよう';
 }
 
 /* =========================================================
@@ -763,7 +796,7 @@ function mNew(){
   $('mText').className='mondai';
   $('mText').innerHTML=M.p.html;
   $('mVerdict').className='verdict';$('mVerdict').textContent='';
-  $('mZu').innerHTML='';
+  $('mZu').innerHTML=emptyZuHTML(M.p);   // 名前が 入るまで 数も 入れられない
   $('mAsk').classList.remove('hidden');
   $('mNext').disabled=true;
   mChips();mScore();refit();
@@ -804,20 +837,15 @@ function mAnswer(name){
     $('mStage').className='stage correct';
     $('mPick').classList.add('hidden');
     $('mAsk').classList.add('hidden');
-    $('mZu').innerHTML=zuHTML({
-      base:(p.ask==='base')?fldHTML('',false):valHTML(p.a,p.u),
-      rate:(p.ask==='rate')?fldHTML('',false):String(p.n),
-      cmp :(p.ask==='cmp') ?fldHTML('',false):valHTML(p.b,p.u),
-      baseName:p.A,cmpName:p.B,
-      rateBack:(p.ask==='rate')?'?':String(p.n),
-      lit:litOf(p.ask)});
+    $('mZu').innerHTML=filledZuHTML(p,'blank');
     $('mVerdict').className='verdict ok';
-    $('mVerdict').innerHTML='せいかい！ 🎉　'+motoHint(p);
+    $('mVerdict').innerHTML='せいかい！ 🎉　'+motoHint(p)+
+      '。'+p.A+'が はこに 入ると 数も きまる';
     $('mNext').disabled=false;
   }else{
     $('mStage').className='stage wrong';
     $('mVerdict').className='verdict ng';
-    $('mVerdict').innerHTML='もう一回！　'+motoNg(p);
+    $('mVerdict').innerHTML='その はこには 入らないよ。'+motoNg(p);
   }
   mScore();refit();
 }
@@ -838,8 +866,8 @@ function wNew(){
   $('wText').className='mondai';
   $('wText').innerHTML=W.p.html;
   $('wVerdict').className='verdict';$('wVerdict').textContent='';
-  $('wZu').innerHTML='';
-  $('wAsk').textContent='まず、もとにする数は どっち？';
+  $('wZu').innerHTML=emptyZuHTML(W.p);
+  $('wAsk').textContent='まず もとにする数の はこに 入るのは どっち？';
   $('wPad').classList.add('hidden');
   wChips();wScore();refit();
 }
@@ -864,7 +892,7 @@ function wPickBase(name){
   if(name!==p.A){
     $('wStage').className='stage wrong';
     $('wVerdict').className='verdict ng';
-    $('wVerdict').innerHTML='もう一回！　'+motoNg(p);
+    $('wVerdict').innerHTML='その はこには 入らないよ。'+motoNg(p);
     return;
   }
   W.stage=2;
@@ -877,14 +905,8 @@ function wPickBase(name){
   wRender();wPad();refit();
 }
 function wRender(){
-  const p=W.p,shown=W.locked?String(p.ans):W.input;
-  $('wZu').innerHTML=zuHTML({
-    base:(p.ask==='base')?(W.locked?doneHTML(p.a,p.u):fldHTML(shown,true)):valHTML(p.a,p.u),
-    rate:(p.ask==='rate')?(W.locked?doneHTML(p.n,''):fldHTML(shown,true)):String(p.n),
-    cmp :(p.ask==='cmp') ?(W.locked?doneHTML(p.b,p.u):fldHTML(shown,true)):valHTML(p.b,p.u),
-    baseName:p.A,cmpName:p.B,
-    rateBack:(p.ask==='rate')?(W.locked?String(p.ans):'?'):String(p.n),
-    lit:litOf(p.ask)});
+  const p=W.p;
+  $('wZu').innerHTML=filledZuHTML(p,W.locked?'done':'live',W.input);
 }
 function wHint(){
   const p=W.p;
