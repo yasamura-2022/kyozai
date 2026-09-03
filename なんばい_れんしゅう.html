@@ -130,18 +130,26 @@
   .tlab{color:#6f5d3d;font-weight:800;font-size:calc(clamp(12px,3.4vw,16px) * var(--shrink,1))}
   .tlab .big{color:var(--accent-dark);font-size:1.15em}
   .tlab .cnt{color:var(--ng)}
-  .trow{display:flex;gap:2px;width:100%}
-  .tape{height:calc(clamp(20px, calc(var(--fh,100vh) * 0.052), 54px) * var(--shrink,1));
-    flex:0 0 auto;width:calc((100% - 10px)/6);border-radius:6px;
-    display:flex;align-items:center;justify-content:center;
-    font-size:calc(clamp(11px,3vw,15px) * var(--shrink,1));font-weight:800;
-    background:var(--accent-soft);border:2px solid var(--accent);color:var(--accent-dark)}
-  .tape.seg{background:#fdf6e0;border-color:var(--gold);color:#8a6a10;animation:pop .3s}
-  .tape.seg.last{background:var(--flash)}
-  /* まだ わからない ところは 点せんの わく */
-  .tape.q{background:#fff;border-style:dashed;color:#a99a7c}
-  .tape.full{width:100% !important}
-  .tape.split{background:repeating-linear-gradient(90deg,#fdf6e0 0,#fdf6e0 calc(100%/var(--sp,2) - 2px),var(--gold) calc(100%/var(--sp,2) - 2px),var(--gold) calc(100%/var(--sp,2)))}
+  .trow{display:flex;width:100%}
+  /* テープ1本＝1つの数。じぶんの 数を バーの上に のせる。
+     中の 切れ目で 「もとにする数の いくつぶん」を 見せる */
+  .tbar{position:relative;display:flex;border-radius:6px;border:2px solid var(--gold);
+    background:#fdf6e0;
+    height:calc(clamp(22px, calc(var(--fh,100vh) * 0.055), 56px) * var(--shrink,1))}
+  .tbar.base{border-color:var(--accent);background:var(--accent-soft)}
+  .tbar.q{background:#fff;border-style:dashed}
+  .tcell{flex:1 1 0;min-width:0;border-right:2px dashed var(--gold)}
+  .tcell:last-child{border-right:0}
+  .tbar.base .tcell{border-right-color:var(--accent)}
+  .tcell.hot{animation:hotcell .45s}
+  @keyframes hotcell{0%{background:var(--gold)}100%{background:transparent}}
+  .tval{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+    background:#fff;border-radius:8px;padding:1px 8px;white-space:nowrap;
+    box-shadow:0 0 0 1px rgba(0,0,0,.07);
+    font-weight:800;color:#8a6a10;
+    font-size:calc(clamp(12px,3.2vw,17px) * var(--shrink,1))}
+  .tbar.base .tval{color:var(--accent-dark)}
+  .tbar.q .tval{color:#a99a7c}
   @keyframes pop{0%{transform:scale(.7)}60%{transform:scale(1.12)}100%{transform:scale(1)}}
 
   /* きまり見つけの表 */
@@ -287,11 +295,11 @@
     <div class="stage" id="tStage">
       <div class="tapes">
         <div class="tline">
-          <span class="tlab">もとにする数　<span class="big" id="tBaseLab"></span></span>
+          <span class="tlab">もとにする数</span>
           <div class="trow" id="tBaseRow"></div>
         </div>
         <div class="tline">
-          <span class="tlab">くらべる数　<span class="cnt" id="tCntLab"></span>　<span class="big" id="tSumLab"></span></span>
+          <span class="tlab">くらべる数　<span class="cnt" id="tCntLab"></span></span>
           <div class="trow" id="tRow"></div>
         </div>
       </div>
@@ -414,6 +422,22 @@ try{const s=JSON.parse(localStorage.getItem('nanbaiStreak')||'null');if(s)streak
 function saveStreaks(){try{localStorage.setItem('nanbaiStreak',JSON.stringify(streaks));}catch(e){}}
 const GOAL=10;
 
+/* ---------- テープ図 ----------
+   o.parts … 中の 切れ目の 数（1なら 切れ目なし）
+   o.width … バーの よこはば（css）
+   o.cls   … 'base'（もとにする数）／'cmp'（くらべる数）
+   o.val   … バーに のせる 数（そのテープ じしんの 数）
+   o.q     … まだ わからない テープ（点せんにする）
+   o.hot   … いちばん うしろの 1つぶんを 光らせる（ステップ１で ふえたところ） */
+function tapeBar(o){
+  let cells='';
+  for(let i=0;i<o.parts;i++){
+    cells+='<div class="tcell'+((o.hot&&i===o.parts-1)?' hot':'')+'"></div>';
+  }
+  const val=o.val?'<span class="tval">'+o.val+'</span>':'';
+  return '<div class="tbar '+o.cls+(o.q?' q':'')+'" style="width:'+o.width+'">'+cells+val+'</div>';
+}
+
 /* ---------- 関係図 ---------- */
 function unitHTML(u){return '<span class="unit">'+u+'</span>';}
 function valHTML(n,u){return n+unitHTML(u);}
@@ -471,13 +495,11 @@ function tChips(){
 }
 function tRender(){
   const b=T.base,n=T.n,sum=b*n;
-  $('tBaseLab').innerHTML=valHTML(b,'cm');
   $('tCntLab').textContent=n+'ばい';
-  $('tSumLab').innerHTML=valHTML(sum,'cm');
-  $('tBaseRow').innerHTML='<div class="tape">'+b+'</div>';
-  let segs='';
-  for(let i=1;i<=n;i++)segs+='<div class="tape seg'+(i===n?' last':'')+'">'+b+'</div>';
-  $('tRow').innerHTML=segs;
+  /* もとにする数を 1つぶんとして、6つぶんまで 入る ものさしで ならべる */
+  $('tBaseRow').innerHTML=tapeBar({parts:1,width:'calc(100% / 6)',cls:'base',val:valHTML(b,'cm')});
+  $('tRow').innerHTML=tapeBar({parts:n,width:'calc(100% / 6 * '+n+')',cls:'cmp',
+    val:valHTML(sum,'cm'),hot:(n>1)});
   $('tZu').innerHTML=zuHTML({base:valHTML(b,'cm'),rate:n,cmp:valHTML(sum,'cm'),lit:'up'});
   let rows='';
   for(let i=1;i<=n;i++){
@@ -542,33 +564,30 @@ function zNew(){
   Z.ansUnit=(Z.blank==='rate')?'ばい':Z.u;
   zRender();zPad();zScore();refit();
 }
-/* テープ1つぶんの よこはば。ならべた テープが 画面いっぱいになるようにする */
-function segStyle(n){return 'width:calc((100% - '+((n-1)*3)+'px)/'+n+')';}
 /* ステップ２の テープ図
-   ・もとにする数 … 1つぶん
-   ・くらべる数   … n つぶん（なんばいを もとめるときは 切れ目を 見せない）
-   これで「もとにする数の いくつぶんか」が 目で わかる */
+   ・もとにする数 … くらべる数の 1つぶんの はば
+   ・くらべる数   … 全体で 1本。中を n こに 分けて 見せる
+   　（なんばいを もとめるときは、ヒントか 答えあわせまで 切れ目を 見せない）
+   どちらの テープも のせる数は じぶんの 数（60の ならびでは なく 480） */
 function zTapeHTML(){
   const n=Z.n,u=Z.u;
   const dA=(Z.blank==='base'&&!Z.locked)?'?':Z.a;
   const dB=(Z.blank==='cmp' &&!Z.locked)?'?':Z.b;
   const dN=(Z.blank==='rate'&&!Z.locked)?'?':Z.n;
   const split=(Z.blank!=='rate')||Z.hint||Z.locked;   // 切れ目を 見せるか
-  const qA=(dA==='?')?' q':'';
-  let segs='';
-  if(split){
-    for(let i=0;i<n;i++)segs+='<div class="tape seg'+qA+'" style="'+segStyle(n)+'">'+dA+'</div>';
-  }else{
-    segs='<div class="tape seg full">'+dB+'</div>';
-  }
+  /* もとにする数の テープは ばいが 大きいと ほそくなるので、
+     そのときだけ 数を テープの上（ラベル）に 書く */
+  const inside=(n<=4);
   return '<div class="tline">'+
-      '<span class="tlab">もとにする数　<span class="big">'+valHTML(dA,u)+'</span></span>'+
-      '<div class="trow"><div class="tape'+qA+'" style="'+segStyle(n)+'">'+dA+'</div></div>'+
+      '<span class="tlab">もとにする数'+
+        (inside?'':'　<span class="big">'+valHTML(dA,u)+'</span>')+'</span>'+
+      '<div class="trow">'+tapeBar({parts:1,width:'calc(100% / '+n+')',cls:'base',
+        q:(dA==='?'),val:inside?valHTML(dA,u):''})+'</div>'+
     '</div>'+
     '<div class="tline">'+
-      '<span class="tlab">くらべる数　<span class="cnt">'+dN+'ばい</span>　'+
-        '<span class="big">'+valHTML(dB,u)+'</span></span>'+
-      '<div class="trow">'+segs+'</div>'+
+      '<span class="tlab">くらべる数　<span class="cnt">'+dN+'ばい</span></span>'+
+      '<div class="trow">'+tapeBar({parts:split?n:1,width:'100%',cls:'cmp',
+        q:(dB==='?'),val:valHTML(dB,u)})+'</div>'+
     '</div>';
 }
 /* しき。ヒントを おしたときと 答えあわせのあとだけ 出す */
