@@ -88,7 +88,8 @@
   }
   .stage.correct{border-color:var(--ok);background:#f2f9ee}
   .stage.wrong{border-color:var(--ng);background:#fcf0f0}
-  .verdict{min-height:1.3em;font-size:clamp(12px,3.3vw,16px);font-weight:800;line-height:1.35}
+  .verdict{min-height:1.3em;font-weight:800;line-height:1.35;
+    font-size:calc(clamp(12px,3.3vw,16px) * var(--shrink,1))}
   .verdict.ok{color:var(--ok)}
   .verdict.ng{color:var(--ng)}
   .verdict em{font-style:normal;color:var(--accent-dark)}
@@ -98,7 +99,7 @@
   /* ===== 関係図（4つのステップで 同じ形を使う） ===== */
   .zu{display:flex;align-items:stretch;justify-content:center;gap:4px;
     width:100%;max-width:520px;margin:0 auto;
-    font-size:calc(clamp(15px, calc(var(--fh,100vh) * 0.034), 26px) * var(--shrink,1))}
+    font-size:calc(clamp(15px, calc(var(--fh,100vh) * 0.036), 32px) * var(--shrink,1))}
   .zubox{flex:1 1 0;min-width:0;border:3px solid var(--line);border-radius:14px;background:#fff;
     padding:5px 4px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px}
   .zubox.base{border-color:var(--accent);background:var(--accent-soft)}
@@ -111,28 +112,36 @@
     padding:0 2px;color:#6f5d3d}
   .zuarr .up{font-size:.72em;font-weight:800;white-space:nowrap;color:var(--accent-dark)}
   .zuarr .dn{font-size:.55em;white-space:nowrap;opacity:.7}
+  /* いま つかう やじるしだけ 光らせる（×か ÷か が 見えるように） */
+  .zuarr .lit{background:var(--flash);border-radius:8px;padding:1px 4px;opacity:1;font-weight:800}
+  .zuarr .dim{opacity:.3}
   /* 数を入れる わく */
   .fld{display:inline-block;min-width:2.2ch;padding:0 6px;border-radius:10px;border:3px dashed var(--line);
     background:#fff;color:var(--ink);font-weight:800;font-size:inherit;line-height:1.1}
   .fld.empty{color:#c7b891}
   .fld.on{border-style:solid;border-color:var(--accent);background:var(--flash);animation:glow 1.2s infinite}
+  .fld.done{border-style:solid;border-color:var(--ok);background:#eaf5e4}
   @keyframes glow{0%,100%{box-shadow:0 0 0 0 rgba(0,0,0,0)}50%{box-shadow:0 0 0 5px var(--accent-soft)}}
   .zuarr .fld{padding:0 3px;border-width:2px}
 
   /* ===== ステップ１：テープ ===== */
   .tapes{display:flex;flex-direction:column;gap:9px;text-align:left}
   .tline{display:flex;flex-direction:column;gap:3px}
-  .tlab{font-size:clamp(12px,3.4vw,16px);color:#6f5d3d;font-weight:800}
+  .tlab{color:#6f5d3d;font-weight:800;font-size:calc(clamp(12px,3.4vw,16px) * var(--shrink,1))}
   .tlab .big{color:var(--accent-dark);font-size:1.15em}
   .tlab .cnt{color:var(--ng)}
   .trow{display:flex;gap:2px;width:100%}
-  .tape{height:calc(clamp(20px, calc(var(--fh,100vh) * 0.048), 42px) * var(--shrink,1));
+  .tape{height:calc(clamp(20px, calc(var(--fh,100vh) * 0.052), 54px) * var(--shrink,1));
     flex:0 0 auto;width:calc((100% - 10px)/6);border-radius:6px;
     display:flex;align-items:center;justify-content:center;
-    font-size:clamp(11px,3vw,15px);font-weight:800;
+    font-size:calc(clamp(11px,3vw,15px) * var(--shrink,1));font-weight:800;
     background:var(--accent-soft);border:2px solid var(--accent);color:var(--accent-dark)}
   .tape.seg{background:#fdf6e0;border-color:var(--gold);color:#8a6a10;animation:pop .3s}
   .tape.seg.last{background:var(--flash)}
+  /* まだ わからない ところは 点せんの わく */
+  .tape.q{background:#fff;border-style:dashed;color:#a99a7c}
+  .tape.full{width:100% !important}
+  .tape.split{background:repeating-linear-gradient(90deg,#fdf6e0 0,#fdf6e0 calc(100%/var(--sp,2) - 2px),var(--gold) calc(100%/var(--sp,2) - 2px),var(--gold) calc(100%/var(--sp,2)))}
   @keyframes pop{0%{transform:scale(.7)}60%{transform:scale(1.12)}100%{transform:scale(1)}}
 
   /* きまり見つけの表 */
@@ -159,7 +168,22 @@
   .mondai .cue b{font-weight:700}
   .mondai.hi .cue{background:var(--flash);border-radius:6px;padding:1px 3px}
   .mondai.hi .cue b{color:#c0392b;font-weight:800}
-  .ask{font-size:clamp(12px,3.4vw,16px);font-weight:800;color:#8a7a5f}
+  .ask{font-weight:800;color:#8a7a5f;font-size:calc(clamp(12px,3.4vw,16px) * var(--shrink,1))}
+  .askrow{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap}
+  /* 上が テープ図、下が 関係図。同じことを 2つの 見方で 出す */
+  .sect{text-align:left;font-weight:800;letter-spacing:.08em;color:#a99a7c;margin-bottom:-2px;
+    font-size:calc(clamp(10px,2.8vw,13px) * var(--shrink,1))}
+  .hintbtn{flex:none;border:2px solid var(--line);border-radius:12px;background:#fff;color:#8a7a5f;
+    font-weight:800;padding:6px 16px;cursor:pointer;
+    font-size:calc(clamp(12px,3.2vw,15px) * var(--shrink,1));
+    min-height:calc(40px * var(--shrink,1))}
+  .hintbtn.on{background:var(--flash);border-color:var(--gold);color:var(--ink)}
+  /* しき（ヒントを おしたときと 答えあわせのあとに 出す） */
+  .shiki{font-weight:800;font-variant-numeric:tabular-nums;min-height:1.25em;
+    font-size:calc(clamp(14px, calc(var(--fh,100vh) * 0.034), 26px) * var(--shrink,1))}
+  .shiki .lab{font-size:.62em;color:#8a7a5f;margin-right:.4em}
+  .shiki .sq{display:inline-block;min-width:1.7em;color:var(--accent-dark);
+    border-bottom:3px solid var(--gold);padding:0 4px}
   .pick{gap:8px}
   .pick .chip{min-height:48px;font-size:clamp(13px,3.6vw,17px);flex:1 1 0;justify-content:center;
     white-space:normal;word-break:keep-all;line-height:1.2}
@@ -198,6 +222,7 @@
   .key.enter{background:var(--ok);color:#fff;box-shadow:0 3px 0 #446838}
   .key.next{background:var(--gold);color:#fff;box-shadow:0 3px 0 #a5811a}
 
+  #zStage{gap:10px}
   .drill-main{flex:1;min-height:0;display:flex;flex-direction:column;gap:6px}
   .drill-main .stage{flex:1;min-height:0}
   /* ステップ１・３は カードを のばして、ボタンを 下に そろえる */
@@ -290,8 +315,15 @@
     </div>
     <div class="drill-main">
       <div class="stage" id="zStage">
-        <div class="ask" id="zAsk">□に 入る 数は？</div>
+        <div class="askrow">
+          <div class="ask" id="zAsk">□に 入る 数は？</div>
+          <button class="hintbtn" id="zHintBtn" type="button">ヒント</button>
+        </div>
+        <div class="sect">テープ図</div>
+        <div class="tapes" id="zTape"></div>
+        <div class="sect">かんけいず</div>
         <div id="zZu"></div>
+        <div class="shiki" id="zShiki"></div>
         <div class="verdict" id="zVerdict"></div>
       </div>
       <div class="pad" id="zPad"></div>
@@ -388,25 +420,35 @@ function valHTML(n,u){return n+unitHTML(u);}
 function fldHTML(txt,on){
   return '<span class="fld'+(on?' on':'')+(txt?'':' empty')+'">'+(txt||'?')+'</span>';
 }
-/* baseHTML / rateHTML / cmpHTML は できあがった 文字を わたす */
-function zuHTML(baseHTML,rateHTML,cmpHTML,baseName,cmpName,rateBack){
+/* 答えあわせのあとの わく。たんいまで 入れて 図を かんせいさせる */
+function doneHTML(v,u){return '<span class="fld done">'+(u?valHTML(v,u):v)+'</span>';}
+/* o.base / o.rate / o.cmp … できあがった 文字を わたす
+   o.baseName / o.cmpName … なまえ（いらなければ 出さない）
+   o.rateBack … 下の やじるしに 出す 文字（なければ o.rate と 同じ）
+   o.lit … 'up'（×を つかう）／'dn'（÷を つかう）。どちらの やじるしかを 光らせる */
+function zuHTML(o){
+  const back=(o.rateBack!==undefined&&o.rateBack!=='')?o.rateBack:o.rate;
+  const upC='up'+(o.lit==='up'?' lit':(o.lit==='dn'?' dim':''));
+  const dnC='dn'+(o.lit==='dn'?' lit':(o.lit==='up'?' dim':''));
   return '<div class="zu">'+
     '<div class="zubox base">'+
-      (baseName?'<span class="zname">'+baseName+'</span>':'')+
+      (o.baseName?'<span class="zname">'+o.baseName+'</span>':'')+
       '<span class="zlab">もとにする数</span>'+
-      '<span class="zval">'+baseHTML+'</span>'+
+      '<span class="zval">'+o.base+'</span>'+
     '</div>'+
     '<div class="zuarr">'+
-      '<span class="up">─ ×'+rateHTML+' →</span>'+
-      '<span class="dn">← ÷'+(rateBack||rateHTML)+' ─</span>'+
+      '<span class="'+upC+'">─ ×'+o.rate+' →</span>'+
+      '<span class="'+dnC+'">← ÷'+back+' ─</span>'+
     '</div>'+
     '<div class="zubox cmp">'+
-      (cmpName?'<span class="zname">'+cmpName+'</span>':'')+
+      (o.cmpName?'<span class="zname">'+o.cmpName+'</span>':'')+
       '<span class="zlab">くらべる数</span>'+
-      '<span class="zval">'+cmpHTML+'</span>'+
+      '<span class="zval">'+o.cmp+'</span>'+
     '</div>'+
   '</div>';
 }
+/* □を もとめる むきから、つかう やじるしを きめる */
+function litOf(ask){return (ask==='base')?'dn':'up';}
 
 /* =========================================================
    ステップ１：ばいって なに？
@@ -436,7 +478,7 @@ function tRender(){
   let segs='';
   for(let i=1;i<=n;i++)segs+='<div class="tape seg'+(i===n?' last':'')+'">'+b+'</div>';
   $('tRow').innerHTML=segs;
-  $('tZu').innerHTML=zuHTML(valHTML(b,'cm'),n,valHTML(sum,'cm'));
+  $('tZu').innerHTML=zuHTML({base:valHTML(b,'cm'),rate:n,cmp:valHTML(sum,'cm'),lit:'up'});
   let rows='';
   for(let i=1;i<=n;i++){
     rows+='<div class="row'+(i===n?' new':'')+'">'+
@@ -446,6 +488,7 @@ function tRender(){
   $('tTable').innerHTML=rows;
   $('tAdd').disabled=(n>=MAXN);
   $('tBack').disabled=(n<=1);
+  refit();
 }
 bindTap($('tAdd'),()=>{if(T.n<MAXN){T.n++;tRender();}});
 bindTap($('tBack'),()=>{if(T.n>1){T.n--;tRender();}});
@@ -462,9 +505,11 @@ const UNITBASE={
   'kg':[2,3,4,5,6],
   'g' :[20,30,40,50,60,80,100],
   '円':[20,30,40,50,60,70,80,100],
-  'こ':[2,3,4,5,6,7,8,9]
+  'こ':[2,3,4,5,6,7,8,9],
+  'まい':[2,3,4,5,6,7,8,9]
 };
-const UNITKEYS=Object.keys(UNITBASE);
+/* テープ図と あう cm を 多めに 出す */
+const UNITKEYS=['cm','cm','cm','m','dL','円','こ','まい','g','kg'];
 const ZTYPES=[{k:'cmp',t:'くらべる数'},{k:'rate',t:'なんばい'},{k:'base',t:'もとにする数'},{k:'mix',t:'まぜる'}];
 const Z={sel:'cmp',blank:'cmp',a:0,n:0,b:0,u:'cm',input:'',locked:false,correct:0,total:0};
 try{const s=localStorage.getItem('nanbaiZSel');if(s&&ZTYPES.some(x=>x.k===s))Z.sel=s;}catch(e){}
@@ -484,7 +529,8 @@ function zOps(){
   });
 }
 function zNew(){
-  Z.input='';Z.locked=false;
+  Z.input='';Z.locked=false;Z.hint=false;
+  $('zHintBtn').classList.remove('on');
   $('zStage').className='stage';
   $('zVerdict').className='verdict';$('zVerdict').textContent='';
   Z.blank=(Z.sel==='mix')?pick(['cmp','rate','base']):Z.sel;
@@ -494,15 +540,56 @@ function zNew(){
   Z.b=Z.a*Z.n;
   Z.ans=(Z.blank==='cmp')?Z.b:(Z.blank==='rate')?Z.n:Z.a;
   Z.ansUnit=(Z.blank==='rate')?'ばい':Z.u;
-  zRender();zPad();zScore();
+  zRender();zPad();zScore();refit();
+}
+/* テープ1つぶんの よこはば。ならべた テープが 画面いっぱいになるようにする */
+function segStyle(n){return 'width:calc((100% - '+((n-1)*3)+'px)/'+n+')';}
+/* ステップ２の テープ図
+   ・もとにする数 … 1つぶん
+   ・くらべる数   … n つぶん（なんばいを もとめるときは 切れ目を 見せない）
+   これで「もとにする数の いくつぶんか」が 目で わかる */
+function zTapeHTML(){
+  const n=Z.n,u=Z.u;
+  const dA=(Z.blank==='base'&&!Z.locked)?'?':Z.a;
+  const dB=(Z.blank==='cmp' &&!Z.locked)?'?':Z.b;
+  const dN=(Z.blank==='rate'&&!Z.locked)?'?':Z.n;
+  const split=(Z.blank!=='rate')||Z.hint||Z.locked;   // 切れ目を 見せるか
+  const qA=(dA==='?')?' q':'';
+  let segs='';
+  if(split){
+    for(let i=0;i<n;i++)segs+='<div class="tape seg'+qA+'" style="'+segStyle(n)+'">'+dA+'</div>';
+  }else{
+    segs='<div class="tape seg full">'+dB+'</div>';
+  }
+  return '<div class="tline">'+
+      '<span class="tlab">もとにする数　<span class="big">'+valHTML(dA,u)+'</span></span>'+
+      '<div class="trow"><div class="tape'+qA+'" style="'+segStyle(n)+'">'+dA+'</div></div>'+
+    '</div>'+
+    '<div class="tline">'+
+      '<span class="tlab">くらべる数　<span class="cnt">'+dN+'ばい</span>　'+
+        '<span class="big">'+valHTML(dB,u)+'</span></span>'+
+      '<div class="trow">'+segs+'</div>'+
+    '</div>';
+}
+/* しき。ヒントを おしたときと 答えあわせのあとだけ 出す */
+function zShikiHTML(){
+  if(!Z.hint&&!Z.locked)return '';
+  const ans=Z.locked?('<span class="sq">'+Z.ans+'</span>'):'<span class="sq">□</span>';
+  const body=(Z.blank==='cmp')?(Z.a+' × '+Z.n+' ＝ '+ans)
+    :(Z.blank==='rate')?(Z.b+' ÷ '+Z.a+' ＝ '+ans)
+    :(Z.b+' ÷ '+Z.n+' ＝ '+ans);
+  return '<span class="lab">しき</span>'+body;
 }
 function zRender(){
   const shown=Z.locked?String(Z.ans):Z.input;
-  const bs=(Z.blank==='base')?fldHTML(shown,!Z.locked):valHTML(Z.a,Z.u);
-  const rt=(Z.blank==='rate')?fldHTML(shown,!Z.locked):String(Z.n);
-  const cs=(Z.blank==='cmp')?fldHTML(shown,!Z.locked):valHTML(Z.b,Z.u);
-  const rb=(Z.blank==='rate')?(Z.locked?String(Z.ans):'?'):String(Z.n);
-  $('zZu').innerHTML=zuHTML(bs,rt,cs,'','',rb);
+  $('zTape').innerHTML=zTapeHTML();
+  $('zZu').innerHTML=zuHTML({
+    base:(Z.blank==='base')?(Z.locked?doneHTML(Z.a,Z.u):fldHTML(shown,true)):valHTML(Z.a,Z.u),
+    rate:(Z.blank==='rate')?(Z.locked?doneHTML(Z.n,''):fldHTML(shown,true)):String(Z.n),
+    cmp :(Z.blank==='cmp') ?(Z.locked?doneHTML(Z.b,Z.u):fldHTML(shown,true)):valHTML(Z.b,Z.u),
+    rateBack:(Z.blank==='rate')?(Z.locked?String(Z.ans):'?'):String(Z.n),
+    lit:litOf(Z.blank)});
+  $('zShiki').innerHTML=zShikiHTML();
   $('zAsk').innerHTML=(Z.blank==='cmp')?'くらべる数は 何'+Z.u+'？'
     :(Z.blank==='rate')?'くらべる数は もとにする数の 何ばい？'
     :'もとにする数は 何'+Z.u+'？';
@@ -541,7 +628,7 @@ function zCheck(){
     $('zVerdict').className='verdict ng';
     $('zVerdict').innerHTML='おしい！ こたえは '+Z.ans+Z.ansUnit+'　'+zHint();
   }
-  zSaveScore();zRender();zPad();zScore();
+  zSaveScore();zRender();zPad();zScore();refit();
 }
 function zPress(v){
   if(Z.locked)return;
@@ -573,6 +660,11 @@ function buildPad(padEl,press,check,next,locked){
   }
 }
 function zPad(){buildPad($('zPad'),zPress,zCheck,zNew,Z.locked);}
+bindTap($('zHintBtn'),()=>{
+  Z.hint=!Z.hint;
+  $('zHintBtn').classList.toggle('on',Z.hint);
+  zRender();
+});
 
 /* =========================================================
    もんだい文づくり（ステップ３・４で 使う）
@@ -655,7 +747,7 @@ function mNew(){
   $('mZu').innerHTML='';
   $('mAsk').classList.remove('hidden');
   $('mNext').disabled=true;
-  mChips();mScore();
+  mChips();mScore();refit();
 }
 function mChips(){
   const box=$('mPick');box.innerHTML='';
@@ -693,11 +785,13 @@ function mAnswer(name){
     $('mStage').className='stage correct';
     $('mPick').classList.add('hidden');
     $('mAsk').classList.add('hidden');
-    $('mZu').innerHTML=zuHTML(
-      (p.ask==='base')?fldHTML('',false):valHTML(p.a,p.u),
-      (p.ask==='rate')?fldHTML('',false):String(p.n),
-      (p.ask==='cmp')?fldHTML('',false):valHTML(p.b,p.u),
-      p.A,p.B,(p.ask==='rate')?'?':String(p.n));
+    $('mZu').innerHTML=zuHTML({
+      base:(p.ask==='base')?fldHTML('',false):valHTML(p.a,p.u),
+      rate:(p.ask==='rate')?fldHTML('',false):String(p.n),
+      cmp :(p.ask==='cmp') ?fldHTML('',false):valHTML(p.b,p.u),
+      baseName:p.A,cmpName:p.B,
+      rateBack:(p.ask==='rate')?'?':String(p.n),
+      lit:litOf(p.ask)});
     $('mVerdict').className='verdict ok';
     $('mVerdict').innerHTML='せいかい！ 🎉　'+motoHint(p);
     $('mNext').disabled=false;
@@ -706,7 +800,7 @@ function mAnswer(name){
     $('mVerdict').className='verdict ng';
     $('mVerdict').innerHTML='もう一回！　'+motoNg(p);
   }
-  mScore();
+  mScore();refit();
 }
 bindTap($('mNext'),()=>{if(!$('mNext').disabled)mNew();});
 
@@ -728,7 +822,7 @@ function wNew(){
   $('wZu').innerHTML='';
   $('wAsk').textContent='まず、もとにする数は どっち？';
   $('wPad').classList.add('hidden');
-  wChips();wScore();
+  wChips();wScore();refit();
 }
 function wChips(){
   const box=$('wPick');box.innerHTML='';box.classList.remove('hidden');
@@ -761,15 +855,17 @@ function wPickBase(name){
   $('wVerdict').className='verdict ok';
   $('wVerdict').innerHTML='そう！ もとにする数は <em>'+p.A+'</em>';
   $('wAsk').innerHTML='つぎに □の 数を 入れよう';
-  wRender();wPad();
+  wRender();wPad();refit();
 }
 function wRender(){
   const p=W.p,shown=W.locked?String(p.ans):W.input;
-  $('wZu').innerHTML=zuHTML(
-    (p.ask==='base')?fldHTML(shown,!W.locked):valHTML(p.a,p.u),
-    (p.ask==='rate')?fldHTML(shown,!W.locked):String(p.n),
-    (p.ask==='cmp')?fldHTML(shown,!W.locked):valHTML(p.b,p.u),
-    p.A,p.B,(p.ask==='rate')?(W.locked?String(p.ans):'?'):String(p.n));
+  $('wZu').innerHTML=zuHTML({
+    base:(p.ask==='base')?(W.locked?doneHTML(p.a,p.u):fldHTML(shown,true)):valHTML(p.a,p.u),
+    rate:(p.ask==='rate')?(W.locked?doneHTML(p.n,''):fldHTML(shown,true)):String(p.n),
+    cmp :(p.ask==='cmp') ?(W.locked?doneHTML(p.b,p.u):fldHTML(shown,true)):valHTML(p.b,p.u),
+    baseName:p.A,cmpName:p.B,
+    rateBack:(p.ask==='rate')?(W.locked?String(p.ans):'?'):String(p.n),
+    lit:litOf(p.ask)});
 }
 function wHint(){
   const p=W.p;
@@ -799,7 +895,7 @@ function wCheck(){
     $('wVerdict').className='verdict ng';
     $('wVerdict').innerHTML='おしい！ こたえは '+p.ans+p.ansUnit+'　'+wHint();
   }
-  wSaveScore();wRender();wPad();wScore();
+  wSaveScore();wRender();wPad();wScore();refit();
 }
 function wPress(v){
   if(W.locked||W.stage!==2)return;
@@ -855,6 +951,9 @@ document.addEventListener('keydown',e=>{
   }
 });
 
+/* 中身が かわったあとに 1画面に 収まっているか 見なおす */
+function refit(){if(typeof fitShrink==='function')fitShrink();}
+
 /* ===== 枠の高さを実測して、その中に必ず収める ===== */
 function frameHeight(){
   const c=document.documentElement.clientHeight||0;
@@ -873,13 +972,26 @@ function fitShrink(){
   shrinkPass=0;
   requestAnimationFrame(shrinkStep);
 }
+/* あふれているところを さがす。カードは overflow:hidden なので
+   .app だけ 見ていると 中身が はみ出しているのに 気づけない */
+function overflowInfo(){
+  let worst={over:0,ratio:1};
+  const check=el=>{
+    if(!el||el.clientHeight<=0)return;
+    const over=el.scrollHeight-el.clientHeight;
+    if(over>worst.over)worst={over:over,ratio:el.clientHeight/el.scrollHeight};
+  };
+  check(document.querySelector('.app'));
+  document.querySelectorAll('.stage').forEach(st=>{if(st.offsetParent!==null)check(st);});
+  return worst;
+}
 function shrinkStep(){
   const appEl=document.querySelector('.app');
   if(!appEl)return;
-  const over=appEl.scrollHeight-appEl.clientHeight;
+  const w=overflowInfo(),over=w.over;
   if(over>2&&shrinkPass<6){
     const cur=parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--shrink'))||1;
-    const next=Math.max(.55,cur*Math.max(.8,appEl.clientHeight/appEl.scrollHeight));
+    const next=Math.max(.55,cur*Math.max(.8,w.ratio));
     document.documentElement.style.setProperty('--shrink',next.toFixed(3));
     shrinkPass++;
     requestAnimationFrame(shrinkStep);
