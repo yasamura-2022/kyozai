@@ -683,6 +683,22 @@ const cel={c:document.getElementById('cCorrect'),t:document.getElementById('cTot
    「まぜる」のときは、その問題の しるし（＋か－）のほうに数える */
 function pKeyOp(op){return 'p:'+pkey()+':'+op;}
 function pKey(){return pKeyOp(P.op);}
+
+/* ステップ４は はじめ「たす」だけ。たし算を UNLOCK_N もん 正かいすると
+   「ひく」「まぜる」の ボタンが 出てくる。
+   ・れんぞくでなくてよい（苦手な子が たどりつけなくなるのを ふせぐ）
+   ・記録にのこるので、つぎに開いたときは 出たまま
+   ・アプリごと（長さ／重さ／かさ）に べつべつ */
+const UNLOCK_N=5;
+let plusOK={};
+try{const o=JSON.parse(localStorage.getItem('tanniPlusOK')||'null');if(o)plusOK=o;}catch(e){}
+function savePlusOK(){try{localStorage.setItem('tanniPlusOK',JSON.stringify(plusOK));}catch(e){}}
+function opsOpen(){return (plusOK[CAT]|0)>=UNLOCK_N;}
+function renderOps(){
+  const row=document.querySelector('.ops');
+  if(row)row.classList.toggle('hidden',!opsOpen());
+  if(!opsOpen())P.mode='+';            // 出ていないあいだは たし算だけ
+}
 /* ステップ４で使う数。1km400m ＋ 800m のように、下のけたが 0 の数だけにする。
    くりあがり・くりさがりに集中させたいので、ここでは「0の ばしょ」の
    難しさ（2km30m のような形）を重ねない。それはステップ３で練習する */
@@ -786,6 +802,14 @@ function pCheck(){
     }else if(stamps[k]){cVerdict.textContent='せいかい！ 🎉';}
     else{cVerdict.textContent='せいかい！ 🎉（あと '+(GOAL-setStreak[k])+'もん で スタンプ）';}
     saveStreak();
+    /* ひき算の ボタンを 出すかどうか */
+    if(P.op==='+'&&!opsOpen()){
+      plusOK[CAT]=(plusOK[CAT]|0)+1;savePlusOK();
+      if(opsOpen()){
+        renderOps();fitShrink();
+        cVerdict.innerHTML=cVerdict.innerHTML+'<br>ひきざんも できるように なったよ！';
+      }
+    }
   }else{
     if(!stamps[k])pQueue.push({op:P.op,a1:P.a1,b1:P.b1,b2:P.b2,ans:P.ans});
     setStreak[k]=0;saveStreak();
@@ -931,7 +955,7 @@ window.addEventListener('orientationchange',()=>setTimeout(fitToFrame,200));
 window.addEventListener('load',fitToFrame);
 
 /* ---------- はじめの表示 ---------- */
-refillQueue();buildChips();fRender();dNew();mNew();pNew();fitToFrame();
+refillQueue();buildChips();renderOps();fRender();dNew();mNew();pNew();fitToFrame();
 </script>
 </body>
 </html>
