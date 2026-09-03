@@ -525,13 +525,16 @@ const mel={c:document.getElementById('mCorrect'),t:document.getElementById('mTot
 
 function mKey(){return 'm:'+pkey();}
 function mTotalVal(){return M.a*pair().r+M.b;}
-/* のこりの数：くみあわせによって、きりのよい数だけを出す */
+/* のこりの数。うしろのグループは「0の ばしょ」でつまずきやすい形。
+   3km50m＝3050m、2080m＝2km80m、305cm＝3m5cm のような問題を わざと入れている */
 function mRests(){
   const r=pair().r;
   if(r===10) return [1,2,3,4,5,6,7,8,9];
-  if(r===100)return [5,10,20,25,30,40,50,60,70,75,80,90];
-  return [50,100,200,250,300,400,500,600,700,750,800,900];
+  if(r===100)return [10,20,25,30,40,50,60,70,75,80,90,  2,5,8];
+  return [100,200,250,300,400,500,600,700,750,800,900,  20,30,50,60,80,90];
 }
+/* のこりが たんいより1けた小さいとき＝0の ばしょに 気をつける形 */
+function isHardRest(b,r){return b<r/10;}
 function mNew(){
   M.f=['',''];M.act=0;M.locked=false;
   mStage.className='stage';mVerdict.className='verdict';mVerdict.textContent='';
@@ -576,9 +579,10 @@ function mScore(){
 }
 function mHint(){
   const p=pair();
+  const care=isHardRest(M.b,p.r)?'。0の ばしょに 気をつけて':'';
   return (M.dir==='a')
-    ? '1'+p.big+' は <em>'+p.r+p.small+'</em>。あわせて かんがえるよ'
-    : '<em>'+p.r+p.small+'</em> で 1'+p.big+'。のこりが '+p.small+' だよ';
+    ? '<em>'+(M.a*p.r)+p.small+'</em> と '+M.b+p.small+' を あわせるよ'+care
+    : '<em>'+p.r+p.small+'</em> で 1'+p.big+'。のこりは '+M.b+p.small+care;
 }
 function mCheck(){
   if(M.locked)return;
@@ -715,14 +719,15 @@ function pScore(){
 }
 function pHint(){
   const p=pair();
+  const care=isHardRest(P.ans%p.r,p.r)?'。0の ばしょに 気をつけて':'';
   if(P.op==='+'){
-    return (P.b1+P.b2>=p.r)
+    return ((P.b1+P.b2>=p.r)
       ? '<em>'+P.b1+p.small+' と '+P.b2+p.small+' で '+(P.b1+P.b2)+p.small+'</em>。'+p.r+p.small+' を 1'+p.big+' に くりあげるよ'
-      : p.small+' どうしを たすよ。'+p.big+' は そのまま';
+      : p.small+' どうしを たすよ。'+p.big+' は そのまま')+care;
   }
-  return (P.b2>P.b1)
+  return ((P.b2>P.b1)
     ? '<em>1'+p.big+' を '+p.r+p.small+' に かえて</em>、'+(p.r+P.b1)+p.small+' から '+P.b2+p.small+' を ひくよ'
-    : p.small+' どうしを ひくよ。'+p.big+' は そのまま';
+    : p.small+' どうしを ひくよ。'+p.big+' は そのまま')+care;
 }
 function pCheck(){
   if(P.locked)return;
