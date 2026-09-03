@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>なんばい</title>
+<style>
+  :root{
+    --ink:#2b2118;
+    --paper:#fdf6e3;
+    --card:#fffdf7;
+    --line:#e7d9b8;
+    --gold:#c9a227;
+    --ok:#5a8a4c;
+    --ng:#d34b4b;
+    --flash:#ffe14d;
+  }
+  /* このアプリの色（なんばい） */
+  body{--accent:#7a5ea8;--accent-dark:#5d4685;--accent-soft:#efe8f7}
+
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:'Hiragino Maru Gothic ProN','Yu Gothic',sans-serif;
+    background:
+      radial-gradient(circle at 15% 10%,#fef0d0 0,transparent 40%),
+      radial-gradient(circle at 85% 90%,#fbe6cf 0,transparent 45%),
+      var(--paper);
+    color:var(--ink);
+    display:flex;flex-direction:column;align-items:center;
+    position:fixed;inset:0;width:100%;
+    height:var(--fh,100dvh);
+    padding:6px 8px 10px;
+    overflow:hidden;
+    overscroll-behavior:none;
+    touch-action:manipulation;
+  }
+  /* iPadでのダブルタップ拡大・長押し選択によるタップ抜けを防ぐ */
+  button{
+    touch-action:manipulation;
+    -webkit-user-select:none;user-select:none;
+    -webkit-touch-callout:none;
+  }
+  .app{width:100%;max-width:560px;height:100%;display:flex;flex-direction:column;gap:6px;min-height:0}
+  #viewTape,#viewZu,#viewMoto,#viewWord{flex:1;min-height:0;display:flex;flex-direction:column;gap:6px}
+
+  header{text-align:center}
+  h1{font-size:clamp(17px,4.6vw,24px);letter-spacing:.04em}
+  h1 .em{color:var(--accent)}
+
+  /* 学習ステップ タブ */
+  .tabs{display:flex;gap:6px;margin-bottom:2px}
+  .tab{
+    flex:1;border:2px solid var(--line);border-radius:14px;background:var(--card);
+    padding:10px 4px;cursor:pointer;color:#8a7a5f;font-weight:800;
+    font-size:clamp(11px,2.9vw,15px);display:flex;flex-direction:column;align-items:center;gap:1px;
+    line-height:1.15;word-break:keep-all;
+    transition:transform .08s;
+  }
+  .tab .step{font-size:11px;font-weight:700;opacity:.7}
+  .tab.on{color:var(--ink);border-color:var(--gold);background:#fffdf7;box-shadow:0 3px 0 #a5811a}
+  .tab.on .step{color:var(--gold);opacity:1}
+  .tab:active{transform:translateY(1px)}
+
+  /* えらぶところ */
+  .picker{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:8px 10px;
+    display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap}
+  .picker .lbl{font-size:13px;color:#8a7a5f;white-space:nowrap}
+  .chips{display:flex;gap:7px;justify-content:center;flex-wrap:wrap}
+  .chip{
+    position:relative;min-height:44px;padding:6px 12px;border-radius:14px;border:2px solid var(--line);
+    background:#fff;font-size:clamp(14px,3.8vw,17px);font-weight:800;cursor:pointer;color:var(--ink);
+    transition:transform .08s;white-space:nowrap;
+  }
+  .chip:active{transform:scale(.94)}
+  .chip.on{color:#fff;border-color:var(--accent);background:var(--accent);box-shadow:0 3px 0 var(--accent-dark)}
+  .chip .stamp{
+    position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;
+    background:var(--gold);color:#fff;font-size:12px;display:flex;align-items:center;justify-content:center;
+    box-shadow:0 1px 2px rgba(0,0,0,.25);
+  }
+
+  /* もんだいカード（共通） */
+  .stage{
+    background:var(--card);border:3px solid var(--line);border-radius:18px;
+    padding:10px 12px;text-align:center;transition:border-color .2s,background .2s;
+    display:flex;flex-direction:column;justify-content:center;gap:6px;
+  }
+  .stage.correct{border-color:var(--ok);background:#f2f9ee}
+  .stage.wrong{border-color:var(--ng);background:#fcf0f0}
+  .verdict{min-height:1.3em;font-size:clamp(12px,3.3vw,16px);font-weight:800;line-height:1.35}
+  .verdict.ok{color:var(--ok)}
+  .verdict.ng{color:var(--ng)}
+  .verdict em{font-style:normal;color:var(--accent-dark)}
+  .unit{font-size:.62em;margin-left:.12em;color:var(--accent-dark)}
+  .op{opacity:.55}
+
+  /* ===== 関係図（4つのステップで 同じ形を使う） ===== */
+  .zu{display:flex;align-items:stretch;justify-content:center;gap:4px;
+    width:100%;max-width:520px;margin:0 auto;
+    font-size:calc(clamp(15px, calc(var(--fh,100vh) * 0.034), 26px) * var(--shrink,1))}
+  .zubox{flex:1 1 0;min-width:0;border:3px solid var(--line);border-radius:14px;background:#fff;
+    padding:5px 4px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px}
+  .zubox.base{border-color:var(--accent);background:var(--accent-soft)}
+  .zubox.cmp{border-color:#c9a227;background:#fdf6e0}
+  .zubox .zlab{font-size:.46em;font-weight:800;letter-spacing:.02em;color:var(--accent-dark)}
+  .zubox.cmp .zlab{color:#8a6a10}
+  .zubox .zname{font-size:.44em;color:#6f5d3d;line-height:1.15;word-break:keep-all}
+  .zubox .zval{font-weight:800;font-variant-numeric:tabular-nums;line-height:1.1}
+  .zuarr{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+    padding:0 2px;color:#6f5d3d}
+  .zuarr .up{font-size:.72em;font-weight:800;white-space:nowrap;color:var(--accent-dark)}
+  .zuarr .dn{font-size:.55em;white-space:nowrap;opacity:.7}
+  /* 数を入れる わく */
+  .fld{display:inline-block;min-width:2.2ch;padding:0 6px;border-radius:10px;border:3px dashed var(--line);
+    background:#fff;color:var(--ink);font-weight:800;font-size:inherit;line-height:1.1}
+  .fld.empty{color:#c7b891}
+  .fld.on{border-style:solid;border-color:var(--accent);background:var(--flash);animation:glow 1.2s infinite}
+  @keyframes glow{0%,100%{box-shadow:0 0 0 0 rgba(0,0,0,0)}50%{box-shadow:0 0 0 5px var(--accent-soft)}}
+  .zuarr .fld{padding:0 3px;border-width:2px}
+
+  /* ===== ステップ１：テープ ===== */
+  .tapes{display:flex;flex-direction:column;gap:9px;text-align:left}
+  .tline{display:flex;flex-direction:column;gap:3px}
+  .tlab{font-size:clamp(12px,3.4vw,16px);color:#6f5d3d;font-weight:800}
+  .tlab .big{color:var(--accent-dark);font-size:1.15em}
+  .tlab .cnt{color:var(--ng)}
+  .trow{display:flex;gap:2px;width:100%}
+  .tape{height:calc(clamp(20px, calc(var(--fh,100vh) * 0.048), 42px) * var(--shrink,1));
+    flex:0 0 auto;width:calc((100% - 10px)/6);border-radius:6px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:clamp(11px,3vw,15px);font-weight:800;
+    background:var(--accent-soft);border:2px solid var(--accent);color:var(--accent-dark)}
+  .tape.seg{background:#fdf6e0;border-color:var(--gold);color:#8a6a10;animation:pop .3s}
+  .tape.seg.last{background:var(--flash)}
+  @keyframes pop{0%{transform:scale(.7)}60%{transform:scale(1.12)}100%{transform:scale(1)}}
+
+  /* きまり見つけの表 */
+  .table{display:flex;flex-direction:column;gap:3px;align-items:center;overflow:hidden}
+  .row{display:flex;align-items:center;justify-content:center;gap:5px;
+    font-weight:800;font-variant-numeric:tabular-nums;
+    font-size:calc(clamp(13px, calc(var(--fh,100vh) * 0.031), 22px) * var(--shrink,1));line-height:1.1}
+  .row .sh{color:var(--accent-dark);font-size:.86em;margin-left:4px}
+  .row.new{background:var(--flash);border-radius:8px;padding:0 6px}
+
+  .actions{display:flex;gap:8px}
+  .btn{flex:1;border:none;border-radius:14px;padding:13px 4px;font-size:clamp(14px,4vw,18px);
+    font-weight:800;cursor:pointer;transition:transform .08s;color:#fff}
+  .btn:active{transform:translateY(2px)}
+  .btn.show{background:var(--gold);box-shadow:0 4px 0 #a5811a}
+  .btn.next{background:#5a8a4c;box-shadow:0 4px 0 #446838}
+  .btn.sub{background:#a99a7c;box-shadow:0 4px 0 #85795f}
+  .btn:disabled{opacity:.45;box-shadow:none}
+
+  /* ===== もんだい文 ===== */
+  .mondai{text-align:left;line-height:1.55;font-weight:700;
+    font-size:calc(clamp(13px, calc(var(--fh,100vh) * 0.030), 20px) * var(--shrink,1))}
+  .mondai .q{display:block;margin-top:3px;color:var(--accent-dark)}
+  .mondai .cue b{font-weight:700}
+  .mondai.hi .cue{background:var(--flash);border-radius:6px;padding:1px 3px}
+  .mondai.hi .cue b{color:#c0392b;font-weight:800}
+  .ask{font-size:clamp(12px,3.4vw,16px);font-weight:800;color:#8a7a5f}
+  .pick{gap:8px}
+  .pick .chip{min-height:48px;font-size:clamp(13px,3.6vw,17px);flex:1 1 0;justify-content:center;
+    white-space:normal;word-break:keep-all;line-height:1.2}
+
+  /* ===== えらび（どの □ を もとめるか） ===== */
+  .ops{display:flex;gap:6px;justify-content:center}
+  .op-btn{
+    position:relative;flex:1;border-radius:14px;padding:8px 2px;
+    font-size:clamp(11px,3.1vw,15px);font-weight:700;cursor:pointer;
+    background:var(--card);color:var(--ink);border:2px solid var(--line);transition:transform .08s;
+    white-space:nowrap;
+  }
+  .op-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);box-shadow:0 3px 0 var(--accent-dark)}
+  .op-btn:active{transform:translateY(2px)}
+  .op-btn .stamp{
+    position:absolute;top:-6px;right:-4px;width:18px;height:18px;border-radius:50%;
+    background:var(--gold);color:#fff;font-size:11px;display:flex;align-items:center;justify-content:center;
+  }
+
+  /* ===== てんすう ===== */
+  .score{display:flex;gap:8px}
+  .score .box{flex:1;background:var(--card);border:2px solid var(--line);border-radius:12px;padding:6px 4px;text-align:center}
+  .score .n{font-size:clamp(19px,5.5vw,24px);font-weight:800;font-variant-numeric:tabular-nums;line-height:1}
+  .score .t{font-size:10px;color:#8a7a5f;margin-top:2px}
+  .score .streak .n{color:var(--gold)}
+  .score .correct .n{color:var(--ok)}
+
+  /* ===== テンキー ===== */
+  .pad{display:grid;grid-template-columns:repeat(3,1fr);gap:calc(min(6px, calc(var(--fh,100vh) * 0.009)) * var(--shrink,1));flex-shrink:0}
+  .key{border:2px solid var(--line);border-radius:14px;background:#fff;
+    font-size:calc(clamp(15px, calc(var(--fh,100vh) * 0.038), 24px) * var(--shrink,1));
+    font-weight:800;cursor:pointer;color:var(--ink);
+    padding:calc(clamp(2px, calc(var(--fh,100vh) * 0.011), 9px) * var(--shrink,1)) 0;transition:transform .07s,background .1s}
+  .key:active{transform:translateY(2px);background:#fff4df}
+  .key.del{background:#e6d3a8;box-shadow:0 3px 0 #c9b47f}
+  .key.enter{background:var(--ok);color:#fff;box-shadow:0 3px 0 #446838}
+  .key.next{background:var(--gold);color:#fff;box-shadow:0 3px 0 #a5811a}
+
+  .drill-main{flex:1;min-height:0;display:flex;flex-direction:column;gap:6px}
+  .drill-main .stage{flex:1;min-height:0}
+  /* ステップ１・３は カードを のばして、ボタンを 下に そろえる */
+  #viewTape .stage,#viewMoto .stage{flex:1;min-height:0}
+
+  .tabs,.picker,.score,.actions,.ops{flex-shrink:0}
+  .hidden{display:none !important}
+
+  @media(max-height:720px){
+    h1{font-size:16px}
+    .tab{padding:7px 4px;font-size:13px}
+    .tab .step{font-size:10px}
+    .picker{padding:6px 8px}
+    .chip{min-height:40px;padding:5px 10px;font-size:15px}
+    .op-btn{padding:6px 2px;font-size:13px}
+    .score .box{padding:3px}
+    .score .n{font-size:20px}
+    .score .t{font-size:9px}
+  }
+  @media(max-height:560px){
+    header{display:none}
+    .app{gap:5px}
+    #viewTape,#viewZu,#viewMoto,#viewWord{gap:5px}
+    .chip{min-height:36px;padding:4px 9px;font-size:14px}
+  }
+  /* 横向き（iPad横など）：もんだいと テンキーを 左右2列に */
+  @media(orientation:landscape) and (max-height:820px){
+    header{display:none}
+    /* 横向きは 左右2列にするので、もんだい文の ために 横を ひろげる */
+    .app{gap:5px;max-width:min(96vw,880px)}
+    #viewZu,#viewMoto,#viewWord{gap:5px}
+    .drill-main{flex-direction:row;gap:10px;align-items:stretch}
+    .drill-main .stage{flex:1 1 60%;min-width:0;padding:10px 14px}
+    .drill-main .pad{flex:0 0 auto;width:min(40%,300px);align-content:center}
+    .key{font-size:calc(clamp(15px, calc(var(--fh,100vh) * 0.042), 23px) * var(--shrink,1));padding:calc(clamp(4px, calc(var(--fh,100vh) * 0.018), 13px) * var(--shrink,1)) 2px;white-space:nowrap}
+    .tab{padding:6px 4px;font-size:13px}
+    .tab .step{font-size:10px}
+    .picker{padding:5px 8px}
+    .chip{min-height:36px;padding:4px 9px;font-size:14px}
+    .score .box{padding:3px}
+    .score .n{font-size:19px}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header><h1><span class="em">なんばい</span></h1></header>
+
+  <div class="tabs">
+    <button class="tab on" data-v="tape"><span class="step">ステップ１</span>ばいって なに？</button>
+    <button class="tab" data-v="zu"><span class="step">ステップ２</span>かんけいず</button>
+    <button class="tab" data-v="moto"><span class="step">ステップ３</span>どっちが もと？</button>
+    <button class="tab" data-v="word"><span class="step">ステップ４</span>ぶんしょうだい</button>
+  </div>
+
+  <!-- ============ ステップ１：ばいって なに？ ============ -->
+  <div id="viewTape">
+    <div class="picker">
+      <span class="lbl">もとにする ながさ</span>
+      <div class="chips" id="tChips"></div>
+    </div>
+    <div class="stage" id="tStage">
+      <div class="tapes">
+        <div class="tline">
+          <span class="tlab">もとにする数　<span class="big" id="tBaseLab"></span></span>
+          <div class="trow" id="tBaseRow"></div>
+        </div>
+        <div class="tline">
+          <span class="tlab">くらべる数　<span class="cnt" id="tCntLab"></span>　<span class="big" id="tSumLab"></span></span>
+          <div class="trow" id="tRow"></div>
+        </div>
+      </div>
+      <div id="tZu"></div>
+    </div>
+    <div class="table" id="tTable"></div>
+    <div class="actions">
+      <button class="btn sub" id="tBack">◀ もどす</button>
+      <button class="btn next" id="tAdd">ならべる ▶</button>
+      <button class="btn show" id="tReset">はじめから</button>
+    </div>
+  </div>
+
+  <!-- ============ ステップ２：かんけいず ============ -->
+  <div id="viewZu" class="hidden">
+    <div class="ops" id="zOps"></div>
+    <div class="score">
+      <div class="box correct"><div class="n" id="zCorrect">0</div><div class="t">せいかい</div></div>
+      <div class="box"><div class="n" id="zTotal">0</div><div class="t">やったもんだい</div></div>
+      <div class="box streak"><div class="n" id="zStreak">0/10</div><div class="t">れんぞく</div></div>
+    </div>
+    <div class="drill-main">
+      <div class="stage" id="zStage">
+        <div class="ask" id="zAsk">□に 入る 数は？</div>
+        <div id="zZu"></div>
+        <div class="verdict" id="zVerdict"></div>
+      </div>
+      <div class="pad" id="zPad"></div>
+    </div>
+  </div>
+
+  <!-- ============ ステップ３：どっちが もと？ ============ -->
+  <div id="viewMoto" class="hidden">
+    <div class="score">
+      <div class="box correct"><div class="n" id="mCorrect">0</div><div class="t">せいかい</div></div>
+      <div class="box"><div class="n" id="mTotal">0</div><div class="t">やったもんだい</div></div>
+      <div class="box streak"><div class="n" id="mStreak">0/10</div><div class="t">れんぞく</div></div>
+    </div>
+    <div class="stage" id="mStage">
+      <p class="mondai" id="mText"></p>
+      <div class="ask" id="mAsk">もとにする数は どっち？</div>
+      <div class="chips pick" id="mPick"></div>
+      <div id="mZu"></div>
+      <div class="verdict" id="mVerdict"></div>
+    </div>
+    <div class="actions">
+      <button class="btn next" id="mNext" disabled>つぎ →</button>
+    </div>
+  </div>
+
+  <!-- ============ ステップ４：ぶんしょうだい ============ -->
+  <div id="viewWord" class="hidden">
+    <div class="score">
+      <div class="box correct"><div class="n" id="wCorrect">0</div><div class="t">せいかい</div></div>
+      <div class="box"><div class="n" id="wTotal">0</div><div class="t">やったもんだい</div></div>
+      <div class="box streak"><div class="n" id="wStreak">0/10</div><div class="t">れんぞく</div></div>
+    </div>
+    <div class="drill-main">
+      <div class="stage" id="wStage">
+        <p class="mondai" id="wText"></p>
+        <div class="ask" id="wAsk"></div>
+        <div class="chips pick" id="wPick"></div>
+        <div id="wZu"></div>
+        <div class="verdict" id="wVerdict"></div>
+      </div>
+      <div class="pad hidden" id="wPad"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =========================================================
+   なんばい（3年・倍の考え）
+   ねらい
+   ・関係図（もとにする数 ─×□→ くらべる数）に なれる
+   ・もんだい文を 読んで どちらが もとにする数か 見つける
+========================================================= */
+
+/* ---------- タップ（iPadで 反応が おそくならないように） ---------- */
+function bindTap(el,fn){
+  let lastFire=0;
+  const fire=()=>{
+    const now=Date.now();
+    if(now-lastFire<60)return;   // 同じ瞬間の二重発火を防ぐ
+    lastFire=now;
+    fn();
+  };
+  if(window.PointerEvent){
+    el.addEventListener('pointerdown',ev=>{
+      if(ev.pointerType==='mouse'&&ev.button!==0)return;
+      ev.preventDefault();
+      fire();
+    });
+    el.addEventListener('click',()=>{
+      if(Date.now()-lastFire<500)return;
+      fire();
+    });
+  }else{
+    el.addEventListener('touchstart',ev=>{ev.preventDefault();fire();},{passive:false});
+    el.addEventListener('click',()=>{if(Date.now()-lastFire<500)return;fire();});
+  }
+}
+const $=id=>document.getElementById(id);
+function pick(a){return a[Math.floor(Math.random()*a.length)];}
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+/* ---------- 記録（とじても 消えないように 保存） ---------- */
+let stamps={};
+try{const s=JSON.parse(localStorage.getItem('nanbaiStamps')||'null');if(s)stamps=s;}catch(e){}
+function saveStamps(){try{localStorage.setItem('nanbaiStamps',JSON.stringify(stamps));}catch(e){}}
+let streaks={};
+try{const s=JSON.parse(localStorage.getItem('nanbaiStreak')||'null');if(s)streaks=s;}catch(e){}
+function saveStreaks(){try{localStorage.setItem('nanbaiStreak',JSON.stringify(streaks));}catch(e){}}
+const GOAL=10;
+
+/* ---------- 関係図 ---------- */
+function unitHTML(u){return '<span class="unit">'+u+'</span>';}
+function valHTML(n,u){return n+unitHTML(u);}
+function fldHTML(txt,on){
+  return '<span class="fld'+(on?' on':'')+(txt?'':' empty')+'">'+(txt||'?')+'</span>';
+}
+/* baseHTML / rateHTML / cmpHTML は できあがった 文字を わたす */
+function zuHTML(baseHTML,rateHTML,cmpHTML,baseName,cmpName,rateBack){
+  return '<div class="zu">'+
+    '<div class="zubox base">'+
+      (baseName?'<span class="zname">'+baseName+'</span>':'')+
+      '<span class="zlab">もとにする数</span>'+
+      '<span class="zval">'+baseHTML+'</span>'+
+    '</div>'+
+    '<div class="zuarr">'+
+      '<span class="up">─ ×'+rateHTML+' →</span>'+
+      '<span class="dn">← ÷'+(rateBack||rateHTML)+' ─</span>'+
+    '</div>'+
+    '<div class="zubox cmp">'+
+      (cmpName?'<span class="zname">'+cmpName+'</span>':'')+
+      '<span class="zlab">くらべる数</span>'+
+      '<span class="zval">'+cmpHTML+'</span>'+
+    '</div>'+
+  '</div>';
+}
+
+/* =========================================================
+   ステップ１：ばいって なに？
+   もとにする テープを ならべて、「○つぶん＝○ばい」を 見せる
+========================================================= */
+const T={base:4,n:1};
+const MAXN=6;
+try{const s=JSON.parse(localStorage.getItem('nanbaiTape')||'null');if(s&&s.base)T.base=s.base;}catch(e){}
+function tSave(){try{localStorage.setItem('nanbaiTape',JSON.stringify({base:T.base}));}catch(e){}}
+
+function tChips(){
+  const box=$('tChips');box.innerHTML='';
+  [2,3,4,5].forEach(v=>{
+    const b=document.createElement('button');
+    b.type='button';b.className='chip'+(v===T.base?' on':'');
+    b.innerHTML=v+'cm';
+    bindTap(b,()=>{T.base=v;T.n=1;tSave();tChips();tRender();});
+    box.appendChild(b);
+  });
+}
+function tRender(){
+  const b=T.base,n=T.n,sum=b*n;
+  $('tBaseLab').innerHTML=valHTML(b,'cm');
+  $('tCntLab').textContent=n+'ばい';
+  $('tSumLab').innerHTML=valHTML(sum,'cm');
+  $('tBaseRow').innerHTML='<div class="tape">'+b+'</div>';
+  let segs='';
+  for(let i=1;i<=n;i++)segs+='<div class="tape seg'+(i===n?' last':'')+'">'+b+'</div>';
+  $('tRow').innerHTML=segs;
+  $('tZu').innerHTML=zuHTML(valHTML(b,'cm'),n,valHTML(sum,'cm'));
+  let rows='';
+  for(let i=1;i<=n;i++){
+    rows+='<div class="row'+(i===n?' new':'')+'">'+
+      b+'cm の '+i+'ばい は '+(b*i)+'cm'+
+      '<span class="sh">'+b+'×'+i+'＝'+(b*i)+'</span></div>';
+  }
+  $('tTable').innerHTML=rows;
+  $('tAdd').disabled=(n>=MAXN);
+  $('tBack').disabled=(n<=1);
+}
+bindTap($('tAdd'),()=>{if(T.n<MAXN){T.n++;tRender();}});
+bindTap($('tBack'),()=>{if(T.n>1){T.n--;tRender();}});
+bindTap($('tReset'),()=>{T.n=1;tRender();});
+
+/* =========================================================
+   ステップ２：かんけいず
+   図の どこが □ かを 入れかえて、図の 読み方に なれる
+========================================================= */
+const UNITBASE={
+  'cm':[2,3,4,5,6,7,8,9,10,12],
+  'm' :[2,3,4,5,6,7,8],
+  'dL':[2,3,4,5,6,7,8],
+  'kg':[2,3,4,5,6],
+  'g' :[20,30,40,50,60,80,100],
+  '円':[20,30,40,50,60,70,80,100],
+  'こ':[2,3,4,5,6,7,8,9]
+};
+const UNITKEYS=Object.keys(UNITBASE);
+const ZTYPES=[{k:'cmp',t:'くらべる数'},{k:'rate',t:'なんばい'},{k:'base',t:'もとにする数'},{k:'mix',t:'まぜる'}];
+const Z={sel:'cmp',blank:'cmp',a:0,n:0,b:0,u:'cm',input:'',locked:false,correct:0,total:0};
+try{const s=localStorage.getItem('nanbaiZSel');if(s&&ZTYPES.some(x=>x.k===s))Z.sel=s;}catch(e){}
+try{const sc=JSON.parse(sessionStorage.getItem('nanbaiZScore')||'null');
+  if(sc){Z.correct=sc.c|0;Z.total=sc.t|0;}}catch(e){}
+function zSaveScore(){try{sessionStorage.setItem('nanbaiZScore',JSON.stringify({c:Z.correct,t:Z.total}));}catch(e){}}
+
+function zKey(){return 'z:'+Z.blank;}
+function zOps(){
+  const box=$('zOps');box.innerHTML='';
+  ZTYPES.forEach(t=>{
+    const b=document.createElement('button');
+    b.type='button';b.className='op-btn'+(t.k===Z.sel?' active':'');
+    b.innerHTML=(t.k==='mix'?'':'□は ')+t.t+(stamps['z:'+t.k]?'<span class="stamp">⭐</span>':'');
+    bindTap(b,()=>{Z.sel=t.k;try{localStorage.setItem('nanbaiZSel',t.k);}catch(e){}zOps();zNew();});
+    box.appendChild(b);
+  });
+}
+function zNew(){
+  Z.input='';Z.locked=false;
+  $('zStage').className='stage';
+  $('zVerdict').className='verdict';$('zVerdict').textContent='';
+  Z.blank=(Z.sel==='mix')?pick(['cmp','rate','base']):Z.sel;
+  Z.u=pick(UNITKEYS);
+  Z.n=pick([2,3,4,5,6,7,8,9]);
+  Z.a=pick(UNITBASE[Z.u]);
+  Z.b=Z.a*Z.n;
+  Z.ans=(Z.blank==='cmp')?Z.b:(Z.blank==='rate')?Z.n:Z.a;
+  Z.ansUnit=(Z.blank==='rate')?'ばい':Z.u;
+  zRender();zPad();zScore();
+}
+function zRender(){
+  const shown=Z.locked?String(Z.ans):Z.input;
+  const bs=(Z.blank==='base')?fldHTML(shown,!Z.locked):valHTML(Z.a,Z.u);
+  const rt=(Z.blank==='rate')?fldHTML(shown,!Z.locked):String(Z.n);
+  const cs=(Z.blank==='cmp')?fldHTML(shown,!Z.locked):valHTML(Z.b,Z.u);
+  const rb=(Z.blank==='rate')?(Z.locked?String(Z.ans):'?'):String(Z.n);
+  $('zZu').innerHTML=zuHTML(bs,rt,cs,'','',rb);
+  $('zAsk').innerHTML=(Z.blank==='cmp')?'くらべる数は 何'+Z.u+'？'
+    :(Z.blank==='rate')?'くらべる数は もとにする数の 何ばい？'
+    :'もとにする数は 何'+Z.u+'？';
+}
+function zHint(){
+  if(Z.blank==='cmp')return 'もとにする数の <em>'+Z.n+'つぶん</em> だから　'+Z.a+'×'+Z.n+'＝'+Z.b;
+  if(Z.blank==='rate')return '<em>'+Z.b+'の中に '+Z.a+'が いくつ</em> あるかな。　'+Z.b+'÷'+Z.a+'＝'+Z.n;
+  return '<em>'+Z.n+'つぶんが '+Z.b+'</em>。だから　'+Z.b+'÷'+Z.n+'＝'+Z.a;
+}
+function zScore(){
+  $('zCorrect').textContent=Z.correct;
+  $('zTotal').textContent=Z.total;
+  const k=zKey();
+  $('zStreak').textContent=stamps[k]?'⭐':((streaks[k]||0)+'/'+GOAL);
+}
+function zCheck(){
+  if(Z.locked||Z.input==='')return;
+  Z.locked=true;Z.total++;
+  const ok=Number(Z.input)===Z.ans,k=zKey();
+  if(ok){
+    Z.correct++;
+    $('zStage').classList.add('correct');
+    $('zVerdict').className='verdict ok';
+    streaks[k]=(streaks[k]||0)+1;
+    if(!stamps[k]&&streaks[k]>=GOAL){
+      stamps[k]=true;saveStamps();zOps();
+      $('zVerdict').innerHTML='スタンプ ゲット！ ⭐ １０もん せいかい！';
+      streaks[k]=0;
+    }else{
+      $('zVerdict').innerHTML='せいかい！ 🎉　'+zHint();
+    }
+    saveStreaks();
+  }else{
+    streaks[k]=0;saveStreaks();
+    $('zStage').classList.add('wrong');
+    $('zVerdict').className='verdict ng';
+    $('zVerdict').innerHTML='おしい！ こたえは '+Z.ans+Z.ansUnit+'　'+zHint();
+  }
+  zSaveScore();zRender();zPad();zScore();
+}
+function zPress(v){
+  if(Z.locked)return;
+  const maxLen=String(Z.ans).length;
+  if(v==='del')Z.input=Z.input.slice(0,-1);
+  else if(Z.input.length<maxLen)Z.input+=v;
+  zRender();
+}
+let lastAction=0;
+function buildPad(padEl,press,check,next,locked){
+  padEl.innerHTML='';
+  for(let i=1;i<=9;i++)add(String(i),'key',()=>press(String(i)),false);
+  add('けす','key del',()=>press('del'),false);
+  add('0','key',()=>press('0'),false);
+  if(locked)add('つぎ →','key next',next,true);
+  else add('こたえ','key enter',check,true);
+  function add(label,cls,fn,guard){
+    const b=document.createElement('button');
+    b.className=cls;b.textContent=label;b.type='button';
+    bindTap(b,()=>{
+      if(guard){                       // こたえ／つぎ のみ 連打を防ぐ
+        const now=Date.now();
+        if(now-lastAction<450)return;
+        lastAction=now;
+      }
+      fn();
+    });
+    padEl.appendChild(b);
+  }
+}
+function zPad(){buildPad($('zPad'),zPress,zCheck,zNew,Z.locked);}
+
+/* =========================================================
+   もんだい文づくり（ステップ３・４で 使う）
+   ・「〜の ○ばい」の 〜の の前が もとにする数
+   ・出てくる じゅんばんを かえて、場所で おぼえないようにする
+========================================================= */
+const CTX=[
+  {a:'あおい テープ',  b:'あかい テープ',    u:'cm', base:[2,3,4,5,6,7,8,9,10,12], maxN:9},
+  {a:'しろい リボン',  b:'きいろい リボン',  u:'cm', base:[3,4,5,6,7,8,9,10],      maxN:9},
+  {a:'チューリップ',    b:'ひまわり',        u:'cm', base:[10,15,20,25,30],        maxN:6},
+  {a:'ねこ',           b:'いぬ',            u:'kg', base:[2,3,4,5],               maxN:6},
+  {a:'ハムスター',      b:'うさぎ',          u:'g',  base:[80,100,120,150],        maxN:5},
+  {a:'おちゃ',         b:'ジュース',         u:'dL', base:[2,3,4,5,6],             maxN:8},
+  {a:'あめ',           b:'クッキー',        u:'円', base:[20,30,40,50,60],         maxN:9},
+  {a:'えんぴつ',        b:'ものさし',        u:'cm', base:[3,4,5,6],               maxN:9},
+  {a:'シール',         b:'カード',          u:'まい',base:[2,3,4,5,6,7,8],         maxN:9},
+  {a:'あさがお',        b:'とうもろこし',    u:'cm', base:[15,20,25,30],           maxN:6}
+];
+function cueNo(name,rateTxt){
+  return '<span class="cue">'+name+'<b>の</b> '+rateTxt+'ばい</span>';
+}
+function makeWord(){
+  const c=pick(CTX);
+  const n=pick([2,3,4,5,6,7,8,9].filter(x=>x<=(c.maxN||9)));
+  const a=pick(c.base),b=a*n,u=c.u,A=c.a,B=c.b;
+  const t=pick([1,2,3,4,5,6]);
+  let state='',q='',ask='cmp',cueKind='no';
+  if(t===1){
+    state=A+'は '+a+u+' です。'+B+'は '+cueNo(A,n)+' です。';
+    q=B+'は 何'+u+' ですか。';ask='cmp';
+  }else if(t===2){
+    state=B+'は '+cueNo(A,n)+' です。'+A+'は '+a+u+' です。';
+    q=B+'は 何'+u+' ですか。';ask='cmp';
+  }else if(t===3){
+    state=A+'は '+a+u+'、'+B+'は '+b+u+' です。';
+    q=B+'は '+cueNo(A,'何')+' ですか。';ask='rate';
+  }else if(t===4){
+    state=B+'は '+b+u+' です。これは '+cueNo(A,n)+' です。';
+    q=A+'は 何'+u+' ですか。';ask='base';
+  }else if(t===5){
+    state=B+'は '+cueNo(A,n)+' で、'+b+u+' です。';
+    q=A+'は 何'+u+' ですか。';ask='base';
+  }else{
+    state=A+'は '+a+u+' です。'+B+'は '+b+u+' です。';
+    q='<span class="cue">'+A+'を もとにする</span>と、'+B+'は 何ばい ですか。';
+    ask='rate';cueKind='moto';
+  }
+  const ans=(ask==='cmp')?b:(ask==='rate')?n:a;
+  return {A:A,B:B,a:a,b:b,n:n,u:u,ask:ask,cueKind:cueKind,
+    html:state+'<span class="q">'+q+'</span>',
+    ans:ans,ansUnit:(ask==='rate')?'ばい':u,
+    chips:shuffle([A,B])};
+}
+function motoHint(p){
+  if(p.cueKind==='moto')
+    return '「<em>'+p.A+'を もとにすると</em>」と 書いてあるね。もとにする数は <em>'+p.A+'</em>';
+  return '「'+p.A+'<em>の</em> '+(p.ask==='rate'?'何':p.n)+'ばい」と 書いてあるね。<em>の</em>の まえの <em>'+p.A+'</em>が もとにする数';
+}
+function motoNg(p){
+  return (p.cueKind==='moto')
+    ? '「<em>もとにすると</em>」の まえを 見てみよう'
+    : '「〜<em>の</em> ○ばい」の　<em>の</em>の まえを さがしてみよう';
+}
+
+/* =========================================================
+   ステップ３：どっちが もと？
+   数を 出すまえに、もとにする数を 見つける ところだけを 練習する
+========================================================= */
+const M={p:null,done:false,tried:false,correct:0,total:0};
+try{const sc=JSON.parse(sessionStorage.getItem('nanbaiMScore')||'null');
+  if(sc){M.correct=sc.c|0;M.total=sc.t|0;}}catch(e){}
+function mSaveScore(){try{sessionStorage.setItem('nanbaiMScore',JSON.stringify({c:M.correct,t:M.total}));}catch(e){}}
+
+function mNew(){
+  M.p=makeWord();M.done=false;M.tried=false;
+  $('mStage').className='stage';
+  $('mText').className='mondai';
+  $('mText').innerHTML=M.p.html;
+  $('mVerdict').className='verdict';$('mVerdict').textContent='';
+  $('mZu').innerHTML='';
+  $('mAsk').classList.remove('hidden');
+  $('mNext').disabled=true;
+  mChips();mScore();
+}
+function mChips(){
+  const box=$('mPick');box.innerHTML='';
+  box.classList.remove('hidden');
+  M.p.chips.forEach(name=>{
+    const b=document.createElement('button');
+    b.type='button';b.className='chip';b.textContent=name;
+    bindTap(b,()=>mAnswer(name));
+    box.appendChild(b);
+  });
+}
+function mScore(){
+  $('mCorrect').textContent=M.correct;
+  $('mTotal').textContent=M.total;
+  $('mStreak').textContent=stamps['moto']?'⭐':((streaks['moto']||0)+'/'+GOAL);
+}
+function mAnswer(name){
+  if(M.done)return;
+  const p=M.p,ok=(name===p.A);
+  if(!M.tried){
+    M.total++;
+    if(ok){
+      M.correct++;
+      streaks['moto']=(streaks['moto']||0)+1;
+      if(!stamps['moto']&&streaks['moto']>=GOAL){stamps['moto']=true;saveStamps();streaks['moto']=0;}
+    }else{
+      streaks['moto']=0;
+    }
+    saveStreaks();mSaveScore();
+  }
+  M.tried=true;
+  $('mText').classList.add('hi');       // 手がかりの ことばを 光らせる
+  if(ok){
+    M.done=true;
+    $('mStage').className='stage correct';
+    $('mPick').classList.add('hidden');
+    $('mAsk').classList.add('hidden');
+    $('mZu').innerHTML=zuHTML(
+      (p.ask==='base')?fldHTML('',false):valHTML(p.a,p.u),
+      (p.ask==='rate')?fldHTML('',false):String(p.n),
+      (p.ask==='cmp')?fldHTML('',false):valHTML(p.b,p.u),
+      p.A,p.B,(p.ask==='rate')?'?':String(p.n));
+    $('mVerdict').className='verdict ok';
+    $('mVerdict').innerHTML='せいかい！ 🎉　'+motoHint(p);
+    $('mNext').disabled=false;
+  }else{
+    $('mStage').className='stage wrong';
+    $('mVerdict').className='verdict ng';
+    $('mVerdict').innerHTML='もう一回！　'+motoNg(p);
+  }
+  mScore();
+}
+bindTap($('mNext'),()=>{if(!$('mNext').disabled)mNew();});
+
+/* =========================================================
+   ステップ４：ぶんしょうだい
+   ①もとにする数を えらぶ → ②関係図の □ を うめる
+========================================================= */
+const W={p:null,stage:1,input:'',locked:false,tried:false,correct:0,total:0};
+try{const sc=JSON.parse(sessionStorage.getItem('nanbaiWScore')||'null');
+  if(sc){W.correct=sc.c|0;W.total=sc.t|0;}}catch(e){}
+function wSaveScore(){try{sessionStorage.setItem('nanbaiWScore',JSON.stringify({c:W.correct,t:W.total}));}catch(e){}}
+
+function wNew(){
+  W.p=makeWord();W.stage=1;W.input='';W.locked=false;W.tried=false;
+  $('wStage').className='stage';
+  $('wText').className='mondai';
+  $('wText').innerHTML=W.p.html;
+  $('wVerdict').className='verdict';$('wVerdict').textContent='';
+  $('wZu').innerHTML='';
+  $('wAsk').textContent='まず、もとにする数は どっち？';
+  $('wPad').classList.add('hidden');
+  wChips();wScore();
+}
+function wChips(){
+  const box=$('wPick');box.innerHTML='';box.classList.remove('hidden');
+  W.p.chips.forEach(name=>{
+    const b=document.createElement('button');
+    b.type='button';b.className='chip';b.textContent=name;
+    bindTap(b,()=>wPickBase(name));
+    box.appendChild(b);
+  });
+}
+function wScore(){
+  $('wCorrect').textContent=W.correct;
+  $('wTotal').textContent=W.total;
+  $('wStreak').textContent=stamps['word']?'⭐':((streaks['word']||0)+'/'+GOAL);
+}
+function wPickBase(name){
+  if(W.stage!==1)return;
+  const p=W.p;
+  $('wText').classList.add('hi');
+  if(name!==p.A){
+    $('wStage').className='stage wrong';
+    $('wVerdict').className='verdict ng';
+    $('wVerdict').innerHTML='もう一回！　'+motoNg(p);
+    return;
+  }
+  W.stage=2;
+  $('wStage').className='stage';
+  $('wPick').classList.add('hidden');
+  $('wPad').classList.remove('hidden');
+  $('wVerdict').className='verdict ok';
+  $('wVerdict').innerHTML='そう！ もとにする数は <em>'+p.A+'</em>';
+  $('wAsk').innerHTML='つぎに □の 数を 入れよう';
+  wRender();wPad();
+}
+function wRender(){
+  const p=W.p,shown=W.locked?String(p.ans):W.input;
+  $('wZu').innerHTML=zuHTML(
+    (p.ask==='base')?fldHTML(shown,!W.locked):valHTML(p.a,p.u),
+    (p.ask==='rate')?fldHTML(shown,!W.locked):String(p.n),
+    (p.ask==='cmp')?fldHTML(shown,!W.locked):valHTML(p.b,p.u),
+    p.A,p.B,(p.ask==='rate')?(W.locked?String(p.ans):'?'):String(p.n));
+}
+function wHint(){
+  const p=W.p;
+  if(p.ask==='cmp')return 'もとにする数の <em>'+p.n+'つぶん</em>。　'+p.a+'×'+p.n+'＝'+p.b;
+  if(p.ask==='rate')return '<em>'+p.b+'の中に '+p.a+'が いくつ</em>。　'+p.b+'÷'+p.a+'＝'+p.n;
+  return '<em>'+p.n+'つぶんが '+p.b+'</em>。　'+p.b+'÷'+p.n+'＝'+p.a;
+}
+function wCheck(){
+  if(W.locked||W.input==='')return;
+  W.locked=true;W.total++;
+  const p=W.p,ok=Number(W.input)===p.ans;
+  if(ok){
+    W.correct++;
+    $('wStage').className='stage correct';
+    $('wVerdict').className='verdict ok';
+    streaks['word']=(streaks['word']||0)+1;
+    if(!stamps['word']&&streaks['word']>=GOAL){
+      stamps['word']=true;saveStamps();streaks['word']=0;
+      $('wVerdict').innerHTML='スタンプ ゲット！ ⭐ １０もん せいかい！';
+    }else{
+      $('wVerdict').innerHTML='せいかい！ 🎉　こたえ '+p.ans+p.ansUnit+'　'+wHint();
+    }
+    saveStreaks();
+  }else{
+    streaks['word']=0;saveStreaks();
+    $('wStage').className='stage wrong';
+    $('wVerdict').className='verdict ng';
+    $('wVerdict').innerHTML='おしい！ こたえは '+p.ans+p.ansUnit+'　'+wHint();
+  }
+  wSaveScore();wRender();wPad();wScore();
+}
+function wPress(v){
+  if(W.locked||W.stage!==2)return;
+  const maxLen=String(W.p.ans).length;
+  if(v==='del')W.input=W.input.slice(0,-1);
+  else if(W.input.length<maxLen)W.input+=v;
+  wRender();
+}
+function wPad(){buildPad($('wPad'),wPress,wCheck,wNew,W.locked);}
+
+/* =========================================================
+   ステップの きりかえ
+========================================================= */
+const VIEWS={tape:'viewTape',zu:'viewZu',moto:'viewMoto',word:'viewWord'};
+const S={view:'tape'};
+document.querySelectorAll('.tab').forEach(t=>{
+  bindTap(t,()=>{
+    if(S.view===t.dataset.v)return;      // 同じタブの 再タップでは 作り直さない
+    S.view=t.dataset.v;
+    document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x===t));
+    Object.keys(VIEWS).forEach(k=>{
+      $(VIEWS[k]).classList.toggle('hidden',S.view!==k);
+    });
+    if(S.view==='tape')tRender();
+    if(S.view==='zu'){zScore();zRender();}
+    if(S.view==='moto')mScore();
+    if(S.view==='word')wScore();
+    fitToFrame();
+  });
+});
+document.addEventListener('keydown',e=>{
+  if(e.repeat)return;
+  const v=S.view;
+  if(v==='tape'){
+    if(e.key==='ArrowRight'){if(T.n<MAXN){T.n++;tRender();}}
+    else if(e.key==='ArrowLeft'){if(T.n>1){T.n--;tRender();}}
+    return;
+  }
+  if(v==='moto'){
+    if(e.key==='Enter'&&!$('mNext').disabled)mNew();
+    return;
+  }
+  if(v!=='zu'&&v!=='word')return;
+  const press=(v==='zu')?zPress:wPress;
+  if(e.key.length===1&&e.key>='0'&&e.key<='9')press(e.key);
+  else if(e.key==='Backspace')press('del');
+  else if(e.key==='Enter'){
+    const now=Date.now();
+    if(now-lastAction<450)return;
+    lastAction=now;
+    if(v==='zu')Z.locked?zNew():zCheck();
+    else if(W.stage===2)W.locked?wNew():wCheck();
+  }
+});
+
+/* ===== 枠の高さを実測して、その中に必ず収める ===== */
+function frameHeight(){
+  const c=document.documentElement.clientHeight||0;
+  const w=window.innerHeight||0;
+  const v=(window.visualViewport&&window.visualViewport.height)||0;
+  return Math.min.apply(null,[c,w,v].filter(x=>x>0))||w||c;
+}
+function fitToFrame(){
+  document.documentElement.style.setProperty('--fh',frameHeight()+'px');
+  fitShrink();
+}
+/* ===== はみ出す場合は --shrink で自動縮小して必ず1画面に収める ===== */
+let shrinkPass=0;
+function fitShrink(){
+  document.documentElement.style.setProperty('--shrink','1');
+  shrinkPass=0;
+  requestAnimationFrame(shrinkStep);
+}
+function shrinkStep(){
+  const appEl=document.querySelector('.app');
+  if(!appEl)return;
+  const over=appEl.scrollHeight-appEl.clientHeight;
+  if(over>2&&shrinkPass<6){
+    const cur=parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--shrink'))||1;
+    const next=Math.max(.55,cur*Math.max(.8,appEl.clientHeight/appEl.scrollHeight));
+    document.documentElement.style.setProperty('--shrink',next.toFixed(3));
+    shrinkPass++;
+    requestAnimationFrame(shrinkStep);
+  }
+}
+window.addEventListener('resize',fitToFrame);
+if(window.visualViewport)window.visualViewport.addEventListener('resize',fitToFrame);
+window.addEventListener('orientationchange',()=>setTimeout(fitToFrame,200));
+window.addEventListener('load',fitToFrame);
+
+/* ---------- はじめの表示 ---------- */
+tChips();tRender();zOps();zNew();mNew();wNew();fitToFrame();
+</script>
+</body>
+</html>
