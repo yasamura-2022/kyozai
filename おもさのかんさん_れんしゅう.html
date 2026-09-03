@@ -77,6 +77,7 @@
   .chip .arw{opacity:.6;margin:0 2px}
   .chip .stamp.mx{left:-7px;right:auto;background:#7a5ea8}
   .chip .stamp.pl{top:auto;bottom:-7px;right:-7px;background:#3f7f8c;font-size:10px}
+  .chip .stamp.mi{top:auto;bottom:-7px;left:-7px;right:auto;background:#b05a7a;font-size:10px}
   .chip .stamp{
     position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;
     background:var(--gold);color:#fff;font-size:12px;display:flex;align-items:center;justify-content:center;
@@ -116,6 +117,16 @@
   @keyframes glow{0%,100%{box-shadow:0 0 0 0 rgba(0,0,0,0)}50%{box-shadow:0 0 0 5px var(--accent-soft)}}
   .fld.fixed{border:none;background:transparent;padding:0 3px;cursor:default}
   .tapnote{margin-top:6px;min-height:1.1em;font-size:clamp(11px,3vw,14px);color:#8a7a5f}
+
+  /* たす／ひく／まぜる のえらび（ステップ４の中だけに置く） */
+  .ops{display:flex;gap:8px;justify-content:center}
+  .op-btn{
+    flex:1;border-radius:14px;padding:8px 6px;
+    font-size:clamp(13px,3.7vw,16px);font-weight:700;cursor:pointer;
+    background:var(--card);color:var(--ink);border:2px solid var(--line);transition:transform .08s;
+  }
+  .op-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);box-shadow:0 3px 0 var(--accent-dark)}
+  .op-btn:active{transform:translateY(2px)}
 
   /* ===== たす・ひくビュー（1km700m ＋ 600m）===== */
   /* 式と こたえを 上下2行にする。ノートに書く形に近づける */
@@ -174,7 +185,7 @@
 
   .drill-main{flex:1;min-height:0;display:flex;flex-direction:column;gap:6px}
 
-  .tabs,.picker,.score,.actions{flex-shrink:0}
+  .tabs,.picker,.score,.actions,.ops{flex-shrink:0}
   .hidden{display:none !important}
 
   @media(max-height:720px){
@@ -183,6 +194,7 @@
     .tab .step{font-size:10px}
     .picker{padding:6px 8px}
     .chip{min-height:40px;padding:5px 10px;font-size:15px}
+    .op-btn{padding:6px;font-size:13px}
     .score .box{padding:3px}
     .score .n{font-size:20px}
     .score .t{font-size:9px}
@@ -274,6 +286,11 @@
 
   <!-- たす・ひくビュー（1km700m ＋ 600m ＝ □km □m） -->
   <div id="viewCalc" class="hidden">
+    <div class="ops">
+      <button class="op-btn active" data-o="+">たす</button>
+      <button class="op-btn" data-o="-">ひく</button>
+      <button class="op-btn" data-o="x">まぜる</button>
+    </div>
     <div class="score">
       <div class="box correct"><div class="n" id="cCorrect">0</div><div class="t">正かい</div></div>
       <div class="box"><div class="n" id="cTotal">0</div><div class="t">といた数</div></div>
@@ -654,14 +671,17 @@ function buildPadM(){
    ・くり上がり／くり下がりの ある形も 出す
    ・ヒントの言い方は「くりあがりくりさがり」アプリと そろえる
 ========================================================= */
-const P={op:'+',a1:0,b1:0,b2:0,ans:0,f:['',''],act:0,locked:false};
+const P={mode:'+',op:'+',a1:0,b1:0,b2:0,ans:0,f:['',''],act:0,locked:false};
 let pQueue=[];
 const cEq=document.getElementById('cEq'),cVerdict=document.getElementById('cVerdict'),
       cStage=document.getElementById('cStage'),cNote=document.getElementById('cNote'),
       padCalcEl=document.getElementById('padCalc');
 const cel={c:document.getElementById('cCorrect'),t:document.getElementById('cTotal'),s:document.getElementById('cStreak')};
 
-function pKey(){return 'p:'+pkey();}
+/* スタンプは たす・ひく べつべつに数える。
+   「まぜる」のときは、その問題の しるし（＋か－）のほうに数える */
+function pKeyOp(op){return 'p:'+pkey()+':'+op;}
+function pKey(){return pKeyOp(P.op);}
 /* ステップ４で使う数。1km400m ＋ 800m のように、下のけたが 0 の数だけにする。
    くりあがり・くりさがりに集中させたいので、ここでは「0の ばしょ」の
    難しさ（2km30m のような形）を重ねない。それはステップ３で練習する */
@@ -675,7 +695,7 @@ function pRests(){
 function pNums(){
   const r=pair().r,rests=pRests();
   for(let t=0;t<300;t++){
-    const op=Math.random()<0.5?'+':'-';
+    const op=(P.mode==='x')?(Math.random()<0.5?'+':'-'):P.mode;
     const a1=1+Math.floor(Math.random()*8);
     const b1=rests[Math.floor(Math.random()*rests.length)];
     const b2=rests[Math.floor(Math.random()*rests.length)];
@@ -686,7 +706,10 @@ function pNums(){
     return {op:op,a1:a1,b1:b1,b2:b2,ans:ans};
   }
   const b=rests[0];                      // ここに来ることは まずないが、念のため
-  return {op:'+',a1:1,b1:b,b2:b,ans:r+b*2};
+  const op=(P.mode==='-')?'-':'+';
+  return (op==='+')
+    ? {op:'+',a1:1,b1:b,b2:b,ans:r+b*2}
+    : {op:'-',a1:2,b1:b,b2:b*2,ans:2*r+b-b*2};
 }
 function pNew(){
   P.f=['',''];P.act=0;P.locked=false;
@@ -723,8 +746,12 @@ function pRender(){
 }
 function pScore(){
   cel.c.textContent=correct;cel.t.textContent=total;
+  const mark=(P.op==='+')?'➕':'➖';
   const k=pKey();
-  cel.s.textContent=stamps[k]?'➕':((setStreak[k]||0)+'/'+GOAL);
+  if(P.mode==='x'&&stamps[pKeyOp('+')]&&stamps[pKeyOp('-')]){cel.s.textContent='➕➖';return;}
+  if(stamps[k]){cel.s.textContent=mark;return;}
+  /* まぜるのときは、いま数えているほうが わかるように しるしを付ける */
+  cel.s.textContent=(P.mode==='x'?mark+' ':'')+((setStreak[k]||0)+'/'+GOAL);
 }
 function pHint(){
   const p=pair();
@@ -753,7 +780,7 @@ function pCheck(){
     setStreak[k]=(setStreak[k]||0)+1;
     if(!stamps[k]&&setStreak[k]>=GOAL){
       stamps[k]=true;saveStamps();buildChips();
-      cVerdict.innerHTML='スタンプ ゲット！ ➕ １０もん せいかい！';
+      cVerdict.innerHTML='スタンプ ゲット！ '+((P.op==='+')?'➕':'➖')+' １０もん せいかい！';
       setStreak[k]=0;
     }else if(stamps[k]){cVerdict.textContent='せいかい！ 🎉';}
     else{cVerdict.textContent='せいかい！ 🎉（あと '+(GOAL-setStreak[k])+'もん で スタンプ）';}
@@ -809,7 +836,8 @@ function buildChips(){
     b.innerHTML=p.big+'<span class="arw">⇄</span>'+p.small+
       (stamps[CAT+':'+i]?'<span class="stamp">⭐</span>':'')+
       (stamps['m:'+CAT+':'+i]?'<span class="stamp mx">🏅</span>':'')+
-      (stamps['p:'+CAT+':'+i]?'<span class="stamp pl">➕</span>':'');
+      (stamps['p:'+CAT+':'+i+':+']?'<span class="stamp pl">➕</span>':'')+
+      (stamps['p:'+CAT+':'+i+':-']?'<span class="stamp mi">➖</span>':'');
     bindTap(b,()=>{
       if(i===S.pi)return;               // 同じくみあわせの再タップでは何もしない
       S.pi=i;
@@ -826,6 +854,14 @@ function refreshView(){
   else pNew();
   fitShrink();
 }
+document.querySelectorAll('.op-btn').forEach(btn=>{
+  bindTap(btn,()=>{
+    if(P.mode===btn.dataset.o)return;   // 同じものの再タップでは作り直さない
+    P.mode=btn.dataset.o;
+    document.querySelectorAll('.op-btn').forEach(b=>b.classList.toggle('active',b===btn));
+    pQueue=[];pNew();fitShrink();
+  });
+});
 document.querySelectorAll('.tab').forEach(t=>{
   bindTap(t,()=>{
     if(S.view===t.dataset.v)return;     // 同じタブの再タップでは作り直さない
