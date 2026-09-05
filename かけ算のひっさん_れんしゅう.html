@@ -123,6 +123,13 @@
   .sticks{gap:2px}
 
   /* ===== ステップ１：わける（見る） ===== */
+  /* 5つの ばめんの どこに いるか。もんだいが すすむのでは ないことを 見せる */
+  .dots{display:flex;gap:6px;align-items:center;justify-content:center}
+  .dots .dot{width:10px;height:10px;border-radius:50%;background:#e7d9b8;transition:background .2s,transform .2s}
+  .dots .dot.on{background:var(--accent);transform:scale(1.35)}
+  .dots .dot.past{background:var(--accent-soft);box-shadow:inset 0 0 0 2px var(--accent)}
+  .dots .cap{color:#a99a7c;font-weight:800;margin-left:6px;
+    font-size:calc(clamp(10px,2.8vw,13px) * var(--shrink,1))}
   .mshiki{font-weight:800;font-variant-numeric:tabular-nums;color:var(--accent-dark);letter-spacing:.04em;
     font-size:calc(clamp(18px, calc(var(--fh,100vh) * 0.046), 34px) * var(--shrink,1))}
   .sets{display:flex;gap:6px;align-items:flex-end;justify-content:center;flex-wrap:wrap;min-height:0}
@@ -244,6 +251,8 @@
   .btn:active{transform:translateY(2px)}
   .btn.show{background:var(--gold);box-shadow:0 4px 0 #a5811a}
   .btn.next{background:#5a8a4c;box-shadow:0 4px 0 #446838}
+  /* 同じ もんだいの つづきを 見る ボタン（べつの もんだいへ 行く みどりと 分ける） */
+  .btn.play{background:var(--accent);box-shadow:0 4px 0 var(--accent-dark)}
   .btn.sub{background:#a99a7c;box-shadow:0 4px 0 #85795f}
   .btn:disabled{opacity:.45;box-shadow:none}
   .hintbtn{flex:none;border:2px solid var(--line);border-radius:12px;background:#fff;color:#8a7a5f;
@@ -273,7 +282,7 @@
   .drill-main .stage{flex:1;min-height:0}
   #viewMiru .stage,#viewAtsu .stage{flex:1;min-height:0}
 
-  .tabs,.picker,.score,.actions,.lvbar{flex-shrink:0}
+  .tabs,.picker,.score,.actions,.lvbar,.dots{flex-shrink:0}
 
   @media(max-height:720px){
     h1{font-size:16px}
@@ -344,9 +353,10 @@
       </div>
       <p class="total" id="mTotal"></p>
     </div>
+    <div class="dots" id="mDots"></div>
     <div class="actions">
-      <button class="btn sub" id="mBack">← もどる</button>
-      <button class="btn next" id="mNext">つぎへ →</button>
+      <button class="btn sub" id="mBack">◀ ひとつ もどる</button>
+      <button class="btn play" id="mNext">つづきを 見る ▶</button>
     </div>
   </div>
 
@@ -543,8 +553,13 @@ function mRender(){
   else if(st>=4)tot.innerHTML='<span class="tn">'+tenSum+'</span> と <span class="on">'+oneSum+'</span> で <span class="ans">'+all+'</span>';
   else tot.innerHTML='';
 
+  let d='';
+  for(let i=0;i<5;i++)d+='<span class="dot'+(i===st?' on':(i<st?' past':''))+'"></span>';
+  d+='<span class="cap">'+(st+1)+'／5</span>';
+  $('mDots').innerHTML=d;
   $('mBack').disabled=(st===0);
-  $('mNext').textContent=(st>=4)?'もう1回':'つぎへ →';
+  $('mNext').textContent=(st>=4)?'はじめから ↺':'つづきを 見る ▶';
+  $('mNext').className='btn '+((st>=4)?'show':'play');
   refit();
 }
 bindTap($('mBack'),()=>{if(M.st>0){M.st--;mRender();}});
