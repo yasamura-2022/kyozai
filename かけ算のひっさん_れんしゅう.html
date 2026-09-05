@@ -1,0 +1,1173 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>かけ算の筆算</title>
+<style>
+  :root{
+    --ink:#2b2118;
+    --paper:#fdf6e3;
+    --card:#fffdf7;
+    --line:#e7d9b8;
+    --gold:#c9a227;
+    --ok:#5a8a4c;
+    --ng:#d34b4b;
+    --flash:#ffe14d;
+  }
+  /* このアプリの色（かけ算の筆算） */
+  body{--accent:#2f6fa8;--accent-dark:#22527d;--accent-soft:#e6eef7}
+  /* 10のたば＝みどり／ばら＝だいだい。ぜんぶの ステップで この2色を そろえる */
+  body{--ten:#4a8a3f;--ten-dark:#356329;--ten-soft:#eaf4e6;
+       --one:#d98324;--one-dark:#a45f13;--one-soft:#fdf0e0}
+
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:'Hiragino Maru Gothic ProN','Yu Gothic',sans-serif;
+    background:
+      radial-gradient(circle at 15% 10%,#fef0d0 0,transparent 40%),
+      radial-gradient(circle at 85% 90%,#fbe6cf 0,transparent 45%),
+      var(--paper);
+    color:var(--ink);
+    display:flex;flex-direction:column;align-items:center;
+    position:fixed;inset:0;width:100%;
+    height:var(--fh,100dvh);
+    padding:6px 8px 10px;
+    overflow:hidden;
+    overscroll-behavior:none;
+    touch-action:manipulation;
+  }
+  button{
+    touch-action:manipulation;
+    -webkit-user-select:none;user-select:none;
+    -webkit-touch-callout:none;
+  }
+  .app{width:100%;max-width:580px;height:100%;display:flex;flex-direction:column;gap:6px;min-height:0}
+  #viewMiru,#viewAtsu,#viewShiki,#viewHissan{flex:1;min-height:0;display:flex;flex-direction:column;gap:6px}
+
+  header{text-align:center}
+  h1{font-size:clamp(17px,4.6vw,24px);letter-spacing:.04em}
+  h1 .em{color:var(--accent)}
+
+  /* 学習ステップ タブ */
+  .tabs{display:flex;gap:6px;margin-bottom:2px}
+  .tab{
+    flex:1;border:2px solid var(--line);border-radius:14px;background:var(--card);
+    padding:10px 4px;cursor:pointer;color:#8a7a5f;font-weight:800;
+    font-size:clamp(11px,2.9vw,15px);display:flex;flex-direction:column;align-items:center;gap:1px;
+    line-height:1.15;word-break:keep-all;
+    transition:transform .08s;
+  }
+  .tab .step{font-size:11px;font-weight:700;opacity:.7}
+  .tab.on{color:var(--ink);border-color:var(--gold);background:#fffdf7;box-shadow:0 3px 0 #a5811a}
+  .tab.on .step{color:var(--gold);opacity:1}
+  .tab:active{transform:translateY(1px)}
+
+  /* えらぶところ */
+  .picker{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:7px 10px;
+    display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap}
+  .picker .lbl{font-size:13px;color:#8a7a5f;white-space:nowrap}
+  .picker .x{font-size:clamp(15px,4vw,20px);font-weight:800;color:#8a7a5f}
+  .chips{display:flex;gap:6px;justify-content:center;flex-wrap:wrap}
+  .xgrp{align-items:center;gap:8px}
+  .chip{
+    position:relative;min-height:42px;padding:5px 11px;border-radius:14px;border:2px solid var(--line);
+    background:#fff;font-size:clamp(14px,3.8vw,17px);font-weight:800;cursor:pointer;color:var(--ink);
+    transition:transform .08s;white-space:nowrap;font-variant-numeric:tabular-nums;
+  }
+  .chip:active{transform:scale(.94)}
+  .chip.on{color:#fff;border-color:var(--accent);background:var(--accent);box-shadow:0 3px 0 var(--accent-dark)}
+
+  /* もんだいカード（共通） */
+  .stage{
+    background:var(--card);border:3px solid var(--line);border-radius:18px;
+    padding:9px 11px;text-align:center;transition:border-color .2s,background .2s;
+    display:flex;flex-direction:column;justify-content:center;gap:6px;
+    overflow:hidden;
+  }
+  .stage.correct{border-color:var(--ok);background:#f2f9ee}
+  .stage.wrong{border-color:var(--ng);background:#fcf0f0}
+  .verdict{min-height:1.3em;font-weight:800;line-height:1.35;
+    font-size:calc(clamp(12px,3.3vw,16px) * var(--shrink,1))}
+  .verdict.ok{color:var(--ok)}
+  .verdict.ng{color:var(--ng)}
+  .sect{text-align:left;font-weight:800;letter-spacing:.08em;color:#a99a7c;margin-bottom:-2px;
+    font-size:calc(clamp(10px,2.8vw,13px) * var(--shrink,1))}
+  .hidden{display:none !important}
+
+  /* ===== えんぴつ（10の たば と ばら） =====
+     たば＝10本の まとまり。ばら＝1本ずつ。この見た目を 4つの ステップで 使いまわす */
+  .taba{
+    position:relative;
+    width:calc(clamp(15px, calc(var(--fh,100vh) * 0.033), 34px) * var(--shrink,1));
+    height:calc(clamp(30px, calc(var(--fh,100vh) * 0.072), 78px) * var(--shrink,1));
+    border-radius:4px;border:2px solid var(--ten-dark);
+    background:
+      repeating-linear-gradient(90deg,#8cc47c 0 2px,#5f9b4f 2px 4px),
+      #7fbb6e;
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.35);
+  }
+  .taba::after{
+    content:'10';position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+    background:#fff;border-radius:5px;padding:0 2px;color:var(--ten-dark);font-weight:800;
+    font-size:calc(clamp(9px, calc(var(--fh,100vh) * 0.021), 19px) * var(--shrink,1));line-height:1.2;
+  }
+  .stick{
+    width:calc(clamp(4px, calc(var(--fh,100vh) * 0.0095), 10px) * var(--shrink,1));
+    height:calc(clamp(26px, calc(var(--fh,100vh) * 0.062), 68px) * var(--shrink,1));
+    border-radius:3px;background:linear-gradient(90deg,#f2b566,#e08c2c);
+    border:1px solid var(--one-dark);
+  }
+  .tabas,.sticks{display:flex;gap:3px;align-items:flex-end;justify-content:center;flex-wrap:wrap}
+  .sticks{gap:2px}
+
+  /* ===== ステップ１：わける（見る） ===== */
+  .mshiki{font-weight:800;font-variant-numeric:tabular-nums;color:var(--accent-dark);letter-spacing:.04em;
+    font-size:calc(clamp(18px, calc(var(--fh,100vh) * 0.046), 34px) * var(--shrink,1))}
+  .sets{display:flex;gap:6px;align-items:flex-end;justify-content:center;flex-wrap:wrap;min-height:0}
+  .set{
+    display:flex;gap:5px;align-items:flex-end;padding:4px 5px;border-radius:10px;
+    border:2px dashed #d9c9a4;background:#fffef9;animation:pop .25s;
+  }
+  .set .grp{display:flex;gap:3px;align-items:flex-end;transition:opacity .3s}
+  .set .grp.gone{opacity:.16}
+  .set .grp.lit{background:var(--flash);border-radius:7px;box-shadow:0 0 0 3px var(--flash)}
+  .say{font-weight:800;line-height:1.35;min-height:1.35em;
+    font-size:calc(clamp(13px, calc(var(--fh,100vh) * 0.030), 23px) * var(--shrink,1))}
+  .say .tn{color:var(--ten-dark)}
+  .say .on{color:var(--one-dark)}
+  .say .ans{color:var(--accent-dark)}
+
+  /* 2つの へや（たばの へや／ばらの へや）。ステップ１と２で 同じ形 */
+  .rooms{display:flex;gap:7px;align-items:stretch;justify-content:center}
+  .room{
+    flex:1 1 0;min-width:0;border:3px solid var(--line);border-radius:14px;background:#fff;
+    padding:4px 4px 5px;display:flex;flex-direction:column;align-items:center;justify-content:space-between;gap:3px;
+  }
+  .room.tens{border-color:var(--ten);background:var(--ten-soft)}
+  .room.ones{border-color:var(--one);background:var(--one-soft)}
+  .room .rlab{font-weight:800;letter-spacing:.02em;
+    font-size:calc(clamp(11px, calc(var(--fh,100vh) * 0.024), 15px) * var(--shrink,1))}
+  .room.tens .rlab{color:var(--ten-dark)}
+  .room.ones .rlab{color:var(--one-dark)}
+  .room .rbody{flex:1;min-height:calc(clamp(40px, calc(var(--fh,100vh) * 0.105), 118px) * var(--shrink,1));
+    display:flex;align-items:center;justify-content:center;width:100%}
+  .room .rval{font-weight:800;font-variant-numeric:tabular-nums;line-height:1.15;min-height:1.15em;
+    font-size:calc(clamp(13px, calc(var(--fh,100vh) * 0.032), 27px) * var(--shrink,1))}
+  .room.tens .rval{color:var(--ten-dark)}
+  .room.ones .rval{color:var(--one-dark)}
+  .room .rval .sm{font-size:.62em;color:#8a7a5f;display:block;font-weight:700}
+  /* ドラッグの おとしどころ（ステップ２）。はこ ぜんたいが あたり判定 */
+  .room.drop{cursor:pointer}
+  .room.drop.over{box-shadow:0 0 0 5px var(--flash)}
+  .room.drop.ngflash{animation:shake .3s}
+  @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+
+  .total{font-weight:800;font-variant-numeric:tabular-nums;line-height:1.2;min-height:1.2em;
+    font-size:calc(clamp(15px, calc(var(--fh,100vh) * 0.038), 32px) * var(--shrink,1))}
+  .total .tn{color:var(--ten-dark)}
+  .total .on{color:var(--one-dark)}
+  .total .ans{color:var(--accent-dark)}
+  .total .q{color:#c7b891}
+
+  /* ===== ステップ２：あつめる（手で うごかす） ===== */
+  .tray{display:flex;gap:5px;align-items:center;align-content:center;justify-content:center;flex-wrap:wrap;
+    flex:0 1 auto;min-height:0;
+    min-height:calc(clamp(40px, calc(var(--fh,100vh) * 0.095), 72px) * var(--shrink,1))}
+  .setcard{display:flex;gap:4px;align-items:flex-end;padding:3px 4px;border-radius:10px;
+    border:2px dashed #d9c9a4;background:#fffef9}
+  .setcard.empty{opacity:.28}
+  .piece{display:flex;gap:3px;align-items:flex-end;padding:2px;border-radius:8px;
+    border:2px solid transparent;background:transparent;cursor:grab;transition:transform .08s}
+  .piece:active{transform:scale(.95)}
+  .piece.tk{border-color:var(--ten)}
+  .piece.ok2{border-color:var(--one)}
+  .piece.picked{box-shadow:0 0 0 4px var(--flash)}
+  .piece.dragging{opacity:.3}
+  .piece.taken{display:none}
+  .dghost{position:fixed;z-index:60;transform:translate(-50%,-50%);pointer-events:none;
+    opacity:.95;filter:drop-shadow(0 6px 10px rgba(0,0,0,.3))}
+  .traynote{color:#a99a7c;
+    font-size:calc(clamp(10px,2.7vw,13px) * var(--shrink,1))}
+
+  /* ===== ステップ３：2つの しき ===== */
+  .kangae{display:inline-grid;grid-template-columns:auto auto;column-gap:10px;align-items:center;
+    margin:0 auto;font-variant-numeric:tabular-nums;font-weight:800;
+    font-size:calc(clamp(17px, calc(var(--fh,100vh) * 0.046), 34px) * var(--shrink,1))}
+  /* 数は みぎに そろえる（位を たてに そろえて 見せる） */
+  .knum{position:relative;text-align:right;min-width:4.4em;padding-left:1.2em;letter-spacing:.14em;
+    line-height:1.25;white-space:nowrap}
+  .knum .opl{position:absolute;left:0;top:50%;transform:translateY(-50%);color:#6f5d3d;letter-spacing:0}
+  .kmemo{font-size:.44em;color:#8a7a5f;font-weight:700;letter-spacing:0;text-align:left;white-space:nowrap}
+  .kmemo .tn{color:var(--ten-dark);font-weight:800}
+  .kmemo .on{color:var(--one-dark);font-weight:800}
+  .kline{height:3px;background:var(--ink);border-radius:2px;margin:3px 0}
+  .fld{display:inline-block;min-width:2.1ch;padding:0 5px;border-radius:9px;border:3px dashed var(--line);
+    background:#fff;color:var(--ink);font-weight:800;font-size:inherit;line-height:1.15;
+    font-variant-numeric:tabular-nums}
+  .fld.empty{color:#c7b891}
+  .fld.on{border-style:solid;border-color:var(--accent);background:var(--flash);animation:glow 1.2s infinite}
+  .fld.done{border-style:solid;border-color:var(--ok);background:#eaf5e4}
+  .fld.tn.on{border-color:var(--ten)}
+  .fld.on2.on{border-color:var(--one)}
+  @keyframes glow{0%,100%{box-shadow:0 0 0 0 rgba(0,0,0,0)}50%{box-shadow:0 0 0 5px var(--accent-soft)}}
+  @keyframes pop{0%{transform:scale(.7)}60%{transform:scale(1.12)}100%{transform:scale(1)}}
+
+  /* ===== ステップ４：ひっ算 ===== */
+  .hgrid{display:inline-grid;grid-auto-rows:min-content;gap:0 2px;margin:0 auto;
+    font-variant-numeric:tabular-nums;font-weight:800;
+    font-size:calc(clamp(19px, calc(var(--fh,100vh) * 0.052), 38px) * var(--shrink,1))}
+  .hcell{width:1.5em;height:1.35em;display:flex;align-items:center;justify-content:center;line-height:1}
+  .hcell.op{color:#6f5d3d}
+  .hbar{grid-column:1 / -1;height:3px;background:var(--ink);border-radius:2px;margin:2px 0}
+  /* くり上がりの 小さい 数を かく ところ（十の位・百の位の 上） */
+  .hcarry{height:.72em;display:flex;align-items:flex-end;justify-content:center}
+  .hcarry .fld{font-size:.46em;border-width:2px;min-width:1.9ch;padding:0 3px}
+  .hcell .fld{min-width:1.5ch;padding:0 2px;border-width:3px}
+  .hnote{color:#8a7a5f;font-weight:800;line-height:1.35;min-height:1.35em;
+    font-size:calc(clamp(12px, calc(var(--fh,100vh) * 0.028), 17px) * var(--shrink,1))}
+  .hnote .tn{color:var(--ten-dark)}
+  .hnote .on{color:var(--one-dark)}
+  .hnote .hi{background:var(--flash);border-radius:6px;padding:1px 4px}
+  .lvbar{display:flex;gap:6px;align-items:center;justify-content:center;flex-wrap:wrap}
+  .lvtag{border:2px solid var(--line);border-radius:12px;background:#fff;padding:3px 10px;
+    font-weight:800;color:#8a7a5f;
+    font-size:calc(clamp(11px,3vw,14px) * var(--shrink,1))}
+  .lvtag.on{background:var(--accent);border-color:var(--accent);color:#fff}
+  .lvtag.lock{opacity:.45}
+
+  /* ボタン・てんすう・テンキー（ほかの アプリと そろえる） */
+  .actions{display:flex;gap:8px}
+  .btn{flex:1;border:none;border-radius:14px;padding:12px 4px;font-size:clamp(14px,4vw,18px);
+    font-weight:800;cursor:pointer;transition:transform .08s;color:#fff}
+  .btn:active{transform:translateY(2px)}
+  .btn.show{background:var(--gold);box-shadow:0 4px 0 #a5811a}
+  .btn.next{background:#5a8a4c;box-shadow:0 4px 0 #446838}
+  .btn.sub{background:#a99a7c;box-shadow:0 4px 0 #85795f}
+  .btn:disabled{opacity:.45;box-shadow:none}
+  .hintbtn{flex:none;border:2px solid var(--line);border-radius:12px;background:#fff;color:#8a7a5f;
+    font-weight:800;padding:6px 16px;cursor:pointer;
+    font-size:calc(clamp(12px,3.2vw,15px) * var(--shrink,1));
+    min-height:calc(40px * var(--shrink,1))}
+  .hintbtn.on{background:var(--flash);border-color:var(--gold);color:var(--ink)}
+
+  .score{display:flex;gap:8px}
+  .score .box{flex:1;background:var(--card);border:2px solid var(--line);border-radius:12px;padding:6px 4px;text-align:center}
+  .score .n{font-size:clamp(19px,5.5vw,24px);font-weight:800;font-variant-numeric:tabular-nums;line-height:1}
+  .score .t{font-size:10px;color:#8a7a5f;margin-top:2px}
+  .score .streak .n{color:var(--gold)}
+  .score .correct .n{color:var(--ok)}
+
+  .pad{display:grid;grid-template-columns:repeat(3,1fr);gap:calc(min(6px, calc(var(--fh,100vh) * 0.009)) * var(--shrink,1));flex-shrink:0}
+  .key{border:2px solid var(--line);border-radius:14px;background:#fff;
+    font-size:calc(clamp(15px, calc(var(--fh,100vh) * 0.038), 24px) * var(--shrink,1));
+    font-weight:800;cursor:pointer;color:var(--ink);
+    padding:calc(clamp(2px, calc(var(--fh,100vh) * 0.011), 9px) * var(--shrink,1)) 0;transition:transform .07s,background .1s}
+  .key:active{transform:translateY(2px);background:#fff4df}
+  .key.del{background:#e6d3a8;box-shadow:0 3px 0 #c9b47f}
+  .key.enter{background:var(--ok);color:#fff;box-shadow:0 3px 0 #446838}
+  .key.next{background:var(--gold);color:#fff;box-shadow:0 3px 0 #a5811a}
+
+  .drill-main{flex:1;min-height:0;display:flex;flex-direction:column;gap:6px}
+  .drill-main .stage{flex:1;min-height:0}
+  #viewMiru .stage,#viewAtsu .stage{flex:1;min-height:0}
+
+  .tabs,.picker,.score,.actions,.lvbar{flex-shrink:0}
+
+  @media(max-height:720px){
+    h1{font-size:16px}
+    .tab{padding:7px 4px;font-size:13px}
+    .tab .step{font-size:10px}
+    .picker{padding:6px 8px}
+    .chip{min-height:38px;padding:4px 9px;font-size:15px}
+    .score .box{padding:3px}
+    .score .n{font-size:20px}
+    .score .t{font-size:9px}
+  }
+  @media(max-height:560px){
+    header{display:none}
+    .app{gap:5px}
+    #viewMiru,#viewAtsu,#viewShiki,#viewHissan{gap:5px}
+    .chip{min-height:34px;padding:4px 8px;font-size:14px}
+  }
+  /* 横向き（iPad横など）：もんだいと テンキーを 左右2列に */
+  @media(orientation:landscape) and (max-height:820px){
+    header{display:none}
+    .app{gap:5px;max-width:min(96vw,900px)}
+    #viewShiki,#viewHissan{gap:5px}
+    .drill-main{flex-direction:row;gap:10px;align-items:stretch}
+    .drill-main .stage{flex:1 1 60%;min-width:0;padding:10px 14px}
+    .drill-main .pad{flex:0 0 auto;width:min(38%,290px);align-content:center}
+    .key{font-size:calc(clamp(15px, calc(var(--fh,100vh) * 0.042), 23px) * var(--shrink,1));padding:calc(clamp(4px, calc(var(--fh,100vh) * 0.018), 13px) * var(--shrink,1)) 2px;white-space:nowrap}
+    .tab{padding:6px 4px;font-size:13px}
+    .tab .step{font-size:10px}
+    .picker{padding:5px 8px}
+    .chip{min-height:34px;padding:4px 8px;font-size:14px}
+    .score .box{padding:3px}
+    .score .n{font-size:19px}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header><h1><span class="em">かけ算の筆算</span></h1></header>
+
+  <div class="tabs">
+    <button class="tab on" data-v="miru"><span class="step">ステップ１</span>わける</button>
+    <button class="tab" data-v="atsu"><span class="step">ステップ２</span>あつめる</button>
+    <button class="tab" data-v="shiki"><span class="step">ステップ３</span>2つの しき</button>
+    <button class="tab" data-v="hissan"><span class="step">ステップ４</span>筆算</button>
+  </div>
+
+  <!-- ============ ステップ１：わける（見る） ============ -->
+  <div id="viewMiru">
+    <div class="picker">
+      <div class="chips" id="mA"></div>
+      <div class="chips xgrp"><span class="x">×</span><span class="chips" id="mB"></span></div>
+    </div>
+    <div class="stage" id="mStage">
+      <p class="mshiki" id="mSect"></p>
+      <div class="sets" id="mSets"></div>
+      <p class="say" id="mSay"></p>
+      <div class="rooms">
+        <div class="room tens">
+          <span class="rlab">10の たばの へや</span>
+          <div class="rbody"><div class="tabas" id="mTenBody"></div></div>
+          <div class="rval" id="mTenVal"></div>
+        </div>
+        <div class="room ones">
+          <span class="rlab">ばらの へや</span>
+          <div class="rbody"><div class="sticks" id="mOneBody"></div></div>
+          <div class="rval" id="mOneVal"></div>
+        </div>
+      </div>
+      <p class="total" id="mTotal"></p>
+    </div>
+    <div class="actions">
+      <button class="btn sub" id="mBack">← もどる</button>
+      <button class="btn next" id="mNext">つぎへ →</button>
+    </div>
+  </div>
+
+  <!-- ============ ステップ２：あつめる（手で うごかす） ============ -->
+  <div id="viewAtsu" class="hidden">
+    <div class="score">
+      <div class="box correct"><div class="n" id="aCorrect">0</div><div class="t">できた</div></div>
+      <div class="box"><div class="n" id="aTotal">0</div><div class="t">やったもんだい</div></div>
+      <div class="box streak"><div class="n" id="aStreak">0/5</div><div class="t">れんぞく</div></div>
+    </div>
+    <div class="stage" id="aStage">
+      <p class="say" id="aQ"></p>
+      <div class="tray" id="aTray"></div>
+      <p class="traynote" id="aNote">ゆびで うごかすか、ふだを タップ → へやを タップ</p>
+      <div class="rooms">
+        <div class="room tens drop" data-slot="ten">
+          <span class="rlab">10の たばの へや</span>
+          <div class="rbody"><div class="tabas" id="aTenBody"></div></div>
+          <div class="rval" id="aTenVal"></div>
+        </div>
+        <div class="room ones drop" data-slot="one">
+          <span class="rlab">ばらの へや</span>
+          <div class="rbody"><div class="sticks" id="aOneBody"></div></div>
+          <div class="rval" id="aOneVal"></div>
+        </div>
+      </div>
+      <p class="total" id="aTotalLine"></p>
+      <p class="verdict" id="aVerdict"></p>
+    </div>
+    <div class="actions">
+      <button class="btn sub" id="aReset">やりなおす</button>
+      <button class="btn next" id="aNext" disabled>つぎ →</button>
+    </div>
+  </div>
+
+  <!-- ============ ステップ３：2つの しき ============ -->
+  <div id="viewShiki" class="hidden">
+    <div class="score">
+      <div class="box correct"><div class="n" id="sCorrect">0</div><div class="t">せいかい</div></div>
+      <div class="box"><div class="n" id="sTotal">0</div><div class="t">やったもんだい</div></div>
+      <div class="box streak"><div class="n" id="sStreak">0/10</div><div class="t">れんぞく</div></div>
+    </div>
+    <div class="drill-main">
+      <div class="stage" id="sStage">
+        <div class="sect">わけて かけて、あわせる</div>
+        <div id="sKangae"></div>
+        <p class="hnote" id="sAsk"></p>
+        <div style="display:flex;justify-content:center">
+          <button class="hintbtn" id="sHintBtn">ヒント</button>
+        </div>
+        <p class="verdict" id="sVerdict"></p>
+      </div>
+      <div class="pad" id="sPad"></div>
+    </div>
+  </div>
+
+  <!-- ============ ステップ４：ひっ算 ============ -->
+  <div id="viewHissan" class="hidden">
+    <div class="score">
+      <div class="box correct"><div class="n" id="hCorrect">0</div><div class="t">せいかい</div></div>
+      <div class="box"><div class="n" id="hTotal">0</div><div class="t">やったもんだい</div></div>
+      <div class="box streak"><div class="n" id="hStreak">0/5</div><div class="t">れんぞく</div></div>
+    </div>
+    <div class="lvbar" id="hLv"></div>
+    <div class="drill-main">
+      <div class="stage" id="hStage">
+        <div id="hBoard"></div>
+        <p class="hnote" id="hAsk"></p>
+        <div style="display:flex;justify-content:center">
+          <button class="hintbtn" id="hHintBtn">ヒント</button>
+        </div>
+        <p class="verdict" id="hVerdict"></p>
+      </div>
+      <div class="pad" id="hPad"></div>
+    </div>
+  </div>
+</div>
+<script>
+/* =========================================================
+   かけ算の筆算（3年・1けたをかけるかけ算）
+   ねらい
+   ・十の位の 数×かける数 と 一の位の 数×かける数 を
+     あわせると こたえに なることを、目と 手で つかむ
+   ステップ
+   １ わける … 分かれて あつまる ようすを 見る（子どもが 1つずつ すすめる）
+   ２ あつめる… 同じことを 自分の 手で 仕分ける
+   ３ 2つのしき… その けっかを しきに かく
+   ４ ひっ算 … ひっ算の 形に する
+========================================================= */
+
+/* ---------- タップ（iPadで 反応が おそくならないように） ---------- */
+function bindTap(el,fn){
+  let lastFire=0;
+  const fire=()=>{
+    const now=Date.now();
+    if(now-lastFire<60)return;
+    lastFire=now;
+    fn();
+  };
+  if(window.PointerEvent){
+    el.addEventListener('pointerdown',ev=>{
+      if(ev.pointerType==='mouse'&&ev.button!==0)return;
+      ev.preventDefault();
+      fire();
+    });
+    el.addEventListener('click',()=>{
+      if(Date.now()-lastFire<500)return;
+      fire();
+    });
+  }else{
+    el.addEventListener('touchstart',ev=>{ev.preventDefault();fire();},{passive:false});
+    el.addEventListener('click',()=>{if(Date.now()-lastFire<500)return;fire();});
+  }
+}
+const $=id=>document.getElementById(id);
+function pick(a){return a[Math.floor(Math.random()*a.length)];}
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+let lastAction=0;
+
+/* ---------- えんぴつの 絵 ---------- */
+function tabaHTML(n){let s='';for(let i=0;i<n;i++)s+='<div class="taba"></div>';return s;}
+function stickHTML(n){let s='';for(let i=0;i<n;i++)s+='<div class="stick"></div>';return s;}
+function setInner(t,o){
+  return '<div class="grp gt">'+tabaHTML(t)+'</div><div class="grp go">'+stickHTML(o)+'</div>';
+}
+
+/* =========================================================
+   ステップ１：わける（見る）
+========================================================= */
+const ALIST=[12,13,21,22,23,31,32,43];
+const BLIST=[2,3,4];
+function validB(a){return BLIST.filter(b=>Math.floor(a/10)*b<=9&&(a%10)*b<=9);}
+const M={a:12,b:4,st:0};
+try{
+  const s=JSON.parse(localStorage.getItem('kakeMiru')||'null');
+  if(s&&ALIST.indexOf(s.a)>=0){M.a=s.a;if(validB(s.a).indexOf(s.b)>=0)M.b=s.b;else M.b=validB(s.a)[0];}
+}catch(e){}
+function mSave(){try{localStorage.setItem('kakeMiru',JSON.stringify({a:M.a,b:M.b}));}catch(e){}}
+
+function mChips(){
+  const ab=$('mA');ab.innerHTML='';
+  ALIST.forEach(a=>{
+    const c=document.createElement('button');
+    c.type='button';c.className='chip'+(a===M.a?' on':'');c.textContent=a;
+    bindTap(c,()=>{
+      M.a=a;
+      const vs=validB(a);
+      if(vs.indexOf(M.b)<0)M.b=vs[vs.length-1];
+      M.st=0;mSave();mChips();mRender();
+    });
+    ab.appendChild(c);
+  });
+  const bb=$('mB');bb.innerHTML='';
+  validB(M.a).forEach(b=>{
+    const c=document.createElement('button');
+    c.type='button';c.className='chip'+(b===M.b?' on':'');c.textContent=b;
+    bindTap(c,()=>{M.b=b;M.st=0;mSave();mChips();mRender();});
+    bb.appendChild(c);
+  });
+}
+
+function mRender(){
+  const a=M.a,b=M.b,t=Math.floor(a/10),o=a%10,st=M.st;
+  const tenSum=t*10*b, oneSum=o*b, all=a*b;
+  $('mSect').textContent=a+' × '+b;
+  /* えんぴつの ならび */
+  const sets=$('mSets');
+  const n=(st===0)?1:b;
+  let h='';
+  for(let i=0;i<n;i++)h+='<div class="set">'+setInner(t,o)+'</div>';
+  sets.innerHTML=h;
+  /* あつめた ぶんは うすくする。いま あつめる ところは 光らせる */
+  if(st===2)sets.querySelectorAll('.gt').forEach(g=>g.classList.add('lit'));
+  else if(st>=3)sets.querySelectorAll('.gt').forEach(g=>g.classList.add('gone'));
+  if(st===3)sets.querySelectorAll('.go').forEach(g=>g.classList.add('lit'));
+  else if(st>=4)sets.querySelectorAll('.go').forEach(g=>g.classList.add('gone'));
+
+  /* へや */
+  $('mTenBody').innerHTML=(st>=2)?tabaHTML(t*b):'';
+  $('mOneBody').innerHTML=(st>=3)?stickHTML(o*b):'';
+  $('mTenVal').innerHTML=(st>=2)?('<span class="sm">10が '+(t*b)+'こ</span>'+(t*10)+'×'+b+'＝'+tenSum):'';
+  $('mOneVal').innerHTML=(st>=3)?('<span class="sm">ばら '+(o*b)+'本</span>'+o+'×'+b+'＝'+oneSum):'';
+
+  /* せつめい */
+  const say=$('mSay');
+  if(st===0)say.innerHTML=a+' は <span class="tn">10の たば '+t+'つ</span> と <span class="on">ばら '+o+'本</span>';
+  else if(st===1)say.innerHTML=a+' の '+b+'つ分 が '+a+'×'+b;
+  else if(st===2)say.innerHTML='<span class="tn">10の たばだけ</span> あつめる → <span class="tn">'+(t*10)+'×'+b+'＝'+tenSum+'</span>';
+  else if(st===3)say.innerHTML='<span class="on">ばらだけ</span> あつめる → <span class="on">'+o+'×'+b+'＝'+oneSum+'</span>';
+  else say.innerHTML='十の位の 分と 一の位の 分を あわせて <span class="ans">'+a+'×'+b+'＝'+all+'</span>';
+
+  const tot=$('mTotal');
+  if(st===3)tot.innerHTML='<span class="tn">'+tenSum+'</span> と <span class="on">'+oneSum+'</span> で <span class="q">？</span>';
+  else if(st>=4)tot.innerHTML='<span class="tn">'+tenSum+'</span> と <span class="on">'+oneSum+'</span> で <span class="ans">'+all+'</span>';
+  else tot.innerHTML='';
+
+  $('mBack').disabled=(st===0);
+  $('mNext').textContent=(st>=4)?'もう1回':'つぎへ →';
+  refit();
+}
+bindTap($('mBack'),()=>{if(M.st>0){M.st--;mRender();}});
+bindTap($('mNext'),()=>{M.st=(M.st>=4)?0:M.st+1;mRender();});
+
+/* =========================================================
+   ことばや ふだを ドラッグする しくみ（ステップ２で つかう）
+   ・おとしどころは へや ぜんたい
+   ・うごかさずに タップした ときは「えらんだ」あつかい。つぎに へやを タップ
+========================================================= */
+let dragSel=null;
+function dropZones(){
+  return [].filter.call(document.querySelectorAll('.room.drop'),z=>z.offsetParent!==null);
+}
+function zoneAt(x,y){
+  const zs=dropZones();
+  for(let i=0;i<zs.length;i++){
+    const r=zs[i].getBoundingClientRect();
+    if(x>=r.left&&x<=r.right&&y>=r.top&&y<=r.bottom)return zs[i].dataset.slot;
+  }
+  return null;
+}
+function markOver(slot){dropZones().forEach(z=>z.classList.toggle('over',z.dataset.slot===slot));}
+function clearOver(){dropZones().forEach(z=>z.classList.remove('over'));}
+function clearSel(){
+  dragSel=null;
+  document.querySelectorAll('.piece.picked').forEach(c=>c.classList.remove('picked'));
+}
+let dragCleanup=null;
+function bindDrag(el,payload,place){
+  el.style.touchAction='none';
+  el.addEventListener('pointerdown',function(ev){
+    if(ev.pointerType==='mouse'&&ev.button!==0)return;
+    ev.preventDefault();
+    if(dragCleanup)dragCleanup();
+    const sx=ev.clientX,sy=ev.clientY;
+    let moved=false,ghost=null;
+    const stop=function(){
+      window.removeEventListener('pointermove',move);
+      window.removeEventListener('pointerup',up);
+      window.removeEventListener('pointercancel',cancel);
+      if(ghost&&ghost.parentNode)ghost.parentNode.removeChild(ghost);
+      ghost=null;
+      el.classList.remove('dragging');
+      clearOver();
+      dragCleanup=null;
+    };
+    const move=function(e){
+      const dx=e.clientX-sx,dy=e.clientY-sy;
+      if(!moved&&(dx*dx+dy*dy)<64)return;
+      if(!moved){
+        moved=true;clearSel();
+        ghost=el.cloneNode(true);
+        ghost.className=el.className.replace('picked','')+' dghost';
+        ghost.style.width=el.offsetWidth+'px';
+        document.body.appendChild(ghost);
+        el.classList.add('dragging');
+      }
+      ghost.style.left=e.clientX+'px';
+      ghost.style.top=e.clientY+'px';
+      markOver(zoneAt(e.clientX,e.clientY));
+    };
+    const up=function(e){
+      const wasMoved=moved,x=e.clientX,y=e.clientY;
+      stop();
+      if(wasMoved){
+        const slot=zoneAt(x,y);
+        if(slot)place(payload,slot);
+      }else{
+        const was=(dragSel&&dragSel.i===payload.i&&dragSel.k===payload.k);
+        clearSel();
+        if(!was){dragSel=payload;el.classList.add('picked');}
+      }
+    };
+    const cancel=function(){stop();};
+    dragCleanup=stop;
+    window.addEventListener('pointermove',move);
+    window.addEventListener('pointerup',up);
+    window.addEventListener('pointercancel',cancel);
+  });
+}
+
+/* =========================================================
+   ステップ２：あつめる（手で うごかす）
+========================================================= */
+const A={a:12,b:4,done:[],correct:0,total:0,streak:0,fin:false};
+try{const s=JSON.parse(localStorage.getItem('kakeAtsuStreak')||'null');if(s&&typeof s.s==='number')A.streak=s.s;}catch(e){}
+function aSaveStreak(){try{localStorage.setItem('kakeAtsuStreak',JSON.stringify({s:A.streak}));}catch(e){}}
+try{const s=JSON.parse(sessionStorage.getItem('kakeAtsuScore')||'null');if(s){A.correct=s.c;A.total=s.t;}}catch(e){}
+function aSaveScore(){try{sessionStorage.setItem('kakeAtsuScore',JSON.stringify({c:A.correct,t:A.total}));}catch(e){}}
+
+function aNew(){
+  let t,o,b,tries=0;
+  do{
+    t=1+Math.floor(Math.random()*4);
+    o=1+Math.floor(Math.random()*4);
+    b=2+Math.floor(Math.random()*3);
+    tries++;
+  }while((t*b>9||o*b>9||(t===A.a/10&&o===A.a%10&&b===A.b))&&tries<60);
+  A.a=t*10+o;A.b=b;
+  A.done=[];
+  for(let i=0;i<b;i++)A.done.push({ten:false,one:false});
+  A.fin=false;
+  clearSel();
+  aDraw();
+}
+function aReset(){
+  A.done.forEach(d=>{d.ten=false;d.one=false;});
+  A.fin=false;clearSel();aDraw();
+}
+function aDraw(){
+  const a=A.a,b=A.b,t=Math.floor(a/10),o=a%10;
+  $('aQ').innerHTML=a+' × '+b+' の えんぴつを、２つの へやに わけよう';
+  /* ふだ（1つ分の カード。たばの ぶんと ばらの ぶんを べつべつに もてる） */
+  const tray=$('aTray');tray.innerHTML='';
+  A.done.forEach((d,i)=>{
+    const card=document.createElement('div');
+    card.className='setcard'+((d.ten&&d.one)?' empty':'');
+    const pt=document.createElement('div');
+    pt.className='piece tk'+(d.ten?' taken':'');
+    pt.innerHTML=tabaHTML(t);
+    const po=document.createElement('div');
+    po.className='piece ok2'+(d.one?' taken':'');
+    po.innerHTML=stickHTML(o);
+    card.appendChild(pt);card.appendChild(po);
+    tray.appendChild(card);
+    if(!d.ten)bindDrag(pt,{i:i,k:'ten'},aPlace);
+    if(!d.one)bindDrag(po,{i:i,k:'one'},aPlace);
+  });
+  /* へや */
+  const nt=A.done.filter(d=>d.ten).length, no=A.done.filter(d=>d.one).length;
+  const allT=(nt===b), allO=(no===b);
+  $('aTenBody').innerHTML=tabaHTML(t*nt);
+  $('aOneBody').innerHTML=stickHTML(o*no);
+  $('aTenVal').innerHTML=nt===0?'':(allT
+    ? '<span class="sm">10が '+(t*b)+'こ</span>'+(t*10)+'×'+b+'＝'+(t*10*b)
+    : '<span class="sm">10が '+(t*nt)+'こ</span>'+(t*nt*10));
+  $('aOneVal').innerHTML=no===0?'':(allO
+    ? '<span class="sm">ばら '+(o*b)+'本</span>'+o+'×'+b+'＝'+(o*b)
+    : '<span class="sm">ばら '+(o*no)+'本</span>'+(o*no));
+  const tot=$('aTotalLine');
+  if(allT&&allO)tot.innerHTML='<span class="tn">'+(t*10*b)+'</span> と <span class="on">'+(o*b)+'</span> で <span class="ans">'+(a*b)+'</span>';
+  else if(allT||allO)tot.innerHTML='<span class="'+(allT?'tn':'on')+'">'+(allT?(t*10*b):(o*b))+'</span> と <span class="q">？</span>';
+  else tot.innerHTML='';
+  aScore();
+  refit();
+}
+function aPlace(p,slot){
+  if(A.fin)return;
+  const d=A.done[p.i];
+  if(!d)return;
+  if(p.k!==slot){
+    const z=document.querySelector('.room.drop[data-slot="'+slot+'"]');
+    if(z){z.classList.add('ngflash');setTimeout(()=>z.classList.remove('ngflash'),320);}
+    const v=$('aVerdict');
+    v.className='verdict ng';
+    v.textContent=(p.k==='ten')?'それは 10の たば。たばの へやへ':'それは ばら。ばらの へやへ';
+    $('aStage').className='stage wrong';
+    setTimeout(()=>{
+      if(!A.fin){v.textContent='';v.className='verdict';$('aStage').className='stage';refit();}
+    },1100);
+    return;
+  }
+  if(d[p.k])return;
+  d[p.k]=true;
+  clearSel();
+  aDraw();
+  if(A.done.every(x=>x.ten&&x.one))aFinish();
+}
+function aFinish(){
+  A.fin=true;
+  A.total++;A.correct++;A.streak++;
+  aSaveScore();aSaveStreak();
+  const v=$('aVerdict');
+  v.className='verdict ok';
+  v.innerHTML='よくできました！　'+A.a+'×'+A.b+'＝'+(A.a*A.b);
+  $('aStage').className='stage correct';
+  $('aNext').disabled=false;
+  aScore();
+  refit();
+}
+function aScore(){
+  $('aCorrect').textContent=A.correct;
+  $('aTotal').textContent=A.total;
+  $('aStreak').textContent=Math.min(A.streak,5)+'/5';
+  if(!A.fin){$('aNext').disabled=true;$('aVerdict').className='verdict';$('aVerdict').textContent='';$('aStage').className='stage';}
+}
+bindTap($('aReset'),()=>{if(!A.fin)aReset();});
+bindTap($('aNext'),()=>{
+  const now=Date.now();if(now-lastAction<450)return;lastAction=now;
+  aNew();
+});
+/* へやを タップしても 入る（ふだを えらんでから へやを タップ） */
+[].forEach.call(document.querySelectorAll('#viewAtsu .room.drop'),function(z){
+  bindTap(z,function(){
+    if(dragSel){const p=dragSel;clearSel();aPlace(p,z.dataset.slot);}
+  });
+});
+
+/* ---------- テンキー（ステップ３・４で 共通） ---------- */
+function buildPad(padEl,press,check,next,locked){
+  padEl.innerHTML='';
+  for(let i=1;i<=9;i++)add(String(i),'key',()=>press(String(i)),false);
+  add('けす','key del',()=>press('del'),false);
+  add('0','key',()=>press('0'),false);
+  if(locked)add('つぎ →','key next',next,true);
+  else add('こたえ','key enter',check,true);
+  function add(label,cls,fn,guard){
+    const b=document.createElement('button');
+    b.className=cls;b.textContent=label;b.type='button';
+    bindTap(b,()=>{
+      if(guard){
+        const now=Date.now();
+        if(now-lastAction<450)return;
+        lastAction=now;
+      }
+      fn();
+    });
+    padEl.appendChild(b);
+  }
+}
+function fldHTML(txt,cls,state){
+  return '<span class="fld '+(cls||'')+' '+state+'">'+(txt===''?'　':txt)+'</span>';
+}
+
+/* =========================================================
+   ステップ３：2つの しき
+   一の位の 分（o×b）と 十の位の 分（t0×b）を べつべつに かき、
+   それを たすと こたえに なることを しきで たしかめる
+========================================================= */
+const S3={a:12,b:4,idx:0,vals:['','',''],locked:false,miss:false,hint:false,
+          correct:0,total:0,streak:0};
+try{const s=JSON.parse(localStorage.getItem('kakeShikiStreak')||'null');if(s&&typeof s.s==='number')S3.streak=s.s;}catch(e){}
+function s3SaveStreak(){try{localStorage.setItem('kakeShikiStreak',JSON.stringify({s:S3.streak}));}catch(e){}}
+try{const s=JSON.parse(sessionStorage.getItem('kakeShikiScore')||'null');if(s){S3.correct=s.c;S3.total=s.t;}}catch(e){}
+function s3SaveScore(){try{sessionStorage.setItem('kakeShikiScore',JSON.stringify({c:S3.correct,t:S3.total}));}catch(e){}}
+
+function s3Parts(){
+  const t=Math.floor(S3.a/10),o=S3.a%10;
+  return {t:t,o:o,p1:o*S3.b,p2:t*10*S3.b,all:S3.a*S3.b};
+}
+function s3New(){
+  let t,o,b,tries=0;
+  do{
+    t=1+Math.floor(Math.random()*4);
+    o=1+Math.floor(Math.random()*9);
+    b=2+Math.floor(Math.random()*8);
+    tries++;
+  }while((t*10+o===S3.a&&b===S3.b)&&tries<40);
+  S3.a=t*10+o;S3.b=b;
+  S3.idx=0;S3.vals=['','',''];S3.locked=false;S3.miss=false;S3.hint=false;
+  $('sHintBtn').classList.remove('on');
+  s3Render();
+}
+function s3Render(){
+  const p=s3Parts(),a=S3.a,b=S3.b;
+  const st=i=>(S3.idx===i&&!S3.locked)?'on':((S3.idx>i||S3.locked)?'done':'empty');
+  let h='<div class="kangae">';
+  h+='<div class="knum">'+a+'</div><div class="kmemo"></div>';
+  h+='<div class="knum"><span class="opl">×</span>'+b+'</div><div class="kmemo"></div>';
+  h+='<div class="kline"></div><div></div>';
+  h+='<div class="knum">'+fldHTML(S3.vals[0],'on2',st(0))+'</div>'+
+     '<div class="kmemo"><span class="on">'+p.o+'×'+b+'</span>　一の位の 分</div>';
+  h+='<div class="knum">'+fldHTML(S3.vals[1],'tn',st(1))+'</div>'+
+     '<div class="kmemo"><span class="tn">'+(p.t*10)+'×'+b+'</span>　十の位の 分</div>';
+  h+='<div class="kline"></div><div></div>';
+  h+='<div class="knum">'+fldHTML(S3.vals[2],'',st(2))+'</div>'+
+     '<div class="kmemo">あわせて</div>';
+  h+='</div>';
+  $('sKangae').innerHTML=h;
+
+  const ask=$('sAsk');
+  if(S3.locked)ask.innerHTML='';
+  else if(S3.idx===0)ask.innerHTML='<span class="on">一の位</span>の '+p.o+' に '+b+' を かけると？';
+  else if(S3.idx===1)ask.innerHTML='<span class="tn">十の位</span>の '+p.t+' は '+(p.t*10)+'。'+(p.t*10)+'×'+b+' は？';
+  else ask.innerHTML='2つを あわせると？　'+p.p1+' ＋ '+p.p2;
+
+  if(S3.hint&&!S3.locked){
+    if(S3.idx===0)ask.innerHTML+='<br><span class="hi">九九だね　'+p.o+'×'+b+'</span>';
+    else if(S3.idx===1)ask.innerHTML+='<br><span class="hi">'+p.t+'×'+b+'＝'+(p.t*b)+' だから 10が '+(p.t*b)+'こ</span>';
+    else ask.innerHTML+='<br><span class="hi">'+p.p1+'＋'+p.p2+' を たしざん</span>';
+  }
+  s3Pad();
+  refit();
+}
+function s3Press(v){
+  if(S3.locked)return;
+  const i=S3.idx;
+  if(v==='del')S3.vals[i]=S3.vals[i].slice(0,-1);
+  else if(S3.vals[i].length<3)S3.vals[i]+=v;
+  s3Render();
+}
+function s3Check(){
+  if(S3.locked)return;
+  const p=s3Parts(),i=S3.idx;
+  if(S3.vals[i]==='')return;
+  const want=[p.p1,p.p2,p.all][i];
+  const v=$('sVerdict');
+  if(parseInt(S3.vals[i],10)===want){
+    if(i<2){
+      S3.idx++;
+      v.className='verdict ok';
+      v.textContent=(i===0)?'そう！ つぎは 十の位の 分':'そう！ さいごに あわせよう';
+      $('sStage').className='stage';
+      S3.hint=false;$('sHintBtn').classList.remove('on');
+      s3Render();
+      return;
+    }
+    S3.locked=true;S3.total++;
+    if(!S3.miss){S3.correct++;S3.streak++;}else{S3.streak=0;}
+    s3SaveScore();s3SaveStreak();
+    v.className='verdict ok';
+    v.innerHTML='よくできました！　'+p.p1+' と '+p.p2+' で '+p.all+'　'+S3.a+'×'+S3.b+'＝'+p.all;
+    $('sStage').className='stage correct';
+    s3Score();s3Render();
+  }else{
+    S3.miss=true;S3.streak=0;s3SaveStreak();
+    S3.vals[i]='';
+    v.className='verdict ng';
+    v.textContent='もう一回！　ヒントを 見てもいいよ';
+    $('sStage').className='stage wrong';
+    s3Score();s3Render();
+    setTimeout(()=>{if(!S3.locked)$('sStage').className='stage';},900);
+  }
+}
+function s3Score(){
+  $('sCorrect').textContent=S3.correct;
+  $('sTotal').textContent=S3.total;
+  $('sStreak').textContent=Math.min(S3.streak,10)+'/10';
+}
+function s3Pad(){buildPad($('sPad'),s3Press,s3Check,s3New,S3.locked);}
+bindTap($('sHintBtn'),()=>{
+  S3.hint=!S3.hint;
+  $('sHintBtn').classList.toggle('on',S3.hint);
+  s3Render();
+});
+
+/* =========================================================
+   ステップ４：ひっ算
+   レベル１ くり上がり なし
+   レベル２ 一の位から くり上がる
+   レベル３ 十の位から くり上がる（百の位が できる）
+   レベル４ くり上がりが 2かい
+   5もん れんぞく せいかいで つぎの レベルが 出る
+========================================================= */
+const LV=[
+  {k:1,name:'くり上がり なし'},
+  {k:2,name:'一の位から'},
+  {k:3,name:'十の位から'},
+  {k:4,name:'2かい くり上がる'}
+];
+const H={a:12,b:4,lv:1,open:1,idx:0,fields:[],locked:false,miss:false,hint:false,
+         correct:0,total:0,streak:0};
+try{
+  const s=JSON.parse(localStorage.getItem('kakeHissan')||'null');
+  if(s){if(s.open>=1&&s.open<=4)H.open=s.open;if(s.lv>=1&&s.lv<=4)H.lv=Math.min(s.lv,H.open);
+        if(typeof s.streak==='number')H.streak=s.streak;}
+}catch(e){}
+function hSave(){try{localStorage.setItem('kakeHissan',JSON.stringify({open:H.open,lv:H.lv,streak:H.streak}));}catch(e){}}
+try{const s=JSON.parse(sessionStorage.getItem('kakeHissanScore')||'null');if(s){H.correct=s.c;H.total=s.t;}}catch(e){}
+function hSaveScore(){try{sessionStorage.setItem('kakeHissanScore',JSON.stringify({c:H.correct,t:H.total}));}catch(e){}}
+
+function hCalc(a,b){
+  const t=Math.floor(a/10),o=a%10;
+  const p1=o*b,c1=Math.floor(p1/10),d1=p1%10;
+  const p2=t*b+c1,c2=Math.floor(p2/10),d2=p2%10;
+  return {t:t,o:o,p1:p1,c1:c1,d1:d1,p2:p2,c2:c2,d2:d2,all:a*b};
+}
+function hMatch(lv,c){
+  if(lv===1)return c.c1===0&&c.c2===0;
+  if(lv===2)return c.c1>0&&c.c2===0;
+  if(lv===3)return c.c1===0&&c.c2>0;
+  return c.c1>0&&c.c2>0;
+}
+function hNew(){
+  const cand=[];
+  for(let t=1;t<=9;t++)for(let o=1;o<=9;o++)for(let b=2;b<=9;b++){
+    const c=hCalc(t*10+o,b);
+    if(hMatch(H.lv,c))cand.push({a:t*10+o,b:b});
+  }
+  let q=pick(cand),tries=0;
+  while(q.a===H.a&&q.b===H.b&&tries<20){q=pick(cand);tries++;}
+  H.a=q.a;H.b=q.b;
+  const c=hCalc(H.a,H.b);
+  /* 入れる じゅんばん：一の位 →（くり上がり）→ 十の位 →（百の位） */
+  H.fields=[{key:'d1',want:c.d1,v:''}];
+  if(c.c1>0)H.fields.push({key:'c1',want:c.c1,v:''});
+  H.fields.push({key:'d2',want:c.d2,v:''});
+  if(c.c2>0)H.fields.push({key:'c2',want:c.c2,v:''});
+  H.idx=0;H.locked=false;H.miss=false;H.hint=false;
+  $('hHintBtn').classList.remove('on');
+  hRender();
+}
+function hVal(key){
+  const f=H.fields.filter(x=>x.key===key)[0];
+  return f?f.v:'';
+}
+function hState(key){
+  const i=H.fields.map(x=>x.key).indexOf(key);
+  if(i<0)return null;
+  if(H.locked)return 'done';
+  return (H.idx===i)?'on':((H.idx>i)?'done':'empty');
+}
+function hCell(key,cls){
+  const s=hState(key);
+  if(s===null)return '<div class="hcell"></div>';
+  return '<div class="hcell">'+fldHTML(hVal(key),cls,s)+'</div>';
+}
+function hRender(){
+  const c=hCalc(H.a,H.b);
+  let h='<div class="hgrid" style="grid-template-columns:repeat(4,auto)">';
+  /* くり上がりを かく ところ（十の位の 上） */
+  h+='<div class="hcarry"></div><div class="hcarry"></div>';
+  if(hState('c1')!==null)h+='<div class="hcarry">'+fldHTML(hVal('c1'),'on2',hState('c1'))+'</div>';
+  else h+='<div class="hcarry"></div>';
+  h+='<div class="hcarry"></div>';
+  /* かけられる数 */
+  h+='<div class="hcell"></div><div class="hcell"></div>';
+  h+='<div class="hcell">'+c.t+'</div><div class="hcell">'+c.o+'</div>';
+  /* かける数 */
+  h+='<div class="hcell op">×</div><div class="hcell"></div><div class="hcell"></div>';
+  h+='<div class="hcell">'+H.b+'</div>';
+  h+='<div class="hbar"></div>';
+  /* こたえ */
+  h+='<div class="hcell"></div>';
+  h+=(hState('c2')!==null)?hCell('c2','tn'):'<div class="hcell"></div>';
+  h+=hCell('d2','tn');
+  h+=hCell('d1','on2');
+  h+='</div>';
+  $('hBoard').innerHTML=h;
+
+  const ask=$('hAsk');
+  const cur=H.fields[H.idx];
+  if(H.locked)ask.innerHTML='';
+  else if(cur.key==='d1'){
+    ask.innerHTML='<span class="on">一の位</span>　'+c.o+'×'+H.b+
+      (c.c1>0?' の こたえの <span class="on">一の位</span>を かこう':' は？');
+  }else if(cur.key==='c1'){
+    ask.innerHTML='くり上げた '+c.c1+' を <span class="tn">十の位</span>の 上に かこう';
+  }else if(cur.key==='d2'){
+    ask.innerHTML='<span class="tn">十の位</span>　'+c.t+'×'+H.b+
+      (c.c1>0?' に くり上げた '+c.c1+' を たすと？':' は？')+
+      (c.c2>0?'（十の位に かく 数）':'');
+  }else{
+    ask.innerHTML='くり上げた '+c.c2+' を 百の位に かこう';
+  }
+  if(H.hint&&!H.locked){
+    let t2='';
+    if(cur.key==='d1')t2=c.o+'×'+H.b+'＝'+c.p1+(c.c1>0?'　'+c.d1+'を かいて '+c.c1+' くり上げる':'');
+    else if(cur.key==='c1')t2='一の位の '+c.p1+' の 十の位が '+c.c1;
+    else if(cur.key==='d2')t2=c.t+'×'+H.b+'＝'+(c.t*H.b)+(c.c1>0?'　'+(c.t*H.b)+'＋'+c.c1+'＝'+c.p2:'');
+    else t2='十の位が '+c.p2+' だから 百の位に '+c.c2;
+    ask.innerHTML+='<br><span class="hi">'+t2+'</span>';
+  }
+  hPad();
+  refit();
+}
+function hPress(v){
+  if(H.locked)return;
+  const f=H.fields[H.idx];
+  if(v==='del')f.v='';
+  else f.v=v;                       /* ひっ算は 1マス 1つの 数 */
+  hRender();
+}
+function hCheck(){
+  if(H.locked)return;
+  const f=H.fields[H.idx];
+  if(f.v==='')return;
+  const v=$('hVerdict');
+  if(parseInt(f.v,10)===f.want){
+    if(H.idx<H.fields.length-1){
+      H.idx++;H.hint=false;$('hHintBtn').classList.remove('on');
+      v.className='verdict ok';v.textContent='そう！';
+      $('hStage').className='stage';
+      hRender();return;
+    }
+    H.locked=true;H.total++;
+    if(!H.miss){H.correct++;H.streak++;}else{H.streak=0;}
+    hSaveScore();hSave();
+    v.className='verdict ok';
+    v.innerHTML='よくできました！　'+H.a+'×'+H.b+'＝'+hCalc(H.a,H.b).all;
+    $('hStage').className='stage correct';
+    /* 5もん れんぞくで つぎの レベルが 出る */
+    if(H.streak>=5&&H.lv===H.open&&H.open<4){
+      H.open++;hSave();
+      v.innerHTML+='<br>つぎの ひっ算が できるように なったよ！';
+      hLvBar();
+    }
+    hScore();hRender();
+  }else{
+    H.miss=true;H.streak=0;hSave();
+    f.v='';
+    v.className='verdict ng';
+    v.textContent='もう一回！　ヒントを 見てもいいよ';
+    $('hStage').className='stage wrong';
+    hScore();hRender();
+    setTimeout(()=>{if(!H.locked)$('hStage').className='stage';},900);
+  }
+}
+function hScore(){
+  $('hCorrect').textContent=H.correct;
+  $('hTotal').textContent=H.total;
+  $('hStreak').textContent=Math.min(H.streak,5)+'/5';
+}
+function hPad(){buildPad($('hPad'),hPress,hCheck,hNew,H.locked);}
+function hLvBar(){
+  const bar=$('hLv');bar.innerHTML='';
+  LV.forEach(l=>{
+    const b=document.createElement('button');
+    b.type='button';
+    const open=(l.k<=H.open);
+    b.className='lvtag'+(l.k===H.lv?' on':'')+(open?'':' lock');
+    b.textContent=open?l.name:'🔒';
+    if(open)bindTap(b,()=>{if(H.lv!==l.k){H.lv=l.k;H.streak=0;hSave();hLvBar();hNew();hScore();}});
+    bar.appendChild(b);
+  });
+}
+bindTap($('hHintBtn'),()=>{
+  H.hint=!H.hint;
+  $('hHintBtn').classList.toggle('on',H.hint);
+  hRender();
+});
+
+/* =========================================================
+   ステップの きりかえ
+========================================================= */
+const VIEWS={miru:'viewMiru',atsu:'viewAtsu',shiki:'viewShiki',hissan:'viewHissan'};
+const SV={view:'miru'};
+document.querySelectorAll('.tab').forEach(t=>{
+  bindTap(t,()=>{
+    if(SV.view===t.dataset.v)return;
+    SV.view=t.dataset.v;
+    document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x===t));
+    Object.keys(VIEWS).forEach(k=>{
+      $(VIEWS[k]).classList.toggle('hidden',SV.view!==k);
+    });
+    clearSel();
+    if(SV.view==='miru')mRender();
+    if(SV.view==='atsu'){aScore();aDraw();}
+    if(SV.view==='shiki'){s3Score();s3Render();}
+    if(SV.view==='hissan'){hScore();hRender();}
+    fitToFrame();
+  });
+});
+document.addEventListener('keydown',e=>{
+  if(e.repeat)return;
+  const v=SV.view;
+  if(v==='miru'){
+    if(e.key==='ArrowRight'||e.key==='Enter'){M.st=(M.st>=4)?0:M.st+1;mRender();}
+    else if(e.key==='ArrowLeft'){if(M.st>0){M.st--;mRender();}}
+    return;
+  }
+  if(v==='atsu'){
+    if(e.key==='Enter'&&!$('aNext').disabled)aNew();
+    return;
+  }
+  const press=(v==='shiki')?s3Press:hPress;
+  if(e.key.length===1&&e.key>='0'&&e.key<='9')press(e.key);
+  else if(e.key==='Backspace')press('del');
+  else if(e.key==='Enter'){
+    const now=Date.now();
+    if(now-lastAction<450)return;
+    lastAction=now;
+    if(v==='shiki')S3.locked?s3New():s3Check();
+    else H.locked?hNew():hCheck();
+  }
+});
+
+/* 中身が かわったあとに 1画面に 収まっているか 見なおす */
+function refit(){if(typeof fitShrink==='function')fitShrink();}
+
+/* ===== 枠の高さを実測して、その中に必ず収める ===== */
+function frameHeight(){
+  const c=document.documentElement.clientHeight||0;
+  const w=window.innerHeight||0;
+  const v=(window.visualViewport&&window.visualViewport.height)||0;
+  return Math.min.apply(null,[c,w,v].filter(x=>x>0))||w||c;
+}
+function fitToFrame(){
+  document.documentElement.style.setProperty('--fh',frameHeight()+'px');
+  fitShrink();
+}
+/* ===== はみ出す場合は --shrink で自動縮小して必ず1画面に収める ===== */
+let shrinkPass=0;
+function fitShrink(){
+  document.documentElement.style.setProperty('--shrink','1');
+  shrinkPass=0;
+  requestAnimationFrame(shrinkStep);
+}
+function overflowInfo(){
+  let worst={over:0,ratio:1};
+  const check=el=>{
+    if(!el||el.clientHeight<=0)return;
+    const over=el.scrollHeight-el.clientHeight;
+    if(over>worst.over)worst={over:over,ratio:el.clientHeight/el.scrollHeight};
+  };
+  check(document.querySelector('.app'));
+  document.querySelectorAll('.stage').forEach(st=>{if(st.offsetParent!==null)check(st);});
+  return worst;
+}
+function shrinkStep(){
+  const appEl=document.querySelector('.app');
+  if(!appEl)return;
+  const w=overflowInfo(),over=w.over;
+  if(over>2&&shrinkPass<8){
+    const cur=parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--shrink'))||1;
+    const next=Math.max(.45,cur*Math.max(.78,w.ratio));
+    document.documentElement.style.setProperty('--shrink',next.toFixed(3));
+    shrinkPass++;
+    requestAnimationFrame(shrinkStep);
+  }
+}
+window.addEventListener('resize',fitToFrame);
+if(window.visualViewport)window.visualViewport.addEventListener('resize',fitToFrame);
+window.addEventListener('orientationchange',()=>setTimeout(fitToFrame,200));
+window.addEventListener('load',fitToFrame);
+
+/* ---------- はじめの表示 ---------- */
+mChips();mRender();
+aNew();
+s3New();
+hLvBar();hNew();hScore();
+fitToFrame();
+</script>
+</body>
+</html>
