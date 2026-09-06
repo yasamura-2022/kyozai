@@ -136,6 +136,9 @@
   .brk i{flex:0 0 2px;height:10px;background:#cbb98f}
   .brk .ln{flex:1 1 auto;height:2px;background:#cbb98f}
   .brk b{flex:0 0 auto;white-space:nowrap}
+  /* 1mが 2本ぶん（1より 大きい 分数）のとき、1mの かっこを 2つ ならべる */
+  .brks{display:flex;width:100%;max-width:520px;margin:0 auto}
+  .brks .brk{flex:1 1 0;max-width:none;margin:0;padding:0 3px;min-width:0}
 
   .tape{display:flex;width:100%;max-width:520px;margin:0 auto;background:#fff;
     border:3px solid #9a8763;border-radius:10px;overflow:hidden;
@@ -152,6 +155,8 @@
   @keyframes cellpop{0%{transform:scaleY(.55);opacity:.4}60%{transform:scaleY(1.06)}100%{transform:scaleY(1)}}
   @keyframes cutin{0%{border-right-color:var(--flash);background:var(--flash)}100%{background:transparent}}
   .tape.whole .cell{border-right:0}
+  /* 1mの さかいめ。ここまでで ちょうど 1m だと 見てわかるようにする */
+  .cell.mid{border-left:4px solid #9a8763}
   .cnt{font-weight:800;color:var(--fill-dark);
     font-size:calc(clamp(12px,3.3vw,16px) * var(--shrink,1))}
 
@@ -338,6 +343,7 @@
 
   <!-- ============ ステップ３：分数で かく ============ -->
   <div id="viewKaku" class="hidden">
+    <div class="ops" id="kOps"></div>
     <div class="score">
       <div class="box correct"><div class="n" id="kCorrect">0</div><div class="t">せいかい</div></div>
       <div class="box"><div class="n" id="kTotal">0</div><div class="t">やったもんだい</div></div>
@@ -349,7 +355,7 @@
           <div class="ask">色を ぬった ところは 何m？</div>
           <button class="hintbtn" id="kHintBtn" type="button">ヒント</button>
         </div>
-        <div class="brk"><i></i><span class="ln"></span><b>1m</b><span class="ln"></span><i></i></div>
+        <div class="brks" id="kBrk"></div>
         <div class="tape" id="kTape"></div>
         <div class="big" id="kBig"></div>
         <div class="navi" id="kNavi"></div>
@@ -440,33 +446,43 @@ function fracM(nu,de){return fracHTML(nu,de)+'<span class="u">m</span>';}
 function yomi(nu,de,unit){return de+'分の'+nu+(unit||'');}
 
 /* ---------- テープ ----------
-   n … いくつに わけたか（1なら わける前）
-   k … 色を ぬった 数
+   cells … ますの 数（1mが 2本ぶんなら 分母の 2ばい）
+   k     … 色を ぬった 数
+   o.den    … ますの 中に 出す 分数の 分母（きめなければ ますの 数と 同じ）
+   o.mid    … ここから 2本めの 1m、という ところに ふとい 線を 引く（-1で なし）
    o.labels … ますの 中に 1/n を 出す
    o.tap    … タップできる（ステップ２）
    o.pop    … いま ぬった ところを ぴょこっと させる（-1で なし）
    o.cut    … わけた しゅんかんを 光らせる */
-function tapeHTML(n,k,o){
+function cellScale(cells){
+  return (cells>=13)?'.5em':(cells>=11)?'.58em':(cells>=9)?'.64em'
+        :(cells>=7)?'.74em':(cells>=5)?'.86em':'';
+}
+function paintTape(el,cells,k,o){
   o=o||{};
-  const scale=(n>=9)?0.6:(n>=7)?0.72:(n>=5)?0.86:1;
+  const den=o.den||cells;
   let h='';
-  for(let i=0;i<n;i++){
-    const on=i<k;
+  for(let i=0;i<cells;i++){
     let cls='cell';
-    if(on)cls+=' on';
+    if(i<k)cls+=' on';
     if(o.tap)cls+=' tap';
     if(o.pop===i)cls+=' pop';
     if(o.cut)cls+=' cut';
-    const lab=(o.labels&&n>1)?fracHTML(1,n):'';
+    if(o.mid===i)cls+=' mid';
+    const lab=(o.labels&&den>1)?fracHTML(1,den):'';
     h+='<div class="'+cls+'" data-i="'+i+'">'+lab+'</div>';
   }
-  return {html:h,cls:(n<=1?'tape whole':'tape'),style:'font-size:'+scale+'em'};
+  el.className=(cells<=1)?'tape whole':'tape';
+  el.style.fontSize=cellScale(cells);
+  el.innerHTML=h;
 }
-function paintTape(el,n,k,o){
-  const t=tapeHTML(n,k,o);
-  el.className=t.cls;
-  el.style.fontSize=(n>=9)?'.6em':(n>=7)?'.72em':(n>=5)?'.86em':'';
-  el.innerHTML=t.html;
+/* テープの 上の「1m」の かっこ。range が 2なら 2つ ならべる */
+function brksHTML(range){
+  let h='';
+  for(let i=0;i<range;i++){
+    h+='<div class="brk"><i></i><span class="ln"></span><b>1m</b><span class="ln"></span><i></i></div>';
+  }
+  return h;
 }
 
 /* =========================================================
@@ -714,7 +730,7 @@ function buildFracPad(padEl,st,press,cont,check,next){
    ステップ３：分数で かく
    色を ぬった テープを 見て、分数を かく
 ========================================================= */
-const K={n:4,k:3,den:'',num:'',pos:0,unit:'m',locked:false,hint:false,
+const K={lv:1,range:1,n:4,k:3,den:'',num:'',pos:0,unit:'m',locked:false,hint:false,
   correct:0,total:0,streak:0};
 Object.assign(K,load('bunsuuKaku',{}));
 K.locked=false;K.den='';K.num='';K.pos=0;K.hint=false;
@@ -725,28 +741,57 @@ function kScore(){
   $('kTotal').textContent=K.total;
   $('kStreak').textContent=Math.min(K.streak,GOAL)+'/'+GOAL;
 }
+function kOps(){
+  const box=$('kOps');box.innerHTML='';
+  [{v:1,t:'1より 小さい'},{v:2,t:'1より 大きい'}].forEach(o=>{
+    const b=document.createElement('button');
+    b.type='button';
+    b.className='op-btn'+(o.v===K.lv?' active':'');
+    b.textContent=o.t;
+    bindTap(b,()=>{
+      if(K.lv===o.v)return;
+      K.lv=o.v;kOps();kNew();
+    });
+    box.appendChild(b);
+  });
+}
 function kNew(){
   let n,k,guard=0;
   do{
-    n=pick([2,3,4,5,6,8,10]);
-    k=1+Math.floor(Math.random()*n);
+    if(K.lv===1){
+      n=pick([2,3,4,5,6,8,10]);
+      k=1+Math.floor(Math.random()*n);        // n/n（＝1m）も 出す
+      K.range=1;
+    }else{
+      /* 1mの テープが 2本。1より 大きく 2より 小さい ところを 出す。
+         分母を 6までに するのは、ますが 12こを こえると
+         中の 1/n が 小さすぎて 読めなくなるため */
+      n=pick([3,4,5,6]);
+      k=n+1+Math.floor(Math.random()*(n-1));
+      K.range=2;
+    }
     guard++;
   }while(guard<20&&n===K.n&&k===K.k);
   K.n=n;K.k=k;K.den='';K.num='';K.pos=0;K.locked=false;
+  K.hint=false;
   $('kStage').classList.remove('correct','wrong');
   $('kVerdict').textContent='';$('kVerdict').className='verdict';
   kRender();
 }
 function kRender(){
-  paintTape($('kTape'),K.n,K.k,{labels:K.hint,pop:-1});
+  $('kBrk').innerHTML=brksHTML(K.range);
+  paintTape($('kTape'),K.n*K.range,K.k,
+    {den:K.n,mid:(K.range===2?K.n:-1),labels:K.hint,pop:-1});
   $('kBig').innerHTML=fracInputHTML(K,K.locked?'done':'live');
   $('kBig').classList.remove('fill');
   if(K.locked){
     $('kNavi').textContent='';
   }else if(K.pos===0){
-    $('kNavi').innerHTML='まず <b>下</b>の 数　＝ いくつに わけた？';
+    /* テープが 2本のとき、ますを ぜんぶ 数えて 分母に してしまう 子が いる。
+       「1mを」を 入れて、分母は 1本ぶんの わけ方だと はっきりさせる */
+    $('kNavi').innerHTML='まず <b>下</b>の 数　＝ <b>1m</b>を いくつに わけた？';
   }else{
-    $('kNavi').innerHTML='つぎは <b>上</b>の 数　＝ 何こ分？';
+    $('kNavi').innerHTML='つぎは <b>上</b>の 数　＝ ぬったのは 何こ分？';
   }
   $('kHintBtn').classList.toggle('on',K.hint);
   buildFracPad($('kPad'),K,kPress,kCont,kCheck,kNew);
@@ -776,9 +821,11 @@ function kCheck(){
     K.correct++;K.streak++;
     $('kStage').classList.add('correct');
     $('kVerdict').className='verdict ok';
-    $('kVerdict').innerHTML=(K.streak>=GOAL?'すごい！ ':'よくできました！ ')+
-      '1mを <em>'+K.n+'等分</em>した <em>'+K.k+'こ分</em>'+
-      (K.k===K.n?'　'+fracHTML(K.n,K.n)+' は <em>1m</em>と 同じ！':'');
+    let msg=(K.streak>=GOAL?'すごい！ ':'よくできました！ ')+
+      fracHTML(1,K.n)+' が <em>'+K.k+'こ分</em>で '+fracM(K.k,K.n);
+    if(K.k===K.n)msg+='　'+fracHTML(K.n,K.n)+' は <em>1m</em>と 同じ！';
+    else if(K.k>K.n)msg+='　<em>1m</em>より 大きいね';
+    $('kVerdict').innerHTML=msg;
     if(K.streak>=GOAL)K.streak=0;
   }else{
     K.streak=0;
@@ -787,6 +834,7 @@ function kCheck(){
     $('kVerdict').innerHTML='がんばろう！　こたえは '+fracM(K.k,K.n)+
       '（1mを '+K.n+'等分した '+K.k+'こ分）';
     K.den=String(K.n);K.num=String(K.k);
+    K.hint=true;                          // まちがえたときは ますの 1/n を 出して 見せる
   }
   kRender();kScore();kSave();
 }
@@ -1015,7 +1063,7 @@ window.addEventListener('load',fitToFrame);
 /* ---------- はじめの表示 ---------- */
 wChips();wRender();
 nScore();nNew();
-kScore();kNew();
+kOps();kScore();kNew();
 lOps();lScore();lNew();
 fitToFrame();
 </script>
