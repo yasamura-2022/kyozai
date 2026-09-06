@@ -162,9 +162,14 @@
   .foldbox{position:relative;height:100%;aspect-ratio:var(--far,1.2);
     perspective:900px;-webkit-perspective:900px}
   .foldbox .ly{position:absolute;inset:0}
-  .foldbox .flap{transform-style:preserve-3d;-webkit-transform-style:preserve-3d;
-    transition:transform .9s cubic-bezier(.42,0,.3,1)}
-  .foldbox .flap.no{transition:none}
+  /* うごく 紙は、おる ときだけ 色が つく。
+     はじめから 半分に 色が ついていると、どこで おるか 一目で わかってしまう */
+  .foldbox .flap{transform-style:preserve-3d;-webkit-transform-style:preserve-3d;opacity:0;
+    transition:transform .9s cubic-bezier(.42,0,.3,1), opacity .2s linear .72s}
+  /* おる とき＝すぐ 色が つく ／ ひらく とき＝もどりきってから 色が きえる */
+  .foldbox .flap.on{opacity:1;
+    transition:transform .9s cubic-bezier(.42,0,.3,1), opacity .18s linear}
+  .foldbox .flap.no,.foldbox .flap.no.on{transition:none}
   .alab{cursor:pointer}
   .glow{animation:gl 1s ease-in-out 3}
   @keyframes gl{0%,100%{opacity:1}50%{opacity:.25}}
@@ -847,6 +852,10 @@ function oRender(){
   fl.style.transformOrigin=(V.x/O.W*100).toFixed(2)+'% '+(V.y/O.H*100).toFixed(2)+'%';
   const th=Math.atan2(d.y,d.x)*180/Math.PI;
   fl.style.transform='rotate('+f1(th-90)+'deg) rotateY('+(O.folded?180:0)+'deg) rotate('+f1(90-th)+'deg)';
+  /* かき直した ときは アニメーションなしで 今の じょうたいに そろえる */
+  fl.classList.add('no');
+  fl.classList.toggle('on',O.folded);
+  setTimeout(function(){fl.classList.remove('no');},30);
   oLabels();
   oSize();refit();
 }
@@ -922,6 +931,7 @@ function oToggleFold(){
   O.folded=!O.folded;
   $('oFold').textContent=O.folded?'ひらく ◀':'おって みる ▶';
   const fl=$('oFlap');
+  fl.classList.toggle('on',O.folded);
   const g=oFoldParts();
   const d={x:g.M.x-g.V.x,y:g.M.y-g.V.y};
   const th=Math.atan2(d.y,d.x)*180/Math.PI;
