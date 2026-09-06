@@ -4,8 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>地球の自転と星の動き</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
 <style>
 :root{
   --panel:#141b36;
@@ -22,7 +20,10 @@ html{overflow-y:scroll;}  /* スクロールバーの出入りで幅が変わり
 body{
   margin:0;
   padding:16px;
-  font-family:'Zen Maru Gothic','Hiragino Maru Gothic ProN','Hiragino Sans',Meiryo,sans-serif;
+  /* 外から フォントを 読まない（学校のネットワークで 落ちるため）。
+     入っている フォントの中から、まるい 教科書体に 近いものを 上から さがす。
+     Mac・iPad は ヒラギノ丸ゴ、Windows は BIZ UDPゴシックが 当たる */
+  font-family:'Zen Maru Gothic','Hiragino Maru Gothic ProN','ヒラギノ丸ゴ ProN W4','Klee One','BIZ UDPGothic','Hiragino Sans','Yu Gothic UI',Meiryo,sans-serif;
   background:radial-gradient(120% 120% at 50% -10%, #24356b 0%, #0d1230 60%, #070a1d 100%);
   color:var(--ink);
   min-height:100vh;
