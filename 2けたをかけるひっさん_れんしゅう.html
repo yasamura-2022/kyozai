@@ -165,6 +165,16 @@
   .fcell.op{color:#6f5d3d}
   /* いま つかっている かける数の 数字（1だんめは 一の位、2だんめは 十の位） */
   .fcell.use{background:var(--flash);border-radius:6px}
+  /* くり上がりを 小さく メモする ところ。紙の 筆算と 同じで 丸つけは しない */
+  .fmemo{height:1.05em;display:flex;align-items:flex-end;justify-content:center}
+  .fmemo[data-pos]{cursor:pointer;border-radius:6px}
+  .fmemo[data-pos]:active{background:#fff4df}
+  .fmemo.lab{font-size:.3em;color:#a99a7c;font-weight:800;justify-content:flex-end;padding-right:2px;
+    white-space:nowrap}
+  .mbox{font-size:.44em;min-width:2.1ch;line-height:1.15;font-weight:800;
+    color:var(--accent-dark);border-bottom:2px dotted #cbbb95;border-radius:4px 4px 0 0;
+    display:inline-block;text-align:center;pointer-events:none}
+  .mbox.on{background:var(--flash);border-bottom:2px solid var(--accent-dark);animation:nxtblink .9s infinite}
   .fbar{grid-column:1 / -1;height:3px;background:var(--ink);border-radius:2px;margin:2px 0}
   .fcell .fld{min-width:1.5ch;padding:0 2px;border-width:3px}
   /* 位の 見出し（百・十・一）。どこに かくかを 見わける ため */
@@ -994,7 +1004,9 @@ const LV=[
   {k:3,name:'3けた×2けた'}
 ];
 const H={a:23,b:34,lv:1,open:1,idx:0,vals:['','',''],locked:false,miss:false,hint:false,
+         memo:['','','','','',''],memoFocus:null,
          correct:0,total:0,streak:0};
+function hClearMemo(){H.memo=['','','','','',''];H.memoFocus=null;}
 try{
   const s=JSON.parse(localStorage.getItem('kake2Hissan')||'null');
   if(s){if(s.open>=1&&s.open<=3)H.open=s.open;if(s.lv>=1&&s.lv<=3)H.lv=Math.min(s.lv,H.open);
@@ -1033,6 +1045,7 @@ function hNew(){
   if(!hOK(a,b,H.lv)){a=(H.lv===3)?248:(H.lv===1?12:23);b=(H.lv===1?21:34);}
   H.a=a;H.b=b;
   H.idx=0;H.vals=['','',''];H.locked=false;H.miss=false;H.hint=false;
+  hClearMemo();
   $('hHintBtn').classList.remove('on');
   hRender();
 }
@@ -1046,6 +1059,7 @@ function hRender(){
   const all=a*b,cols=String(all).length;
   let h='<div class="fgrid" style="grid-template-columns:repeat('+(cols+1)+',auto)">';
   h+=labelRow(cols);
+  h+=memoRow(cols);
   h+=numRow(a,cols,0,'');
   h+=opRow(b,cols,'',H.locked?null:(H.idx===0?0:(H.idx===1?1:null)));
   h+='<div class="fbar"></div>';
@@ -1055,10 +1069,22 @@ function hRender(){
   h+=fieldRow(2);
   h+='</div>';
   $('hBoard').innerHTML=h;
+  [].forEach.call($('hBoard').querySelectorAll('.fmemo[data-pos]'),function(m){
+    bindTap(m,function(){
+      if(H.locked)return;
+      const k=parseInt(m.dataset.pos,10);
+      H.memoFocus=(H.memoFocus===k)?null:k;
+      hRender();
+    });
+  });
 
   const ask=$('hAsk');
   const kurai=n=>['一の位','十の位','百の位','千の位','万の位'][Math.min(n,4)];
   if(H.locked)ask.innerHTML='';
+  else if(H.memoFocus!==null){
+    ask.innerHTML='<span class="hi">メモ</span>に くり上がりを かこう'+
+      '（もう一回 おすと やめる）';
+  }
   else{
     const f=hField(H.idx),v=H.vals[H.idx],done=(v.length>=hNeed(H.idx));
     let head;
@@ -1070,7 +1096,7 @@ function hRender(){
   }
   if(H.hint&&!H.locked){
     let t2;
-    if(H.idx===0)t2='こたえは <b>一の位</b>から かく';
+    if(H.idx===0)t2='こたえは <b>一の位</b>から かく。くり上がりは 上の <b>メモ</b>に かける';
     else if(H.idx===1)t2='こたえは <b>十の位</b>から かく。一の位に 0は かかない';
     else t2='1だんめと 2だんめを たす。一の位から';
     ask.innerHTML+='<br><span class="hi">'+t2+'</span>';
@@ -1078,6 +1104,15 @@ function hRender(){
   hPad();
   refit();
 
+  function memoRow(cols){
+    let s='<div class="fmemo lab">メモ</div>';
+    for(let c=0;c<cols;c++){
+      const pos=cols-1-c,v=H.memo[pos]||'';
+      s+='<div class="fmemo" data-pos="'+pos+'"><span class="mbox'+((H.memoFocus===pos)?' on':'')+'">'+
+         (v===''?'　':v)+'</span></div>';
+    }
+    return s;
+  }
   function fieldRow(i){
     const f=hField(i),v=H.vals[i],need=String(f.want).length;
     const active=(H.idx===i&&!H.locked);
@@ -1096,6 +1131,10 @@ function hRender(){
 }
 function hPress(v){
   if(H.locked)return;
+  if(H.memoFocus!==null){
+    H.memo[H.memoFocus]=(v==='del')?'':v;
+    hRender();return;
+  }
   const i=H.idx;
   if(v==='del')H.vals[i]=H.vals[i].slice(1);
   else if(H.vals[i].length<hNeed(i))H.vals[i]=v+H.vals[i];
@@ -1103,12 +1142,13 @@ function hPress(v){
 }
 function hCheck(){
   if(H.locked)return;
+  H.memoFocus=null;
   const i=H.idx;
   if(H.vals[i]==='')return;
   const v=$('hVerdict');
   if(parseInt(H.vals[i],10)===hField(i).want){
     if(i<2){
-      H.idx++;H.hint=false;$('hHintBtn').classList.remove('on');
+      H.idx++;H.hint=false;hClearMemo();$('hHintBtn').classList.remove('on');
       v.className='verdict ok';
       v.textContent=(i===0)?'そう！ つぎは 2だんめ':'そう！ さいごに たしざん';
       $('hStage').className='stage';
