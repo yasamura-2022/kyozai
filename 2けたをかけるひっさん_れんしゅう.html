@@ -166,18 +166,19 @@
   /* いま つかっている かける数の 数字（1だんめは 一の位、2だんめは 十の位） */
   .fcell.use{background:var(--flash);border-radius:6px}
   /* くり上がりを 小さく メモする ところ。紙の 筆算と 同じで 丸つけは しない */
-  .fmemo{height:1.05em;display:flex;align-items:flex-end;justify-content:center}
+  .fmemo{height:1.2em;display:flex;align-items:flex-end;justify-content:center;padding-bottom:3px}
   .fmemo[data-pos]{cursor:pointer;border-radius:6px}
   .fmemo[data-pos]:active{background:#fff4df}
   .fmemo.lab{font-size:.3em;color:#a99a7c;font-weight:800;justify-content:flex-end;padding-right:2px;
     white-space:nowrap}
-  .mbox{font-size:.44em;min-width:2.1ch;line-height:1.15;font-weight:800;
-    color:var(--accent-dark);border-bottom:2px dotted #cbbb95;border-radius:4px 4px 0 0;
+  .mbox{font-size:.44em;min-width:2.2ch;line-height:1.3;font-weight:800;
+    color:var(--accent-dark);border:2px dotted #cbbb95;border-radius:6px;background:#fffdf7;
     display:inline-block;text-align:center;pointer-events:none}
-  .mbox.on{background:var(--flash);border-bottom:2px solid var(--accent-dark);animation:nxtblink .9s infinite}
+  .mbox.on{background:var(--flash);border-style:solid;border-color:var(--accent-dark);
+    animation:nxtblink .9s infinite}
   /* メモらんは いま かいている だんの 色に そろえる */
-  .fmemo.d1 .mbox{color:var(--one-dark);border-bottom-color:var(--one)}
-  .fmemo.d2 .mbox{color:var(--ten-dark);border-bottom-color:var(--ten)}
+  .fmemo.d1 .mbox{color:var(--one-dark);border-color:var(--one)}
+  .fmemo.d2 .mbox{color:var(--ten-dark);border-color:var(--ten)}
   .fmemo.lab.d1{color:var(--one-dark)}
   .fmemo.lab.d2{color:var(--ten-dark)}
   .fbar{grid-column:1 / -1;height:3px;background:var(--ink);border-radius:2px;margin:2px 0}
