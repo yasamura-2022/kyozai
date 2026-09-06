@@ -215,6 +215,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const DEG = Math.PI/180, RAD = 180/Math.PI;
   const LAT = 34.2, LON = 131.5;   // 山口県（山口市あたり）
   const SKY_K_RATIO = 1/6.2;       // 空の写し方の大きさ（下の geomOf でつかう）
+  const EQUI_K = 4/Math.PI;        // θ＝90°の 位置を、前の写し方と そろえるための ばい率
   const GROUND_H = 56;
 
   /* ================================================================
@@ -333,7 +334,7 @@ document.addEventListener('DOMContentLoaded', () => {
       /*12 */ {name:'北極星',    ra:2.53, dec:89.26, mag:2.0, color:'#ffd98e', polaris:true}
     ],
     figures:[
-      {name:'北斗七星（おおぐま座）', lines:[[0,1],[1,2],[2,3],[3,0],[3,4],[4,5],[5,6]],
+      {name:'北斗七星', lines:[[0,1],[1,2],[2,3],[3,0],[3,4],[4,5],[5,6]],
        anchor:1, dx:-10, dy:26},
       {name:'カシオペヤ座', lines:[[7,8],[8,9],[9,10],[10,11]], anchor:9, dx:12, dy:-16}
     ],
@@ -515,13 +516,21 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   /* ================= 画面への うつしかた =================
-     見ている方角（南 または 北）の地平線の点を中心にした「ステレオ投影」。
+     見ている方角（南 または 北）の地平線の点を中心にして、
+     そこからの「角度に そのまま 比例させて」うつす（等距離方位）。
      この写し方なら
        ・地平線は まっすぐな横線のまま（方位のラベルもそのまま使える）
-       ・星のならび（かたち）は くずれない
+       ・星座の 大きさが、画面の どこでも ほぼ 同じ
        ・天頂の近くを通る星でも、画面の真ん中で急に速くならない
      方位をそのまま横じくにすると、天頂近くを通る星は真ん中で
      方位が急に変わるため、何倍もの速さで横切って見えてしまう。
+
+     はじめは ステレオ投影（角度の半分の tan に比例）だった。
+     かたちは くずれないが、中心から はなれるほど 大きく うつるため、
+     夏の大三角が 南の まん中と 西のはしで 面積が 約3倍 ちがっていた
+     （2026-09-06 に 変更）。いまの写し方では その差が 約1.5倍。
+     θ＝90°（天頂／東・西のはし）の 位置は 前と 同じに なるよう
+     EQUI_K＝4/π を かけている。
   =========================================================== */
   function geomOf(view, w, horizonY){
     const c = view.center*DEG;
@@ -535,9 +544,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const a = alt*DEG, z = az*DEG, ca = Math.cos(a);
     const P = [ca*Math.sin(z), ca*Math.cos(z), Math.sin(a)];   // x:東 y:北 z:上
     const f = P[0]*g.C[0] + P[1]*g.C[1];                       // 見ている方向とのむき
-    const s = 2/(1 + Math.max(f, -0.62));                      // 後ろがわは のびすぎないように
-    const x = g.cx + s*(P[0]*g.R[0] + P[1]*g.R[1])*g.k;
-    const y = g.horizonY - s*P[2]*g.k;
+    const th = Math.acos(Math.max(-1, Math.min(1, f)));        // 見ている方向からの 角度
+    const sin = Math.sin(th);
+    const r = EQUI_K*th*g.k;                                   // 角度に そのまま 比例
+    const ux = (sin < 1e-6) ? 0 : (P[0]*g.R[0] + P[1]*g.R[1])/sin;   // 画面の右へ
+    const uz = (sin < 1e-6) ? 0 : P[2]/sin;                          // 画面の上へ
+    const x = g.cx + r*ux;
+    const y = g.horizonY - r*uz;
     // 夏の大三角のデネブのように、ななめ後ろの高い空にある星も入るようにしている
     const on = alt >= 0 && f > -0.55 &&
                x > -60 && x < g.w + 60 && y > -60;
@@ -806,7 +819,7 @@ document.addEventListener('DOMContentLoaded', () => {
           c.strokeStyle = `rgba(255,217,142,${alpha})`;
           c.lineWidth = 1.5;
           c.beginPath(); c.arc(p.x,p.y,size+6,0,Math.PI*2); c.stroke();
-          starLabels.push({ text:'北極星（ほとんど動かない）', p,
+          starLabels.push({ text:'北極星', p,
             font:`900 14px 'Zen Maru Gothic', sans-serif`,
             color:`rgba(255,217,142,${alpha})` });
         } else if(s.label){
