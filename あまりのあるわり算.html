@@ -6,24 +6,32 @@
 <title>あまりのある わり算</title>
 <style>
 :root{
-  --bg:#EDF3FA;
-  --paper:#FFFFFF;
-  --line:#C3D2E4;
-  --line2:#9CB2CE;
-  --ink:#16304E;
-  --muted:#5E7692;
-  --gold:#D69A22;
-  --gold-l:#FCEFD2;
-  --gold-d:#A9760E;
-  --ok:#1F8A54;
-  --ok-l:#DFF4E8;
+  /* ほかの算数アプリと 同じ 和紙色。--bg がページ、--paper がカード。
+     ほかのアプリの --paper（#fdf6e3）＝ここの --bg、--card（#fffdf7）＝ここの --paper */
+  --bg:#fdf6e3;
+  --paper:#fffdf7;
+  --line:#e7d9b8;
+  --line2:#cbb489;
+  --ink:#2b2118;
+  --muted:#8a7a5f;
+  --gold:#c9a227;
+  --gold-l:#f7ecc9;
+  --gold-d:#a5811a;
+  --ok:#5a8a4c;
+  --ok-l:#f2f9ee;
+  /* あまりの だいだいは そのまま。金・みどりと ぶつからず、
+     「あまり」だけを 表す 色として 3画面で つかっている */
   --amari:#E2621C;
   --amari-l:#FDE7D8;
   --f-round:"Zen Maru Gothic","Hiragino Maru Gothic ProN","ヒラギノ丸ゴ ProN W4","Klee One","BIZ UDPGothic","Yu Gothic UI",sans-serif;
   --f-text:"UD デジタル 教科書体 NP-R","UDデジタル教科書体 NP-R","BIZ UDPGothic","Hiragino Maru Gothic ProN","Zen Maru Gothic","Yu Gothic UI",sans-serif;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);
+html,body{margin:0;padding:0;color:var(--ink);
+  background:
+    radial-gradient(circle at 15% 10%,#fef0d0 0,transparent 40%),
+    radial-gradient(circle at 85% 90%,#fbe6cf 0,transparent 45%),
+    var(--bg);
   font-family:var(--f-round);overflow:hidden;overscroll-behavior:none}
 button{font-family:inherit;color:inherit;cursor:pointer;touch-action:manipulation;user-select:none}
 button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
@@ -32,9 +40,9 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 
 /* ---- ヘッダー ---- */
 #top{display:flex;align-items:center;gap:8px}
-#tabs{display:flex;gap:4px;background:#DCE7F4;border-radius:12px;padding:4px}
+#tabs{display:flex;gap:4px;background:#f0e6cd;border-radius:12px;padding:4px}
 .tab{border:0;background:transparent;border-radius:9px;padding:7px 15px;
-  font-size:clamp(13px,1.35vw,18px);color:#42618A}
+  font-size:clamp(13px,1.35vw,18px);color:#8a7a5f}
 .tab[aria-selected="true"]{background:var(--paper);color:var(--ink);font-weight:700;
   box-shadow:0 1px 3px rgba(22,48,78,.18)}
 #top .spacer{flex:1}
@@ -55,7 +63,7 @@ body.kimari .grp.k{display:flex}
 .num{min-width:2.1em;text-align:center;font-size:clamp(16px,1.6vw,22px);font-weight:700;color:var(--gold-d)}
 .step{border:1px solid var(--line2);background:var(--paper);border-radius:9px;
   width:2em;height:2em;font-size:clamp(14px,1.4vw,19px);line-height:1;display:grid;place-items:center}
-.step:active{background:#E7EEF7}
+.step:active{background:#f5edda}
 .sep{width:1px;align-self:stretch;background:var(--line)}
 select{font-family:inherit;font-size:14px;background:var(--paper);color:var(--ink);
   border:1px solid var(--line2);border-radius:9px;padding:6px 8px}
@@ -70,7 +78,7 @@ body:not(.kimari) #ktable{display:none}
 /* ---- わけて みる ---- */
 .band{position:absolute;left:0;right:0;pointer-events:none}
 .band .bl{position:absolute;left:12px;top:4px;font-size:13px;color:var(--muted);letter-spacing:.08em}
-#bandPool{background:#F7FAFD;border-bottom:1px dashed var(--line2)}
+#bandPool{background:#fbf6ea;border-bottom:1px dashed var(--line2)}
 #bandAmari{border-top:1px dashed var(--amari);background:var(--amari-l)}
 #bandAmari .bl{color:var(--amari);font-weight:700}
 
@@ -78,7 +86,7 @@ body:not(.kimari) #ktable{display:none}
 #items{z-index:3}
 #ghosts{z-index:2}
 
-.cont{position:absolute;border:2px solid var(--line2);background:#FAFCFE;
+.cont{position:absolute;border:2px solid var(--line2);background:#fdfaf1;
   transition:border-color .3s,background .3s,opacity .3s;opacity:0}
 .cont.on{opacity:1}
 .cont.bag{border-radius:12px 12px 22px 22px}
@@ -89,10 +97,10 @@ body:not(.kimari) #ktable{display:none}
 .cont.done .clab{color:var(--ok);font-weight:700}
 
 .item{position:absolute;left:0;top:0;display:flex;align-items:center;justify-content:center;
-  background:#FFFFFF;border:1px solid var(--line);border-radius:50%;
+  background:#fffdf7;border:1px solid var(--line);border-radius:50%;
   transition:transform .45s cubic-bezier(.22,.75,.3,1);will-change:transform}
 .item.noanim{transition:none}
-.item.amari{background:#FFF;border-color:var(--amari);box-shadow:0 0 0 2px var(--amari)}
+.item.amari{background:#fffdf7;border-color:var(--amari);box-shadow:0 0 0 2px var(--amari)}
 .ghost{position:absolute;left:0;top:0;border:2px dashed var(--amari);
   border-radius:50%;opacity:0;transition:opacity .3s}
 .ghost.on{opacity:1}
@@ -103,20 +111,20 @@ body:not(.kimari) #ktable{display:none}
 .krow{display:grid;align-items:center;gap:0 .1em;
   grid-template-columns:2.4em .9em 1.7em 1.1em 1.7em 3.4em 1.7em 1fr;
   font-size:clamp(16px,1.9vw,27px);padding:4px 8px;border-radius:10px;
-  background:#F7FAFD;border:1px solid transparent}
+  background:#fbf6ea;border:1px solid transparent}
 .krow > span{text-align:center}
 .krow .n{font-weight:700}
 .krow .q{color:var(--gold-d);font-weight:700}
 .krow .am{font-size:.62em;color:var(--muted)}
 .krow .r{color:var(--amari);font-weight:700}
-.krow.zero{background:var(--ok-l);border-color:#B6E2C9}
+.krow.zero{background:var(--ok-l);border-color:#c6ddb8}
 .krow.zero .r{color:var(--ok)}
 .krow.zero .am{color:var(--ok)}
 .krow.new{border-color:var(--gold);background:var(--gold-l)}
 .strip{display:flex;align-items:center;gap:7px;justify-self:start;padding-left:12px;flex-wrap:wrap}
-.grpx{display:flex;gap:2px;padding:2px 3px;border-radius:5px;background:#E3EDF7;border:1px solid #CBDCEC}
+.grpx{display:flex;gap:2px;padding:2px 3px;border-radius:5px;background:#efe4c9;border:1px solid #dcc9a2}
 .grpx.rem{background:var(--amari-l);border-color:var(--amari)}
-.grpx i{display:block;width:.42em;height:.42em;border-radius:2px;background:#7C9CBE;font-size:inherit}
+.grpx i{display:block;width:.42em;height:.42em;border-radius:2px;background:#8c7a58;font-size:inherit}
 .grpx.rem i{background:var(--amari)}
 #kend{margin-top:10px;font-family:var(--f-text);font-size:clamp(13px,1.4vw,20px);color:var(--muted)}
 
@@ -147,7 +155,7 @@ body:not(.kimari) .kcard{display:none}
 body.kimari #kukuCard{display:none}
 #kukuList{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:3px}
 .kk{display:flex;align-items:center;gap:8px;padding:2px 8px;border-radius:8px;
-  font-size:clamp(13px,1.35vw,20px);background:#F2F6FB;color:var(--muted)}
+  font-size:clamp(13px,1.35vw,20px);background:#f7f1e2;color:var(--muted)}
 .kk.done{background:var(--ok-l);color:var(--ink)}
 .kk.over{background:var(--amari-l);color:var(--amari);font-weight:700}
 .kk .mk{font-size:.85em;flex:none;width:1.4em;text-align:center}
@@ -157,7 +165,7 @@ body.kimari #kukuCard{display:none}
 #ringRow{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
 .ring{width:2.1em;height:2.1em;border-radius:50%;display:grid;place-items:center;
   font-size:clamp(15px,1.55vw,21px);font-weight:700;border:2px solid var(--line2);
-  color:var(--muted);background:#F7FAFD;transition:background .25s,color .25s,border-color .25s}
+  color:var(--muted);background:#fbf6ea;transition:background .25s,color .25s,border-color .25s}
 .ring.seen{border-color:var(--amari);color:var(--amari);background:var(--amari-l)}
 .ring.zero.seen{border-color:var(--ok);color:var(--ok);background:var(--ok-l)}
 .ring.now{transform:scale(1.12);box-shadow:0 0 0 3px var(--gold-l)}
@@ -193,7 +201,7 @@ body:not(.drill) #drill{display:none}
 #dQrow{flex:none}
 #dEq{margin-top:auto}
 #dPic{margin-bottom:auto}
-#dStage.ok{background:var(--ok-l);border-color:#B6E2C9}
+#dStage.ok{background:var(--ok-l);border-color:#c6ddb8}
 #dStage.ng{background:var(--amari-l);border-color:var(--amari)}
 
 #dQrow{display:flex;align-items:flex-start;gap:10px}
@@ -241,11 +249,14 @@ body:not(.drill) #drill{display:none}
 .dkey{border:1px solid var(--line2);background:var(--paper);border-radius:12px;
   padding:11px 2px;font-size:clamp(15px,2vw,24px);font-weight:700;white-space:nowrap}
 .dkey:active{transform:translateY(2px)}
-.dkey.dkdel{background:#E7EEF7}
+.dkey.dkdel{background:#f5edda}
 /* 青＝同じ問題の中で 進む／金＝答え合わせ／みどり＝別の問題へ */
 .dkey.dkgo{background:#2f6fa8;color:#fff;border-color:#22527d}
 .dkey.dkans{background:var(--gold);color:#3A2600;border-color:var(--gold-d)}
-.dkey.dknext{background:var(--ok);color:#fff;border-color:#177244}
+/* 「つぎの もんだい→」は 長いので、ますに 入らないときは 2行にする。
+   （みじかく「つぎ →」に しない。青の ボタンと 一字ちがいに なるため） */
+.dkey.dknext{background:var(--ok);color:#fff;border-color:#446838;
+  font-size:.74em;white-space:normal;line-height:1.15;word-break:keep-all;padding:8px 3px}
 
 /* ---- メッセージ ---- */
 #msg{font-family:var(--f-text);font-size:clamp(14px,1.7vw,26px);line-height:1.4;
@@ -259,7 +270,7 @@ body:not(.drill) #drill{display:none}
 #ctrl{display:flex;gap:8px;align-items:stretch;flex-wrap:wrap}
 .btn{border:1px solid var(--line2);background:var(--paper);border-radius:12px;
   padding:10px 16px;font-size:clamp(14px,1.5vw,20px);transition:transform .08s,background .2s}
-.btn:active{transform:translateY(2px);background:#E7EEF7}
+.btn:active{transform:translateY(2px);background:#f5edda}
 .btn:disabled{opacity:.38;cursor:default}
 /* 青＝同じ画面の中で 先へ すすむ（ほかの算数アプリと そろえる。
    金は「答え合わせ」に とってあるので すすむボタンには 使わない） */
