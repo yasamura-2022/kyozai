@@ -342,10 +342,10 @@
   <header><h1><span class="em">かけ算の筆算</span></h1></header>
 
   <div class="tabs">
-    <button class="tab on" data-v="miru"><span class="step">ステップ１</span>見る</button>
+    <button class="tab on" data-v="miru"><span class="step">ステップ１</span>やり方を 見る</button>
     <button class="tab" data-v="atsu"><span class="step">ステップ２</span>やって みる</button>
-    <button class="tab" data-v="shiki"><span class="step">ステップ３</span>しきに かく</button>
-    <button class="tab" data-v="hissan"><span class="step">ステップ４</span>筆算</button>
+    <button class="tab" data-v="shiki"><span class="step">ステップ３</span>筆算</button>
+    <button class="tab" data-v="hissan"><span class="step">ステップ４</span>やって みよう</button>
   </div>
 
   <!-- ============ ステップ１：わける（見る） ============ -->
@@ -848,9 +848,9 @@ function s3Render(){
   h+='<div class="knum"><span class="opl">×</span>'+b+'</div><div class="kmemo"></div>';
   h+='<div class="kline"></div><div></div>';
   h+='<div class="knum">'+fldHTML(S3.vals[0],'on2',st(0))+'</div>'+
-     '<div class="kmemo"><span class="on">'+p.o+'×'+b+'</span>　一の位の 分</div>';
+     '<div class="kmemo"><span class="on">'+p.o+'×'+b+'</span></div>';
   h+='<div class="knum">'+fldZeroHTML(S3.vals[1],'tn',st(1))+'</div>'+
-     '<div class="kmemo"><span class="tn">'+p.t+'×'+b+'</span>　十の位の 分</div>';
+     '<div class="kmemo"><span class="tn">'+(p.t*10)+'×'+b+'</span></div>';
   h+='<div class="kline"></div><div></div>';
   h+='<div class="knum">'+fldHTML(S3.vals[2],'',st(2))+'</div>'+
      '<div class="kmemo">あわせて</div>';
@@ -860,7 +860,7 @@ function s3Render(){
   const ask=$('sAsk');
   if(S3.locked)ask.innerHTML='';
   else if(S3.idx===0)ask.innerHTML='<span class="on">一の位</span>の '+p.o+' に '+b+' を かけると？';
-  else if(S3.idx===1)ask.innerHTML='<span class="tn">十の位</span>の '+p.t+' に '+b+' を かけると？（0は もう ついているよ）';
+  else if(S3.idx===1)ask.innerHTML='<span class="tn">'+(p.t*10)+'×'+b+'</span>　'+p.t+' に '+b+' を かけると？（0は もう ついているよ）';
   else ask.innerHTML='2つを あわせると？　'+p.p1+' ＋ '+p.p2;
 
   if(S3.hint&&!S3.locked){
@@ -935,7 +935,7 @@ const LV=[
   {k:1,name:'くり上がり なし'},
   {k:2,name:'一の位から'},
   {k:3,name:'十の位から'},
-  {k:4,name:'2かい くり上がる'}
+  {k:4,name:'2回 くり上げる'}
 ];
 const H={a:12,b:4,lv:1,open:1,idx:0,fields:[],locked:false,miss:false,hint:false,
          correct:0,total:0,streak:0};
