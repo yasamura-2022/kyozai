@@ -180,8 +180,9 @@
     padding:calc(clamp(2px, calc(var(--fh,100vh) * 0.011), 9px) * var(--shrink,1)) 0;transition:transform .07s,background .1s}
   .key:active{transform:translateY(2px);background:#fff4df}
   .key.del{background:#e6d3a8;box-shadow:0 3px 0 #c9b47f}
-  .key.enter{background:var(--ok);color:#fff;box-shadow:0 3px 0 #446838}
-  .key.next{background:var(--gold);color:#fff;box-shadow:0 3px 0 #a5811a}
+  .key.cont{background:#2f6fa8;color:#fff;box-shadow:0 3px 0 #22527d}
+  .key.enter{background:var(--gold);color:#fff;box-shadow:0 3px 0 #a5811a}
+  .key.next{background:var(--ok);color:#fff;box-shadow:0 3px 0 #446838}
 
   .drill-main{flex:1;min-height:0;display:flex;flex-direction:column;gap:6px}
 
@@ -684,20 +685,13 @@ const cel={c:document.getElementById('cCorrect'),t:document.getElementById('cTot
 function pKeyOp(op){return 'p:'+pkey()+':'+op;}
 function pKey(){return pKeyOp(P.op);}
 
-/* ステップ４は はじめ「たす」だけ。たし算を UNLOCK_N もん 正かいすると
-   「ひく」「まぜる」の ボタンが 出てくる。
-   ・れんぞくでなくてよい（苦手な子が たどりつけなくなるのを ふせぐ）
-   ・記録にのこるので、つぎに開いたときは 出たまま
-   ・アプリごと（長さ／重さ／かさ）に べつべつ */
-const UNLOCK_N=5;
-let plusOK={};
-try{const o=JSON.parse(localStorage.getItem('tanniPlusOK')||'null');if(o)plusOK=o;}catch(e){}
-function savePlusOK(){try{localStorage.setItem('tanniPlusOK',JSON.stringify(plusOK));}catch(e){}}
-function opsOpen(){return (plusOK[CAT]|0)>=UNLOCK_N;}
+/* ステップ４の「たす」「ひく」「まぜる」は はじめから ぜんぶ えらべる。
+   まえは たし算を 5もん 正かいするまで「ひく」が 出なかったが、
+   先生が「今日は くりさがり」と 出したいときに 出せなくなるので やめた。
+   （分数・小数のアプリと 同じ かんがえ方） */
 function renderOps(){
   const row=document.querySelector('.ops');
-  if(row)row.classList.toggle('hidden',!opsOpen());
-  if(!opsOpen())P.mode='+';            // 出ていないあいだは たし算だけ
+  if(row)row.classList.remove('hidden');
 }
 /* ステップ４で使う数。1km400m ＋ 800m のように、下のけたが 0 の数だけにする。
    くりあがり・くりさがりに集中させたいので、ここでは「0の ばしょ」の
@@ -729,7 +723,7 @@ function pNums(){
     : {op:'-',a1:2,b1:b,b2:b*2,ans:2*r+b-b*2};
 }
 function pNew(){
-  P.f=['',''];P.act=0;P.locked=false;
+  P.f=['',''];P.act=1;P.locked=false;   // 小さいたんいの わくから 入れる
   cStage.className='stage';cVerdict.className='verdict';cVerdict.textContent='';
   const q=pQueue.length?pQueue.shift():pNums();
   P.op=q.op;P.a1=q.a1;P.b1=q.b1;P.b2=q.b2;P.ans=q.ans;
@@ -754,12 +748,15 @@ function pRender(){
       '<span class="op">＝</span>'+
       '<span class="grp">'+fld(0,ansBig)+big+'</span><span class="grp">'+fld(1,ansSmall)+small+'</span>'+
     '</div>';
-  cNote.textContent=P.locked?'':'わくを おすと、入れるところが かわるよ';
+  cNote.textContent=P.locked?''
+    :(P.act===1?p.small+' の わくから 入れよう':'つぎは '+p.big+' の わく')
+     +'（わくを おすと かえられる）';
   if(!P.locked){
     cEq.querySelectorAll('.fld[data-i]').forEach(el=>{
       bindTap(el,()=>{P.act=Number(el.dataset.i);pRender();});
     });
   }
+  buildPadC();
 }
 function pScore(){
   cel.c.textContent=correct;cel.t.textContent=total;
@@ -802,14 +799,6 @@ function pCheck(){
     }else if(stamps[k]){cVerdict.textContent='せいかい！ 🎉';}
     else{cVerdict.textContent='せいかい！ 🎉（あと '+(GOAL-setStreak[k])+'もん で スタンプ）';}
     saveStreak();
-    /* ひき算の ボタンを 出すかどうか */
-    if(P.op==='+'&&!opsOpen()){
-      plusOK[CAT]=(plusOK[CAT]|0)+1;savePlusOK();
-      if(opsOpen()){
-        renderOps();fitShrink();
-        cVerdict.innerHTML=cVerdict.innerHTML+'<br>ひきざんも できるように なったよ！';
-      }
-    }
   }else{
     if(!stamps[k])pQueue.push({op:P.op,a1:P.a1,b1:P.b1,b2:P.b2,ans:P.ans});
     setStreak[k]=0;saveStreak();
@@ -825,7 +814,6 @@ function pPress(v){
   if(v==='del'){P.f[i]=P.f[i].slice(0,-1);}
   else if(P.f[i].length<pMax(i)){
     P.f[i]+=v;
-    if(i===0&&P.f[0].length>=pMax(0))P.act=1;   // 大きいたんいが うまったら つぎのわくへ
   }
   pRender();
 }
@@ -835,6 +823,7 @@ function buildPadC(){
   addKeyC('けす','key del',()=>pPress('del'),false);
   addKeyC('0','key',()=>pPress('0'),false);
   if(P.locked)addKeyC('つぎ →','key next',pNew,true);
+  else if(P.act===1)addKeyC('ひだりへ ◀','key cont',()=>{P.act=0;pRender();},false);
   else addKeyC('こたえ','key enter',pCheck,true);
   function addKeyC(label,cls,fn,guard){
     const b=document.createElement('button');b.className=cls;b.textContent=label;b.type='button';
