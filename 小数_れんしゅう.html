@@ -170,6 +170,18 @@
   .fld.empty{color:#c7b891}
   .fld.on{border-style:solid;border-color:var(--accent);background:var(--flash);animation:glow 1.2s infinite}
   .fld.done{border-style:solid;border-color:var(--ok);background:#eaf5e4}
+  /* こたえの 小数第一位が 0に なった ときに 引く ななめの 線（左上 → 右下）。
+     えんぴつで 引く ときと 同じに 見えるよう、赤ではなく 字の 色で 引く */
+  .fld.slash{position:relative}
+  /* ますの 左上の かどから 右下の かどへ ちょうど 引く。
+     （to top right の しま は、左上→右下 の むきに ならぶ） */
+  .fld.slash::after{content:'';position:absolute;inset:0;pointer-events:none;
+    background:linear-gradient(to top right,
+      transparent calc(50% - 1.7px), var(--ink) calc(50% - 1.7px),
+      var(--ink) calc(50% + 1.7px), transparent calc(50% + 1.7px));
+    animation:slashin .3s ease-out}
+  /* 左上から 右下へ 引いていく ように 見せる */
+  @keyframes slashin{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}
   @keyframes glow{0%,100%{box-shadow:0 0 0 0 rgba(0,0,0,0)}50%{box-shadow:0 0 0 5px var(--accent-soft)}}
   .dot{color:var(--ng);font-weight:800;padding:0 .04em}
 
@@ -1065,7 +1077,9 @@ function kRender(){
     h+='<div class="hcell">'+(K.fields.length>2?fCell(K,2):'')+'</div>';
     h+='<div class="hcell">'+fCell(K,1)+'</div>';
     h+='<div class="hdot ans">.</div>';
-    h+='<div class="hcell">'+fCell(K,0)+'</div>';
+    /* 1.2＋2.8＝4.0 の ように 小数第一位が 0に なった ときは、
+       こたえあわせの あとに 0へ ななめの 線を 引いて けす（筆算の きまり） */
+    h+='<div class="hcell">'+fCell(K,0,(K.locked&&r%10===0)?'slash':'')+'</div>';
     h+='</div>';
     $('kBoard').innerHTML=h;
     /* メモらんを タップして えらぶ */
@@ -1138,7 +1152,8 @@ function kCheck(){
     if(kIsHissan())m+='<br>小数点は 上の 小数点に そろえて うつよ';
     else m+='　0.1が <em>'+r+'こ</em>';
     /* 1.2＋2.8 の ように 小数第一位が 0に なる とき（教科書の「0をわすれずにかきます」） */
-    if(r%10===0)m+='<br>筆算では <em>'+dec(r)+'.0</em> と かいて、こたえは <em>'+dec(r)+'</em>';
+    if(r%10===0)m+='<br>筆算では <em>'+dec(r)+'.0</em> と かいて、'+
+      '0に ななめの 線を 引くよ。こたえは <em>'+dec(r)+'</em>';
     else if(r<10)m+='<br>1より 小さいから 一の位に <em>0</em>を かくよ';
     v.innerHTML=m;
     if(K.streak>=GOAL)K.streak=0;
