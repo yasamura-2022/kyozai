@@ -210,6 +210,10 @@
      箱を 分けると 位が よこに ずれるので、同じ 箱の 中で 色と 点せんだけ 分ける */
   .zed{color:#c7b891;text-decoration:underline;text-decoration-style:dotted;
     text-decoration-color:#c7b891;text-underline-offset:.08em}
+  /* あわせての ますで つぎに 入れる ところ */
+  .nxt{display:inline-block;width:1ch;border-bottom:4px solid var(--accent-dark);
+    animation:nxtblink .9s infinite}
+  @keyframes nxtblink{0%,100%{opacity:1}50%{opacity:.2}}
   .kmemo{font-size:.44em;color:#8a7a5f;font-weight:700;letter-spacing:0;text-align:left;white-space:nowrap}
   .kmemo .tn{color:var(--ten-dark);font-weight:800}
   .kmemo .on{color:var(--one-dark);font-weight:800}
@@ -298,6 +302,8 @@
   .key.wide{font-size:.68em;white-space:normal;line-height:1.15;word-break:keep-all;padding-left:2px;padding-right:2px}
 
   .drill-main{flex:1;min-height:0;display:flex;flex-direction:column;gap:6px}
+  /* 文が 2行に なったとき、つぶれて 重ならないように（あふれたら --shrink が はたらく） */
+  #sStage>*,#hStage>*{flex-shrink:0}
   .drill-main .stage{flex:1;min-height:0}
   #viewMiru .stage,#viewAtsu .stage{flex:1;min-height:0}
 
@@ -804,6 +810,12 @@ function buildPad(padEl,press,check,next,locked,isLast){
 function fldHTML(txt,cls,state){
   return '<span class="fld '+(cls||'')+' '+state+'">'+(txt===''?'　':txt)+'</span>';
 }
+/* あわせての ます。つぎに 入れる 位に しるしを 出す（一の位 → 十の位 → 百の位） */
+function sumHTML(state){
+  const cur=(state==='on')?'<span class="nxt"></span>':'';
+  const v=S3.vals[2];
+  return '<span class="fld sum '+state+'">'+cur+(v===''&&!cur?'　':v)+'</span>';
+}
 /* 十の位の 分。うしろの 0は はじめから ついていて、子どもは 九九の 分だけ 入れる。
    位が たてに そろうように、箱は 1つの まま 中の 0だけ 色を かえる */
 function fldZeroHTML(txt,cls,state){
@@ -852,7 +864,7 @@ function s3Render(){
   h+='<div class="knum">'+fldZeroHTML(S3.vals[1],'tn',st(1))+'</div>'+
      '<div class="kmemo"><span class="tn">'+(p.t*10)+'×'+b+'</span></div>';
   h+='<div class="kline"></div><div></div>';
-  h+='<div class="knum">'+fldHTML(S3.vals[2],'',st(2))+'</div>'+
+  h+='<div class="knum">'+sumHTML(st(2))+'</div>'+
      '<div class="kmemo">あわせて</div>';
   h+='</div>';
   $('sKangae').innerHTML=h;
@@ -861,12 +873,30 @@ function s3Render(){
   if(S3.locked)ask.innerHTML='';
   else if(S3.idx===0)ask.innerHTML='<span class="on">一の位</span>の '+p.o+' に '+b+' を かけると？';
   else if(S3.idx===1)ask.innerHTML='<span class="tn">'+(p.t*10)+'×'+b+'</span>　'+p.t+' に '+b+' を かけると？（0は もう ついているよ）';
-  else ask.innerHTML='2つを あわせると？　'+p.p1+' ＋ '+p.p2;
+  else{
+    const kurai=['一の位','十の位','百の位'][Math.min(S3.vals[2].length,2)];
+    ask.innerHTML=p.p1+' ＋ '+p.p2+'　つぎは <span class="hi">'+kurai+'</span>';
+  }
 
   if(S3.hint&&!S3.locked){
     if(S3.idx===0)ask.innerHTML+='<br><span class="hi">九九だね　'+p.o+'×'+b+'</span>';
     else if(S3.idx===1)ask.innerHTML+='<br><span class="hi">'+p.t+'×'+b+'＝'+(p.t*b)+'　10が '+(p.t*b)+'こ で '+p.p2+'</span>';
-    else ask.innerHTML+='<br><span class="hi">'+p.p1+'＋'+p.p2+' を たしざん</span>';
+    else{
+      const A=p.p1,B=p.p2,k=Math.min(S3.vals[2].length,2);
+      const dg=(n,i)=>Math.floor(n/Math.pow(10,i))%10;
+      const carry=(dg(A,0)+dg(B,0)>=10)?1:0;
+      let t2;
+      if(k===0)t2=dg(A,0)+' と '+dg(B,0)+' で '+((dg(A,0)+dg(B,0))%10);
+      else if(k===1){
+        const w=dg(A,1)+dg(B,1)+carry;
+        t2=dg(A,1)+' と '+dg(B,1)+(carry?' と くり上げた 1':'')+' で '+w+
+           (w>=10?'　'+(w%10)+'を かいて 1くり上げる':'');
+      }else{
+        const c2=(dg(A,1)+dg(B,1)+carry>=10)?1:0;
+        t2='百の位は '+dg(B,2)+(c2?' と くり上げた 1':'')+' で '+(dg(B,2)+c2);
+      }
+      ask.innerHTML+='<br><span class="hi">'+t2+'</span>';
+    }
   }
   s3Pad();
   refit();
@@ -874,8 +904,14 @@ function s3Render(){
 function s3Press(v){
   if(S3.locked)return;
   const i=S3.idx;
-  if(v==='del')S3.vals[i]=S3.vals[i].slice(0,-1);
-  else if(S3.vals[i].length<3)S3.vals[i]+=v;
+  if(i===2){
+    /* あわせては たし算。一の位から 左へ ふえていく（けすと 右へ もどる） */
+    if(v==='del')S3.vals[i]=S3.vals[i].slice(1);
+    else if(S3.vals[i].length<3)S3.vals[i]=v+S3.vals[i];
+  }else{
+    if(v==='del')S3.vals[i]=S3.vals[i].slice(0,-1);
+    else if(S3.vals[i].length<3)S3.vals[i]+=v;
+  }
   s3Render();
 }
 function s3Check(){
