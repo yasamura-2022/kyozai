@@ -156,7 +156,9 @@
   .mk.on{color:var(--accent-dark)}
 
   /* ===== ステップ２：おって みる ===== */
-  .foldwrap{flex:1;min-height:0;display:flex;align-items:center;justify-content:center}
+  /* おった 紙は 3D で かたむくので、そのままだと 画面の 高さの けいさんが
+     ずれて 文字が どんどん 小さくなる。ここで はみ出しを 止める */
+  .foldwrap{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;overflow:hidden}
   .foldbox{position:relative;height:100%;aspect-ratio:var(--far,1.2);
     perspective:900px;-webkit-perspective:900px}
   .foldbox .ly{position:absolute;inset:0}
@@ -172,6 +174,7 @@
     font-weight:800;cursor:pointer;color:var(--ink);
     font-size:calc(clamp(13px,3.5vw,16px) * var(--shrink,1))}
   .wchip.on{color:#fff;border-color:var(--fill-dark);background:var(--fill);box-shadow:0 2px 0 var(--fill-dark)}
+  .wchip.done::after{content:'✓';margin-left:3px;font-size:.78em;opacity:.8}
 
   /* ===== ステップ３：角を ならべる ===== */
   .angrow{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;flex:0 0 auto;
@@ -287,7 +290,7 @@
     </div>
     <div class="stage" id="oStage">
       <div class="askrow">
-        <div class="ask" id="oAsk">おなじ 大きさの 角を ぜんぶ タップしよう</div>
+        <div class="ask" id="oAsk"></div>
       </div>
       <div class="note" id="oName"></div>
       <div class="foldwrap"><div class="foldbox" id="oBox">
@@ -719,9 +722,15 @@ bindTap($('eHintBtn'),function(){
 
 /* =========================================================
    ステップ２：おって みる
-   まん中で パタンと おって、かさなる 角を 見つける。
-   ・二等辺三角形 → い と う が かさなる
-   ・正三角形     → どこで おっても かさなる（3つとも 同じ）
+   おり線で パタンと おって、かさなる 角を 見つける。
+   ・二等辺三角形 → あ で おると い と う が かさなる
+   ・正三角形     → あ・い・う どこで おっても かさなる（3つとも 同じ）
+
+   ※問いは いつも「いま 見えている おり線で かさなる 2つ」を きく。
+     正三角形で「同じ 大きさの 角を ぜんぶ」と きくと、
+     い で おった 画面（い は 半分に われて どこにも かさならない）を 見ながら
+     「あ・い・う」と 答えさせる ことに なり、見えている ことと 合わない。
+     3つとも 同じ、は おる ところを 3つ ためした ときに 言う。
    おりかたは CSS の rotateY で 作る。
    おり線が ななめでも いいように
    「おり線を たてに もどす → うら返す → もとの むきに もどす」の
@@ -768,11 +777,32 @@ function oNew(){
   $('oName').innerHTML=(O.kind==='iso')
     ? '<b class="w">二等辺三角形</b>（2つの 辺の 長さが 同じ）'
     : '<b class="w">正三角形</b>（3つの 辺の 長さが みんな 同じ）';
+  $('oAsk').innerHTML='おって かさなる 角は <b>どれと どれ</b>？';
+  O.tried=[false,false,false];
   $('oWhich').classList.toggle('hidden',O.kind!=='equ');
-  document.querySelectorAll('#oWhich .wchip').forEach(function(c){
-    c.classList.toggle('on',+c.dataset.i===O.fv);
-  });
+  oWhichChips();
   oRender();oScore();
+}
+/* いま おり線が 通っている ちょう点いがいの 2つ＝かさなる 角 */
+function oWant(){
+  const g=oFoldParts();
+  return [g.j,g.k].sort();
+}
+function oWhichChips(){
+  document.querySelectorAll('#oWhich .wchip').forEach(function(c){
+    const i=+c.dataset.i;
+    c.classList.toggle('on',i===O.fv);
+    c.classList.toggle('done',!!(O.tried&&O.tried[i]));
+  });
+}
+/* おった ところを おぼえておく。3つとも おったら「3つの 角は みんな 同じ」が 言える */
+function oMarkTried(){
+  if(!O.tried)O.tried=[false,false,false];
+  O.tried[O.fv]=true;
+  oWhichChips();
+}
+function oAllTried(){
+  return O.tried&&O.tried[0]&&O.tried[1]&&O.tried[2];
 }
 /* おり線の 両はしと、うごく ほう・とまっている ほうの 角 */
 function oFoldParts(){
@@ -884,7 +914,7 @@ function oSize(){
   if(!wrap||!box)return;
   const w=wrap.clientWidth,h=wrap.clientHeight;
   if(w<10||h<10)return;
-  let bw=Math.min(w,h*O.W/O.H);
+  let bw=Math.min(w,h*O.W/O.H)*0.97;   // おる とちゅうの ふくらみ ぶんを 少し あける
   box.style.width=bw+'px';
   box.style.height=(bw*O.H/O.W)+'px';
 }
@@ -896,6 +926,16 @@ function oTap(i){
 }
 function oToggleFold(){
   O.folded=!O.folded;
+  if(O.folded){
+    oMarkTried();
+    /* こたえた あとに ほかの ところで おったら、ことばも 言いなおす
+       （3つとも おわったら「3つの 角は みんな 同じ」に かわる） */
+    if(O.locked&&O.wasOk){
+      $('oVerdict').className='verdict ok';
+      $('oVerdict').innerHTML='よくできました！ '+oOkText();
+      refit();
+    }
+  }
   $('oFold').textContent=O.folded?'ひらく ◀':'おって みる ▶';
   const fl=$('oFlap');
   const g=oFoldParts();
@@ -906,9 +946,21 @@ function oToggleFold(){
   setTimeout(oLabels,O.folded?900:0);
   if(!O.folded)oLabels();
 }
+/* こたえた あとの ことば。
+   正三角形は「3つとも 同じ」を、あ・い・う 3つとも おってから 言う */
+function oOkText(){
+  const w=oWant().map(function(i){return '<em>'+VNAME[i]+'</em>';}).join(' と ');
+  if(O.kind==='iso'){
+    return w+' が ぴったり かさなった　二等辺三角形の <em>2つの 角</em>の 大きさは 同じ';
+  }
+  if(oAllTried()){
+    return 'どこで おっても かさなった　正三角形の <em>3つの 角</em>は みんな 同じ 大きさ';
+  }
+  return w+' が かさなった　<em>ほかの ところ</em>でも おって みよう';
+}
 function oCheck(){
   if(O.locked)return;
-  const want=(O.kind==='iso')?[1,2]:[0,1,2];
+  const want=oWant();
   if(O.sel.length===0){
     $('oVerdict').className='verdict ng';
     $('oVerdict').textContent='まだ えらんでいないよ　あ・い・う を タップしてね';
@@ -916,21 +968,20 @@ function oCheck(){
   }
   O.locked=true;O.total++;
   const ok=(O.sel.length===want.length)&&want.every(function(i){return O.sel.indexOf(i)>=0;});
+  O.wasOk=ok;
   if(ok){
     O.correct++;O.streak++;
     $('oStage').classList.add('correct');
     $('oVerdict').className='verdict ok';
-    $('oVerdict').innerHTML=(O.streak>=GOAL?'すごい！ ':'よくできました！ ')+
-      (O.kind==='iso'
-        ? 'おると <em>い</em> と <em>う</em> が ぴったり かさなる　二等辺三角形の <em>2つの 角</em>の 大きさは 同じ'
-        : 'どこで おっても ぴったり かさなる　正三角形の <em>3つの 角</em>の 大きさは みんな 同じ');
+    $('oVerdict').innerHTML=(O.streak>=GOAL?'すごい！ ':'よくできました！ ')+oOkText();
     if(O.streak>=GOAL)O.streak=0;
   }else{
     O.streak=0;
     $('oStage').classList.add('wrong');
     $('oVerdict').className='verdict ng';
-    $('oVerdict').innerHTML='もう一回！　こたえは <em>'+want.map(function(i){return VNAME[i];}).join(' と ')+
-      '</em>　おって かさなる 角は 大きさが 同じだよ';
+    $('oVerdict').innerHTML='もう一回！　おり線が 通っている <em>'+VNAME[O.fv]+
+      '</em> は 半分に われるよ　かさなるのは <em>'+
+      want.map(function(i){return VNAME[i];}).join(' と ')+'</em>';
     O.sel=want.slice();
   }
   $('oCheck').classList.add('hidden');
@@ -948,9 +999,15 @@ document.querySelectorAll('#oWhich .wchip').forEach(function(c){
     if(O.fv===i)return;
     O.fv=i;O.folded=false;
     $('oFold').textContent='おって みる ▶';
-    document.querySelectorAll('#oWhich .wchip').forEach(function(x){
-      x.classList.toggle('on',+x.dataset.i===i);
-    });
+    /* おる ところが かわると こたえも かわる。
+       まだ こたえていないなら えらんだ 角を いったん けす */
+    if(!O.locked){
+      O.sel=[];
+      $('oVerdict').textContent='';$('oVerdict').className='verdict';
+    }else{
+      O.sel=oWant();          // こたえた あとは いまの おり線で かさなる 2つを 光らせる
+    }
+    oWhichChips();
     $('oFlap').classList.add('no');
     oRender();
     setTimeout(function(){$('oFlap').classList.remove('no');},30);
@@ -1374,10 +1431,11 @@ function overflowInfo(){
 function shrinkStep(){
   const appEl=document.querySelector('.app');
   if(!appEl)return;
+  oSize();                       // おりばこを 先に 合わせてから はみ出しを 見る
   const w=overflowInfo(),over=w.over;
-  if(over>2&&shrinkPass<6){
+  if(over>2&&shrinkPass<9){
     const cur=parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--shrink'))||1;
-    const next=Math.max(.55,cur*Math.max(.8,w.ratio));
+    const next=Math.max(.5,cur*Math.max(.8,w.ratio));
     document.documentElement.style.setProperty('--shrink',next.toFixed(3));
     shrinkPass++;
     requestAnimationFrame(shrinkStep);
