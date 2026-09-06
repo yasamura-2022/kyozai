@@ -175,6 +175,11 @@
     color:var(--accent-dark);border-bottom:2px dotted #cbbb95;border-radius:4px 4px 0 0;
     display:inline-block;text-align:center;pointer-events:none}
   .mbox.on{background:var(--flash);border-bottom:2px solid var(--accent-dark);animation:nxtblink .9s infinite}
+  /* メモらんは いま かいている だんの 色に そろえる */
+  .fmemo.d1 .mbox{color:var(--one-dark);border-bottom-color:var(--one)}
+  .fmemo.d2 .mbox{color:var(--ten-dark);border-bottom-color:var(--ten)}
+  .fmemo.lab.d1{color:var(--one-dark)}
+  .fmemo.lab.d2{color:var(--ten-dark)}
   .fbar{grid-column:1 / -1;height:3px;background:var(--ink);border-radius:2px;margin:2px 0}
   .fcell .fld{min-width:1.5ch;padding:0 2px;border-width:3px}
   /* 位の 見出し（百・十・一）。どこに かくかを 見わける ため */
@@ -1058,12 +1063,16 @@ function hRender(){
   const a=H.a,b=H.b,o=b%10,t=Math.floor(b/10);
   const all=a*b,cols=String(all).length;
   let h='<div class="fgrid" style="grid-template-columns:repeat('+(cols+1)+',auto)">';
+  const mAt=H.locked?2:H.idx;
   h+=labelRow(cols);
-  h+=memoRow(cols);
+  if(mAt===0)h+=memoRow(cols,'d1');
   h+=numRow(a,cols,0,'');
   h+=opRow(b,cols,'',H.locked?null:(H.idx===0?0:(H.idx===1?1:null)));
   h+='<div class="fbar"></div>';
+  /* たしざんの くり上がりは、たす 2つの だんの 上（線の すぐ下）に かく */
+  if(mAt===2)h+=memoRow(cols,'sum');
   h+=fieldRow(0);
+  if(mAt===1)h+=memoRow(cols,'d2');
   h+=fieldRow(1);
   h+='<div class="fbar"></div>';
   h+=fieldRow(2);
@@ -1097,18 +1106,18 @@ function hRender(){
   if(H.hint&&!H.locked){
     let t2;
     if(H.idx===0)t2='こたえは <b>一の位</b>から かく。くり上がりは 上の <b>メモ</b>に かける';
-    else if(H.idx===1)t2='こたえは <b>十の位</b>から かく。一の位に 0は かかない';
-    else t2='1だんめと 2だんめを たす。一の位から';
+    else if(H.idx===1)t2='こたえは <b>十の位</b>から かく。一の位に 0は かかない。くり上がりは <b>メモ</b>に';
+    else t2='1だんめと 2だんめを たす。一の位から。くり上がりは <b>メモ</b>に かける';
     ask.innerHTML+='<br><span class="hi">'+t2+'</span>';
   }
   hPad();
   refit();
 
-  function memoRow(cols){
-    let s='<div class="fmemo lab">メモ</div>';
+  function memoRow(cols,cls){
+    let s='<div class="fmemo lab '+cls+'">メモ</div>';
     for(let c=0;c<cols;c++){
       const pos=cols-1-c,v=H.memo[pos]||'';
-      s+='<div class="fmemo" data-pos="'+pos+'"><span class="mbox'+((H.memoFocus===pos)?' on':'')+'">'+
+      s+='<div class="fmemo '+cls+'" data-pos="'+pos+'"><span class="mbox'+((H.memoFocus===pos)?' on':'')+'">'+
          (v===''?'　':v)+'</span></div>';
     }
     return s;
