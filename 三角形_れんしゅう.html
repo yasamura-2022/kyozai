@@ -550,6 +550,9 @@ const ISO=[[3,5,5],[4,6,6],[6,5,5],[8,5,5],[3,4,4],[6,4,4],[4,7,7],[9,7,7],[5,8,
 const EQU=[[3,3,3],[4,4,4],[5,5,5],[6,6,6],[7,7,7]];
 const SCA=[[3,5,7],[4,6,8],[5,7,9],[3,4,6],[4,5,8],[5,6,9],[2,4,5],[6,8,11],[3,6,7],[4,7,9],[5,8,10],[2,3,4]];
 const ROTS=[0,25,50,75,100,125,150,175,200,225,250,275,300,325];
+/* ステップ２で 三角形を 回す 角度。
+   おり線が ちょうど たてに なる 0度ばかりに ならないよう、まんべんなく とる */
+const OROTS=[0,20,45,70,95,120,145,170,195,220,245,270,295,320,345];
 const EW=230,EH=166;
 
 const E=load('sankaku3.era',{correct:0,total:0,streak:0});
@@ -757,16 +760,33 @@ function labelRadii(pts,sides){
   });
 }
 function oNew(){
-  O.locked=false;O.folded=false;O.sel=[];O.fv=0;
+  O.locked=false;O.folded=false;O.sel=[];
   $('oStage').className='stage';
   $('oVerdict').textContent='';$('oVerdict').className='verdict';
   $('oCheck').classList.remove('hidden');
   $('oNext').classList.add('hidden');
   O.kind=pick(['iso','iso','equ']);
-  O.sides=(O.kind==='iso')?pick(ISO):pick(EQU);
+  const raw=(O.kind==='iso')?pick(ISO):pick(EQU);
+  /* raw は [いう, うあ, あい]。二等辺は 2ばんめと 3ばんめが 同じ長さなので
+     triPoints の p[0]（てっぺん）が「等しい 2辺の あいだの 角」になる */
+  let p=triPoints(raw[0],raw[1],raw[2]);
+  let sd=[raw[0],raw[1],raw[2]];        // sd[i] は p[i] の むかいの 辺の 長さ
+
+  /* ① 向きを 回す。
+     いつも てっぺんが 上だと「ちがう 長さの 辺は いつも 下」と おぼえてしまう */
+  p=rotPts(p,pick(OROTS));
+
+  /* ② あ・い・う の つけ方も かえる。
+     てっぺんが いつも「あ」だと、二等辺の こたえが いつも「い と う」に なる */
+  const perm=shuffle([0,1,2]);
+  p=perm.map(function(k){return p[k];});
+  sd=perm.map(function(k){return sd[k];});
+  O.sides=sd;
+  O.apex=perm.indexOf(0);               // 等しい 2辺の あいだの 角＝おり線が 通る ところ
+  O.fv=(O.kind==='iso')?O.apex:0;
+
   /* 三角形の 形に あわせて わくの 大きさを きめる
      （ほそい 三角形でも 大きく 見えるように） */
-  let p=triPoints(O.sides[0],O.sides[1],O.sides[2]);
   const b=bboxOf(p);
   let sc=Math.min(160/b.h,240/b.w);
   O.W=b.w*sc+88;O.H=b.h*sc+78;
@@ -781,6 +801,8 @@ function oNew(){
   O.tried=[false,false,false];
   $('oWhich').classList.toggle('hidden',O.kind!=='equ');
   oWhichChips();
+  /* 二等辺の おり線は「等しい 2辺の あいだ」の 1本だけ。
+     どの 名前に なるかは もんだいごとに かわる */
   oRender();oScore();
 }
 /* いま おり線が 通っている ちょう点いがいの 2つ＝かさなる 角 */
