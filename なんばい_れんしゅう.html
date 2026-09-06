@@ -154,7 +154,10 @@
   .tlab.c{color:#8a6a10}
   .tlab .big{color:var(--accent-dark);font-size:1.15em}
   .tlab .cnt{color:var(--ng)}
-  .trow{display:flex;width:100%}
+  /* --barw … バーが つかう はば。のこりは 数を 書く ばしょ（右どなり）。
+     数を バーの 中に のせると、ぐうすう倍の とき 中央の 切れ目を かくして
+     「見えるときと 見えないとき」が できてしまうので 外に 出す */
+  .trow{display:flex;align-items:center;width:100%;gap:7px;--barw:78%}
   /* テープ1本＝1つの数。じぶんの 数を バーの上に のせる。
      中の 切れ目で 「もとにする数の いくつぶん」を 見せる */
   .tbar{position:relative;display:flex;border-radius:6px;border:2px solid var(--gold);
@@ -167,13 +170,10 @@
   .tbar.base .tcell{border-right-color:var(--accent)}
   .tcell.hot{animation:hotcell .45s}
   @keyframes hotcell{0%{background:var(--gold)}100%{background:transparent}}
-  .tval{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
-    background:#fff;border-radius:8px;padding:1px 8px;white-space:nowrap;
-    box-shadow:0 0 0 1px rgba(0,0,0,.07);
-    font-weight:800;color:#8a6a10;
+  .tval{flex:0 0 auto;white-space:nowrap;font-weight:800;color:#8a6a10;
     font-size:calc(clamp(12px,3.2vw,17px) * var(--shrink,1))}
-  .tbar.base .tval{color:var(--accent-dark)}
-  .tbar.q .tval{color:#a99a7c}
+  .tval.base{color:var(--accent-dark)}
+  .tval.q{color:#a99a7c}
   @keyframes pop{0%{transform:scale(.7)}60%{transform:scale(1.12)}100%{transform:scale(1)}}
 
   /* きまり見つけの表 */
@@ -469,8 +469,9 @@ function tapeBar(o){
   for(let i=0;i<o.parts;i++){
     cells+='<div class="tcell'+((o.hot&&i===o.parts-1)?' hot':'')+'"></div>';
   }
-  const val=o.val?'<span class="tval">'+o.val+'</span>':'';
-  return '<div class="tbar '+o.cls+(o.q?' q':'')+'" style="width:'+o.width+'">'+cells+val+'</div>';
+  const bar='<div class="tbar '+o.cls+(o.q?' q':'')+'" style="width:'+o.width+'">'+cells+'</div>';
+  const val=o.val?'<span class="tval '+o.cls+(o.q?' q':'')+'">'+o.val+'</span>':'';
+  return bar+val;                       // 数は バーの 右どなり
 }
 
 /* ---------- 関係図 ---------- */
@@ -567,8 +568,8 @@ function tRender(){
   const b=T.base,n=T.n,sum=b*n;
   $('tCntLab').textContent=n+'倍';
   /* もとにする数を 1つぶんとして、6つぶんまで 入る ものさしで ならべる */
-  $('tBaseRow').innerHTML=tapeBar({parts:1,width:'calc(100% / 6)',cls:'base',val:valHTML(b,'cm')});
-  $('tRow').innerHTML=tapeBar({parts:n,width:'calc(100% / 6 * '+n+')',cls:'cmp',
+  $('tBaseRow').innerHTML=tapeBar({parts:1,width:'calc(var(--barw) / 6)',cls:'base',val:valHTML(b,'cm')});
+  $('tRow').innerHTML=tapeBar({parts:n,width:'calc(var(--barw) / 6 * '+n+')',cls:'cmp',
     val:valHTML(sum,'cm'),hot:(n>1)});
   $('tZu').innerHTML=zuHTML({base:valHTML(b,'cm'),rate:n,cmp:valHTML(sum,'cm'),lit:'up'});
   let rows='';
@@ -647,18 +648,14 @@ function zTapeHTML(){
   const dB=(Z.blank==='cmp' &&!Z.locked)?'?':Z.b;
   const dN=(Z.blank==='rate'&&!Z.locked)?'?':Z.n;
   const split=(Z.blank!=='rate')||Z.hint||Z.locked;   // 切れ目を 見せるか
-  /* もとにする数の テープは 倍が 大きいと ほそくなるので、
-     そのときだけ 数を テープの上（ラベル）に 書く */
-  const inside=(n<=4);
   return '<div class="tline">'+
-      '<span class="tlab b">もとにする数'+
-        (inside?'':'　<span class="big">'+valHTML(dA,u)+'</span>')+'</span>'+
-      '<div class="trow">'+tapeBar({parts:1,width:'calc(100% / '+n+')',cls:'base',
-        q:(dA==='?'),val:inside?valHTML(dA,u):''})+'</div>'+
+      '<span class="tlab b">もとにする数</span>'+
+      '<div class="trow">'+tapeBar({parts:1,width:'calc(var(--barw) / '+n+')',cls:'base',
+        q:(dA==='?'),val:valHTML(dA,u)})+'</div>'+
     '</div>'+
     '<div class="tline">'+
       '<span class="tlab c">くらべる数　<span class="cnt">'+dN+'倍</span></span>'+
-      '<div class="trow">'+tapeBar({parts:split?n:1,width:'100%',cls:'cmp',
+      '<div class="trow">'+tapeBar({parts:split?n:1,width:'var(--barw)',cls:'cmp',
         q:(dB==='?'),val:valHTML(dB,u)})+'</div>'+
     '</div>';
 }
