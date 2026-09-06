@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>かけ算の筆算</title>
+<title>1けたをかけるかけ算の筆算</title>
 <style>
   :root{
     --ink:#2b2118;
@@ -47,7 +47,8 @@
   #viewMiru,#viewAtsu,#viewShiki,#viewHissan{flex:1;min-height:0;display:flex;flex-direction:column;gap:6px}
 
   header{text-align:center}
-  h1{font-size:clamp(17px,4.6vw,24px);letter-spacing:.04em}
+  /* タイトルが 長いので、せまい画面では 少し 小さくなるようにして 2行に しない */
+  h1{font-size:clamp(14px,4.6vw,24px);letter-spacing:.04em;white-space:nowrap}
   h1 .em{color:var(--accent)}
 
   /* 学習ステップ タブ */
@@ -344,7 +345,7 @@
 </head>
 <body>
 <div class="app">
-  <header><h1><span class="em">かけ算の筆算</span></h1></header>
+  <header><h1><span class="em">1けたを かける かけ算の筆算</span></h1></header>
 
   <div class="tabs">
     <button class="tab on" data-v="miru"><span class="step">ステップ１</span>やり方を 見る</button>
