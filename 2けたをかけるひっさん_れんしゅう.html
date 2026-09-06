@@ -260,7 +260,6 @@
     font-weight:800;color:#8a7a5f;
     font-size:calc(clamp(11px,3vw,14px) * var(--shrink,1))}
   .lvtag.on{background:var(--accent);border-color:var(--accent);color:#fff}
-  .lvtag.lock{opacity:.45}
 
   /* ボタン・てんすう・テンキー（1けたの アプリと そろえる）
      青＝同じ もんだいの 中で すすむ／金＝こたえあわせ／みどり＝べつの もんだいへ */
@@ -1010,21 +1009,25 @@ bindTap($('sHintBtn'),()=>{
    1だんめ → 2だんめ（十の位から）→ たしざん の じゅんに、
    どれも 一の位から 入れる
 ========================================================= */
+  /* レベルは はじめから ぜんぶ えらべる（鍵を かけない）。
+     前は 5もん れんぞく せいかいで つぎが 出る 作りだったが、
+     先生が「今日は 3けた×2けた」と 出したいときに 出せない。
+     分数・小数・長さ・重さ・かさ・1けたのかけ算 と 同じ かんがえ方（2026-09-06） */
 const LV=[
   {k:1,name:'くり上がり なし'},
   {k:2,name:'くり上がり あり'},
   {k:3,name:'3けた×2けた'}
 ];
-const H={a:23,b:34,lv:1,open:1,idx:0,vals:['','',''],locked:false,miss:false,hint:false,
+const H={a:23,b:34,lv:1,idx:0,vals:['','',''],locked:false,miss:false,hint:false,
          memo:['','','','','',''],memoFocus:null,
          correct:0,total:0,streak:0};
 function hClearMemo(){H.memo=['','','','','',''];H.memoFocus=null;}
 try{
   const s=JSON.parse(localStorage.getItem('kake2Hissan')||'null');
-  if(s){if(s.open>=1&&s.open<=3)H.open=s.open;if(s.lv>=1&&s.lv<=3)H.lv=Math.min(s.lv,H.open);
+  if(s){if(s.lv>=1&&s.lv<=3)H.lv=s.lv;
         if(typeof s.streak==='number')H.streak=s.streak;}
 }catch(e){}
-function hSave(){try{localStorage.setItem('kake2Hissan',JSON.stringify({open:H.open,lv:H.lv,streak:H.streak}));}catch(e){}}
+function hSave(){try{localStorage.setItem('kake2Hissan',JSON.stringify({lv:H.lv,streak:H.streak}));}catch(e){}}
 try{const s=JSON.parse(sessionStorage.getItem('kake2HissanScore')||'null');if(s){H.correct=s.c;H.total=s.t;}}catch(e){}
 function hSaveScore(){try{sessionStorage.setItem('kake2HissanScore',JSON.stringify({c:H.correct,t:H.total}));}catch(e){}}
 
@@ -1184,11 +1187,8 @@ function hCheck(){
     v.className='verdict ok';
     v.innerHTML='よくできました！　'+H.a+'×'+H.b+'＝'+(H.a*H.b);
     $('hStage').className='stage correct';
-    if(H.streak>=5&&H.lv===H.open&&H.open<3){
-      H.open++;hSave();
-      v.innerHTML+='<br>つぎの ひっ算が できるように なったよ！';
-      hLvBar();
-    }
+    /* レベルの 鍵は はずした。5もん つづいたら ほめるだけ */
+    if(H.streak===5) v.innerHTML+='<br>5もん れんぞく せいかい！ すごい！';
     hScore();hRender();
   }else{
     H.miss=true;H.streak=0;hSave();
@@ -1211,10 +1211,9 @@ function hLvBar(){
   LV.forEach(l=>{
     const b=document.createElement('button');
     b.type='button';
-    const open=(l.k<=H.open);
-    b.className='lvtag'+(l.k===H.lv?' on':'')+(open?'':' lock');
-    b.textContent=open?l.name:'🔒';
-    if(open)bindTap(b,()=>{if(H.lv!==l.k){H.lv=l.k;H.streak=0;hSave();hLvBar();hNew();hScore();}});
+    b.className='lvtag'+(l.k===H.lv?' on':'');
+    b.textContent=l.name;
+    bindTap(b,()=>{if(H.lv!==l.k){H.lv=l.k;H.streak=0;hSave();hLvBar();hNew();hScore();}});
     bar.appendChild(b);
   });
 }
