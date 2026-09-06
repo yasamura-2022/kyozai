@@ -206,10 +206,10 @@
   .knum{position:relative;text-align:right;min-width:4.4em;padding-left:1.2em;letter-spacing:.14em;
     line-height:1.25;white-space:nowrap}
   .knum .opl{position:absolute;left:0;top:50%;transform:translateY(-50%);color:#6f5d3d;letter-spacing:0}
-  /* 十の位の 分の 0。子どもは 入れない（位どりの 0だと 見せる） */
-  .zero{display:inline-block;min-width:2.1ch;padding:0 5px;border-radius:9px;
-    border:3px dotted #c7b891;background:#fff;color:#c7b891;font-weight:800;
-    font-size:inherit;line-height:1.15;font-variant-numeric:tabular-nums}
+  /* 十の位の 分の 0。子どもは 入れない（位どりの 0だと 見せる）。
+     箱を 分けると 位が よこに ずれるので、同じ 箱の 中で 色と 点せんだけ 分ける */
+  .zed{color:#c7b891;text-decoration:underline;text-decoration-style:dotted;
+    text-decoration-color:#c7b891;text-underline-offset:.08em}
   .kmemo{font-size:.44em;color:#8a7a5f;font-weight:700;letter-spacing:0;text-align:left;white-space:nowrap}
   .kmemo .tn{color:var(--ten-dark);font-weight:800}
   .kmemo .on{color:var(--one-dark);font-weight:800}
@@ -233,8 +233,19 @@
   .hcell.op{color:#6f5d3d}
   .hbar{grid-column:1 / -1;height:3px;background:var(--ink);border-radius:2px;margin:2px 0}
   /* くり上がりの 小さい 数を かく ところ（十の位・百の位の 上） */
-  .hcarry{height:.72em;display:flex;align-items:flex-end;justify-content:center}
-  .hcarry .fld{font-size:.46em;border-width:2px;min-width:1.9ch;padding:0 3px}
+  .hcarry{height:.9em;display:flex;align-items:flex-end;justify-content:center}
+  .hcarry .fld{font-size:.55em;border-width:2px;min-width:2.1ch;padding:0 3px}
+  /* いま 入れる ますだけ ふるえて 光る。小さいので ふつうの 光りかたでは 気づけない */
+  .hcarry .fld.on{border-width:3px;animation:carry .9s infinite}
+  @keyframes carry{
+    0%,100%{transform:translateY(0) scale(1);box-shadow:0 0 0 3px var(--flash)}
+    50%{transform:translateY(-4px) scale(1.12);box-shadow:0 0 0 7px var(--flash)}
+  }
+  /* 「ここ」の 目じるし。ますの すぐ 下から 上を さす */
+  .hpoint{height:.62em;display:flex;align-items:flex-end;justify-content:center;
+    color:var(--accent-dark);font-weight:800;font-size:.34em;line-height:1;white-space:nowrap}
+  .hpoint span{animation:pointup .9s infinite}
+  @keyframes pointup{0%,100%{transform:translateY(-2px)}50%{transform:translateY(2px)}}
   .hcell .fld{min-width:1.5ch;padding:0 2px;border-width:3px}
   .hnote{color:#8a7a5f;font-weight:800;line-height:1.35;min-height:1.35em;
     font-size:calc(clamp(12px, calc(var(--fh,100vh) * 0.028), 17px) * var(--shrink,1))}
@@ -793,6 +804,12 @@ function buildPad(padEl,press,check,next,locked,isLast){
 function fldHTML(txt,cls,state){
   return '<span class="fld '+(cls||'')+' '+state+'">'+(txt===''?'　':txt)+'</span>';
 }
+/* 十の位の 分。うしろの 0は はじめから ついていて、子どもは 九九の 分だけ 入れる。
+   位が たてに そろうように、箱は 1つの まま 中の 0だけ 色を かえる */
+function fldZeroHTML(txt,cls,state){
+  return '<span class="fld '+(cls||'')+' '+state+'">'+(txt===''?'　':txt)+
+         '<span class="zed">0</span></span>';
+}
 
 /* =========================================================
    ステップ３：2つの しき
@@ -832,7 +849,7 @@ function s3Render(){
   h+='<div class="kline"></div><div></div>';
   h+='<div class="knum">'+fldHTML(S3.vals[0],'on2',st(0))+'</div>'+
      '<div class="kmemo"><span class="on">'+p.o+'×'+b+'</span>　一の位の 分</div>';
-  h+='<div class="knum">'+fldHTML(S3.vals[1],'tn',st(1))+'<span class="zero">0</span></div>'+
+  h+='<div class="knum">'+fldZeroHTML(S3.vals[1],'tn',st(1))+'</div>'+
      '<div class="kmemo"><span class="tn">'+p.t+'×'+b+'</span>　十の位の 分</div>';
   h+='<div class="kline"></div><div></div>';
   h+='<div class="knum">'+fldHTML(S3.vals[2],'',st(2))+'</div>'+
@@ -980,6 +997,11 @@ function hCell(key,cls){
 function hRender(){
   const c=hCalc(H.a,H.b);
   let h='<div class="hgrid" style="grid-template-columns:repeat(4,auto)">';
+  /* くり上がりの ますに 入れる ときは、そのますの 上に 目じるしを 出す */
+  const pt=(!H.locked&&H.fields[H.idx].key==='c1');
+  h+='<div class="hpoint"></div><div class="hpoint"></div>';
+  h+='<div class="hpoint">'+(pt?'<span>ここ▼</span>':'')+'</div>';
+  h+='<div class="hpoint"></div>';
   /* くり上がりを かく ところ（十の位の 上） */
   h+='<div class="hcarry"></div><div class="hcarry"></div>';
   if(hState('c1')!==null)h+='<div class="hcarry">'+fldHTML(hVal('c1'),'on2',hState('c1'))+'</div>';
@@ -1007,7 +1029,7 @@ function hRender(){
     ask.innerHTML='<span class="on">一の位</span>　'+c.o+'×'+H.b+
       (c.c1>0?' の こたえの <span class="on">一の位</span>を かこう':' は？');
   }else if(cur.key==='c1'){
-    ask.innerHTML='くり上げた '+c.c1+' を <span class="tn">十の位</span>の 上に かこう';
+    ask.innerHTML='<span class="hi">光っている 小さい ます</span>に、くり上げた '+c.c1+' を 入れよう';
   }else if(cur.key==='d2'){
     ask.innerHTML='<span class="tn">十の位</span>　'+c.t+'×'+H.b+
       (c.c1>0?' に くり上げた '+c.c1+' を たすと？':' は？')+
