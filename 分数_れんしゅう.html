@@ -201,7 +201,6 @@
     white-space:nowrap;
   }
   .op-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);box-shadow:0 3px 0 var(--accent-dark)}
-  .op-btn.lock{color:#bbae92}
   .op-btn:active{transform:translateY(2px)}
 
   /* ===== てんすう ===== */
@@ -235,6 +234,7 @@
   .key.enter{background:var(--gold);color:#fff;box-shadow:0 3px 0 #a5811a}
   .key.cont{background:var(--accent);color:#fff;box-shadow:0 3px 0 var(--accent-dark)}
   .key.next{background:var(--ok);color:#fff;box-shadow:0 3px 0 #446838}
+  .key.wide{font-size:.68em;white-space:normal;line-height:1.15;word-break:keep-all;padding-left:2px;padding-right:2px}
 
   .drill-main{flex:1;min-height:0;display:flex;flex-direction:column;gap:6px}
   .drill-main .stage{flex:1;min-height:0}
@@ -332,7 +332,7 @@
     <div class="actions">
       <button class="btn sub" id="nClear">ぜんぶ けす</button>
       <button class="btn show" id="nCheck">こたえ</button>
-      <button class="btn next hidden" id="nNext">つぎ →</button>
+      <button class="btn next hidden" id="nNext">つぎの もんだい →</button>
     </div>
   </div>
 
@@ -365,7 +365,7 @@
     <div class="score">
       <div class="box correct"><div class="n" id="lCorrect">0</div><div class="t">せいかい</div></div>
       <div class="box"><div class="n" id="lTotal">0</div><div class="t">やったもんだい</div></div>
-      <div class="box streak"><div class="n" id="lStreak">0/5</div><div class="t">れんぞく</div></div>
+      <div class="box streak"><div class="n" id="lStreak">0/10</div><div class="t">れんぞく</div></div>
     </div>
     <div class="drill-main">
       <div class="stage" id="lStage">
@@ -688,10 +688,12 @@ function buildFracPad(padEl,st,press,cont,check,next){
   for(let i=1;i<=9;i++)add(String(i),'key',()=>press(String(i)),false);
   add('けす','key del',()=>press('del'),false);
   add('0','key',()=>press('0'),false);
-  if(st.locked)add('つぎ →','key next',next,true);
-  /* 「つぎへ」は 何回 おしても 同じなので、れんだの ロックは かけない
+  if(st.locked)add('つぎの もんだい→','key next wide',next,true);
+  /* 下の ます → 上の ますへ うつる ボタン。
+     「つぎ」は 他のアプリで「つぎの もんだい」の いみなので つかわない。
+     何回 おしても 同じなので、れんだの ロックは かけない
      （ロックすると すぐ あとの「こたえ」が きかなくなる） */
-  else if(st.pos===0)add('つぎへ ▶','key cont',cont,false);
+  else if(st.pos===0)add('うえへ ▲','key cont',cont,false);
   else add('こたえ','key enter',check,true);
   function add(label,cls,fn,guard){
     const b=document.createElement('button');
@@ -797,32 +799,28 @@ bindTap($('kBig'),()=>{if(!K.locked){K.pos=(K.pos===0)?1:0;kRender();}});
    レベル1 … 0〜1（1より 小さい 分数）
    レベル2 … 0〜2（1より 大きい 分数）　5もん れんぞく せいかいで あく
 ========================================================= */
-const L={lv:1,max:1,n:5,k:3,range:1,den:'',num:'',pos:0,unit:'',locked:false,hint:false,
+const L={lv:1,n:5,k:3,range:1,den:'',num:'',pos:0,unit:'',locked:false,hint:false,
   correct:0,total:0,streak:0};
 Object.assign(L,load('bunsuuLine',{}));
 L.locked=false;L.den='';L.num='';L.pos=0;L.hint=false;
-const LGOAL=5;
+const LGOAL=GOAL;   // 他のステップと 同じ 0/10
 
-function lSave(){save('bunsuuLine',{correct:L.correct,total:L.total,streak:L.streak,max:L.max});}
+function lSave(){save('bunsuuLine',{correct:L.correct,total:L.total,streak:L.streak});}
 function lScore(){
   $('lCorrect').textContent=L.correct;
   $('lTotal').textContent=L.total;
   $('lStreak').textContent=Math.min(L.streak,LGOAL)+'/'+LGOAL;
 }
+/* どちらも はじめから えらべる。
+   1をこえる分数は 同じ 単元の 中みなので、先生が 見せたい ときに すぐ 出せるようにする */
 function lOps(){
   const box=$('lOps');box.innerHTML='';
   [{v:1,t:'1より 小さい'},{v:2,t:'1より 大きい'}].forEach(o=>{
     const b=document.createElement('button');
-    const lock=(o.v>L.max);
     b.type='button';
-    b.className='op-btn'+(o.v===L.lv?' active':'')+(lock?' lock':'');
-    b.innerHTML=(lock?'🔒 ':'')+o.t;
+    b.className='op-btn'+(o.v===L.lv?' active':'');
+    b.textContent=o.t;
     bindTap(b,()=>{
-      if(lock){
-        $('lVerdict').className='verdict ng';
-        $('lVerdict').textContent=LGOAL+'もん れんぞくで せいかいすると あくよ';
-        refit();return;
-      }
       if(L.lv===o.v)return;
       L.lv=o.v;lOps();lNew();
     });
@@ -902,12 +900,8 @@ function lCheck(){
     let msg=(L.streak>=LGOAL?'すごい！ ':'よくできました！ ')+
       fracHTML(1,L.n)+' が <em>'+L.k+'こ分</em>の ところ';
     if(L.k===L.n)msg+='　'+fracHTML(L.n,L.n)+' は <em>1</em>と 同じ！';
-    if(L.streak>=LGOAL&&L.max<2){
-      L.max=2;msg+='<br>「1より 大きい」が あいたよ！';
-    }
     $('lVerdict').innerHTML=msg;
     if(L.streak>=LGOAL)L.streak=0;
-    lOps();
   }else{
     L.streak=0;
     $('lStage').classList.add('wrong');
