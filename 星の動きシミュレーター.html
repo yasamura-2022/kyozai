@@ -218,6 +218,23 @@ document.addEventListener('DOMContentLoaded', () => {
   const EQUI_K = 4/Math.PI;        // θ＝90°の 位置を、前の写し方と そろえるための ばい率
   const GROUND_H = 56;
 
+  /* ---- 空に 出す 名前（2026-09-06 に へらした） ----
+     出すもの
+       ・明るい星の 名前（星のデータの label:true）と 北極星
+       ・北斗七星・カシオペヤ座（星のデータの showName:true）
+         この2つは ふつうの 青い線で かいてあるので、名前が ないと
+         どちらか わからない。北の空の 学習の 主役でもある
+     出さないもの
+       ・そのほかの 星座名（こと座・わし座・やぎ座 など）
+         3〜4年の 観察では 使わない
+       ・目印の 名前（夏の大三角・秋の四辺形・冬の大三角）
+         ピンクや 金の 太い点線で かいてあるので、名前が なくても わかる
+     消した 名前は ぜんぶ 下の「南の空のポイント／北の空のポイント」の
+     カードに 書いてあるので、わからなく なることは ない。
+     名前を 空にも 出したく なったら、下の 2つを true にする。 */
+  const SHOW_FIG_NAMES  = false;   // 星座の名前（showName:true のものは いつも 出す）
+  const SHOW_MARK_NAMES = false;   // 夏の大三角・秋の四辺形・冬の大三角
+
   /* ================================================================
      星のデータ（J2000概算）
      形がくずれないように、たがいに星を共有する星座は
@@ -334,9 +351,9 @@ document.addEventListener('DOMContentLoaded', () => {
       /*12 */ {name:'北極星',    ra:2.53, dec:89.26, mag:2.0, color:'#ffd98e', polaris:true}
     ],
     figures:[
-      {name:'北斗七星', lines:[[0,1],[1,2],[2,3],[3,0],[3,4],[4,5],[5,6]],
+      {name:'北斗七星', showName:true, lines:[[0,1],[1,2],[2,3],[3,0],[3,4],[4,5],[5,6]],
        anchor:1, dx:-10, dy:26},
-      {name:'カシオペヤ座', lines:[[7,8],[8,9],[9,10],[10,11]], anchor:9, dx:12, dy:-16}
+      {name:'カシオペヤ座', showName:true, lines:[[7,8],[8,9],[9,10],[10,11]], anchor:9, dx:12, dy:-16}
     ],
     refStar:12   // 北極星を基準にして、そのまわりを回るようにする
   };
@@ -832,7 +849,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // ---- 星座の名前・大三角のラベル（あとでまとめて置く） ----
       if(!opt.ghost){
         group.figures.forEach(fig => {
-          if(fig.name){
+          if(fig.name && (SHOW_FIG_NAMES || fig.showName)){
             const a = pts[fig.anchor];
             if(a && a.on){
               // 最初の候補（+10,-6）がもとの位置と重なるようにずらしておく
@@ -841,7 +858,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 color:`rgba(200,210,235,${0.85*alpha})` });
             }
           }
-          if(fig.centerLabel && fig.centerIdx){
+          if(SHOW_MARK_NAMES && fig.centerLabel && fig.centerIdx){
             const vs = fig.centerIdx.map(i => pts[i]);
             if(vs.every(p => p.on)){
               centerLabels.push({
