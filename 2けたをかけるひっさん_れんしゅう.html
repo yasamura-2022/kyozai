@@ -163,6 +163,8 @@
     font-size:calc(clamp(17px, calc(var(--fh,100vh) * 0.046), 34px) * var(--shrink,1))}
   .fcell{width:1.5em;height:1.35em;display:flex;align-items:center;justify-content:center;line-height:1}
   .fcell.op{color:#6f5d3d}
+  /* いま つかっている かける数の 数字（1だんめは 一の位、2だんめは 十の位） */
+  .fcell.use{background:var(--flash);border-radius:6px}
   .fbar{grid-column:1 / -1;height:3px;background:var(--ink);border-radius:2px;margin:2px 0}
   .fcell .fld{min-width:1.5ch;padding:0 2px;border-width:3px}
   /* 位の 見出し（百・十・一）。どこに かくかを 見わける ため */
@@ -342,15 +344,15 @@
       <div class="split" id="mSplit"></div>
       <p class="say" id="mSay"></p>
       <div class="rooms">
-        <div class="room ones">
-          <span class="rlab" id="mOneLab"></span>
-          <div class="rbody"><div class="mgrid" id="mOneBody"></div></div>
-          <div class="rval" id="mOneVal"></div>
-        </div>
         <div class="room tens">
           <span class="rlab" id="mTenLab"></span>
           <div class="rbody"><div class="mgrid" id="mTenBody"></div></div>
           <div class="rval" id="mTenVal"></div>
+        </div>
+        <div class="room ones">
+          <span class="rlab" id="mOneLab"></span>
+          <div class="rbody"><div class="mgrid" id="mOneBody"></div></div>
+          <div class="rval" id="mOneVal"></div>
         </div>
       </div>
       <p class="total" id="mTotal"></p>
@@ -491,9 +493,13 @@ function numRow(v,cols,offset,cls){
   });
   return h;
 }
-function opRow(v,cols,cls){
+function opRow(v,cols,cls,use){
   let h='<div class="fcell op">×</div>';
-  placeDigits(v,cols,0).forEach(d=>{h+='<div class="fcell '+(cls||'')+'">'+d+'</div>';});
+  placeDigits(v,cols,0).forEach((d,i)=>{
+    const pos=cols-1-i;
+    const on=(use!=null&&pos===use&&d!=='');
+    h+='<div class="fcell '+(cls||'')+(on?' use':'')+'">'+d+'</div>';
+  });
   return h;
 }
 
@@ -538,29 +544,29 @@ function mRender(){
   /* かける数の 分けかた */
   $('mSplit').innerHTML=(st===0)
     ? b+' <span style="color:#a99a7c">→</span> <span class="tag t10">'+t0+'</span> <span class="tag t1">'+o+'</span>'
-    : '<span class="tag t1">'+o+'こ分</span> と <span class="tag t10">'+t0+'こ分</span>';
+    : '<span class="tag t10">'+t0+'こ分</span> と <span class="tag t1">'+o+'こ分</span>';
 
   /* へや */
   $('mOneLab').innerHTML=o+'こ分';
   $('mTenLab').innerHTML=t0+'こ分';
-  $('mOneBody').innerHTML=(st>=1)?mknHTML(o):'';
-  $('mTenBody').innerHTML=(st>=2)?mknHTML(t0):'';
-  $('mOneVal').innerHTML=(st>=1)?(a+'×'+o+'＝'+p1):'';
-  $('mTenVal').innerHTML=(st>=2)
+  $('mTenBody').innerHTML=(st>=1)?mknHTML(t0):'';
+  $('mOneBody').innerHTML=(st>=2)?mknHTML(o):'';
+  $('mTenVal').innerHTML=(st>=1)
     ? ('<span class="sm">'+a+'×'+t+'＝'+(a*t)+' の 10倍</span>'+a+'×'+t0+'＝'+p2):'';
+  $('mOneVal').innerHTML=(st>=2)?(a+'×'+o+'＝'+p1):'';
 
   /* せつめい */
   const say=$('mSay');
   if(st===0)say.innerHTML='かける数の '+b+' を <span class="tn">'+t0+'</span> と <span class="on">'+o+'</span> に わけます';
-  else if(st===1)say.innerHTML='<span class="on">'+o+'こ分</span>の ねだんは '+a+'×'+o+'＝<span class="on">'+p1+'</span>';
-  else if(st===2)say.innerHTML='<span class="tn">'+t0+'こ分</span>は '+a+'×'+t+'＝'+(a*t)+' の 10倍で <span class="tn">'+p2+'</span>';
+  else if(st===1)say.innerHTML='<span class="tn">'+t0+'こ分</span>は '+a+'×'+t+'＝'+(a*t)+' の 10倍で <span class="tn">'+p2+'</span>';
+  else if(st===2)say.innerHTML='<span class="on">'+o+'こ分</span>の ねだんは '+a+'×'+o+'＝<span class="on">'+p1+'</span>';
   else if(st===3)say.innerHTML='2つを あわせると <span class="ans">'+a+'×'+b+'＝'+all+'</span>';
   else say.innerHTML='筆算では <span class="tn">'+p2+'</span> の <span class="sm">0</span> を かかずに、<br>'+
        '<span class="tn">'+(a*t)+'</span> を <span class="tn">十の位</span>から かきます';
 
   const tot=$('mTotal');
-  if(st===2)tot.innerHTML='<span class="on">'+p1+'</span> と <span class="tn">'+p2+'</span> で <span class="q">？</span>';
-  else if(st===3)tot.innerHTML='<span class="on">'+p1+'</span> と <span class="tn">'+p2+'</span> で <span class="ans">'+all+'</span>';
+  if(st===2)tot.innerHTML='<span class="tn">'+p2+'</span> と <span class="on">'+p1+'</span> で <span class="q">？</span>';
+  else if(st===3)tot.innerHTML='<span class="tn">'+p2+'</span> と <span class="on">'+p1+'</span> で <span class="ans">'+all+'</span>';
   else tot.innerHTML='';
 
   /* さいごに 筆算の かたちを 見せる */
@@ -703,8 +709,8 @@ function oDraw(){
   const a=O.a,b=O.b,t=Math.floor(b/10),o=b%10;
   const p1=a*o,q=a*t,all=a*b;
   const cols=String(all).length;
-  $('oQ').innerHTML=a+' × '+b+' の 2つの こたえを、ひっ算の ますに おこう'+
-    '<br><span class="hi">ふだの 右はし</span>を どの ますに おく？';
+  $('oQ').innerHTML=a+' × '+b+' の 2つの こたえを ひっ算に かこう'+
+    '<br>この ふだは <span class="hi">どの位から</span> かく？　その ますに おいてね';
 
   /* ふだ */
   const tray=$('oTray');tray.innerHTML='';
@@ -1041,7 +1047,7 @@ function hRender(){
   let h='<div class="fgrid" style="grid-template-columns:repeat('+(cols+1)+',auto)">';
   h+=labelRow(cols);
   h+=numRow(a,cols,0,'');
-  h+=opRow(b,cols,'');
+  h+=opRow(b,cols,'',H.locked?null:(H.idx===0?0:(H.idx===1?1:null)));
   h+='<div class="fbar"></div>';
   h+=fieldRow(0);
   h+=fieldRow(1);
@@ -1056,11 +1062,11 @@ function hRender(){
   else{
     const f=hField(H.idx),v=H.vals[H.idx],done=(v.length>=hNeed(H.idx));
     let head;
-    if(H.idx===0)head='<span class="on">1だんめ</span>　'+a+' に 一の位の '+o+' を かける';
-    else if(H.idx===1)head='<span class="tn">2だんめ</span>　'+a+' に 十の位の '+t+' を かける';
-    else head='2つを たす';
+    if(H.idx===0)head='<span class="on">1だんめ</span>　'+a+' × '+o;
+    else if(H.idx===1)head='<span class="tn">2だんめ</span>　'+a+' × '+t;
+    else head='1だんめと 2だんめを たす';
     ask.innerHTML=head+'　'+(done?'<span class="hi">こたえ</span> を おそう'
-                                :'つぎは <span class="hi">'+kurai(f.off+v.length)+'</span>');
+                                :'かくのは <span class="hi">'+kurai(f.off+v.length)+'</span>');
   }
   if(H.hint&&!H.locked){
     let t2;
