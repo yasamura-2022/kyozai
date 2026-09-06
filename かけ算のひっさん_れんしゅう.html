@@ -924,9 +924,17 @@ function s3Press(v){
 function s3Check(){
   if(S3.locked)return;
   const p=s3Parts(),i=S3.idx;
-  if(S3.vals[i]==='')return;
   const want=[p.p1,p.t*S3.b,p.all][i];
   const v=$('sVerdict');
+  /* まだ 入れ終わって いないうちは 丸つけしない（まちがい あつかいに しない） */
+  const need=String(want).length;
+  if(S3.vals[i].length<need){
+    v.className='verdict';
+    v.innerHTML=(i===2)
+      ? 'まだ とちゅうだよ　つぎは <span class="hi">'+['一の位','十の位','百の位'][Math.min(S3.vals[i].length,2)]+'</span>'
+      : 'まだ とちゅうだよ';
+    refit();return;
+  }
   if(parseInt(S3.vals[i],10)===want){
     if(i<2){
       S3.idx++;

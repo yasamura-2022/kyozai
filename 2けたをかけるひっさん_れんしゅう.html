@@ -959,8 +959,14 @@ function kPress(v){
 function kCheck(){
   if(K.locked)return;
   const p=kParts(),i=K.idx;
-  if(K.vals[i]==='')return;
   const v=$('sVerdict');
+  const kurai=['一の位','十の位','百の位','千の位'];
+  if(K.vals[i].length<kNeed(i)){
+    v.className='verdict';
+    v.innerHTML='まだ とちゅうだよ　つぎは <span class="hi">'+
+      kurai[Math.min((i===1?K.vals[i].length+1:K.vals[i].length),3)]+'</span>';
+    refit();return;
+  }
   if(parseInt(K.vals[i],10)===kWant(i)){
     if(i<2){
       K.idx++;
@@ -1093,7 +1099,7 @@ function hRender(){
   if(H.locked)ask.innerHTML='';
   else if(H.memoFocus!==null){
     ask.innerHTML='<span class="hi">メモ</span>に くり上がりを かこう'+
-      '（もう一回 おすと やめる）';
+      '（1つ 入れると もどります）';
   }
   else{
     const f=hField(H.idx),v=H.vals[H.idx],done=(v.length>=hNeed(H.idx));
@@ -1143,6 +1149,7 @@ function hPress(v){
   if(H.locked)return;
   if(H.memoFocus!==null){
     H.memo[H.memoFocus]=(v==='del')?'':v;
+    H.memoFocus=null;          /* 1つ 入れたら こたえの ますに もどす */
     hRender();return;
   }
   const i=H.idx;
@@ -1152,10 +1159,17 @@ function hPress(v){
 }
 function hCheck(){
   if(H.locked)return;
-  H.memoFocus=null;
+  if(H.memoFocus!==null){   /* メモを えらんで いるだけ。やめるだけに する */
+    H.memoFocus=null;hRender();return;
+  }
   const i=H.idx;
-  if(H.vals[i]==='')return;
   const v=$('hVerdict');
+  if(H.vals[i].length<hNeed(i)){
+    v.className='verdict';
+    v.innerHTML='まだ とちゅうだよ　つぎは <span class="hi">'+
+      ['一の位','十の位','百の位','千の位','万の位'][Math.min(hField(i).off+H.vals[i].length,4)]+'</span>';
+    refit();return;
+  }
   if(parseInt(H.vals[i],10)===hField(i).want){
     if(i<2){
       H.idx++;H.hint=false;hClearMemo();$('hHintBtn').classList.remove('on');
