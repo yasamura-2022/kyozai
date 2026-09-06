@@ -182,8 +182,10 @@ body.kimari #kukuCard{display:none}
   padding:10px 16px;font-size:clamp(14px,1.5vw,20px);transition:transform .08s,background .2s}
 .btn:active{transform:translateY(2px);background:#E7EEF7}
 .btn:disabled{opacity:.38;cursor:default}
-.btn.main{background:var(--gold);color:#3A2600;border-color:var(--gold-d);font-weight:700;flex:1;min-width:180px}
-.btn.main:active{background:var(--gold-d);color:#fff}
+/* 青＝同じ画面の中で 先へ すすむ（ほかの算数アプリと そろえる。
+   金は「答え合わせ」に とってあるので すすむボタンには 使わない） */
+.btn.main{background:#2f6fa8;color:#fff;border-color:#22527d;font-weight:700;flex:1;min-width:180px}
+.btn.main:active{background:#22527d;color:#fff}
 .btn.sm{padding:7px 11px;font-size:clamp(12px,1.15vw,15px)}
 .btn.tog[aria-pressed="true"]{background:var(--gold);color:#3A2600;border-color:var(--gold-d);font-weight:700}
 body.kimari .wbtn{display:none}

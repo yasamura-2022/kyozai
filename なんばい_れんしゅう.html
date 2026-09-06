@@ -190,6 +190,7 @@
   .btn:active{transform:translateY(2px)}
   .btn.show{background:var(--gold);box-shadow:0 4px 0 #a5811a}
   .btn.next{background:#5a8a4c;box-shadow:0 4px 0 #446838}
+  .btn.play{background:#2f6fa8;box-shadow:0 4px 0 #22527d}
   .btn.sub{background:#a99a7c;box-shadow:0 4px 0 #85795f}
   .btn:disabled{opacity:.45;box-shadow:none}
 
@@ -258,8 +259,8 @@
     padding:calc(clamp(2px, calc(var(--fh,100vh) * 0.011), 9px) * var(--shrink,1)) 0;transition:transform .07s,background .1s}
   .key:active{transform:translateY(2px);background:#fff4df}
   .key.del{background:#e6d3a8;box-shadow:0 3px 0 #c9b47f}
-  .key.enter{background:var(--ok);color:#fff;box-shadow:0 3px 0 #446838}
-  .key.next{background:var(--gold);color:#fff;box-shadow:0 3px 0 #a5811a}
+  .key.enter{background:var(--gold);color:#fff;box-shadow:0 3px 0 #a5811a}
+  .key.next{background:var(--ok);color:#fff;box-shadow:0 3px 0 #446838}
 
   #zStage{gap:10px}
   .drill-main{flex:1;min-height:0;display:flex;flex-direction:column;gap:6px}
@@ -341,8 +342,8 @@
     <div class="table" id="tTable"></div>
     <div class="actions">
       <button class="btn sub" id="tBack">◀ もどす</button>
-      <button class="btn next" id="tAdd">ならべる ▶</button>
-      <button class="btn show" id="tReset">はじめから</button>
+      <button class="btn play" id="tAdd">ならべる ▶</button>
+      <button class="btn sub" id="tReset">はじめから</button>
     </div>
   </div>
 
