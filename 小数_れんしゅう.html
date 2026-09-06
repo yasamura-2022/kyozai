@@ -1,0 +1,1258 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>小数</title>
+<style>
+  :root{
+    --ink:#2b2118;
+    --paper:#fdf6e3;
+    --card:#fffdf7;
+    --line:#e7d9b8;
+    --gold:#c9a227;
+    --ok:#5a8a4c;
+    --ng:#d34b4b;
+    --flash:#ffe14d;
+  }
+  /* このアプリの色（小数）
+     UIは青（＝つづきの ボタンも 青）。水は 水色（教科書と 同じ） */
+  body{--accent:#3a6ea5;--accent-dark:#2a5279;--accent-soft:#e6eef7;
+       --water:#8fcbe8;--water-dark:#2f7396;--water-soft:#dcf0fa}
+
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:'Hiragino Maru Gothic ProN','Yu Gothic',sans-serif;
+    background:
+      radial-gradient(circle at 15% 10%,#fef0d0 0,transparent 40%),
+      radial-gradient(circle at 85% 90%,#fbe6cf 0,transparent 45%),
+      var(--paper);
+    color:var(--ink);
+    display:flex;flex-direction:column;align-items:center;
+    position:fixed;inset:0;width:100%;
+    height:var(--fh,100dvh);
+    padding:6px 8px 10px;
+    overflow:hidden;
+    overscroll-behavior:none;
+    touch-action:manipulation;
+  }
+  /* iPadでのダブルタップ拡大・長押し選択によるタップ抜けを防ぐ */
+  button{
+    touch-action:manipulation;
+    -webkit-user-select:none;user-select:none;
+    -webkit-touch-callout:none;
+  }
+  .app{width:100%;max-width:560px;height:100%;display:flex;flex-direction:column;gap:6px;min-height:0}
+  #viewMizu,#viewYomu,#viewTani,#viewKeisan{flex:1;min-height:0;display:flex;flex-direction:column;gap:6px}
+
+  header{text-align:center}
+  h1{font-size:clamp(17px,4.6vw,24px);letter-spacing:.04em}
+  h1 .em{color:var(--accent)}
+
+  /* 学習ステップ タブ */
+  .tabs{display:flex;gap:6px;margin-bottom:2px}
+  .tab{
+    flex:1;border:2px solid var(--line);border-radius:14px;background:var(--card);
+    padding:10px 4px;cursor:pointer;color:#8a7a5f;font-weight:800;
+    font-size:clamp(11px,2.9vw,15px);display:flex;flex-direction:column;align-items:center;gap:1px;
+    line-height:1.15;word-break:keep-all;
+    transition:transform .08s;
+  }
+  .tab .step{font-size:11px;font-weight:700;opacity:.7}
+  .tab.on{color:var(--ink);border-color:var(--gold);background:#fffdf7;box-shadow:0 3px 0 #a5811a}
+  .tab.on .step{color:var(--gold);opacity:1}
+  .tab:active{transform:translateY(1px)}
+
+  /* もんだいカード（共通） */
+  .stage{
+    background:var(--card);border:3px solid var(--line);border-radius:18px;
+    padding:10px 12px;text-align:center;transition:border-color .2s,background .2s;
+    display:flex;flex-direction:column;justify-content:center;gap:6px;overflow:hidden;
+  }
+  .stage.correct{border-color:var(--ok);background:#f2f9ee}
+  .stage.wrong{border-color:var(--ng);background:#fcf0f0}
+  .verdict{min-height:1.3em;font-weight:800;line-height:1.35;
+    font-size:calc(clamp(12px,3.3vw,16px) * var(--shrink,1))}
+  .verdict.ok{color:var(--ok)}
+  .verdict.ng{color:var(--ng)}
+  .verdict em{font-style:normal;color:var(--accent-dark)}
+
+  .sect{text-align:left;font-weight:800;letter-spacing:.08em;color:#a99a7c;margin-bottom:-2px;
+    font-size:calc(clamp(10px,2.8vw,13px) * var(--shrink,1))}
+  .ask{font-weight:800;color:#8a7a5f;font-size:calc(clamp(12px,3.4vw,16px) * var(--shrink,1))}
+  .askrow{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap}
+  .hintbtn{flex:none;border:2px solid var(--line);border-radius:12px;background:#fff;color:#8a7a5f;
+    font-weight:800;padding:6px 16px;cursor:pointer;
+    font-size:calc(clamp(12px,3.2vw,15px) * var(--shrink,1));
+    min-height:calc(40px * var(--shrink,1))}
+  .hintbtn.on{background:var(--flash);border-color:var(--gold);color:var(--ink)}
+
+  .big{font-weight:800;color:var(--accent-dark);line-height:1.15;
+    display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:.05em;
+    font-variant-numeric:tabular-nums;
+    font-size:calc(clamp(20px, calc(var(--fh,100vh) * 0.058), 42px) * var(--shrink,1))}
+  .big.water{color:var(--water-dark)}
+  .big .u{font-size:.55em;margin-left:.1em}
+  .big .same{margin-left:.24em}
+  .yomi{color:#8a7a5f;font-weight:800;
+    font-size:calc(clamp(11px,3.1vw,15px) * var(--shrink,1))}
+  .say{line-height:1.8;font-weight:700;color:#5d5040;word-break:keep-all;
+    font-size:calc(clamp(12px, calc(var(--fh,100vh) * 0.028), 18px) * var(--shrink,1))}
+  .say b{color:var(--water-dark)}
+  .say .w{color:var(--accent-dark)}
+  .navi{font-weight:800;color:var(--accent-dark);
+    font-size:calc(clamp(12px,3.3vw,16px) * var(--shrink,1))}
+
+  /* 分数の かたち（0.1＝1/10 を 見せる ときだけ つかう）
+     文の 中に 入るので、たての まん中で そろえる（下がると 行から はみ出して 見える） */
+  .frac{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;
+    vertical-align:middle;line-height:1.06;margin:0 .16em;font-size:.8em;position:relative;top:-.06em}
+  .frac .fn{padding:0 .24em}
+  .frac .fd{padding:0 .24em;border-top:.09em solid currentColor;margin-top:.06em}
+
+  /* ===== 1L ます ===== */
+  .masuwrap{display:flex;gap:10px;justify-content:center;align-items:flex-end;flex-wrap:wrap}
+  .mcol{display:flex;flex-direction:column;align-items:stretch}
+  .mlab{text-align:right;font-weight:800;color:#8a7a5f;line-height:1;padding-right:2px;
+    font-size:calc(clamp(10px,2.8vw,13px) * var(--shrink,1))}
+  .masu{position:relative;background:#fff;overflow:hidden;
+    border:3px solid #8a7a5f;border-top:none;border-radius:0 0 10px 10px;
+    width:calc(clamp(50px, calc(var(--fh,100vh) * 0.115), 108px) * var(--shrink,1));
+    height:calc(clamp(66px, calc(var(--fh,100vh) * 0.195), 186px) * var(--shrink,1));
+    font-size:calc(clamp(9px, calc(var(--fh,100vh) * 0.022), 15px) * var(--shrink,1))}
+  /* ますが たくさん ならぶ ときは 小さくする */
+  .masu.sm{width:calc(clamp(40px, calc(var(--fh,100vh) * 0.075), 74px) * var(--shrink,1));
+    height:calc(clamp(52px, calc(var(--fh,100vh) * 0.13), 124px) * var(--shrink,1))}
+  .masu .water{position:absolute;left:0;right:0;bottom:0;
+    background:linear-gradient(180deg,#aadcf3,var(--water));
+    border-top:2px solid var(--water-dark);transition:height .3s}
+  /* 目もりは 水より 上に かく。水に かくれると 何こ分か 数えられない */
+  .masu .mk{position:absolute;left:0;height:2px;background:#8a7a5f;width:26%;z-index:2}
+  .masu .mk.half{width:44%}
+  .masu .mkl{position:absolute;left:30%;transform:translateY(-50%);color:#6f5d3d;font-weight:800;
+    font-size:.72em;line-height:1;z-index:2}
+  .masu .mkl.now{color:var(--water-dark);background:rgba(255,255,255,.82);border-radius:4px;padding:0 2px}
+  .masu.hi{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+
+  /* ===== 1cm を 10等分した テープ（長さの ヒント） ===== */
+  .cmwrap{display:flex;gap:5px;justify-content:center;align-items:flex-end;flex-wrap:wrap}
+  .cmcol{display:flex;flex-direction:column}
+  .cmlab{text-align:center;font-weight:800;color:#8a7a5f;line-height:1.1;
+    font-size:calc(clamp(9px,2.4vw,12px) * var(--shrink,1))}
+  /* 1本しか 出さない ときは 大きく 見せる（--cmw で ばいりつを かえる） */
+  .cmbar{display:flex;border:2px solid #8a7a5f;border-radius:5px;overflow:hidden;background:#fff;
+    width:calc(clamp(34px, calc(var(--fh,100vh) * 0.05), 52px) * var(--shrink,1) * var(--cmw,1));
+    height:calc(clamp(16px, calc(var(--fh,100vh) * 0.028), 26px) * var(--shrink,1) * var(--cmh,1))}
+  .cmbar .c{flex:1 1 0;border-right:1px solid #cbbb96}
+  .cmbar .c:last-child{border-right:0}
+  .cmbar .c.on{background:var(--water)}
+
+  /* ===== 数直線 ===== */
+  .nl{position:relative;width:100%;max-width:520px;margin:0 auto;
+    height:calc(clamp(60px, calc(var(--fh,100vh) * 0.16), 120px) * var(--shrink,1));
+    font-size:calc(clamp(11px, calc(var(--fh,100vh) * 0.025), 17px) * var(--shrink,1))}
+  .nl .axis{position:absolute;left:0;right:0;top:56%;border-top:3px solid #9a8763}
+  .nl .t{position:absolute;top:56%;background:#9a8763;transform:translate(-50%,-50%)}
+  .nl .t.minor{width:2px;height:12px}
+  .nl .t.major{width:3px;height:24px}
+  .nl .lab{position:absolute;top:calc(56% + 1.5em);transform:translateX(-50%);
+    font-weight:800;color:#6f5d3d}
+  .nl .fr{position:absolute;top:calc(56% - 2.1em);transform:translateX(-50%);
+    color:#b9a67f;font-weight:800;font-size:.8em}
+  .nl .arw{position:absolute;top:calc(56% + .05em);transform:translateX(-50%);
+    color:var(--water-dark);font-weight:800;line-height:1;font-size:1.35em}
+
+  /* ===== 数を 入れる わく ===== */
+  .fld{display:inline-block;min-width:1.4em;padding:0 .1em;border-radius:8px;
+    border:3px dashed var(--line);background:#fff;color:var(--ink);font-weight:800;line-height:1.15;
+    text-align:center}
+  .fld.empty{color:#c7b891}
+  .fld.on{border-style:solid;border-color:var(--accent);background:var(--flash);animation:glow 1.2s infinite}
+  .fld.done{border-style:solid;border-color:var(--ok);background:#eaf5e4}
+  @keyframes glow{0%,100%{box-shadow:0 0 0 0 rgba(0,0,0,0)}50%{box-shadow:0 0 0 5px var(--accent-soft)}}
+  .dot{color:var(--ng);font-weight:800;padding:0 .04em}
+
+  /* ===== もんだいの 文（たんいと 小数） ===== */
+  .qtext{font-weight:800;color:var(--ink);line-height:1.9;word-break:keep-all;
+    font-size:calc(clamp(14px, calc(var(--fh,100vh) * 0.036), 24px) * var(--shrink,1))}
+  .qtext .u{font-size:.72em;margin:0 .08em;color:#6f5d3d}
+  .qans{margin-top:.2em}
+
+  /* ===== 筆算 ===== */
+  .hgrid{display:inline-grid;grid-auto-rows:min-content;gap:0 1px;margin:0 auto;
+    font-variant-numeric:tabular-nums;font-weight:800;
+    font-size:calc(clamp(19px, calc(var(--fh,100vh) * 0.052), 38px) * var(--shrink,1))}
+  .hcell{width:1.5em;height:1.35em;display:flex;align-items:center;justify-content:center;line-height:1}
+  .hcell.op{color:#6f5d3d}
+  /* 小数点の れつ。ここが たてに そろっている ことを 色で 見せる */
+  .hdot{width:.6em;height:1.35em;display:flex;align-items:flex-end;justify-content:center;
+    line-height:1;padding-bottom:.16em;background:#fff6d9;color:#6f5d3d}
+  .hdot.ans{color:var(--ng)}
+  .hbar{grid-column:1 / -1;height:3px;background:var(--ink);border-radius:2px;margin:2px 0}
+  .hcell .fld{min-width:1.4ch;padding:0 2px;border-width:3px}
+  /* 自分で 入れた 数では ないことを 見せる（7を 7.0 と 考える ときの 0） */
+  .zero{color:#c0ae86;border-bottom:2px dotted #c0ae86}
+  /* くり上がりなどの メモらん。丸つけは しない（紙と 同じ） */
+  .hmemo{height:.95em;display:flex;align-items:flex-end;justify-content:center}
+  .hmemo .mbox{border:2px dotted #c0ae86;border-radius:5px;background:#fff;color:#8a7a5f;
+    font-size:.46em;min-width:1.5em;line-height:1.25;cursor:pointer}
+  .hmemo .mbox.on{border-style:solid;border-color:var(--accent);background:var(--flash);color:var(--ink)}
+  .hnote{color:#8a7a5f;font-weight:800;line-height:1.35;min-height:1.35em;
+    font-size:calc(clamp(12px, calc(var(--fh,100vh) * 0.028), 17px) * var(--shrink,1))}
+  .hnote b{color:var(--accent-dark)}
+
+  /* ===== えらぶ ボタン（もんだいの しゅるい・レベル） ===== */
+  .ops{display:flex;gap:6px}
+  .op-btn{
+    position:relative;flex:1;border-radius:14px;padding:8px 2px;
+    font-size:clamp(11px,3.1vw,15px);font-weight:700;cursor:pointer;
+    background:var(--card);color:var(--ink);border:2px solid var(--line);transition:transform .08s;
+    white-space:nowrap;
+  }
+  .op-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);box-shadow:0 3px 0 var(--accent-dark)}
+  .op-btn:active{transform:translateY(2px)}
+  .lvbar{display:flex;gap:5px;justify-content:center;flex-wrap:wrap}
+  .lvtag{border:2px solid var(--line);border-radius:12px;background:#fff;padding:4px 9px;
+    font-weight:800;color:#8a7a5f;cursor:pointer;white-space:nowrap;
+    font-size:calc(clamp(11px,2.9vw,14px) * var(--shrink,1))}
+  .lvtag.on{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 3px 0 var(--accent-dark)}
+
+  /* ===== てんすう ===== */
+  .score{display:flex;gap:8px}
+  .score .box{flex:1;background:var(--card);border:2px solid var(--line);border-radius:12px;padding:6px 4px;text-align:center}
+  .score .n{font-size:clamp(19px,5.5vw,24px);font-weight:800;font-variant-numeric:tabular-nums;line-height:1}
+  .score .t{font-size:10px;color:#8a7a5f;margin-top:2px}
+  .score .streak .n{color:var(--gold)}
+  .score .correct .n{color:var(--ok)}
+
+  /* ===== ボタン =====
+     青＝おなじ もんだいの 中で つづき ／ 金＝こたえあわせ ／ みどり＝つぎの もんだい */
+  .actions{display:flex;gap:8px}
+  .btn{flex:1;border:none;border-radius:14px;padding:13px 4px;font-size:clamp(14px,4vw,18px);
+    font-weight:800;cursor:pointer;transition:transform .08s;color:#fff}
+  .btn:active{transform:translateY(2px)}
+  .btn.play{background:var(--accent);box-shadow:0 4px 0 var(--accent-dark)}
+  .btn.show{background:var(--gold);box-shadow:0 4px 0 #a5811a}
+  .btn.next{background:#5a8a4c;box-shadow:0 4px 0 #446838}
+  .btn.sub{background:#a99a7c;box-shadow:0 4px 0 #85795f}
+  .btn:disabled{opacity:.45;box-shadow:none}
+
+  /* ===== テンキー ===== */
+  .pad{display:grid;grid-template-columns:repeat(3,1fr);gap:calc(min(6px, calc(var(--fh,100vh) * 0.009)) * var(--shrink,1));flex-shrink:0}
+  .key{border:2px solid var(--line);border-radius:14px;background:#fff;
+    font-size:calc(clamp(15px, calc(var(--fh,100vh) * 0.038), 24px) * var(--shrink,1));
+    font-weight:800;cursor:pointer;color:var(--ink);
+    padding:calc(clamp(2px, calc(var(--fh,100vh) * 0.011), 9px) * var(--shrink,1)) 0;transition:transform .07s,background .1s}
+  .key:active{transform:translateY(2px);background:#fff4df}
+  .key.del{background:#e6d3a8;box-shadow:0 3px 0 #c9b47f}
+  .key.cont{background:var(--accent);color:#fff;box-shadow:0 3px 0 var(--accent-dark)}
+  .key.enter{background:var(--gold);color:#fff;box-shadow:0 3px 0 #a5811a}
+  .key.next{background:var(--ok);color:#fff;box-shadow:0 3px 0 #446838}
+  .key.wide{font-size:.68em;white-space:normal;line-height:1.15;word-break:keep-all;padding-left:2px;padding-right:2px}
+
+  .drill-main{flex:1;min-height:0;display:flex;flex-direction:column;gap:6px}
+  .drill-main .stage{flex:1;min-height:0}
+  #viewMizu .stage{flex:1;min-height:0}
+
+  .tabs,.score,.actions,.ops,.lvbar{flex-shrink:0}
+  .hidden{display:none !important}
+
+  @media(max-height:720px){
+    h1{font-size:16px}
+    .tab{padding:7px 4px;font-size:13px}
+    .tab .step{font-size:10px}
+    .op-btn{padding:6px 2px;font-size:13px}
+    .score .box{padding:3px}
+    .score .n{font-size:20px}
+    .score .t{font-size:9px}
+  }
+  @media(max-height:560px){
+    header{display:none}
+    .app{gap:5px}
+    #viewMizu,#viewYomu,#viewTani,#viewKeisan{gap:5px}
+  }
+  /* 横向き（iPad横など）：もんだいと テンキーを 左右2列に */
+  @media(orientation:landscape) and (max-height:820px){
+    header{display:none}
+    .app{gap:5px;max-width:min(96vw,880px)}
+    #viewYomu,#viewTani,#viewKeisan{gap:5px}
+    .drill-main{flex-direction:row;gap:10px;align-items:stretch}
+    .drill-main .stage{flex:1 1 60%;min-width:0;padding:10px 14px}
+    .drill-main .pad{flex:0 0 auto;width:min(40%,300px);align-content:center}
+    .key{font-size:calc(clamp(15px, calc(var(--fh,100vh) * 0.042), 23px) * var(--shrink,1));padding:calc(clamp(4px, calc(var(--fh,100vh) * 0.018), 13px) * var(--shrink,1)) 2px;white-space:nowrap}
+    .tab{padding:6px 4px;font-size:13px}
+    .tab .step{font-size:10px}
+    .score .box{padding:3px}
+    .score .n{font-size:19px}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header><h1><span class="em">小数</span></h1></header>
+
+  <div class="tabs">
+    <button class="tab on" data-v="mizu"><span class="step">ステップ１</span>1Lますで 見る</button>
+    <button class="tab" data-v="yomu"><span class="step">ステップ２</span>よんで かく</button>
+    <button class="tab" data-v="tani"><span class="step">ステップ３</span>たんいと 小数</button>
+    <button class="tab" data-v="keisan"><span class="step">ステップ４</span>たし算 ひき算</button>
+  </div>
+
+  <!-- ============ ステップ１：1Lますで 見る ============ -->
+  <div id="viewMizu">
+    <div class="stage" id="mStage">
+      <div class="sect">1L の ます</div>
+      <div class="masuwrap" id="mMasu"></div>
+      <div class="big water" id="mBig"></div>
+      <div class="yomi" id="mYomi"></div>
+      <p class="say" id="mSay"></p>
+    </div>
+    <div class="actions">
+      <button class="btn sub" id="mBack">◀ もどす</button>
+      <button class="btn play" id="mGo">10等分する ▶</button>
+      <button class="btn sub" id="mReset">はじめから</button>
+    </div>
+  </div>
+
+  <!-- ============ ステップ２：よんで かく ============ -->
+  <div id="viewYomu" class="hidden">
+    <div class="ops" id="yOps"></div>
+    <div class="score">
+      <div class="box correct"><div class="n" id="yCorrect">0</div><div class="t">せいかい</div></div>
+      <div class="box"><div class="n" id="yTotal">0</div><div class="t">やったもんだい</div></div>
+      <div class="box streak"><div class="n" id="yStreak">0/10</div><div class="t">れんぞく</div></div>
+    </div>
+    <div class="drill-main">
+      <div class="stage" id="yStage">
+        <div class="askrow">
+          <div class="ask" id="yAsk"></div>
+          <button class="hintbtn" id="yHintBtn" type="button">ヒント</button>
+        </div>
+        <div id="yFig"></div>
+        <div class="big" id="yBig"></div>
+        <div class="navi" id="yNavi"></div>
+        <div class="verdict" id="yVerdict"></div>
+      </div>
+      <div class="pad" id="yPad"></div>
+    </div>
+  </div>
+
+  <!-- ============ ステップ３：たんいと 小数 ============ -->
+  <div id="viewTani" class="hidden">
+    <div class="ops" id="tOps"></div>
+    <div class="score">
+      <div class="box correct"><div class="n" id="tCorrect">0</div><div class="t">せいかい</div></div>
+      <div class="box"><div class="n" id="tTotal">0</div><div class="t">やったもんだい</div></div>
+      <div class="box streak"><div class="n" id="tStreak">0/10</div><div class="t">れんぞく</div></div>
+    </div>
+    <div class="drill-main">
+      <div class="stage" id="tStage">
+        <div class="askrow">
+          <div class="ask">□に あてはまる 数を 入れよう</div>
+          <button class="hintbtn" id="tHintBtn" type="button">ヒント</button>
+        </div>
+        <div class="qtext" id="tQ"></div>
+        <div id="tFig"></div>
+        <p class="say" id="tSay"></p>
+        <div class="navi" id="tNavi"></div>
+        <div class="verdict" id="tVerdict"></div>
+      </div>
+      <div class="pad" id="tPad"></div>
+    </div>
+  </div>
+
+  <!-- ============ ステップ４：たし算・ひき算 ============ -->
+  <div id="viewKeisan" class="hidden">
+    <div class="ops" id="kOps"></div>
+    <div class="lvbar" id="kLv"></div>
+    <div class="score">
+      <div class="box correct"><div class="n" id="kCorrect">0</div><div class="t">せいかい</div></div>
+      <div class="box"><div class="n" id="kTotal">0</div><div class="t">やったもんだい</div></div>
+      <div class="box streak"><div class="n" id="kStreak">0/10</div><div class="t">れんぞく</div></div>
+    </div>
+    <div class="drill-main">
+      <div class="stage" id="kStage">
+        <div class="askrow">
+          <div class="ask" id="kAsk"></div>
+          <button class="hintbtn" id="kHintBtn" type="button">ヒント</button>
+        </div>
+        <div id="kBoard"></div>
+        <div class="hnote" id="kNote"></div>
+        <p class="say" id="kSay"></p>
+        <div class="verdict" id="kVerdict"></div>
+      </div>
+      <div class="pad" id="kPad"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =========================================================
+   小数（3年・小数の意味と表し方／たし算・ひき算）
+   ねらい
+   ・1Lを 10等分した 1こ分が 0.1L。小数は「0.1の 何こ分」で 見る
+   ・1mm＝0.1cm、1dL＝0.1L。小数を つかうと 1つの たんいで 表せる
+   ・数直線の 上でも 小数が よめる
+   ・たし算・ひき算も「0.1が 何こ」で 考える。筆算は 位を そろえる
+
+   ステップ１ 1Lますで 見る … 0.1Lずつ 入れて いく（見せる ところ。丸つけなし）
+   ステップ２ よんで かく   … 1Lます／数直線 を よんで 小数で かく
+   ステップ３ たんいと 小数 … 長さ／かさ／0.1の 何こ分
+   ステップ４ たし算 ひき算 … 0.1の いくつ分 → くり上がり → 筆算 → 整数も まじる
+
+   ボタンの 色は ほかの アプリと そろえる
+   　青＝同じ もんだいの 中で すすむ ／ 金＝こたえあわせ ／ みどり＝つぎの もんだいへ
+   「つぎ」で はじまる ことばは みどり（つぎの もんだい）に とっておく。
+   　同じ もんだいの 中で うつる ときは 「ひだりへ ◀」「みぎへ ▶」「うえへ ▲」と 向きで 言う。
+========================================================= */
+
+/* ---------- タップ（iPadで 反応が おそくならないように） ---------- */
+function bindTap(el,fn){
+  let lastFire=0;
+  const fire=()=>{
+    const now=Date.now();
+    if(now-lastFire<60)return;   // 同じ瞬間の二重発火を防ぐ
+    lastFire=now;
+    fn();
+  };
+  if(window.PointerEvent){
+    el.addEventListener('pointerdown',ev=>{
+      if(ev.pointerType==='mouse'&&ev.button!==0)return;
+      ev.preventDefault();
+      fire();
+    });
+    el.addEventListener('click',()=>{
+      if(Date.now()-lastFire<500)return;
+      fire();
+    });
+  }else{
+    el.addEventListener('touchstart',ev=>{ev.preventDefault();fire();},{passive:false});
+    el.addEventListener('click',()=>{if(Date.now()-lastFire<500)return;fire();});
+  }
+}
+const $=id=>document.getElementById(id);
+function pick(a){return a[Math.floor(Math.random()*a.length)];}
+let lastAction=0;
+const GOAL=10;                   // れんぞく せいかいの 目標（ほかの アプリと そろえる）
+
+/* ---------- 記録（とじても 消えないように 保存） ---------- */
+function load(key,def){
+  try{const s=JSON.parse(localStorage.getItem(key)||'null');if(s)return s;}catch(e){}
+  return def;
+}
+function save(key,v){try{localStorage.setItem(key,JSON.stringify(v));}catch(e){}}
+
+/* ---------- 小数は ぜんぶ「0.1が 何こ」（＝10ばいした 整数）で もつ ----------
+   0.1＋0.2 を そのまま 計算すると 0.30000000000000004 に なるため */
+function dec(t){
+  const i=Math.floor(Math.abs(t)/10),f=Math.abs(t)%10;
+  return (t<0?'-':'')+(f===0?String(i):(i+'.'+f));
+}
+function fracHTML(nu,de){
+  return '<span class="frac"><span class="fn">'+nu+'</span><span class="fd">'+de+'</span></span>';
+}
+
+/* =========================================================
+   数を 入れる ところ（ステップ２・３・４で 同じ しくみ）
+   ・ますは じゅんばんに 1つずつ 入れる
+   ・とちゅうの ますは 青（向きで 言う）、さいごの ますだけ 金の「こたえ」
+   ・入れ おわっていない うちは 丸つけを しない
+========================================================= */
+function fldHTML(v,state,cls){
+  let c='fld'+(cls?' '+cls:'');
+  if(state==='on')c+=' on';
+  else if(state==='done')c+=' done';
+  if(v==='')c+=' empty';
+  return '<span class="'+c+'">'+(v===''?'?':v)+'</span>';
+}
+/* fields … [{want:'7',max:1,dir:'left'|'right'|'up',name:'一の位'}] */
+function fState(F,i){
+  if(F.locked)return 'done';
+  return (F.idx===i)?'on':((F.idx>i)?'done':'empty');
+}
+function fCell(F,i,cls){
+  if(i>=F.fields.length)return '';
+  return fldHTML(F.fields[i].v,fState(F,i),cls);
+}
+function fReset(F,fields){
+  F.fields=fields.map(f=>({want:String(f.want),max:f.max||1,dir:f.dir||'right',name:f.name||'',v:''}));
+  F.idx=0;F.locked=false;
+}
+function fPress(F,d,render){
+  if(F.locked)return;
+  const f=F.fields[F.idx];
+  if(d==='del')f.v=f.v.slice(0,-1);
+  else if(f.v.length<f.max)f.v+=d;
+  render();
+}
+function fReady(F){
+  for(let i=0;i<F.fields.length;i++)if(F.fields[i].v==='')return false;
+  return true;
+}
+function fOK(F){
+  for(let i=0;i<F.fields.length;i++){
+    if(parseInt(F.fields[i].v,10)!==parseInt(F.fields[i].want,10))return false;
+  }
+  return true;
+}
+function fFill(F){F.fields.forEach(f=>{f.v=f.want;});}
+function fFirstEmpty(F){
+  for(let i=0;i<F.fields.length;i++)if(F.fields[i].v==='')return F.fields[i];
+  return null;
+}
+const DIRWORD={left:'ひだりへ ◀',right:'みぎへ ▶',up:'うえへ ▲'};
+/* テンキーを 作る。cont＝つぎの ますへ うつる（青）、check＝こたえあわせ（金） */
+function buildPad(padEl,F,press,cont,check,next){
+  padEl.innerHTML='';
+  for(let i=1;i<=9;i++)add(String(i),'key',()=>press(String(i)),false);
+  add('けす','key del',()=>press('del'),false);
+  add('0','key',()=>press('0'),false);
+  if(F.locked)add('つぎの もんだい→','key next wide',next,true);
+  else if(F.idx<F.fields.length-1)add(DIRWORD[F.fields[F.idx+1].dir],'key cont wide',cont,false);
+  else add('こたえ','key enter',check,true);
+  function add(label,cls,fn,guard){
+    const b=document.createElement('button');
+    b.className=cls;b.textContent=label;b.type='button';
+    bindTap(b,()=>{
+      if(guard){
+        const now=Date.now();
+        if(now-lastAction<450)return;
+        lastAction=now;
+      }
+      fn();
+    });
+    padEl.appendChild(b);
+  }
+}
+/* 青ボタン：入っていない ときは すすまない（丸つけも しない） */
+function fCont(F,render,warn){
+  if(F.locked)return;
+  if(F.fields[F.idx].v===''){warn();return;}
+  if(F.idx<F.fields.length-1)F.idx++;
+  render();
+}
+
+/* =========================================================
+   1L ますの 絵
+   t … 0.1が 何こ分 入っているか（10で 1L）
+   o.marks  … 目もりを つける
+   o.labels … 目もり ぜんぶに 0.1〜0.9 の 数を そえる（ヒント）
+   o.now    … 水めんの ところだけ 数を そえる（見せる ところ）
+   o.cups   … ますを 何こ ならべるか（きめなければ 水の ぶんだけ）
+========================================================= */
+function masuHTML(t,o){
+  o=o||{};
+  const cups=o.cups||Math.max(1,Math.ceil(t/10)||1);
+  const sm=(cups>=3)?' sm':'';
+  let h='';
+  for(let c=0;c<cups;c++){
+    const fill=Math.max(0,Math.min(10,t-c*10));
+    let inner='<div class="water" style="height:'+(fill*10)+'%"></div>';
+    if(o.marks){
+      for(let i=1;i<=9;i++){
+        inner+='<div class="mk'+(i===5?' half':'')+'" style="bottom:'+(i*10)+'%"></div>';
+        const nowHere=(o.now&&fill===i);
+        if(o.labels||nowHere){
+          inner+='<div class="mkl'+(nowHere?' now':'')+'" style="bottom:'+(i*10)+'%">'+dec(i)+'</div>';
+        }
+      }
+    }
+    h+='<div class="mcol"><div class="mlab">1L</div>'+
+       '<div class="masu'+sm+(o.hi===c?' hi':'')+'">'+inner+'</div></div>';
+  }
+  return h;
+}
+/* 1cm を 10等分した テープ（1目もり＝1mm）。cm 本ぶん＋のこり mm を ぬる */
+function cmTapeHTML(cm,mm){
+  const bars=cm+((mm>0||cm===0)?1:0);
+  let h='';
+  for(let b=0;b<bars;b++){
+    const on=(b<cm)?10:mm;
+    let cells='';
+    for(let i=0;i<10;i++)cells+='<div class="c'+(i<on?' on':'')+'"></div>';
+    h+='<div class="cmcol"><div class="cmlab">1cm</div><div class="cmbar">'+cells+'</div></div>';
+  }
+  const w=(bars<=1)?2.6:(bars<=2)?1.9:(bars<=3)?1.5:(bars<=4)?1.25:1;
+  return '<div class="cmwrap" style="--cmw:'+w+';--cmh:'+Math.min(1.8,w)+'">'+h+'</div>';
+}
+
+/* =========================================================
+   ステップ１：1Lますで 見る
+   k=-1 … 1Lます（目もり なし）
+   k=0  … 10等分した
+   k=1〜20 … 0.1Lずつ 入れる（10で 1L、20で 2L）
+========================================================= */
+const M={k:-1};
+function mRender(){
+  const k=M.k;
+  const cups=(k>10)?2:1;
+  /* 目もりの 数は、いまの 水めんの ところだけ 出す（ぜんぶ 出すと ごちゃごちゃする） */
+  $('mMasu').innerHTML=masuHTML(Math.max(0,k),{marks:k>=0,now:true,cups:cups,
+    hi:(k>10?1:0)});
+
+  const big=$('mBig'),yo=$('mYomi'),say=$('mSay');
+  if(k<0){
+    big.innerHTML='1<span class="u">L</span>の ます';
+    yo.textContent='';
+    say.innerHTML='1L入りの ますです。<br>この 1Lを <b>同じ 大きさ</b>に 10こに わけて みよう。';
+  }else if(k===0){
+    big.innerHTML='10<span class="u">等分</span>';
+    yo.textContent='同じ 大きさが 10こ';
+    say.innerHTML='1Lを 同じ 大きさに 10こに わけました。<br>この <b>1つ分</b>が どれだけか 見て みよう。';
+  }else if(k===1){
+    big.innerHTML='0.1<span class="u">L</span>';
+    yo.textContent='れい点一リットル';
+    say.innerHTML='1Lの '+fracHTML(1,10)+' の かさを <span class="w">0.1L</span>と かき、'+
+      '<b>れい点一リットル</b>と よみます。<br>0.1L ＝ '+fracHTML(1,10)+' L';
+  }else if(k<10){
+    big.innerHTML=dec(k)+'<span class="u">L</span>';
+    yo.textContent='れい点'+'一二三四五六七八九'.charAt(k-1)+'リットル';
+    say.innerHTML='<b>0.1L が '+k+'こ分</b>で <span class="w">'+dec(k)+'L</span>です。';
+  }else if(k===10){
+    big.innerHTML='1<span class="u">L</span><span class="same">＝ 0.1が 10こ</span>';
+    yo.textContent='いちリットル';
+    say.innerHTML='<b>0.1L が 10こ分</b>で 1L。<br>もとの 1Lに もどりました。つぎは 2はいめに 入れて みよう。';
+  }else if(k<20){
+    big.innerHTML=dec(k)+'<span class="u">L</span>';
+    yo.textContent='いち点'+'一二三四五六七八九'.charAt(k-11)+'リットル';
+    say.innerHTML='1L と '+dec(k-10)+'L で <span class="w">'+dec(k)+'L</span>。<br>'+
+      '0.1が <b>'+k+'こ分</b>とも 見られるね。';
+  }else{
+    big.innerHTML='2<span class="u">L</span><span class="same">＝ 0.1が 20こ</span>';
+    yo.textContent='にリットル';
+    say.innerHTML='ますが 2はい ぶんで 2L。<br>0.1が 20こで 2L です。';
+  }
+
+  const go=$('mGo');
+  go.disabled=(k>=20);
+  go.textContent=(k<0)?'10等分する ▶':(k>=20?'いっぱいに なった！':'0.1L 入れる ▶');
+  $('mBack').disabled=(k<0);
+  refit();
+}
+bindTap($('mGo'),()=>{if(M.k<20){M.k++;mRender();}});
+bindTap($('mBack'),()=>{if(M.k>-1){M.k--;mRender();}});
+bindTap($('mReset'),()=>{M.k=-1;mRender();});
+
+/* =========================================================
+   ステップ２：よんで かく
+   1Lます／数直線 を よんで、小数で かく
+   入れる じゅんは 左から。1より 小さいときは 一の位に 0を かく
+========================================================= */
+const Y={mode:'masu',t:7,range:1,fields:[],idx:0,locked:false,hint:false,
+         correct:0,total:0,streak:0};
+Object.assign(Y,load('shosuuYomu',{}));
+Y.locked=false;Y.hint=false;Y.fields=[];Y.idx=0;
+
+function ySave(){save('shosuuYomu',{mode:Y.mode,correct:Y.correct,total:Y.total,streak:Y.streak});}
+function yScore(){
+  $('yCorrect').textContent=Y.correct;
+  $('yTotal').textContent=Y.total;
+  $('yStreak').textContent=Math.min(Y.streak,GOAL)+'/'+GOAL;
+}
+function yOps(){
+  const box=$('yOps');box.innerHTML='';
+  [{v:'masu',t:'1Lます'},{v:'line',t:'数直線'}].forEach(o=>{
+    const b=document.createElement('button');
+    b.type='button';
+    b.className='op-btn'+(o.v===Y.mode?' active':'');
+    b.textContent=o.t;
+    bindTap(b,()=>{if(Y.mode===o.v)return;Y.mode=o.v;yOps();ySave();yNew();});
+    box.appendChild(b);
+  });
+}
+function yNew(){
+  let t,guard=0;
+  do{
+    if(Y.mode==='masu'){
+      t=1+Math.floor(Math.random()*19);       // 0.1〜1.9L
+      Y.range=2;
+    }else{
+      Y.range=pick([1,2,2]);                  // 0〜1 と 0〜2 の 数直線
+      t=1+Math.floor(Math.random()*(Y.range*10-1));
+    }
+    guard++;
+  }while(guard<20&&(t===Y.t||t%10===0));      // ちょうどの 1L・2Lは よみが まぎれるので 出さない
+  Y.t=t;Y.hint=false;
+  fReset(Y,[
+    {want:Math.floor(t/10),max:1,dir:'right',name:'一の位'},
+    {want:t%10,max:1,dir:'right',name:'小数第一位'}
+  ]);
+  $('yStage').classList.remove('correct','wrong');
+  $('yVerdict').textContent='';$('yVerdict').className='verdict';
+  yRender();
+}
+function yRender(){
+  const unit=(Y.mode==='masu')?'L':'';
+  $('yAsk').innerHTML=(Y.mode==='masu')?'水の かさは 何L ですか':'やじるしの ところは いくつ？';
+  if(Y.mode==='masu'){
+    $('yFig').innerHTML='<div class="masuwrap">'+
+      masuHTML(Y.t,{marks:true,labels:Y.hint,cups:2})+'</div>';
+  }else{
+    const total=Y.range*10;
+    const px=i=>(6+(i/total)*88);
+    let h='<div class="axis"></div>';
+    for(let i=0;i<=total;i++){
+      const major=(i%10===0);
+      h+='<div class="t '+(major?'major':'minor')+'" style="left:'+px(i)+'%"></div>';
+      if(major)h+='<div class="lab" style="left:'+px(i)+'%">'+(i/10)+'</div>';
+      /* ヒントの 数は「0.1が いくつ分」の こ数だけ 出す。
+         0.1・0.2…と 出すと となりと くっついて 読めなくなる */
+      else if(Y.hint)h+='<div class="fr" style="left:'+px(i)+'%">'+(i%10)+'</div>';
+    }
+    h+='<div class="arw" style="left:'+px(Y.t)+'%">▲</div>';
+    $('yFig').innerHTML='<div class="nl">'+h+'</div>';
+  }
+  $('yBig').innerHTML=fCell(Y,0)+'<span class="dot">.</span>'+fCell(Y,1)+
+    (unit?'<span class="u">'+unit+'</span>':'');
+  if(Y.locked){
+    $('yNavi').textContent='';
+  }else if(Y.idx===0){
+    $('yNavi').innerHTML='まず <b>一の位</b>　＝ 1が いくつ分？（1より 小さいときは <b>0</b>）';
+  }else{
+    $('yNavi').innerHTML='つぎは <b>小数第一位</b>　＝ 0.1が いくつ分？';
+  }
+  $('yHintBtn').classList.toggle('on',Y.hint);
+  buildPad($('yPad'),Y,yPress,yCont,yCheck,yNew);
+  refit();
+}
+function yPress(d){fPress(Y,d,yRender);}
+function yWarn(name){
+  $('yVerdict').className='verdict ng';
+  $('yVerdict').innerHTML='まだ とちゅうだよ　<em>'+name+'</em>を 入れてね';
+  refit();
+}
+function yCont(){
+  fCont(Y,()=>{$('yVerdict').textContent='';$('yVerdict').className='verdict';yRender();},
+    ()=>yWarn(Y.fields[Y.idx].name));
+}
+function yCheck(){
+  if(Y.locked)return;
+  if(!fReady(Y)){const f=fFirstEmpty(Y);yWarn(f?f.name:'数');return;}
+  Y.locked=true;Y.total++;
+  const unit=(Y.mode==='masu')?'L':'';
+  const v=$('yVerdict');
+  if(fOK(Y)){
+    Y.correct++;Y.streak++;
+    $('yStage').classList.add('correct');
+    v.className='verdict ok';
+    v.innerHTML=(Y.streak>=GOAL?'すごい！ ':'よくできました！ ')+
+      '<em>'+dec(Y.t)+unit+'</em>　0.1が <em>'+Y.t+'こ分</em>だね';
+    if(Y.streak>=GOAL)Y.streak=0;
+  }else{
+    Y.streak=0;
+    $('yStage').classList.add('wrong');
+    v.className='verdict ng';
+    v.innerHTML='がんばろう！　こたえは <em>'+dec(Y.t)+unit+'</em>'+
+      '（0.1が '+Y.t+'こ分）';
+    fFill(Y);
+    Y.hint=true;                 // まちがえたら 目もりの 数を 出して 見せる
+  }
+  yRender();yScore();ySave();
+}
+bindTap($('yHintBtn'),()=>{Y.hint=!Y.hint;yRender();});
+
+/* =========================================================
+   ステップ３：たんいと 小数
+   長さ … 1mm は 1cm の 1/10 だから 0.1cm
+   かさ … 1dL は 1L の 1/10 だから 0.1L
+   0.1の 何こ分 … 2.3 は 0.1が 23こ など
+========================================================= */
+const T={mode:'nagasa',q:null,fields:[],idx:0,locked:false,hint:false,
+         correct:0,total:0,streak:0};
+Object.assign(T,load('shosuuTani',{}));
+T.locked=false;T.hint=false;T.fields=[];T.idx=0;
+
+function tSave(){save('shosuuTani',{mode:T.mode,correct:T.correct,total:T.total,streak:T.streak});}
+function tScore(){
+  $('tCorrect').textContent=T.correct;
+  $('tTotal').textContent=T.total;
+  $('tStreak').textContent=Math.min(T.streak,GOAL)+'/'+GOAL;
+}
+function tOps(){
+  const box=$('tOps');box.innerHTML='';
+  [{v:'nagasa',t:'長さ cm・mm'},{v:'kasa',t:'かさ L・dL'},{v:'kosu',t:'0.1の 何こ分'}].forEach(o=>{
+    const b=document.createElement('button');
+    b.type='button';
+    b.className='op-btn'+(o.v===T.mode?' active':'');
+    b.textContent=o.t;
+    bindTap(b,()=>{if(T.mode===o.v)return;T.mode=o.v;tOps();tSave();tNew();});
+    box.appendChild(b);
+  });
+}
+/* もんだいは {ask:文（%0% %1% が ますに なる）, fields:[…], hint:HTML, fig:絵, tell:こたえの 言い方}
+   絵は ヒントを おした ときだけ 出す（いつも 出ていると 数えるだけの もんだいに なる） */
+function tMakeNagasa(){
+  const kind=pick([1,1,2,2,3]);
+  const mm=1+Math.floor(Math.random()*9);
+  const cm=1+Math.floor(Math.random()*5);      // 絵が よこに ならぶので 5cmまで
+  if(kind===1){
+    return {ask:'<b>'+mm+'mm</b> は 何cm ですか<div class="qans">%0%<span class="dot">.</span>%1%<span class="u">cm</span></div>',
+      fields:[{want:0,dir:'right',name:'一の位'},{want:mm,dir:'right',name:'小数第一位'}],
+      hint:'1mm は 1cm の '+fracHTML(1,10)+' で <b>0.1cm</b>。だから '+mm+'mm は 0.1cm の '+mm+'こ分。',
+      fig:cmTapeHTML(0,mm),
+      tell:mm+'mm ＝ <em>'+dec(mm)+'cm</em>'};
+  }
+  if(kind===2){
+    return {ask:'<b>'+cm+'cm'+mm+'mm</b> は 何cm ですか<div class="qans">%0%<span class="dot">.</span>%1%<span class="u">cm</span></div>',
+      fields:[{want:cm,dir:'right',name:'一の位'},{want:mm,dir:'right',name:'小数第一位'}],
+      hint:mm+'mm は 0.1cm の '+mm+'こ分で <b>'+dec(mm)+'cm</b>。<br>'+cm+'cm と あわせて 考えよう。',
+      fig:cmTapeHTML(cm,mm),
+      tell:cm+'cm'+mm+'mm ＝ <em>'+dec(cm*10+mm)+'cm</em>'};
+  }
+  return {ask:'<b>'+dec(cm*10+mm)+'cm</b> は 何cm 何mm ですか<div class="qans">%0%<span class="u">cm</span>%1%<span class="u">mm</span></div>',
+    fields:[{want:cm,dir:'right',name:'cm の 数'},{want:mm,dir:'right',name:'mm の 数'}],
+    hint:'小数点の 右の '+mm+' は 0.1cm が '+mm+'こ分。<br>0.1cm ＝ 1mm だから…',
+    fig:cmTapeHTML(cm,mm),
+    tell:dec(cm*10+mm)+'cm ＝ <em>'+cm+'cm'+mm+'mm</em>'};
+}
+function tMakeKasa(){
+  const kind=pick([1,2,3,4]);
+  const dL=1+Math.floor(Math.random()*9);
+  const L=1+Math.floor(Math.random()*4);       // ますが よこに ならぶので 4Lまで
+  const masu=t=>'<div class="masuwrap">'+masuHTML(t,{marks:true,cups:Math.ceil(t/10)})+'</div>';
+  if(kind===1){
+    return {ask:'<b>'+dL+'dL</b> は 何L ですか<div class="qans">%0%<span class="dot">.</span>%1%<span class="u">L</span></div>',
+      fields:[{want:0,dir:'right',name:'一の位'},{want:dL,dir:'right',name:'小数第一位'}],
+      hint:'1dL は 1L の '+fracHTML(1,10)+' で <b>0.1L</b>。だから '+dL+'dL は 0.1L の '+dL+'こ分。',
+      fig:masu(dL),
+      tell:dL+'dL ＝ <em>'+dec(dL)+'L</em>'};
+  }
+  if(kind===2){
+    return {ask:'<b>'+L+'L'+dL+'dL</b> は 何L ですか<div class="qans">%0%<span class="dot">.</span>%1%<span class="u">L</span></div>',
+      fields:[{want:L,dir:'right',name:'一の位'},{want:dL,dir:'right',name:'小数第一位'}],
+      hint:dL+'dL は 0.1L の '+dL+'こ分で <b>'+dec(dL)+'L</b>。<br>'+L+'L と あわせて 考えよう。',
+      fig:masu(L*10+dL),
+      tell:L+'L'+dL+'dL ＝ <em>'+dec(L*10+dL)+'L</em>'};
+  }
+  if(kind===3){
+    return {ask:'<b>'+dec(L*10+dL)+'L</b> は 何L 何dL ですか<div class="qans">%0%<span class="u">L</span>%1%<span class="u">dL</span></div>',
+      fields:[{want:L,dir:'right',name:'L の 数'},{want:dL,dir:'right',name:'dL の 数'}],
+      hint:'小数点の 右の '+dL+' は 0.1L が '+dL+'こ分。<br>0.1L ＝ 1dL だから…',
+      fig:masu(L*10+dL),
+      tell:dec(L*10+dL)+'L ＝ <em>'+L+'L'+dL+'dL</em>'};
+  }
+  return {ask:'<b>'+dec(dL)+'L</b> は 何dL ですか<div class="qans">%0%<span class="u">dL</span></div>',
+    fields:[{want:dL,dir:'right',name:'dL の 数'}],
+    hint:'0.1L ＝ 1dL。<br>'+dec(dL)+'L は 0.1L の '+dL+'こ分だね。',
+    fig:masu(dL),
+    tell:dec(dL)+'L ＝ <em>'+dL+'dL</em>'};
+}
+function tMakeKosu(){
+  const kind=pick([1,2,3,4]);
+  const t=1+Math.floor(Math.random()*9);              // 0.1〜0.9
+  const u=11+Math.floor(Math.random()*29);            // 1.1〜3.9
+  if(kind===1){
+    return {ask:'<b>'+dec(t)+'</b> は 0.1を %0%こ 集めた 数です',
+      fields:[{want:t,max:2,dir:'right',name:'こ数'}],
+      hint:'0.1が 1こで 0.1、2こで 0.2、…と 数えて みよう。',
+      tell:dec(t)+' は 0.1が <em>'+t+'こ</em>'};
+  }
+  if(kind===2){
+    return {ask:'<b>'+dec(u)+'</b> は 0.1を %0%こ 集めた 数です',
+      fields:[{want:u,max:2,dir:'right',name:'こ数'}],
+      hint:'1は 0.1が 10こ。<br>'+dec(u)+' は 1が '+Math.floor(u/10)+'こと 0.1が '+(u%10)+'こだから…',
+      tell:dec(u)+' は 0.1が <em>'+u+'こ</em>'};
+  }
+  if(kind===3){
+    return {ask:'0.1を <b>'+u+'こ</b> 集めた 数は %0%<span class="dot">.</span>%1% です',
+      fields:[{want:Math.floor(u/10),dir:'right',name:'一の位'},{want:u%10,dir:'right',name:'小数第一位'}],
+      hint:'0.1が 10こで 1。<br>'+u+'こ は 10こが '+Math.floor(u/10)+'つと、のこり '+(u%10)+'こ。',
+      tell:'0.1が '+u+'こで <em>'+dec(u)+'</em>'};
+  }
+  return {ask:'<b>'+dec(u)+'</b> は 1を %0%こと 0.1を %1%こ あわせた 数です',
+    fields:[{want:Math.floor(u/10),dir:'right',name:'1の こ数'},{want:u%10,dir:'right',name:'0.1の こ数'}],
+    hint:'小数点の 左が 1の こ数、右が 0.1の こ数だよ。',
+    tell:dec(u)+' は 1が <em>'+Math.floor(u/10)+'こ</em>と 0.1が <em>'+(u%10)+'こ</em>'};
+}
+function tNew(){
+  const mk=(T.mode==='nagasa')?tMakeNagasa:(T.mode==='kasa')?tMakeKasa:tMakeKosu;
+  let q=mk(),guard=0;
+  while(guard<20&&T.q&&q.ask===T.q.ask){q=mk();guard++;}
+  T.q=q;T.hint=false;
+  fReset(T,q.fields);
+  $('tStage').classList.remove('correct','wrong');
+  $('tVerdict').textContent='';$('tVerdict').className='verdict';
+  tRender();
+}
+function tRender(){
+  let h=T.q.ask;
+  for(let i=0;i<T.fields.length;i++)h=h.replace('%'+i+'%',fCell(T,i));
+  $('tQ').innerHTML=h;
+  $('tFig').innerHTML=(T.hint&&T.q.fig)?T.q.fig:'';
+  $('tSay').innerHTML=T.hint?T.q.hint:'';
+  if(T.locked)$('tNavi').textContent='';
+  else $('tNavi').innerHTML='いま 入れるのは <b>'+T.fields[T.idx].name+'</b>';
+  $('tHintBtn').classList.toggle('on',T.hint);
+  buildPad($('tPad'),T,tPress,tCont,tCheck,tNew);
+  refit();
+}
+function tPress(d){fPress(T,d,tRender);}
+function tWarn(name){
+  $('tVerdict').className='verdict ng';
+  $('tVerdict').innerHTML='まだ とちゅうだよ　<em>'+name+'</em>を 入れてね';
+  refit();
+}
+function tCont(){
+  fCont(T,()=>{$('tVerdict').textContent='';$('tVerdict').className='verdict';tRender();},
+    ()=>tWarn(T.fields[T.idx].name));
+}
+function tCheck(){
+  if(T.locked)return;
+  if(!fReady(T)){const f=fFirstEmpty(T);tWarn(f?f.name:'数');return;}
+  T.locked=true;T.total++;
+  const v=$('tVerdict');
+  if(fOK(T)){
+    T.correct++;T.streak++;
+    $('tStage').classList.add('correct');
+    v.className='verdict ok';
+    v.innerHTML=(T.streak>=GOAL?'すごい！ ':'よくできました！ ')+T.q.tell;
+    if(T.streak>=GOAL)T.streak=0;
+  }else{
+    T.streak=0;
+    $('tStage').classList.add('wrong');
+    v.className='verdict ng';
+    v.innerHTML='がんばろう！　'+T.q.tell;
+    fFill(T);
+    T.hint=true;
+  }
+  tRender();tScore();tSave();
+}
+bindTap($('tHintBtn'),()=>{T.hint=!T.hint;tRender();});
+
+/* =========================================================
+   ステップ４：たし算・ひき算
+   レベル１ 0.1の いくつ分（くり上がり・くり下がり なし）
+   レベル２ くり上がり・くり下がり
+   レベル３ 筆算
+   レベル４ 整数も まじる 筆算（7を 7.0 と 考える／こたえの 0）
+   どのレベルも はじめから えらべる。
+   　授業で 今日 やる ところが レベル３でも、鍵が かかっていると 出せないため。
+   数は ぜんぶ「0.1が 何こ」（10ばいした 整数）で もつ。
+========================================================= */
+const KLV=[
+  {v:1,t:'0.1の いくつ分'},
+  {v:2,t:'くり上がり'},
+  {v:3,t:'筆算'},
+  {v:4,t:'整数も まじる'}
+];
+const K={op:'+',lv:1,a:6,b:2,fields:[],idx:0,locked:false,hint:false,
+         memo:['',''],memoOn:-1,
+         correct:0,total:0,streak:0};
+Object.assign(K,load('shosuuKeisan',{}));
+K.locked=false;K.hint=false;K.fields=[];K.idx=0;K.memo=['',''];K.memoOn=-1;
+
+function kSave(){save('shosuuKeisan',{op:K.op,lv:K.lv,correct:K.correct,total:K.total,streak:K.streak});}
+function kScore(){
+  $('kCorrect').textContent=K.correct;
+  $('kTotal').textContent=K.total;
+  $('kStreak').textContent=Math.min(K.streak,GOAL)+'/'+GOAL;
+}
+function kOps(){
+  const box=$('kOps');box.innerHTML='';
+  [{v:'+',t:'たし算'},{v:'-',t:'ひき算'}].forEach(o=>{
+    const b=document.createElement('button');
+    b.type='button';
+    b.className='op-btn'+(o.v===K.op?' active':'');
+    b.textContent=o.t;
+    bindTap(b,()=>{if(K.op===o.v)return;K.op=o.v;kOps();kLvBar();kSave();kNew();});
+    box.appendChild(b);
+  });
+}
+function kLvBar(){
+  const box=$('kLv');box.innerHTML='';
+  KLV.forEach(o=>{
+    const b=document.createElement('button');
+    b.type='button';
+    b.className='lvtag'+(o.v===K.lv?' on':'');
+    b.textContent=(o.v===2&&K.op==='-')?'くり下がり':o.t;
+    bindTap(b,()=>{if(K.lv===o.v)return;K.lv=o.v;kLvBar();kSave();kNew();});
+    box.appendChild(b);
+  });
+}
+function kIsHissan(){return K.lv>=3;}
+/* もんだいを つくる。a,b は 0.1が 何こ（10ばい） */
+function kMake(){
+  const plus=(K.op==='+');
+  for(let i=0;i<400;i++){
+    let a,b;
+    if(K.lv===1){
+      a=1+Math.floor(Math.random()*19);
+      b=1+Math.floor(Math.random()*9);
+      if(plus){
+        if(a%10+b%10>9)continue;
+      }else{
+        if(a<=b)continue;
+        if(a%10<b%10)continue;
+      }
+    }else if(K.lv===2){
+      a=1+Math.floor(Math.random()*39);
+      b=1+Math.floor(Math.random()*9);
+      if(plus){
+        if(a%10+b%10<10)continue;
+      }else{
+        if(a<=b)continue;
+        if(a%10>=b%10)continue;
+      }
+    }else if(K.lv===3){
+      a=11+Math.floor(Math.random()*88);
+      b=11+Math.floor(Math.random()*88);
+      if(a%10===0||b%10===0)continue;         // 整数は レベル４で あつかう
+      if(!plus&&a<=b)continue;
+    }else{
+      a=11+Math.floor(Math.random()*88);
+      b=11+Math.floor(Math.random()*88);
+      if(!plus&&a<=b)continue;
+      const r0=plus?(a+b):(a-b);
+      const whole=(a%10===0||b%10===0);       // 7＋5.5 の ような 整数まじり
+      const zero=(r0%10===0||(r0<100&&Math.floor(r0/10)%10===0)); // こたえに 0が 出る
+      if(!whole&&!zero)continue;
+      if(a%10===0&&b%10===0)continue;         // どちらも 整数では 小数に ならない
+    }
+    const r=plus?(a+b):(a-b);
+    if(r<=0)continue;
+    if(r>=200)continue;
+    if(K.lv<=2&&r%10===0)continue;            // 暗算では こたえが 整数に なる ものは 出さない
+    if(a===K.a&&b===K.b)continue;
+    return {a:a,b:b};
+  }
+  return {a:6,b:2};
+}
+function kNew(){
+  const q=kMake();
+  K.a=q.a;K.b=q.b;K.hint=false;K.memo=['',''];K.memoOn=-1;
+  const r=(K.op==='+')?(K.a+K.b):(K.a-K.b);
+  if(kIsHissan()){
+    /* 筆算は 一の位から ではなく、いちばん 右（小数第一位）から 入れる */
+    const f=[{want:r%10,dir:'right',name:'小数第一位'},
+             {want:Math.floor(r/10)%10,dir:'left',name:'一の位'}];
+    if(r>=100)f.push({want:Math.floor(r/100),dir:'left',name:'十の位'});
+    fReset(K,f);
+  }else{
+    fReset(K,[{want:Math.floor(r/10),dir:'right',name:'一の位'},
+              {want:r%10,dir:'right',name:'小数第一位'}]);
+  }
+  $('kStage').classList.remove('correct','wrong');
+  $('kVerdict').textContent='';$('kVerdict').className='verdict';
+  kRender();
+}
+/* 筆算の 1行分（数を ますに ならべる）。t は 0.1が 何こ */
+function kNumRow(t,opChar){
+  const t10=Math.floor(t/100),t1=Math.floor(t/10)%10,t01=t%10;
+  let h='<div class="hcell op">'+(opChar||'')+'</div>';
+  h+='<div class="hcell">'+(t10>0?t10:'')+'</div>';
+  h+='<div class="hcell">'+t1+'</div>';
+  h+='<div class="hdot">.</div>';
+  /* 7 は 7.0 と 考える。この 0は 自分で 入れた 数では ないので グレーの 点線で 出す */
+  h+='<div class="hcell">'+(t01>0?t01:'<span class="zero">0</span>')+'</div>';
+  return h;
+}
+function kRender(){
+  const plus=(K.op==='+');
+  const r=plus?(K.a+K.b):(K.a-K.b);
+  if(kIsHissan()){
+    let h='<div class="hgrid" style="grid-template-columns:auto auto auto auto auto">';
+    /* くり上がりなどを かく メモらん（丸つけは しない＝紙と 同じ） */
+    h+='<div class="hmemo"></div>';
+    h+='<div class="hmemo"><span class="mbox'+(K.memoOn===0?' on':'')+'" data-m="0">'+(K.memo[0]||'&nbsp;')+'</span></div>';
+    h+='<div class="hmemo"><span class="mbox'+(K.memoOn===1?' on':'')+'" data-m="1">'+(K.memo[1]||'&nbsp;')+'</span></div>';
+    h+='<div class="hmemo"></div><div class="hmemo"></div>';
+    h+=kNumRow(K.a,'');
+    h+=kNumRow(K.b,plus?'＋':'－');
+    h+='<div class="hbar"></div>';
+    /* こたえ */
+    h+='<div class="hcell"></div>';
+    h+='<div class="hcell">'+(K.fields.length>2?fCell(K,2):'')+'</div>';
+    h+='<div class="hcell">'+fCell(K,1)+'</div>';
+    h+='<div class="hdot ans">.</div>';
+    h+='<div class="hcell">'+fCell(K,0)+'</div>';
+    h+='</div>';
+    $('kBoard').innerHTML=h;
+    /* メモらんを タップして えらぶ */
+    [].forEach.call($('kBoard').querySelectorAll('.mbox'),el=>{
+      bindTap(el,()=>{
+        if(K.locked)return;
+        const i=parseInt(el.dataset.m,10);
+        K.memoOn=(K.memoOn===i)?-1:i;
+        kRender();
+      });
+    });
+    $('kAsk').innerHTML=dec(K.a)+(plus?' ＋ ':' － ')+dec(K.b)+' の 筆算';
+  }else{
+    $('kBoard').innerHTML='<div class="big">'+dec(K.a)+(plus?' ＋ ':' － ')+dec(K.b)+' ＝ '+
+      fCell(K,0)+'<span class="dot">.</span>'+fCell(K,1)+'</div>';
+    $('kAsk').innerHTML='0.1が 何こに なるか 考えよう';
+  }
+
+  /* いま かく ところ（言うのは かく 場所だけ） */
+  if(K.locked)$('kNote').textContent='';
+  else if(K.memoOn>=0)$('kNote').innerHTML='メモらんに 数を 入れよう（丸つけは しないよ）';
+  else $('kNote').innerHTML='いま かくのは <b>'+K.fields[K.idx].name+'</b>';
+
+  /* ヒント：0.1が 何こ で 考える */
+  if(K.hint&&!K.locked){
+    const s=plus
+      ? dec(K.a)+' は 0.1が '+K.a+'こ、'+dec(K.b)+' は 0.1が '+K.b+'こ。<br>あわせて 0.1が （'+K.a+'＋'+K.b+'）＝ '+(K.a+K.b)+'こ'
+      : dec(K.a)+' は 0.1が '+K.a+'こ、'+dec(K.b)+' は 0.1が '+K.b+'こ。<br>のこりは 0.1が （'+K.a+'－'+K.b+'）＝ '+(K.a-K.b)+'こ';
+    $('kSay').innerHTML=s+(kIsHissan()?'<br>筆算は <b>位を たてに そろえて</b> かくよ':'');
+  }else{
+    $('kSay').innerHTML='';
+  }
+  $('kHintBtn').classList.toggle('on',K.hint);
+  buildPad($('kPad'),K,kPress,kCont,kCheck,kNew);
+  refit();
+}
+function kPress(d){
+  if(K.locked)return;
+  /* メモらんが えらばれて いるときは、1つ 入れたら すぐ こたえの ますに もどす
+     （くり上がりは かならず 1けた。えらばれた ままだと 次の 数も メモに 入ってしまう） */
+  if(K.memoOn>=0){
+    if(d==='del')K.memo[K.memoOn]='';
+    else{K.memo[K.memoOn]=d;K.memoOn=-1;}
+    kRender();return;
+  }
+  fPress(K,d,kRender);
+}
+function kWarn(name){
+  $('kVerdict').className='verdict ng';
+  $('kVerdict').innerHTML='まだ とちゅうだよ　<em>'+name+'</em>を 入れてね';
+  refit();
+}
+function kCont(){
+  fCont(K,()=>{$('kVerdict').textContent='';$('kVerdict').className='verdict';kRender();},
+    ()=>kWarn(K.fields[K.idx].name));
+}
+function kCheck(){
+  if(K.locked)return;
+  if(!fReady(K)){const f=fFirstEmpty(K);kWarn(f?f.name:'数');return;}
+  K.locked=true;K.total++;K.memoOn=-1;
+  const plus=(K.op==='+');
+  const r=plus?(K.a+K.b):(K.a-K.b);
+  const shiki=dec(K.a)+(plus?' ＋ ':' － ')+dec(K.b)+' ＝ '+dec(r);
+  const v=$('kVerdict');
+  if(fOK(K)){
+    K.correct++;K.streak++;
+    $('kStage').classList.add('correct');
+    v.className='verdict ok';
+    let m=(K.streak>=GOAL?'すごい！ ':'よくできました！ ')+'<em>'+shiki+'</em>';
+    if(kIsHissan())m+='<br>小数点は 上の 小数点に そろえて うつよ';
+    else m+='　0.1が <em>'+r+'こ</em>';
+    /* 1.2＋2.8 の ように 小数第一位が 0に なる とき（教科書の「0をわすれずにかきます」） */
+    if(r%10===0)m+='<br>筆算では <em>'+dec(r)+'.0</em> と かいて、こたえは <em>'+dec(r)+'</em>';
+    else if(r<10)m+='<br>1より 小さいから 一の位に <em>0</em>を かくよ';
+    v.innerHTML=m;
+    if(K.streak>=GOAL)K.streak=0;
+  }else{
+    K.streak=0;
+    $('kStage').classList.add('wrong');
+    v.className='verdict ng';
+    v.innerHTML='がんばろう！　<em>'+shiki+'</em>　'+
+      '（0.1が '+K.a+'こと '+K.b+'こ）';
+    fFill(K);
+    K.hint=true;
+  }
+  kRender();kScore();kSave();
+}
+bindTap($('kHintBtn'),()=>{K.hint=!K.hint;kRender();});
+
+/* =========================================================
+   ステップの きりかえ
+========================================================= */
+const VIEWS={mizu:'viewMizu',yomu:'viewYomu',tani:'viewTani',keisan:'viewKeisan'};
+const S={view:'mizu'};
+document.querySelectorAll('.tab').forEach(t=>{
+  bindTap(t,()=>{
+    if(S.view===t.dataset.v)return;      // 同じタブの 再タップでは 作り直さない
+    S.view=t.dataset.v;
+    document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x===t));
+    Object.keys(VIEWS).forEach(k=>{
+      $(VIEWS[k]).classList.toggle('hidden',S.view!==k);
+    });
+    if(S.view==='mizu')mRender();
+    if(S.view==='yomu'){yScore();yRender();}
+    if(S.view==='tani'){tScore();tRender();}
+    if(S.view==='keisan'){kScore();kRender();}
+    fitToFrame();
+  });
+});
+document.addEventListener('keydown',e=>{
+  if(e.repeat)return;
+  const v=S.view;
+  if(v==='mizu'){
+    if(e.key==='ArrowRight'){if(M.k<20){M.k++;mRender();}}
+    else if(e.key==='ArrowLeft'){if(M.k>-1){M.k--;mRender();}}
+    return;
+  }
+  const st=(v==='yomu')?Y:(v==='tani')?T:K;
+  const press=(v==='yomu')?yPress:(v==='tani')?tPress:kPress;
+  const cont=(v==='yomu')?yCont:(v==='tani')?tCont:kCont;
+  const check=(v==='yomu')?yCheck:(v==='tani')?tCheck:kCheck;
+  const next=(v==='yomu')?yNew:(v==='tani')?tNew:kNew;
+  if(e.key.length===1&&e.key>='0'&&e.key<='9')press(e.key);
+  else if(e.key==='Backspace')press('del');
+  else if(e.key==='Enter'){
+    const now=Date.now();if(now-lastAction<450)return;lastAction=now;
+    if(st.locked)next();
+    else if(st.idx<st.fields.length-1)cont();
+    else check();
+  }
+});
+
+/* 中身が かわったあとに 1画面に 収まっているか 見なおす */
+function refit(){if(typeof fitShrink==='function')fitShrink();}
+
+/* ===== 枠の高さを実測して、その中に必ず収める ===== */
+function frameHeight(){
+  const c=document.documentElement.clientHeight||0;
+  const w=window.innerHeight||0;
+  const v=(window.visualViewport&&window.visualViewport.height)||0;
+  return Math.min.apply(null,[c,w,v].filter(x=>x>0))||w||c;
+}
+function fitToFrame(){
+  document.documentElement.style.setProperty('--fh',frameHeight()+'px');
+  fitShrink();
+}
+/* ===== はみ出す場合は --shrink で自動縮小して必ず1画面に収める ===== */
+let shrinkPass=0;
+function fitShrink(){
+  document.documentElement.style.setProperty('--shrink','1');
+  shrinkPass=0;
+  requestAnimationFrame(shrinkStep);
+}
+function overflowInfo(){
+  let worst={over:0,ratio:1};
+  const check=el=>{
+    if(!el||el.clientHeight<=0)return;
+    const over=el.scrollHeight-el.clientHeight;
+    if(over>worst.over)worst={over:over,ratio:el.clientHeight/el.scrollHeight};
+  };
+  check(document.querySelector('.app'));
+  document.querySelectorAll('.stage').forEach(st=>{if(st.offsetParent!==null)check(st);});
+  return worst;
+}
+function shrinkStep(){
+  const appEl=document.querySelector('.app');
+  if(!appEl)return;
+  const w=overflowInfo(),over=w.over;
+  if(over>2&&shrinkPass<6){
+    const cur=parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--shrink'))||1;
+    const next=Math.max(.55,cur*Math.max(.8,w.ratio));
+    document.documentElement.style.setProperty('--shrink',next.toFixed(3));
+    shrinkPass++;
+    requestAnimationFrame(shrinkStep);
+  }
+}
+window.addEventListener('resize',fitToFrame);
+if(window.visualViewport)window.visualViewport.addEventListener('resize',fitToFrame);
+window.addEventListener('orientationchange',()=>setTimeout(fitToFrame,200));
+window.addEventListener('load',fitToFrame);
+
+/* ---------- はじめの表示 ---------- */
+mRender();
+yOps();yScore();yNew();
+tOps();tScore();tNew();
+kOps();kLvBar();kScore();kNew();
+fitToFrame();
+</script>
+</body>
+</html>
