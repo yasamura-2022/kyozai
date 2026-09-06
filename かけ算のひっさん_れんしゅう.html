@@ -812,10 +812,12 @@ function fldHTML(txt,cls,state){
 }
 /* あわせての ます。つぎに 入れる 位に しるしを 出す（一の位 → 十の位 → 百の位） */
 function sumHTML(state){
-  const cur=(state==='on')?'<span class="nxt"></span>':'';
   const v=S3.vals[2];
+  const cur=(state==='on'&&v.length<s3Need())?'<span class="nxt"></span>':'';
   return '<span class="fld sum '+state+'">'+cur+(v===''&&!cur?'　':v)+'</span>';
 }
+/* こたえの けた数。ここまで 入れたら ちかちかを 止める */
+function s3Need(){return String(S3.a*S3.b).length;}
 /* 十の位の 分。うしろの 0は はじめから ついていて、子どもは 九九の 分だけ 入れる。
    位が たてに そろうように、箱は 1つの まま 中の 0だけ 色を かえる */
 function fldZeroHTML(txt,cls,state){
@@ -874,19 +876,24 @@ function s3Render(){
   else if(S3.idx===0)ask.innerHTML='<span class="on">一の位</span>の '+p.o+' に '+b+' を かけると？';
   else if(S3.idx===1)ask.innerHTML='<span class="tn">'+(p.t*10)+'×'+b+'</span>　'+p.t+' に '+b+' を かけると？（0は もう ついているよ）';
   else{
-    const kurai=['一の位','十の位','百の位'][Math.min(S3.vals[2].length,2)];
-    ask.innerHTML=p.p1+' ＋ '+p.p2+'　つぎは <span class="hi">'+kurai+'</span>';
+    const n=S3.vals[2].length;
+    if(n>=s3Need())ask.innerHTML=p.p1+' ＋ '+p.p2+'　<span class="hi">こたえ</span> を おそう';
+    else{
+      const kurai=['一の位','十の位','百の位'][Math.min(n,2)];
+      ask.innerHTML=p.p1+' ＋ '+p.p2+'　つぎは <span class="hi">'+kurai+'</span>';
+    }
   }
 
   if(S3.hint&&!S3.locked){
     if(S3.idx===0)ask.innerHTML+='<br><span class="hi">九九だね　'+p.o+'×'+b+'</span>';
     else if(S3.idx===1)ask.innerHTML+='<br><span class="hi">'+p.t+'×'+b+'＝'+(p.t*b)+'　10が '+(p.t*b)+'こ で '+p.p2+'</span>';
     else{
-      const A=p.p1,B=p.p2,k=Math.min(S3.vals[2].length,2);
+      const A=p.p1,B=p.p2,k=Math.min(S3.vals[2].length,2),full=(S3.vals[2].length>=s3Need());
       const dg=(n,i)=>Math.floor(n/Math.pow(10,i))%10;
       const carry=(dg(A,0)+dg(B,0)>=10)?1:0;
       let t2;
-      if(k===0)t2=dg(A,0)+' と '+dg(B,0)+' で '+((dg(A,0)+dg(B,0))%10);
+      if(full)t2='もう一回 たしかめて みよう';
+      else if(k===0)t2=dg(A,0)+' と '+dg(B,0)+' で '+((dg(A,0)+dg(B,0))%10);
       else if(k===1){
         const w=dg(A,1)+dg(B,1)+carry;
         t2=dg(A,1)+' と '+dg(B,1)+(carry?' と くり上げた 1':'')+' で '+w+
@@ -907,7 +914,7 @@ function s3Press(v){
   if(i===2){
     /* あわせては たし算。一の位から 左へ ふえていく（けすと 右へ もどる） */
     if(v==='del')S3.vals[i]=S3.vals[i].slice(1);
-    else if(S3.vals[i].length<3)S3.vals[i]=v+S3.vals[i];
+    else if(S3.vals[i].length<s3Need())S3.vals[i]=v+S3.vals[i];
   }else{
     if(v==='del')S3.vals[i]=S3.vals[i].slice(0,-1);
     else if(S3.vals[i].length<3)S3.vals[i]+=v;
