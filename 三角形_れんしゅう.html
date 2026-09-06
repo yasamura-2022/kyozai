@@ -1,0 +1,1402 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>三角形</title>
+<style>
+  :root{
+    --ink:#2b2118;
+    --paper:#fdf6e3;
+    --card:#fffdf7;
+    --line:#e7d9b8;
+    --gold:#c9a227;
+    --ok:#5a8a4c;
+    --ng:#d34b4b;
+    --flash:#ffe14d;
+  }
+  /* このアプリの色（三角形）
+     UIは青（＝つづきの ボタンも 青）。三角形の 紙は だいだい */
+  body{--accent:#3a6ea5;--accent-dark:#2a5279;--accent-soft:#e6eef7;
+       --fill:#ec9a52;--fill-dark:#c9762f;--fill-soft:#fbe6d1;
+       --edge:#7a6a4c}
+
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:'Hiragino Maru Gothic ProN','Yu Gothic',sans-serif;
+    background:
+      radial-gradient(circle at 15% 10%,#fef0d0 0,transparent 40%),
+      radial-gradient(circle at 85% 90%,#fbe6cf 0,transparent 45%),
+      var(--paper);
+    color:var(--ink);
+    display:flex;flex-direction:column;align-items:center;
+    position:fixed;inset:0;width:100%;
+    height:var(--fh,100dvh);
+    padding:6px 8px 10px;
+    overflow:hidden;
+    overscroll-behavior:none;
+    touch-action:manipulation;
+  }
+  /* iPadでのダブルタップ拡大・長押し選択によるタップ抜けを防ぐ */
+  button{
+    touch-action:manipulation;
+    -webkit-user-select:none;user-select:none;
+    -webkit-touch-callout:none;
+  }
+  svg{-webkit-user-select:none;user-select:none}
+  .app{width:100%;max-width:600px;height:100%;display:flex;flex-direction:column;gap:6px;min-height:0}
+  #viewEra,#viewOru,#viewKak,#viewShi{flex:1;min-height:0;display:flex;flex-direction:column;gap:6px}
+
+  header{text-align:center}
+  h1{font-size:clamp(17px,4.6vw,24px);letter-spacing:.04em}
+  h1 .em{color:var(--accent)}
+
+  /* 学習ステップ タブ */
+  .tabs{display:flex;gap:6px;margin-bottom:2px}
+  .tab{
+    flex:1;border:2px solid var(--line);border-radius:14px;background:var(--card);
+    padding:10px 4px;cursor:pointer;color:#8a7a5f;font-weight:800;
+    font-size:clamp(11px,2.9vw,15px);display:flex;flex-direction:column;align-items:center;gap:1px;
+    line-height:1.15;word-break:keep-all;
+    transition:transform .08s;
+  }
+  .tab .step{font-size:11px;font-weight:700;opacity:.7}
+  .tab.on{color:var(--ink);border-color:var(--gold);background:#fffdf7;box-shadow:0 3px 0 #a5811a}
+  .tab.on .step{color:var(--gold);opacity:1}
+  .tab:active{transform:translateY(1px)}
+
+  /* えらぶところ */
+  .picker{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:7px 10px;
+    display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap}
+  .picker .lbl{font-size:13px;color:#8a7a5f;white-space:nowrap}
+  .chips{display:flex;gap:7px;justify-content:center;flex-wrap:wrap}
+  .chip{
+    position:relative;min-height:42px;padding:6px 12px;border-radius:14px;border:2px solid var(--line);
+    background:#fff;font-size:clamp(13px,3.4vw,16px);font-weight:800;cursor:pointer;color:var(--ink);
+    transition:transform .08s;white-space:nowrap;
+  }
+  .chip:active{transform:scale(.94)}
+  .chip.on{color:#fff;border-color:var(--accent);background:var(--accent);box-shadow:0 3px 0 var(--accent-dark)}
+
+  /* もんだいカード（共通） */
+  .stage{
+    background:var(--card);border:3px solid var(--line);border-radius:18px;
+    padding:8px 10px;text-align:center;transition:border-color .2s,background .2s;
+    display:flex;flex-direction:column;justify-content:center;gap:5px;overflow:hidden;
+    flex:1;min-height:0;
+  }
+  .stage.correct{border-color:var(--ok);background:#f2f9ee}
+  .stage.wrong{border-color:var(--ng);background:#fcf0f0}
+  .verdict{min-height:1.3em;font-weight:800;line-height:1.35;
+    font-size:calc(clamp(12px,3.3vw,16px) * var(--shrink,1))}
+  .verdict.ok{color:var(--ok)}
+  .verdict.ng{color:var(--ng)}
+  .verdict em{font-style:normal;color:var(--accent-dark)}
+
+  .ask{font-weight:800;color:var(--ink);font-size:calc(clamp(13px,3.7vw,18px) * var(--shrink,1))}
+  .ask b{color:var(--accent-dark)}
+  .askrow{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;
+    background:#fff8e6;border:2px solid var(--line);border-radius:12px;padding:5px 9px;flex:none}
+  .hintbtn{flex:none;border:2px solid var(--line);border-radius:12px;background:#fff;color:#8a7a5f;
+    font-weight:800;padding:5px 14px;cursor:pointer;
+    font-size:calc(clamp(12px,3.2vw,15px) * var(--shrink,1));
+    min-height:calc(38px * var(--shrink,1))}
+  .hintbtn.on{background:var(--flash);border-color:var(--gold);color:var(--ink)}
+  .say{line-height:1.7;font-weight:700;color:#5d5040;word-break:keep-all;
+    font-size:calc(clamp(11px, calc(var(--fh,100vh) * 0.026), 17px) * var(--shrink,1))}
+  .say b{color:var(--fill-dark)}
+  .say .w{color:var(--accent-dark)}
+  .note{color:#8a7a5f;font-weight:700;
+    font-size:calc(clamp(10px,2.9vw,14px) * var(--shrink,1))}
+  .note b,.w{color:var(--accent-dark)}
+
+  /* ===== 三角形の 絵（SVG 共通） ===== */
+  .tsvg{width:100%;height:100%;display:block}
+  .tsvg text{font-family:inherit;font-weight:800}
+
+  /* ===== てんすう ===== */
+  .score{display:flex;gap:8px;flex:none}
+  .score .box{flex:1;background:var(--card);border:2px solid var(--line);border-radius:12px;padding:5px 4px;text-align:center}
+  .score .n{font-size:clamp(18px,5.3vw,23px);font-weight:800;font-variant-numeric:tabular-nums;line-height:1}
+  .score .t{font-size:10px;color:#8a7a5f;margin-top:2px}
+  .score .streak .n{color:var(--gold)}
+  .score .correct .n{color:var(--ok)}
+
+  /* ===== ボタン =====
+     青＝おなじ もんだいの 中で つづき ／ 金＝こたえあわせ ／ みどり＝つぎの もんだい
+     （青に「つぎへ」は 使わない。「つぎ」は みどりに とっておく） */
+  .actions{display:flex;gap:8px;flex:none}
+  .btn{flex:1;border:none;border-radius:14px;padding:12px 4px;font-size:clamp(13px,3.8vw,18px);
+    font-weight:800;cursor:pointer;transition:transform .08s;color:#fff;line-height:1.2}
+  .btn:active{transform:translateY(2px)}
+  .btn.play{background:var(--accent);box-shadow:0 4px 0 var(--accent-dark)}
+  .btn.show{background:var(--gold);box-shadow:0 4px 0 #a5811a}
+  .btn.next{background:#5a8a4c;box-shadow:0 4px 0 #446838}
+  .btn.sub{background:#a99a7c;box-shadow:0 4px 0 #85795f}
+  .btn:disabled{opacity:.45;box-shadow:none}
+
+  .hidden{display:none !important}
+  .tabs,.picker,.ops{flex-shrink:0}
+
+  /* ===== ステップ１：なかまを えらぶ ===== */
+  .tgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;flex:1;min-height:0}
+  .tcell{position:relative;border:3px solid var(--line);border-radius:14px;background:#fff;
+    display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;
+    padding:2px;transition:transform .08s,border-color .15s,background .15s;min-height:0}
+  .tcell:active{transform:scale(.97)}
+  .tcell.on{border-color:var(--accent);background:var(--accent-soft);box-shadow:inset 0 0 0 2px var(--accent)}
+  .tcell.ok{border-color:var(--ok);background:#eef7e9}
+  .tcell.ng{border-color:var(--ng);background:#fdeeee}
+  .tcell.miss{border-color:var(--ok);border-style:dashed;background:#f6fbf3}
+  .mk{position:absolute;top:1px;right:5px;font-weight:800;line-height:1;
+    font-size:calc(clamp(15px,4.4vw,22px) * var(--shrink,1))}
+  .mk.ok{color:var(--ok)}
+  .mk.ng{color:var(--ng)}
+  .mk.on{color:var(--accent-dark)}
+
+  /* ===== ステップ２：おって みる ===== */
+  .foldwrap{flex:1;min-height:0;display:flex;align-items:center;justify-content:center}
+  .foldbox{position:relative;height:100%;aspect-ratio:var(--far,1.2);
+    perspective:900px;-webkit-perspective:900px}
+  .foldbox .ly{position:absolute;inset:0}
+  .foldbox .flap{transform-style:preserve-3d;-webkit-transform-style:preserve-3d;
+    transition:transform .9s cubic-bezier(.42,0,.3,1)}
+  .foldbox .flap.no{transition:none}
+  .alab{cursor:pointer}
+  .glow{animation:gl 1s ease-in-out 3}
+  @keyframes gl{0%,100%{opacity:1}50%{opacity:.25}}
+  .whichrow{display:flex;gap:6px;justify-content:center;align-items:center;flex-wrap:wrap;flex:none}
+  .whichrow .lbl{font-size:calc(clamp(11px,3vw,14px) * var(--shrink,1));color:#8a7a5f;font-weight:700}
+  .wchip{min-height:36px;padding:3px 13px;border-radius:12px;border:2px solid var(--line);background:#fff;
+    font-weight:800;cursor:pointer;color:var(--ink);
+    font-size:calc(clamp(13px,3.5vw,16px) * var(--shrink,1))}
+  .wchip.on{color:#fff;border-color:var(--fill-dark);background:var(--fill);box-shadow:0 2px 0 var(--fill-dark)}
+
+  /* ===== ステップ３：角を ならべる ===== */
+  .angrow{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;flex:0 0 auto;
+    height:calc(clamp(104px, calc(var(--fh,100vh) * 0.25), 215px) * var(--shrink,1))}
+  .angrow.four{grid-template-columns:repeat(4,1fr)}
+  .acard{position:relative;border:3px solid var(--line);border-radius:14px;background:#fff;
+    cursor:pointer;overflow:hidden;padding:2px;transition:transform .08s,opacity .15s;min-height:0;
+    display:flex;align-items:center;justify-content:center}
+  .acard:active{transform:scale(.96)}
+  .acard.used{opacity:.22;pointer-events:none}
+  .ranks{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;flex:none}
+  .ranks.four{grid-template-columns:repeat(4,1fr)}
+  .rank{border:3px dashed var(--line);border-radius:14px;background:#fff;cursor:pointer;
+    padding:3px 2px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+    min-height:calc(clamp(48px, calc(var(--fh,100vh) * 0.105), 84px) * var(--shrink,1))}
+  .rank .rt{font-size:calc(clamp(9px,2.6vw,12px) * var(--shrink,1));color:#8a7a5f;font-weight:800;white-space:nowrap}
+  .rank .rv{font-weight:800;line-height:1;color:#c7b891;
+    font-size:calc(clamp(18px,5.2vw,28px) * var(--shrink,1))}
+  .rank.filled{border-style:solid;border-color:var(--accent);background:var(--accent-soft)}
+  .rank.filled .rv{color:var(--accent-dark)}
+  .rank.ok{border-style:solid;border-color:var(--ok);background:#eef7e9}
+  .rank.ok .rv{color:var(--ok)}
+  .rank.ng{border-style:solid;border-color:var(--ng);background:#fdeeee}
+  .rank.ng .rv{color:var(--ng)}
+
+  /* ===== ステップ４：しきつめる ===== */
+  .board{flex:1;min-height:0;display:flex;align-items:center;justify-content:center}
+  .board svg{width:100%;height:100%;display:block;touch-action:manipulation}
+  .pal{display:flex;gap:7px;justify-content:center;align-items:center;flex:none;flex-wrap:wrap}
+  .pc{width:44px;height:44px;border-radius:12px;border:3px solid var(--line);cursor:pointer;
+    transition:transform .08s}
+  .pc:active{transform:scale(.92)}
+  .pc.on{border-color:var(--ink);box-shadow:0 3px 0 #8a7a5f;transform:translateY(-2px)}
+  .cnt{font-weight:800;color:var(--fill-dark);
+    font-size:calc(clamp(12px,3.3vw,16px) * var(--shrink,1))}
+
+  @media(max-height:720px){
+    h1{font-size:16px}
+    .tab{padding:7px 4px;font-size:13px}
+    .tab .step{font-size:10px}
+    .picker{padding:5px 8px}
+    .chip{min-height:38px;padding:5px 10px;font-size:14px}
+    .score .box{padding:3px}
+    .score .n{font-size:19px}
+    .score .t{font-size:9px}
+    .pc{width:38px;height:38px}
+  }
+  @media(max-height:560px){
+    header{display:none}
+    .app{gap:5px}
+    #viewEra,#viewOru,#viewKak,#viewShi{gap:5px}
+    .chip{min-height:34px;padding:4px 9px;font-size:13px}
+    .pc{width:34px;height:34px}
+  }
+  /* 横向き（iPad横など） */
+  @media(orientation:landscape) and (max-height:820px){
+    header{display:none}
+    .app{gap:5px;max-width:min(96vw,900px)}
+    .tab{padding:6px 4px;font-size:13px}
+    .tab .step{font-size:10px}
+    .picker{padding:5px 8px}
+    .chip{min-height:34px;padding:4px 9px;font-size:14px}
+    .score .box{padding:3px}
+    .score .n{font-size:19px}
+    .tgrid{grid-template-columns:repeat(3,1fr)}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header><h1><span class="em">三角形</span></h1></header>
+
+  <div class="tabs">
+    <button class="tab on" data-v="era"><span class="step">ステップ１</span>なかまを えらぶ</button>
+    <button class="tab" data-v="oru"><span class="step">ステップ２</span>おって みる</button>
+    <button class="tab" data-v="kak"><span class="step">ステップ３</span>角を ならべる</button>
+    <button class="tab" data-v="shi"><span class="step">ステップ４</span>しきつめる</button>
+  </div>
+
+  <!-- ============ ステップ１：なかまを えらぶ ============ -->
+  <div id="viewEra">
+    <div class="picker">
+      <span class="lbl">さがすのは</span>
+      <div class="chips" id="eChips"></div>
+    </div>
+    <div class="score">
+      <div class="box correct"><div class="n" id="eCorrect">0</div><div class="t">せいかい</div></div>
+      <div class="box"><div class="n" id="eTotal">0</div><div class="t">やったもんだい</div></div>
+      <div class="box streak"><div class="n" id="eStreak">0/10</div><div class="t">れんぞく</div></div>
+    </div>
+    <div class="stage" id="eStage">
+      <div class="askrow">
+        <div class="ask" id="eAsk"></div>
+        <button class="hintbtn" id="eHintBtn" type="button">ヒント</button>
+      </div>
+      <div class="note" id="eHint"></div>
+      <div class="tgrid" id="eGrid"></div>
+      <div class="verdict" id="eVerdict"></div>
+    </div>
+    <div class="actions">
+      <button class="btn sub" id="eClear">ぜんぶ けす</button>
+      <button class="btn show" id="eCheck">こたえ</button>
+      <button class="btn next hidden" id="eNext">つぎの もんだい →</button>
+    </div>
+  </div>
+
+  <!-- ============ ステップ２：おって みる ============ -->
+  <div id="viewOru" class="hidden">
+    <div class="score">
+      <div class="box correct"><div class="n" id="oCorrect">0</div><div class="t">せいかい</div></div>
+      <div class="box"><div class="n" id="oTotal">0</div><div class="t">やったもんだい</div></div>
+      <div class="box streak"><div class="n" id="oStreak">0/10</div><div class="t">れんぞく</div></div>
+    </div>
+    <div class="stage" id="oStage">
+      <div class="askrow">
+        <div class="ask" id="oAsk">おなじ 大きさの 角を ぜんぶ タップしよう</div>
+      </div>
+      <div class="note" id="oName"></div>
+      <div class="foldwrap"><div class="foldbox" id="oBox">
+        <div class="ly" id="oBase"></div>
+        <div class="ly flap" id="oFlap"></div>
+      </div></div>
+      <div class="whichrow hidden" id="oWhich">
+        <span class="lbl">おる ところ</span>
+        <button class="wchip on" data-i="0">あ</button>
+        <button class="wchip" data-i="1">い</button>
+        <button class="wchip" data-i="2">う</button>
+      </div>
+      <div class="verdict" id="oVerdict"></div>
+    </div>
+    <div class="actions">
+      <button class="btn play" id="oFold">おって みる ▶</button>
+      <button class="btn show" id="oCheck">こたえ</button>
+      <button class="btn next hidden" id="oNext">つぎの もんだい →</button>
+    </div>
+  </div>
+
+  <!-- ============ ステップ３：角を ならべる ============ -->
+  <div id="viewKak" class="hidden">
+    <div class="picker">
+      <span class="lbl">角の 数</span>
+      <div class="chips" id="kChips"></div>
+    </div>
+    <div class="score">
+      <div class="box correct"><div class="n" id="kCorrect">0</div><div class="t">せいかい</div></div>
+      <div class="box"><div class="n" id="kTotal">0</div><div class="t">やったもんだい</div></div>
+      <div class="box streak"><div class="n" id="kStreak">0/10</div><div class="t">れんぞく</div></div>
+    </div>
+    <div class="stage" id="kStage">
+      <div class="askrow">
+        <div class="ask">大きい じゅんに タップしよう</div>
+        <button class="hintbtn" id="kHintBtn" type="button">かさねる</button>
+      </div>
+      <div class="angrow" id="kAngs"></div>
+      <div class="ranks" id="kRanks"></div>
+      <div class="verdict" id="kVerdict"></div>
+    </div>
+    <div class="actions">
+      <button class="btn sub" id="kClear">やりなおす</button>
+      <button class="btn show" id="kCheck">こたえ</button>
+      <button class="btn next hidden" id="kNext">つぎの もんだい →</button>
+    </div>
+  </div>
+
+  <!-- ============ ステップ４：しきつめる ============ -->
+  <div id="viewShi" class="hidden">
+    <div class="picker">
+      <span class="lbl">つかう 形</span>
+      <div class="chips" id="sChips"></div>
+    </div>
+    <div class="stage" id="sStage">
+      <div class="askrow">
+        <div class="ask">タップして すきまなく しきつめよう</div>
+      </div>
+      <div class="board" id="sBoard"></div>
+      <div class="pal" id="sPal"></div>
+      <div class="cnt" id="sCnt"></div>
+      <div class="verdict" id="sVerdict"></div>
+    </div>
+    <div class="actions">
+      <button class="btn sub" id="sClear">ぜんぶ けす</button>
+      <button class="btn play" id="sAuto">ぜんぶ おく ▶</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =========================================================
+   三角形（3年・二等辺三角形と正三角形）
+   ねらい
+   ・辺の 長さで 三角形を なかまわけできる
+     （二等辺三角形＝2つの辺が同じ ／ 正三角形＝3つの辺が同じ）
+   ・まん中で おって かさなる 角は 大きさが 同じ
+   ・角の 大きさは 辺の 長さでは きまらない（かさねて くらべる）
+   ・同じ 三角形は すきまなく しきつめられる
+
+   ※ステップ１で「二等辺三角形を さがす」ときは、
+     えらぶ 中に 正三角形を 入れていない。
+     3年では 二等辺三角形と 正三角形を べつの なかまとして 出すので、
+     正三角形（＝2つの辺も 同じ）を まぜると 答えが 決まらなくなるため。
+========================================================= */
+
+/* ---------- タップ（iPadで 反応が おそくならないように） ---------- */
+function bindTap(el,fn){
+  let lastFire=0;
+  const fire=()=>{
+    const now=Date.now();
+    if(now-lastFire<60)return;   // 同じ瞬間の二重発火を防ぐ
+    lastFire=now;
+    fn();
+  };
+  if(window.PointerEvent){
+    el.addEventListener('pointerdown',ev=>{
+      if(ev.pointerType==='mouse'&&ev.button!==0)return;
+      ev.preventDefault();
+      fire();
+    });
+    el.addEventListener('click',()=>{
+      if(Date.now()-lastFire<500)return;
+      fire();
+    });
+  }else{
+    el.addEventListener('touchstart',ev=>{ev.preventDefault();fire();},{passive:false});
+    el.addEventListener('click',()=>{if(Date.now()-lastFire<500)return;fire();});
+  }
+}
+const $=id=>document.getElementById(id);
+function pick(a){return a[Math.floor(Math.random()*a.length)];}
+function shuffle(a){
+  a=a.slice();
+  for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));const t=a[i];a[i]=a[j];a[j]=t;}
+  return a;
+}
+let lastAction=0;
+const GOAL=10;
+
+/* ---------- 記録（とじても 消えないように 保存） ---------- */
+function load(key,def){
+  try{const s=JSON.parse(localStorage.getItem(key)||'null');if(s)return s;}catch(e){}
+  return def;
+}
+function save(key,v){try{localStorage.setItem(key,JSON.stringify(v));}catch(e){}}
+
+/* =========================================================
+   三角形の かたち（辺の 長さから 頂点を 出す）
+   a＝いと う の あいだの 辺 ／ b＝う と あ ／ c＝あ と い
+   もどり値は [あ, い, う]（画面の 座標。y は 下むきが プラス）
+========================================================= */
+function triPoints(a,b,c){
+  const x=(c*c+a*a-b*b)/(2*a);
+  const y=Math.sqrt(Math.max(0.01,c*c-x*x));
+  return [{x:x,y:-y},{x:0,y:0},{x:a,y:0}];
+}
+function rotPts(p,deg){
+  const t=deg*Math.PI/180,co=Math.cos(t),si=Math.sin(t);
+  return p.map(q=>({x:q.x*co-q.y*si,y:q.x*si+q.y*co}));
+}
+function bboxOf(p){
+  let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
+  p.forEach(q=>{if(q.x<x0)x0=q.x;if(q.y<y0)y0=q.y;if(q.x>x1)x1=q.x;if(q.y>y1)y1=q.y;});
+  return {x0:x0,y0:y0,x1:x1,y1:y1,w:x1-x0,h:y1-y0};
+}
+/* 中心を 原点に そろえた 形（まだ cm の ままの 大きさ） */
+function triShape(sides,rot){
+  let p=triPoints(sides[0],sides[1],sides[2]);
+  p=rotPts(p,rot);
+  const b=bboxOf(p);
+  const dx=-(b.x0+b.x1)/2,dy=-(b.y0+b.y1)/2;
+  return p.map(q=>({x:q.x+dx,y:q.y+dy}));
+}
+function placePts(p,s,cx,cy){return p.map(q=>({x:q.x*s+cx,y:q.y*s+cy}));}
+function unit(from,to){
+  const dx=to.x-from.x,dy=to.y-from.y,L=Math.hypot(dx,dy)||1;
+  return {x:dx/L,y:dy/L};
+}
+function mid(p,q){return {x:(p.x+q.x)/2,y:(p.y+q.y)/2};}
+function f1(n){return (Math.round(n*10)/10).toString();}
+
+/* ---------- 三角形の 絵を 組み立てる ----------
+   pts … 画面座標の 3点（[あ,い,う]）
+   o.len   … 辺の 長さ [あい, いう, うあ]（cm）。null で 出さない
+   o.ticks … 同じ 長さの 辺に しるしを つける [n,n,n]
+   o.arcs  … 角の しるしを 出す
+   o.labels… 角の 名前（あ・い・う）を 出す
+   o.sel   … えらばれている 角（配列）
+   o.fill / o.stroke … 色 */
+const VNAME=['あ','い','う'];
+function triBody(pts,o){
+  o=o||{};
+  const d='M'+pts.map(p=>f1(p.x)+','+f1(p.y)).join('L')+'Z';
+  let s='<path d="'+d+'" fill="'+(o.fill||'#fffdf7')+'" stroke="'+(o.stroke||'var(--edge)')+
+        '" stroke-width="'+(o.sw||3)+'" stroke-linejoin="round"/>';
+  const cen={x:(pts[0].x+pts[1].x+pts[2].x)/3,y:(pts[0].y+pts[1].y+pts[2].y)/3};
+  /* 角の しるし（円こ） */
+  if(o.arcs){
+    for(let i=0;i<3;i++){
+      const V=pts[i],P=pts[(i+1)%3],Q=pts[(i+2)%3];
+      const u1=unit(V,P),u2=unit(V,Q),r=(o.ars?o.ars[i]:(o.ar||17));
+      const a1={x:V.x+u1.x*r,y:V.y+u1.y*r},a2={x:V.x+u2.x*r,y:V.y+u2.y*r};
+      const sw=(u1.x*u2.y-u1.y*u2.x)>0?1:0;
+      const hot=o.arcHot&&o.arcHot.indexOf(i)>=0;
+      s+='<path id="'+(o.idp||'')+'arc'+i+'" d="M'+f1(V.x)+','+f1(V.y)+'L'+f1(a1.x)+','+f1(a1.y)+
+         ' A'+r+','+r+' 0 0 '+sw+' '+f1(a2.x)+','+f1(a2.y)+'Z" fill="'+
+         (hot?'rgba(201,118,47,.45)':'rgba(58,110,165,.16)')+'" stroke="'+
+         (hot?'#c9762f':'#3a6ea5')+'" stroke-width="'+(hot?3:2)+'"'+
+         (hot?' class="glow"':'')+'/>';
+    }
+  }
+  /* 辺の 長さ。
+     辺に すいちょくな 向きに ずらす（中心からの 向きだと
+     ほそい 三角形で 字が 辺に かぶってしまう） */
+  if(o.len){
+    const E=[[0,1,2,o.len[0]],[1,2,0,o.len[1]],[2,0,1,o.len[2]]];
+    E.forEach(function(e){
+      const P=pts[e[0]],Q=pts[e[1]],R=pts[e[2]];
+      const m=mid(P,Q),u=unit(P,Q);
+      let nx=-u.y,ny=u.x;
+      if(nx*(R.x-m.x)+ny*(R.y-m.y)>0){nx=-nx;ny=-ny;}   // 3つめの 点の はんたいがわへ
+      const off=o.lo||16,fs=o.lf||15;
+      s+='<text x="'+f1(m.x+nx*off)+'" y="'+f1(m.y+ny*off+fs*0.35)+'" text-anchor="middle" '+
+         'font-size="'+fs+'" fill="#6f5d3d">'+e[3]+'cm</text>';
+    });
+  }
+  /* 同じ 長さの 辺の しるし */
+  if(o.ticks){
+    const E=[[0,1],[1,2],[2,0]];
+    E.forEach(function(e,i){
+      const n=o.ticks[i];if(!n)return;
+      const P=pts[e[0]],Q=pts[e[1]],m=mid(P,Q),u=unit(P,Q);
+      const nx=-u.y,ny=u.x,t=o.tk||7;
+      for(let k=0;k<n;k++){
+        const of2=(k-(n-1)/2)*5.5;
+        const cx=m.x+u.x*of2,cy=m.y+u.y*of2;
+        s+='<line x1="'+f1(cx-nx*t)+'" y1="'+f1(cy-ny*t)+'" x2="'+f1(cx+nx*t)+'" y2="'+f1(cy+ny*t)+
+           '" stroke="#d34b4b" stroke-width="3" stroke-linecap="round"/>';
+      }
+    });
+  }
+  /* 角の 名前（あ・い・う） */
+  if(o.labels){
+    for(let i=0;i<3;i++){
+      const V=pts[i],P=pts[(i+1)%3],Q=pts[(i+2)%3];
+      const u1=unit(V,P),u2=unit(V,Q);
+      let bx=u1.x+u2.x,by=u1.y+u2.y;const L=Math.hypot(bx,by)||1;
+      bx/=L;by/=L;
+      const rr=(o.lrs?o.lrs[i]:(o.lr||36)),rad=o.cr||14,fs=o.nf||18;
+      const cx=V.x+bx*rr,cy=V.y+by*rr;
+      const on=o.sel&&o.sel.indexOf(i)>=0;
+      s+='<g class="alab" data-i="'+i+'">'+
+         '<circle cx="'+f1(cx)+'" cy="'+f1(cy)+'" r="'+rad+'" fill="'+(on?'#3a6ea5':'#fff')+
+         '" stroke="'+(on?'#2a5279':'#9a8763')+'" stroke-width="2.5"/>'+
+         '<text x="'+f1(cx)+'" y="'+f1(cy+fs*0.35)+'" text-anchor="middle" font-size="'+fs+
+         '" fill="'+(on?'#fff':'#5d5040')+'">'+VNAME[i]+'</text>'+
+         /* ゆびで おしやすいように 見えない まるを 大きく のせる */
+         '<circle cx="'+f1(cx)+'" cy="'+f1(cy)+'" r="'+(rad+8)+'" fill="transparent"/></g>';
+    }
+  }
+  return s;
+}
+function svgWrap(W,H,inner,cls){
+  return '<svg viewBox="0 0 '+W+' '+H+'" class="tsvg '+(cls||'')+'" '+
+         'preserveAspectRatio="xMidYMid meet">'+inner+'</svg>';
+}
+
+/* =========================================================
+   ステップ１：なかまを えらぶ
+   6つの 三角形から、二等辺三角形（または 正三角形）を ぜんぶ さがす。
+   辺の 長さは いつも 出しておく。
+   ＝「見た目が それっぽい」ではなく「辺の 長さが 同じか」で きめさせるため。
+========================================================= */
+/* [いう, うあ, あい] の 長さ（cm）。二等辺は 2ばんめと 3ばんめを 同じにしてある */
+const ISO=[[3,5,5],[4,6,6],[6,5,5],[8,5,5],[3,4,4],[6,4,4],[4,7,7],[9,7,7],[5,8,8],[10,6,6],[6,7,7],[2,5,5]];
+const EQU=[[3,3,3],[4,4,4],[5,5,5],[6,6,6],[7,7,7]];
+const SCA=[[3,5,7],[4,6,8],[5,7,9],[3,4,6],[4,5,8],[5,6,9],[2,4,5],[6,8,11],[3,6,7],[4,7,9],[5,8,10],[2,3,4]];
+const ROTS=[0,25,50,75,100,125,150,175,200,225,250,275,300,325];
+const EW=230,EH=166;
+
+const E=load('sankaku3.era',{correct:0,total:0,streak:0});
+E.mode='iso';E.items=[];E.sel=[];E.locked=false;E.hint=false;
+function eSave(){save('sankaku3.era',{correct:E.correct,total:E.total,streak:E.streak});}
+function eScore(){
+  $('eCorrect').textContent=E.correct;
+  $('eTotal').textContent=E.total;
+  $('eStreak').textContent=Math.min(E.streak,GOAL)+'/'+GOAL;
+}
+/* えらぶ ボタン（さがす なかま） */
+function eChips(){
+  const box=$('eChips');box.innerHTML='';
+  [['iso','二等辺三角形'],['equ','正三角形'],['mix','まぜて']].forEach(function(m){
+    const b=document.createElement('button');
+    b.className='chip'+(E.mode===m[0]?' on':'');
+    b.textContent=m[1];
+    bindTap(b,function(){if(E.mode===m[0])return;E.mode=m[0];eChips();eNew();});
+    box.appendChild(b);
+  });
+}
+/* 三角形の 種類を 見る（辺の 長さから） */
+function kindOf(s){
+  const a=s[0],b=s[1],c=s[2];
+  if(a===b&&b===c)return 'equ';
+  if(a===b||b===c||c===a)return 'iso';
+  return 'sca';
+}
+function eNew(){
+  E.locked=false;E.sel=[];E.hint=false;
+  $('eHintBtn').classList.remove('on');
+  $('eStage').className='stage';
+  $('eVerdict').textContent='';$('eVerdict').className='verdict';
+  $('eCheck').classList.remove('hidden');
+  $('eNext').classList.add('hidden');
+  $('eClear').disabled=false;
+
+  const want=(E.mode==='mix')?pick(['iso','equ']):E.mode;
+  E.want=want;
+  let list=[];
+  if(want==='iso'){
+    /* 二等辺を さがす ときは 正三角形を まぜない（3年の あつかいに あわせる） */
+    const n=pick([2,3]);
+    list=shuffle(ISO).slice(0,n).concat(shuffle(SCA).slice(0,6-n));
+  }else{
+    const n=pick([1,2]);
+    list=shuffle(EQU).slice(0,n)
+        .concat(shuffle(ISO).slice(0,2))
+        .concat(shuffle(SCA).slice(0,4-n));
+  }
+  list=shuffle(list);
+  E.items=list.map(function(s){
+    const rot=pick(ROTS);
+    return {sides:s,kind:kindOf(s),shape:triShape(s,rot)};
+  });
+  /* 6つを おなじ ものさしで かく（大きさの ちがいが うそに ならないように） */
+  let mw=0,mh=0;
+  E.items.forEach(function(it){
+    const b=bboxOf(it.shape);
+    if(b.w>mw)mw=b.w;if(b.h>mh)mh=b.h;
+  });
+  E.scale=Math.min((EW-100)/mw,(EH-72)/mh);
+  $('eAsk').innerHTML='<b>'+(want==='iso'?'二等辺三角形':'正三角形')+'</b>を ぜんぶ えらぼう';
+  eRender();eScore();
+}
+function eRender(){
+  const g=$('eGrid');g.innerHTML='';
+  $('eHint').innerHTML=E.hint
+    ? (E.want==='iso'
+        ? '二等辺三角形＝<b class="w">2つの 辺</b>の 長さが 同じ 三角形'
+        : '正三角形＝<b class="w">3つの 辺</b>の 長さが みんな 同じ 三角形')
+    : '';
+  E.items.forEach(function(it,i){
+    const cell=document.createElement('div');
+    let cls='tcell',mark='';
+    const isAns=(it.kind===E.want);
+    const chosen=E.sel.indexOf(i)>=0;
+    if(E.locked){
+      if(isAns&&chosen){cls+=' ok';mark='<span class="mk ok">○</span>';}
+      else if(!isAns&&chosen){cls+=' ng';mark='<span class="mk ng">×</span>';}
+      else if(isAns&&!chosen){cls+=' miss';mark='<span class="mk ok">○</span>';}
+    }else if(chosen){cls+=' on';mark='<span class="mk on">✓</span>';}
+    cell.className=cls;
+    const pts=placePts(it.shape,E.scale,EW/2,EH/2);
+    /* 長さは [あい, いう, うあ] の じゅん。sides は [いう, うあ, あい] */
+    const len=[it.sides[2],it.sides[0],it.sides[1]];
+    let ticks=null;
+    if(E.locked){
+      /* こたえあわせの あとに「同じ 長さ」の しるしを つける */
+      const s=it.sides;
+      ticks=[0,0,0];
+      const eq=[[0,1],[1,2],[2,0]];      // 辺 あい(c) いう(a) うあ(b)
+      const L=[s[2],s[0],s[1]];
+      for(let x=0;x<3;x++)for(let y=x+1;y<3;y++)if(L[x]===L[y]){ticks[x]=1;ticks[y]=1;}
+    }
+    cell.innerHTML=svgWrap(EW,EH,triBody(pts,{
+      len:len,ticks:ticks,lf:16,lo:17,tk:6,
+      fill:isAns&&E.locked?'#eef7e9':'#fffdf7',
+      stroke:isAns&&E.locked?'#5a8a4c':'#7a6a4c'
+    }))+mark;
+    if(!E.locked)bindTap(cell,function(){eTap(i);});
+    g.appendChild(cell);
+  });
+  eGridCols();
+  requestAnimationFrame(eGridCols);
+  refit();
+}
+/* 6つの ますを 2れつ／3れつ どちらに するか。
+   三角形の 絵が いちばん 大きく 出る ほうを えらぶ（画面の 形で かわる） */
+function eGridCols(){
+  const g=$('eGrid');
+  if(!g||g.clientHeight<20||g.clientWidth<20)return;
+  const W=g.clientWidth,H=g.clientHeight,gap=6,R=EW/EH;
+  const size=function(cols){
+    const rows=Math.ceil(6/cols);
+    const cw=(W-gap*(cols-1))/cols-8,ch=(H-gap*(rows-1))/rows-8;
+    return Math.min(cw,ch*R);
+  };
+  let cols=2,best=0;
+  [1,2,3,6].forEach(function(c){const v=size(c);if(v>best){best=v;cols=c;}});
+  const want='repeat('+cols+',1fr)';
+  if(g.style.gridTemplateColumns!==want)g.style.gridTemplateColumns=want;
+}
+function eTap(i){
+  if(E.locked)return;
+  const k=E.sel.indexOf(i);
+  if(k>=0)E.sel.splice(k,1);else E.sel.push(i);
+  eRender();
+}
+function eCheck(){
+  if(E.locked)return;
+  if(E.sel.length===0){
+    $('eVerdict').className='verdict ng';
+    $('eVerdict').textContent='まだ えらんでいないよ　三角形を タップしてね';
+    refit();return;
+  }
+  E.locked=true;E.total++;
+  const ans=[];
+  E.items.forEach(function(it,i){if(it.kind===E.want)ans.push(i);});
+  const ok=(E.sel.length===ans.length)&&ans.every(function(i){return E.sel.indexOf(i)>=0;});
+  const nm=(E.want==='iso')?'二等辺三角形':'正三角形';
+  const rule=(E.want==='iso')?'2つの 辺の 長さが 同じ':'3つの 辺の 長さが みんな 同じ';
+  if(ok){
+    E.correct++;E.streak++;
+    $('eStage').classList.add('correct');
+    $('eVerdict').className='verdict ok';
+    $('eVerdict').innerHTML=(E.streak>=GOAL?'すごい！ ':'よくできました！ ')+
+      nm+'は <em>'+ans.length+'こ</em>　'+rule+'ね';
+    if(E.streak>=GOAL)E.streak=0;
+  }else{
+    E.streak=0;
+    $('eStage').classList.add('wrong');
+    $('eVerdict').className='verdict ng';
+    $('eVerdict').innerHTML='もう一回！　'+nm+'は <em>'+rule+'</em> 三角形　'+
+      '同じ 長さの 辺に <span style="color:var(--ng)">しるし</span>を つけたよ';
+  }
+  $('eClear').disabled=true;
+  $('eCheck').classList.add('hidden');
+  $('eNext').classList.remove('hidden');
+  eRender();eScore();eSave();
+}
+bindTap($('eCheck'),function(){const n=Date.now();if(n-lastAction<450)return;lastAction=n;eCheck();});
+bindTap($('eNext'),function(){const n=Date.now();if(n-lastAction<450)return;lastAction=n;eNew();});
+bindTap($('eClear'),function(){if(E.locked)return;E.sel=[];eRender();});
+bindTap($('eHintBtn'),function(){
+  E.hint=!E.hint;
+  $('eHintBtn').classList.toggle('on',E.hint);
+  eRender();
+});
+
+/* =========================================================
+   ステップ２：おって みる
+   まん中で パタンと おって、かさなる 角を 見つける。
+   ・二等辺三角形 → い と う が かさなる
+   ・正三角形     → どこで おっても かさなる（3つとも 同じ）
+   おりかたは CSS の rotateY で 作る。
+   おり線が ななめでも いいように
+   「おり線を たてに もどす → うら返す → もとの むきに もどす」の
+   3つを つなげて 1つの transform にしている。
+========================================================= */
+const O=load('sankaku3.oru',{correct:0,total:0,streak:0});
+O.W=280;O.H=200;
+O.locked=false;O.folded=false;O.sel=[];O.fv=0;
+function oSaveRec(){save('sankaku3.oru',{correct:O.correct,total:O.total,streak:O.streak});}
+function oScore(){
+  $('oCorrect').textContent=O.correct;
+  $('oTotal').textContent=O.total;
+  $('oStreak').textContent=Math.min(O.streak,GOAL)+'/'+GOAL;
+}
+/* 角の 名前を おく きょり（とがった 角では 三角形から はみ出さないように）。
+   内心（うちの まん中）までの きょりを めやすに する */
+function labelRadii(pts,sides){
+  const t=sides[0]+sides[1]+sides[2];
+  const ix=(sides[0]*pts[0].x+sides[1]*pts[1].x+sides[2]*pts[2].x)/t;
+  const iy=(sides[0]*pts[0].y+sides[1]*pts[1].y+sides[2]*pts[2].y)/t;
+  return pts.map(function(p){
+    const d=Math.hypot(p.x-ix,p.y-iy)*0.62;
+    return Math.max(24,Math.min(46,d));
+  });
+}
+function oNew(){
+  O.locked=false;O.folded=false;O.sel=[];O.fv=0;
+  $('oStage').className='stage';
+  $('oVerdict').textContent='';$('oVerdict').className='verdict';
+  $('oCheck').classList.remove('hidden');
+  $('oNext').classList.add('hidden');
+  O.kind=pick(['iso','iso','equ']);
+  O.sides=(O.kind==='iso')?pick(ISO):pick(EQU);
+  /* 三角形の 形に あわせて わくの 大きさを きめる
+     （ほそい 三角形でも 大きく 見えるように） */
+  let p=triPoints(O.sides[0],O.sides[1],O.sides[2]);
+  const b=bboxOf(p);
+  let sc=Math.min(160/b.h,240/b.w);
+  O.W=b.w*sc+88;O.H=b.h*sc+78;
+  const cx=(b.x0+b.x1)/2,cy=(b.y0+b.y1)/2;
+  O.pts=p.map(function(q){return {x:(q.x-cx)*sc+O.W/2,y:(q.y-cy)*sc+O.H/2};});
+  O.lrs=labelRadii(O.pts,O.sides);
+  O.ars=O.lrs.map(function(r){return Math.min(20,r*0.52);});
+  $('oName').innerHTML=(O.kind==='iso')
+    ? '<b class="w">二等辺三角形</b>（2つの 辺の 長さが 同じ）'
+    : '<b class="w">正三角形</b>（3つの 辺の 長さが みんな 同じ）';
+  $('oWhich').classList.toggle('hidden',O.kind!=='equ');
+  document.querySelectorAll('#oWhich .wchip').forEach(function(c){
+    c.classList.toggle('on',+c.dataset.i===O.fv);
+  });
+  oRender();oScore();
+}
+/* おり線の 両はしと、うごく ほう・とまっている ほうの 角 */
+function oFoldParts(){
+  const fv=O.fv,j=(fv+1)%3,k=(fv+2)%3;
+  return {fv:fv,j:j,k:k,V:O.pts[fv],M:mid(O.pts[j],O.pts[k])};
+}
+/* 四角い わくを おり線で 半分に 切る（うごく ほうの かたち） */
+function clipHalf(poly,V,d,sgn){
+  const f=function(p){return sgn*(d.x*(p.y-V.y)-d.y*(p.x-V.x));};
+  const out=[];
+  for(let i=0;i<poly.length;i++){
+    const A=poly[i],B=poly[(i+1)%poly.length];
+    const fa=f(A),fb=f(B);
+    if(fa>=0)out.push(A);
+    if((fa>0&&fb<0)||(fa<0&&fb>0)){
+      const t=fa/(fa-fb);
+      out.push({x:A.x+(B.x-A.x)*t,y:A.y+(B.y-A.y)*t});
+    }
+  }
+  return out;
+}
+function oRender(){
+  const g=oFoldParts(),pts=O.pts;
+  const len=[O.sides[2],O.sides[0],O.sides[1]];   // [あい, いう, うあ]
+  /* 下の 紙（おり線の 点線つき） */
+  let base=triBody(pts,{len:len,lf:17,lo:19,fill:'#fffdf7',stroke:'var(--edge)',arcs:true,ars:O.ars});
+  base+='<line x1="'+f1(g.V.x)+'" y1="'+f1(g.V.y)+'" x2="'+f1(g.M.x)+'" y2="'+f1(g.M.y)+
+        '" stroke="#c9762f" stroke-width="2.5" stroke-dasharray="7 5"/>';
+  $('oBase').innerHTML=svgWrap(O.W,O.H,base);
+  /* うごく 紙（半分だけ 見えるように 切りぬく） */
+  let flap=triBody(pts,{fill:'rgba(236,154,82,.62)',stroke:'#c9762f',sw:3});
+  const V=g.V,P=pts[g.j];
+  /* うごく ほうの 角（かさなる ほう）を こく 出す */
+  const r=O.ars[g.j],W2=pts[(g.j+1)%3],W3=pts[(g.j+2)%3];
+  const b1=unit(P,W2),b2=unit(P,W3);
+  const a1={x:P.x+b1.x*r,y:P.y+b1.y*r},a2={x:P.x+b2.x*r,y:P.y+b2.y*r};
+  const sw=(b1.x*b2.y-b1.y*b2.x)>0?1:0;
+  flap+='<path d="M'+f1(P.x)+','+f1(P.y)+'L'+f1(a1.x)+','+f1(a1.y)+' A'+r+','+r+' 0 0 '+sw+' '+
+        f1(a2.x)+','+f1(a2.y)+'Z" fill="rgba(201,118,47,.75)" stroke="#8a4f18" stroke-width="3"/>';
+  const fl=$('oFlap');
+  fl.innerHTML=svgWrap(O.W,O.H,flap);
+  const d={x:g.M.x-V.x,y:g.M.y-V.y};
+  const sgn=(d.x*(P.y-V.y)-d.y*(P.x-V.x))>=0?1:-1;
+  const poly=clipHalf([{x:0,y:0},{x:O.W,y:0},{x:O.W,y:O.H},{x:0,y:O.H}],V,d,sgn);
+  fl.style.clipPath='polygon('+poly.map(function(p){
+    return (p.x/O.W*100).toFixed(2)+'% '+(p.y/O.H*100).toFixed(2)+'%';}).join(',')+')';
+  fl.style.webkitClipPath=fl.style.clipPath;
+  fl.style.transformOrigin=(V.x/O.W*100).toFixed(2)+'% '+(V.y/O.H*100).toFixed(2)+'%';
+  const th=Math.atan2(d.y,d.x)*180/Math.PI;
+  fl.style.transform='rotate('+f1(th-90)+'deg) rotateY('+(O.folded?180:0)+'deg) rotate('+f1(90-th)+'deg)';
+  oLabels();
+  oSize();refit();
+}
+/* 角の 名前を おく ところ（角の 二等分線の 上） */
+function labelPos(i){
+  const V=O.pts[i],P=O.pts[(i+1)%3],Q=O.pts[(i+2)%3];
+  const u1=unit(V,P),u2=unit(V,Q);
+  let bx=u1.x+u2.x,by=u1.y+u2.y;const L=Math.hypot(bx,by)||1;
+  return {x:V.x+bx/L*O.lrs[i],y:V.y+by/L*O.lrs[i]};
+}
+/* 角の 名前は いちばん 上の そうに かく（うら返っても 字が さかさまに ならないように） */
+function oLabels(){
+  const g=oFoldParts();
+  let s='';
+  for(let i=0;i<3;i++){
+    if(O.folded&&i===g.j)continue;                 // うごいた ほうは 下で かき直す
+    s+=oOneLabel(labelPos(i),i,O.sel.indexOf(i)>=0,false);
+  }
+  if(O.folded){
+    /* おった あとは「うごいた 角」を かさなった 先の となりに 出す */
+    const V=g.V,d={x:g.M.x-V.x,y:g.M.y-V.y};
+    const L=Math.hypot(d.x,d.y)||1,ux=d.x/L,uy=d.y/L;
+    const lp=labelPos(g.j);
+    const wx=lp.x-V.x,wy=lp.y-V.y,dot=wx*ux+wy*uy;
+    /* おり線に うつした 先（かさなる 場所）＝ 相手の 名前と 同じ ところ */
+    const R={x:2*(V.x+ux*dot)-lp.x,y:2*(V.y+uy*dot)-lp.y};
+    const cen={x:(O.pts[0].x+O.pts[1].x+O.pts[2].x)/3,y:(O.pts[0].y+O.pts[1].y+O.pts[2].y)/3};
+    const ou=unit(cen,R);
+    let cx=R.x+ou.x*30,cy=R.y+ou.y*30;
+    cx=Math.max(17,Math.min(O.W-17,cx));
+    cy=Math.max(17,Math.min(O.H-17,cy));
+    s+=oOneLabel({x:cx,y:cy},g.j,true,true);
+  }
+  let lay=$('oLab');
+  if(!lay){
+    lay=document.createElement('div');
+    lay.className='ly';lay.id='oLab';
+    $('oBox').appendChild(lay);
+  }
+  lay.innerHTML=svgWrap(O.W,O.H,s);
+  lay.querySelectorAll('.alab').forEach(function(el){
+    bindTap(el,function(){oTap(+el.dataset.i);});
+  });
+}
+function oOneLabel(pos,i,on,moved){
+  const fs=18,rad=13.5;
+  return '<g class="alab" data-i="'+i+'">'+
+    '<circle cx="'+f1(pos.x)+'" cy="'+f1(pos.y)+'" r="'+rad+'" fill="'+(moved?'#c9762f':(on?'#3a6ea5':'#fff'))+
+    '" stroke="'+(moved?'#8a4f18':(on?'#2a5279':'#9a8763'))+'" stroke-width="'+(moved?3.5:2.5)+
+    '"'+(moved?' class="glow"':'')+'/>'+
+    '<text x="'+f1(pos.x)+'" y="'+f1(pos.y+fs*0.35)+'" text-anchor="middle" font-size="'+fs+
+    '" fill="'+((moved||on)?'#fff':'#5d5040')+'">'+VNAME[i]+'</text>'+
+    '<circle cx="'+f1(pos.x)+'" cy="'+f1(pos.y)+'" r="'+(rad+8)+'" fill="transparent"/></g>';
+}
+/* おりばこの 大きさ（たて・よこの 比を くずさないように 実さいの px で きめる） */
+function oSize(){
+  const wrap=document.querySelector('#viewOru .foldwrap');
+  const box=$('oBox');
+  if(!wrap||!box)return;
+  const w=wrap.clientWidth,h=wrap.clientHeight;
+  if(w<10||h<10)return;
+  let bw=Math.min(w,h*O.W/O.H);
+  box.style.width=bw+'px';
+  box.style.height=(bw*O.H/O.W)+'px';
+}
+function oTap(i){
+  if(O.locked)return;
+  const k=O.sel.indexOf(i);
+  if(k>=0)O.sel.splice(k,1);else O.sel.push(i);
+  oLabels();
+}
+function oToggleFold(){
+  O.folded=!O.folded;
+  $('oFold').textContent=O.folded?'ひらく ◀':'おって みる ▶';
+  const fl=$('oFlap');
+  const g=oFoldParts();
+  const d={x:g.M.x-g.V.x,y:g.M.y-g.V.y};
+  const th=Math.atan2(d.y,d.x)*180/Math.PI;
+  fl.style.transform='rotate('+f1(th-90)+'deg) rotateY('+(O.folded?180:0)+'deg) rotate('+f1(90-th)+'deg)';
+  /* 字は うら返さない。おりおわってから おきなおす */
+  setTimeout(oLabels,O.folded?900:0);
+  if(!O.folded)oLabels();
+}
+function oCheck(){
+  if(O.locked)return;
+  const want=(O.kind==='iso')?[1,2]:[0,1,2];
+  if(O.sel.length===0){
+    $('oVerdict').className='verdict ng';
+    $('oVerdict').textContent='まだ えらんでいないよ　あ・い・う を タップしてね';
+    refit();return;
+  }
+  O.locked=true;O.total++;
+  const ok=(O.sel.length===want.length)&&want.every(function(i){return O.sel.indexOf(i)>=0;});
+  if(ok){
+    O.correct++;O.streak++;
+    $('oStage').classList.add('correct');
+    $('oVerdict').className='verdict ok';
+    $('oVerdict').innerHTML=(O.streak>=GOAL?'すごい！ ':'よくできました！ ')+
+      (O.kind==='iso'
+        ? 'おると <em>い</em> と <em>う</em> が ぴったり かさなる　二等辺三角形の <em>2つの 角</em>の 大きさは 同じ'
+        : 'どこで おっても ぴったり かさなる　正三角形の <em>3つの 角</em>の 大きさは みんな 同じ');
+    if(O.streak>=GOAL)O.streak=0;
+  }else{
+    O.streak=0;
+    $('oStage').classList.add('wrong');
+    $('oVerdict').className='verdict ng';
+    $('oVerdict').innerHTML='もう一回！　こたえは <em>'+want.map(function(i){return VNAME[i];}).join(' と ')+
+      '</em>　おって かさなる 角は 大きさが 同じだよ';
+    O.sel=want.slice();
+  }
+  $('oCheck').classList.add('hidden');
+  $('oNext').classList.remove('hidden');
+  oScore();oSaveRec();
+  if(!O.folded)oToggleFold();else oLabels();
+  refit();
+}
+bindTap($('oFold'),function(){const n=Date.now();if(n-lastAction<400)return;lastAction=n;oToggleFold();});
+bindTap($('oCheck'),function(){const n=Date.now();if(n-lastAction<450)return;lastAction=n;oCheck();});
+bindTap($('oNext'),function(){const n=Date.now();if(n-lastAction<450)return;lastAction=n;oNew();});
+document.querySelectorAll('#oWhich .wchip').forEach(function(c){
+  bindTap(c,function(){
+    const i=+c.dataset.i;
+    if(O.fv===i)return;
+    O.fv=i;O.folded=false;
+    $('oFold').textContent='おって みる ▶';
+    document.querySelectorAll('#oWhich .wchip').forEach(function(x){
+      x.classList.toggle('on',+x.dataset.i===i);
+    });
+    $('oFlap').classList.add('no');
+    oRender();
+    setTimeout(function(){$('oFlap').classList.remove('no');},30);
+  });
+});
+
+/* =========================================================
+   ステップ３：角を ならべる
+   角の 大きさを 大きい じゅんに ならべる。
+   ・辺（へん）の 長さは わざと バラバラにしてある。
+     「辺が 長い ほうが 大きい 角」と まちがえやすいので、
+     長い 辺の 角が 小さい ことが よく 出るように している。
+   ・「かさねる」を おすと、ぜんぶの 角を おなじ ちょう点に かさねて くらべられる。
+     3年は 度（ど）を つかわないので、くらべ方は「かさねる」。
+========================================================= */
+const KW=124,KH=118;
+const KCOL=['#e07b52','#3a6ea5','#7a9b45','#9b7fd4'];
+const ANAME=['あ','い','う','え'];   // 角は 4つまで 出す
+const KDEG=[20,28,38,48,58,70,82,95,110,125,140];
+const KLEN=[20,29,38,48];
+
+const K=load('sankaku3.kak',{correct:0,total:0,streak:0});
+K.n=3;K.locked=false;K.hint=false;K.angs=[];K.order=[];
+function kSaveRec(){save('sankaku3.kak',{correct:K.correct,total:K.total,streak:K.streak});}
+function kScore(){
+  $('kCorrect').textContent=K.correct;
+  $('kTotal').textContent=K.total;
+  $('kStreak').textContent=Math.min(K.streak,GOAL)+'/'+GOAL;
+}
+function kChips(){
+  const box=$('kChips');box.innerHTML='';
+  [[3,'3つ'],[4,'4つ']].forEach(function(m){
+    const b=document.createElement('button');
+    b.className='chip'+(K.n===m[0]?' on':'');
+    b.textContent=m[1];
+    bindTap(b,function(){if(K.n===m[0])return;K.n=m[0];kChips();kNew();});
+    box.appendChild(b);
+  });
+}
+/* はっきり ちがう 大きさの 角を n こ えらぶ */
+function pickDegs(n){
+  for(let t=0;t<200;t++){
+    const c=shuffle(KDEG).slice(0,n).sort(function(a,b){return a-b;});
+    let ok=true;
+    for(let i=1;i<n;i++)if(c[i]-c[i-1]<16)ok=false;
+    if(ok)return shuffle(c);
+  }
+  return KDEG.slice(0,n);
+}
+function kNew(){
+  K.locked=false;K.hint=false;K.order=[];
+  $('kHintBtn').classList.remove('on');
+  $('kStage').className='stage';
+  $('kVerdict').textContent='';$('kVerdict').className='verdict';
+  $('kCheck').classList.remove('hidden');
+  $('kNext').classList.add('hidden');
+  $('kClear').disabled=false;
+  const degs=pickDegs(K.n);
+  /* いちばん 大きい 角の 辺を わざと 短くする ことが 多くなるように する */
+  const big=degs.indexOf(Math.max.apply(null,degs));
+  K.angs=degs.map(function(d,i){
+    let r1=pick(KLEN),r2=pick(KLEN);
+    if(i===big&&Math.random()<0.7){r1=KLEN[0];r2=KLEN[Math.random()<0.5?0:1];}
+    return {deg:d,r1:r1,r2:r2,rot:Math.floor(Math.random()*360),col:KCOL[i]};
+  });
+  kRender();kScore();
+}
+/* 角 1つの かたち（まだ 大きさを あわせる 前） */
+function angGeom(a){
+  const t1=a.rot*Math.PI/180,t2=(a.rot+a.deg)*Math.PI/180;
+  const V={x:0,y:0};
+  const e1={x:Math.cos(t1)*a.r1,y:Math.sin(t1)*a.r1};
+  const e2={x:Math.cos(t2)*a.r2,y:Math.sin(t2)*a.r2};
+  return {t1:t1,t2:t2,V:V,e1:e1,e2:e2,b:bboxOf([V,e1,e2])};
+}
+/* ぜんぶの 角を おなじ ものさしで かく。
+   1つずつ 大きさを あわせると、辺が 短い 角まで 大きく なってしまい、
+   「辺の 長さは かんけいない」ことが 見えなく なるため。 */
+function kSharedScale(){
+  let mw=1,mh=1;
+  K.angs.forEach(function(a){
+    const b=angGeom(a).b;
+    if(b.w>mw)mw=b.w;if(b.h>mh)mh=b.h;
+  });
+  return Math.min((KW-22)/mw,(KH-22)/mh,2.2);
+}
+/* 角 1つの 絵 */
+function angSVG(a,W,H,sc){
+  const g=angGeom(a),t1=g.t1,t2=g.t2,b=g.b,V=g.V,e1=g.e1,e2=g.e2;
+  const ox=W/2-(b.x0+b.x1)/2*sc,oy=H/2-(b.y0+b.y1)/2*sc;
+  const P=function(p){return {x:p.x*sc+ox,y:p.y*sc+oy};};
+  const v=P(V),p1=P(e1),p2=P(e2);
+  const rw=Math.max(10,Math.min(Math.hypot(p1.x-v.x,p1.y-v.y),Math.hypot(p2.x-v.x,p2.y-v.y))*0.5);
+  const q1={x:v.x+Math.cos(t1)*rw,y:v.y+Math.sin(t1)*rw};
+  const q2={x:v.x+Math.cos(t2)*rw,y:v.y+Math.sin(t2)*rw};
+  let s='<path d="M'+f1(v.x)+','+f1(v.y)+'L'+f1(q1.x)+','+f1(q1.y)+' A'+f1(rw)+','+f1(rw)+
+        ' 0 0 1 '+f1(q2.x)+','+f1(q2.y)+'Z" fill="'+a.col+'" fill-opacity=".28" stroke="'+a.col+
+        '" stroke-width="2.5"/>';
+  s+='<line x1="'+f1(v.x)+'" y1="'+f1(v.y)+'" x2="'+f1(p1.x)+'" y2="'+f1(p1.y)+
+     '" stroke="var(--edge)" stroke-width="4" stroke-linecap="round"/>';
+  s+='<line x1="'+f1(v.x)+'" y1="'+f1(v.y)+'" x2="'+f1(p2.x)+'" y2="'+f1(p2.y)+
+     '" stroke="var(--edge)" stroke-width="4" stroke-linecap="round"/>';
+  s+='<circle cx="'+f1(v.x)+'" cy="'+f1(v.y)+'" r="3.5" fill="var(--edge)"/>';
+  return s;
+}
+function kRender(){
+  const box=$('kAngs');
+  box.className='angrow'+(K.n===4?' four':'');
+  box.innerHTML='';
+  if(K.hint){
+    /* ぜんぶの 角を おなじ ちょう点に かさねて くらべる。
+       辺の 長さを そろえるので、大きさの ちがいだけが のこる */
+    const HW=300,HH=170,R=100;
+    const ends=K.angs.map(function(a){
+      const t=-a.deg*Math.PI/180;
+      return {x:Math.cos(t)*R,y:Math.sin(t)*R};
+    });
+    /* 名前の まるまで 入るように わくを 合わせる */
+    let b=bboxOf(ends.concat([{x:0,y:0},{x:R+18,y:0}]));
+    b={x0:b.x0-19,y0:b.y0-19,x1:b.x1+19,y1:b.y1+19};
+    const bw=b.x1-b.x0,bh=b.y1-b.y0;
+    const sc=Math.min((HW-6)/bw,(HH-6)/bh);
+    const tx=(HW-bw*sc)/2-b.x0*sc,ty=(HH-bh*sc)/2-b.y0*sc;
+    let s='<g transform="translate('+f1(tx)+','+f1(ty)+') scale('+sc.toFixed(3)+')">';
+    s+='<line x1="0" y1="0" x2="'+(R+14)+'" y2="0" stroke="var(--edge)" stroke-width="4" stroke-linecap="round"/>';
+    K.angs.forEach(function(a,i){
+      const e=ends[i],rw=32+i*12;
+      const t=-a.deg*Math.PI/180;
+      const q2={x:Math.cos(t)*rw,y:Math.sin(t)*rw};
+      s+='<path d="M'+rw+',0 A'+rw+','+rw+' 0 0 0 '+f1(q2.x)+','+f1(q2.y)+
+         '" fill="none" stroke="'+a.col+'" stroke-width="3.5"/>';
+      s+='<line x1="0" y1="0" x2="'+f1(e.x)+'" y2="'+f1(e.y)+
+         '" stroke="'+a.col+'" stroke-width="3.5" stroke-linecap="round"/>';
+      /* かさねて 見ている ときも、この 字を おせば ならべられる */
+      const used=(!K.locked&&K.order.indexOf(i)>=0);
+      s+='<g class="alab" data-i="'+i+'" opacity="'+(used?'.3':'1')+'">'+
+         '<circle cx="'+f1(e.x)+'" cy="'+f1(e.y)+'" r="15" fill="#fff" stroke="'+a.col+'" stroke-width="2.5"/>'+
+         '<text x="'+f1(e.x)+'" y="'+f1(e.y+6)+'" text-anchor="middle" font-size="18" fill="'+a.col+
+         '">'+ANAME[i]+'</text>'+
+         '<circle cx="'+f1(e.x)+'" cy="'+f1(e.y)+'" r="23" fill="transparent"/></g>';
+    });
+    s+='<circle cx="0" cy="0" r="4.5" fill="var(--edge)"/></g>';
+    const d=document.createElement('div');
+    d.className='acard';d.style.gridColumn='1/-1';
+    d.innerHTML=svgWrap(HW,HH,s);
+    box.appendChild(d);
+    if(!K.locked){
+      d.querySelectorAll('.alab').forEach(function(el){
+        bindTap(el,function(){kPlace(+el.dataset.i);});
+      });
+    }
+  }else{
+    const sc=kSharedScale();
+    K.angs.forEach(function(a,i){
+      const d=document.createElement('div');
+      let cls='acard';
+      if(K.order.indexOf(i)>=0)cls+=' used';
+      d.className=cls;
+      d.innerHTML=svgWrap(KW,KH,angSVG(a,KW,KH,sc))+
+        '<span class="mk" style="color:'+a.col+'">'+ANAME[i]+'</span>';
+      if(!K.locked)bindTap(d,function(){kPlace(i);});
+      box.appendChild(d);
+    });
+  }
+  /* ならべる ところ */
+  const rb=$('kRanks');
+  rb.className='ranks'+(K.n===4?' four':'');
+  rb.innerHTML='';
+  const names=(K.n===3)?['1ばん 大きい','2ばんめ','いちばん 小さい']
+                       :['1ばん 大きい','2ばんめ','3ばんめ','いちばん 小さい'];
+  const right=kAnswer();
+  for(let i=0;i<K.n;i++){
+    const d=document.createElement('div');
+    const v=(i<K.order.length)?K.order[i]:null;
+    let cls='rank'+(v!==null?' filled':'');
+    if(K.locked&&v!==null)cls+=(v===right[i]?' ok':' ng');
+    d.className=cls;
+    d.innerHTML='<span class="rt">'+names[i]+'</span><span class="rv" '+
+      (v!==null?'style="color:'+K.angs[v].col+'"':'')+'>'+(v!==null?ANAME[v]:'？')+'</span>';
+    if(!K.locked)bindTap(d,function(){kTake(i);});
+    rb.appendChild(d);
+  }
+  refit();
+}
+function kAnswer(){
+  const idx=K.angs.map(function(a,i){return i;});
+  idx.sort(function(x,y){return K.angs[y].deg-K.angs[x].deg;});
+  return idx;
+}
+function kPlace(i){
+  if(K.locked)return;
+  if(K.order.indexOf(i)>=0)return;
+  if(K.order.length>=K.n)return;
+  K.order.push(i);kRender();
+}
+function kTake(i){
+  if(K.locked)return;
+  if(i<K.order.length){K.order.splice(i,1);kRender();}
+}
+function kCheck(){
+  if(K.locked)return;
+  if(K.order.length<K.n){
+    $('kVerdict').className='verdict ng';
+    $('kVerdict').textContent='まだ とちゅうだよ　あと '+(K.n-K.order.length)+'つ ならべてね';
+    refit();return;
+  }
+  K.locked=true;K.total++;
+  const right=kAnswer();
+  const ok=right.every(function(v,i){return K.order[i]===v;});
+  const seq=right.map(function(i){return ANAME[i];}).join(' → ');
+  if(ok){
+    K.correct++;K.streak++;
+    $('kStage').classList.add('correct');
+    $('kVerdict').className='verdict ok';
+    $('kVerdict').innerHTML=(K.streak>=GOAL?'すごい！ ':'よくできました！ ')+
+      '大きい じゅんは <em>'+seq+'</em>';
+    if(K.streak>=GOAL)K.streak=0;
+  }else{
+    K.streak=0;
+    $('kStage').classList.add('wrong');
+    $('kVerdict').className='verdict ng';
+    $('kVerdict').innerHTML='もう一回！　こたえは <em>'+seq+
+      '</em>　角の 大きさは <em>辺の 長さでは きまらない</em>よ';
+  }
+  K.hint=true;$('kHintBtn').classList.add('on');
+  $('kClear').disabled=true;
+  $('kCheck').classList.add('hidden');
+  $('kNext').classList.remove('hidden');
+  kRender();kScore();kSaveRec();
+}
+bindTap($('kCheck'),function(){const n=Date.now();if(n-lastAction<450)return;lastAction=n;kCheck();});
+bindTap($('kNext'),function(){const n=Date.now();if(n-lastAction<450)return;lastAction=n;kNew();});
+bindTap($('kClear'),function(){if(K.locked)return;K.order=[];kRender();});
+bindTap($('kHintBtn'),function(){
+  K.hint=!K.hint;
+  $('kHintBtn').classList.toggle('on',K.hint);
+  kRender();
+});
+
+/* =========================================================
+   ステップ４：しきつめる
+   同じ 三角形を すきまなく ならべる。
+   ・上むき と 下むき（さかさま）を こうごに おくと ぴったり つまる
+   ・小さい 三角形が あつまると、同じ 形の 大きな 三角形に なる
+   丸つけは しない（もようを 作る ところ）。
+========================================================= */
+const SROW=4;                      // よこの だん数（4だん＝16こ）
+const SCOL=['#e8a13c','#5b9bd5','#7bbf6a','#c47ad0'];
+const S={shape:'equ',cur:0,fill:[],cells:[],timer:null};
+
+function sChips(){
+  const box=$('sChips');box.innerHTML='';
+  [['equ','正三角形'],['iso','二等辺三角形']].forEach(function(m){
+    const b=document.createElement('button');
+    b.className='chip'+(S.shape===m[0]?' on':'');
+    b.textContent=m[1];
+    bindTap(b,function(){if(S.shape===m[0])return;S.shape=m[0];sChips();sNew();});
+    box.appendChild(b);
+  });
+}
+function sPal(){
+  const box=$('sPal');box.innerHTML='';
+  SCOL.forEach(function(c,i){
+    const b=document.createElement('button');
+    b.className='pc'+(S.cur===i?' on':'');
+    b.style.background=c;
+    bindTap(b,function(){S.cur=i;sPal();});
+    box.appendChild(b);
+  });
+}
+function sNew(){
+  sStop();
+  const side=100,h=(S.shape==='equ')?side*Math.sqrt(3)/2:side*1.25;
+  const pad=10;
+  S.W=SROW*side+pad*2;S.H=SROW*h+pad*2;
+  S.cells=[];
+  for(let r=0;r<SROW;r++){
+    const xl=pad+(SROW-1-r)*side/2, yt=pad+r*h, yb=pad+(r+1)*h;
+    for(let i=0;i<=r;i++){          // 上むき
+      S.cells.push({up:true,p:[{x:xl+i*side,y:yb},{x:xl+(i+1)*side,y:yb},{x:xl+i*side+side/2,y:yt}]});
+    }
+    for(let i=0;i<r;i++){           // 下むき（さかさま）
+      S.cells.push({up:false,p:[{x:xl+i*side+side/2,y:yt},{x:xl+(i+1)*side+side/2,y:yt},{x:xl+(i+1)*side,y:yb}]});
+    }
+  }
+  S.fill=S.cells.map(function(){return null;});
+  $('sStage').className='stage';
+  $('sVerdict').textContent='';$('sVerdict').className='verdict';
+  sRender();
+}
+function sRender(){
+  let s='';
+  /* 大きな わく（ここに つめる）。中の 点線より 下に しく */
+  const pad=10;
+  const frame='M'+(S.W/2)+','+pad+'L'+(S.W-pad)+','+(S.H-pad)+'L'+pad+','+(S.H-pad)+'Z';
+  s+='<path d="'+frame+'" fill="#fffdf7" stroke="none"/>';
+  S.cells.forEach(function(c,i){
+    const d='M'+c.p.map(function(p){return f1(p.x)+','+f1(p.y);}).join('L')+'Z';
+    const v=S.fill[i];
+    s+='<path class="scell" data-i="'+i+'" d="'+d+'" pointer-events="all" fill="'+
+       (v===null?'transparent':SCOL[v])+'" stroke="'+(v===null?'#d9c9a4':'#fffdf7')+
+       '" stroke-width="'+(v===null?2:3)+'" stroke-linejoin="round"'+
+       (v===null?' stroke-dasharray="6 5"':'')+'/>';
+  });
+  /* わくの 線は いちばん 上に かく（中の 点線に けされないように） */
+  s+='<path d="'+frame+'" fill="none" stroke="#9a8763" stroke-width="4" stroke-linejoin="round" pointer-events="none"/>';
+  const board=$('sBoard');
+  board.innerHTML=svgWrap(S.W,S.H,s);
+  board.querySelectorAll('.scell').forEach(function(el){
+    bindTap(el,function(){sTap(+el.dataset.i);});
+  });
+  sCount();
+  refit();
+}
+function sCount(){
+  let done=0,up=0,dn=0;
+  S.fill.forEach(function(v,i){if(v!==null){done++;if(S.cells[i].up)up++;else dn++;}});
+  const left=S.cells.length-done;
+  $('sCnt').textContent=(left>0)?('あと '+left+'こ'):('ぜんぶで '+S.cells.length+'こ');
+  if(left===0){
+    $('sStage').classList.add('correct');
+    $('sVerdict').className='verdict ok';
+    $('sVerdict').innerHTML='すごい！ すきまも かさなりも なく <em>しきつめられた</em>　'+
+      '上むき '+up+'こ と さかさま '+dn+'こ　小さい '+
+      (S.shape==='equ'?'正三角形':'二等辺三角形')+'が あつまって <em>大きな 同じ 形</em>に なったね';
+  }else{
+    $('sStage').classList.remove('correct');
+    $('sVerdict').className='verdict';
+    $('sVerdict').textContent='';
+  }
+}
+function sTap(i){
+  sStop();
+  if(S.fill[i]===S.cur)S.fill[i]=null;    // 同じ 色を もう一回 おすと けせる
+  else S.fill[i]=S.cur;
+  sRender();
+}
+/* ぜんぶ おく：上むき と さかさまで 色を かえて、こうごに なるのを 見せる */
+function sAuto(){
+  sStop();
+  const rest=[];
+  S.cells.forEach(function(c,i){if(S.fill[i]===null)rest.push(i);});
+  if(rest.length===0){S.fill=S.cells.map(function(){return null;});sRender();return sAuto();}
+  const cy=function(i){const q=S.cells[i].p;return (q[0].y+q[1].y+q[2].y)/3;};
+  const cxx=function(i){const q=S.cells[i].p;return (q[0].x+q[1].x+q[2].x)/3;};
+  rest.sort(function(a,b){return (cy(a)-cy(b))||(cxx(a)-cxx(b));});
+  let n=0;
+  S.timer=setInterval(function(){
+    if(n>=rest.length){sStop();return;}
+    const i=rest[n++];
+    S.fill[i]=S.cells[i].up?0:1;
+    sRender();
+  },110);
+}
+function sStop(){if(S.timer){clearInterval(S.timer);S.timer=null;}}
+bindTap($('sClear'),function(){sStop();S.fill=S.cells.map(function(){return null;});sRender();});
+bindTap($('sAuto'),function(){const n=Date.now();if(n-lastAction<400)return;lastAction=n;sAuto();});
+
+/* =========================================================
+   ステップの きりかえ
+========================================================= */
+const VIEWS={era:'viewEra',oru:'viewOru',kak:'viewKak',shi:'viewShi'};
+const VS={view:'era'};
+document.querySelectorAll('.tab').forEach(function(t){
+  bindTap(t,function(){
+    if(VS.view===t.dataset.v)return;     // 同じタブの 再タップでは 作り直さない
+    sStop();
+    VS.view=t.dataset.v;
+    document.querySelectorAll('.tab').forEach(function(x){x.classList.toggle('on',x===t);});
+    Object.keys(VIEWS).forEach(function(k){
+      $(VIEWS[k]).classList.toggle('hidden',VS.view!==k);
+    });
+    if(VS.view==='era'){eScore();eRender();}
+    if(VS.view==='oru'){oScore();oRender();}
+    if(VS.view==='kak'){kScore();kRender();}
+    if(VS.view==='shi'){sRender();}
+    fitToFrame();
+  });
+});
+document.addEventListener('keydown',function(e){
+  if(e.repeat)return;
+  if(e.key!=='Enter')return;
+  const n=Date.now();if(n-lastAction<450)return;lastAction=n;
+  if(VS.view==='era')E.locked?eNew():eCheck();
+  else if(VS.view==='oru')O.locked?oNew():oCheck();
+  else if(VS.view==='kak')K.locked?kNew():kCheck();
+});
+
+/* 中身が かわったあとに 1画面に 収まっているか 見なおす */
+function refit(){if(typeof fitShrink==='function')fitShrink();}
+
+/* ===== 枠の高さを実測して、その中に必ず収める ===== */
+function frameHeight(){
+  const c=document.documentElement.clientHeight||0;
+  const w=window.innerHeight||0;
+  const v=(window.visualViewport&&window.visualViewport.height)||0;
+  return Math.min.apply(null,[c,w,v].filter(function(x){return x>0;}))||w||c;
+}
+function fitToFrame(){
+  document.documentElement.style.setProperty('--fh',frameHeight()+'px');
+  fitShrink();
+}
+/* ===== はみ出す場合は --shrink で自動縮小して必ず1画面に収める ===== */
+let shrinkPass=0;
+function fitShrink(){
+  document.documentElement.style.setProperty('--shrink','1');
+  shrinkPass=0;
+  requestAnimationFrame(shrinkStep);
+}
+function overflowInfo(){
+  let worst={over:0,ratio:1};
+  const check=function(el){
+    if(!el||el.clientHeight<=0)return;
+    const over=el.scrollHeight-el.clientHeight;
+    if(over>worst.over)worst={over:over,ratio:el.clientHeight/el.scrollHeight};
+  };
+  check(document.querySelector('.app'));
+  document.querySelectorAll('.stage').forEach(function(st){if(st.offsetParent!==null)check(st);});
+  return worst;
+}
+function shrinkStep(){
+  const appEl=document.querySelector('.app');
+  if(!appEl)return;
+  const w=overflowInfo(),over=w.over;
+  if(over>2&&shrinkPass<6){
+    const cur=parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--shrink'))||1;
+    const next=Math.max(.55,cur*Math.max(.8,w.ratio));
+    document.documentElement.style.setProperty('--shrink',next.toFixed(3));
+    shrinkPass++;
+    requestAnimationFrame(shrinkStep);
+  }else{
+    oSize();eGridCols();
+  }
+}
+window.addEventListener('resize',fitToFrame);
+if(window.visualViewport)window.visualViewport.addEventListener('resize',fitToFrame);
+window.addEventListener('orientationchange',function(){setTimeout(fitToFrame,200);});
+window.addEventListener('load',function(){fitToFrame();oSize();});
+
+/* ---------- はじめの表示 ---------- */
+eChips();eNew();
+oNew();
+kChips();kNew();
+sChips();sPal();sNew();
+fitToFrame();
+requestAnimationFrame(function(){oSize();});
+</script>
+</body>
+</html>
