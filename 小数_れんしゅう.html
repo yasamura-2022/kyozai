@@ -185,7 +185,7 @@
   @keyframes glow{0%,100%{box-shadow:0 0 0 0 rgba(0,0,0,0)}50%{box-shadow:0 0 0 5px var(--accent-soft)}}
   .dot{color:var(--ng);font-weight:800;padding:0 .04em}
 
-  /* ===== もんだいの 文（たんいと 小数） ===== */
+  /* ===== もんだいの 文（単位と小数） ===== */
   .qtext{font-weight:800;color:var(--ink);line-height:1.9;word-break:keep-all;
     font-size:calc(clamp(14px, calc(var(--fh,100vh) * 0.036), 24px) * var(--shrink,1))}
   .qtext .u{font-size:.72em;margin:0 .08em;color:#6f5d3d}
@@ -306,8 +306,8 @@
 
   <div class="tabs">
     <button class="tab on" data-v="mizu"><span class="step">ステップ１</span>1Lますで 見る</button>
-    <button class="tab" data-v="yomu"><span class="step">ステップ２</span>よんで かく</button>
-    <button class="tab" data-v="tani"><span class="step">ステップ３</span>たんいと 小数</button>
+    <button class="tab" data-v="yomu"><span class="step">ステップ２</span>読んで書く</button>
+    <button class="tab" data-v="tani"><span class="step">ステップ３</span>単位と小数</button>
     <button class="tab" data-v="keisan"><span class="step">ステップ４</span>たし算 ひき算</button>
   </div>
 
@@ -327,7 +327,7 @@
     </div>
   </div>
 
-  <!-- ============ ステップ２：よんで かく ============ -->
+  <!-- ============ ステップ２：読んで書く ============ -->
   <div id="viewYomu" class="hidden">
     <div class="ops" id="yOps"></div>
     <div class="score">
@@ -350,7 +350,7 @@
     </div>
   </div>
 
-  <!-- ============ ステップ３：たんいと 小数 ============ -->
+  <!-- ============ ステップ３：単位と小数 ============ -->
   <div id="viewTani" class="hidden">
     <div class="ops" id="tOps"></div>
     <div class="score">
@@ -409,8 +409,8 @@
    ・たし算・ひき算も「0.1が 何こ」で 考える。筆算は 位を そろえる
 
    ステップ１ 1Lますで 見る … 0.1Lずつ 入れて いく（見せる ところ。丸つけなし）
-   ステップ２ よんで かく   … 1Lます／数直線 を よんで 小数で かく
-   ステップ３ たんいと 小数 … 長さ／かさ／0.1の 何こ分
+   ステップ２ 読んで書く   … 1Lます／数直線 を よんで 小数で かく
+   ステップ３ 単位と小数 … 長さ／かさ／0.1の 何こ分
    ステップ４ たし算 ひき算 … 0.1の いくつ分 → くり上がり → 筆算 → 整数も まじる
 
    ボタンの 色は ほかの アプリと そろえる
@@ -647,7 +647,7 @@ bindTap($('mBack'),()=>{if(M.k>-1){M.k--;mRender();}});
 bindTap($('mReset'),()=>{M.k=-1;mRender();});
 
 /* =========================================================
-   ステップ２：よんで かく
+   ステップ２：読んで書く
    1Lます／数直線 を よんで、小数で かく
    入れる じゅんは 左から。1より 小さいときは 一の位に 0を かく
 ========================================================= */
@@ -765,7 +765,7 @@ function yCheck(){
 bindTap($('yHintBtn'),()=>{Y.hint=!Y.hint;yRender();});
 
 /* =========================================================
-   ステップ３：たんいと 小数
+   ステップ３：単位と小数
    長さ … 1mm は 1cm の 1/10 だから 0.1cm
    かさ … 1dL は 1L の 1/10 だから 0.1L
    0.1の 何こ分 … 2.3 は 0.1が 23こ など
