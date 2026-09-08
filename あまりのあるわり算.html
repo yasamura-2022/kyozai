@@ -148,9 +148,10 @@ body:not(.kimari) #ktable{display:none}
 #kend{margin-top:10px;font-family:var(--f-text);font-size:clamp(13px,1.4vw,20px);color:var(--muted)}
 
 /* ---- 右パネル ---- */
-#rail{flex:none;width:clamp(210px,23%,320px);display:flex;flex-direction:column;gap:10px}
+#rail{flex:none;width:clamp(180px,19%,280px);display:flex;flex-direction:column;gap:10px}
 .card{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:10px 12px}
 .ctitle{font-size:12px;color:var(--muted);letter-spacing:.1em;margin-bottom:6px}
+.wcard{flex:1;display:flex;flex-direction:column;justify-content:center}
 body.kimari .wcard{display:none}
 body:not(.kimari) .kcard{display:none}
 
@@ -169,17 +170,12 @@ body:not(.kimari) .kcard{display:none}
   color:var(--ok);opacity:0;transition:opacity .4s;min-height:1.4em;line-height:1.4}
 #tashikame.on{opacity:1}
 
-#kukuCard{flex:1;min-height:0;display:flex;flex-direction:column}
-#kukuCard.off{display:none}
-body.kimari #kukuCard{display:none}
-#kukuList{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:3px}
 .kk{display:flex;align-items:center;gap:8px;padding:2px 8px;border-radius:8px;
   font-size:clamp(13px,1.35vw,20px);background:#f7f1e2;color:var(--muted)}
 .kk.done{background:var(--ok-l);color:var(--ink)}
 .kk.over{background:var(--amari-l);color:var(--amari);font-weight:700}
 .kk .mk{font-size:.85em;flex:none;width:1.4em;text-align:center}
 .kk .nt{margin-left:auto;font-size:.62em;font-weight:400}
-#kukuEmpty{font-size:13px;color:var(--muted);padding:4px 8px}
 
 #ringRow{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
 .ring{width:2.1em;height:2.1em;border-radius:50%;display:grid;place-items:center;
@@ -305,7 +301,6 @@ body:not(.kimari) .kbtn{display:none}
   #main{flex-direction:column;overflow:hidden}
   #rail{width:auto;flex-direction:row;flex:none;min-height:0}
   #rail .card{min-width:0;overflow:hidden}
-  #kukuCard{display:none}
   /* せまい画面では ステージを ちぢめて、しきカードが かくれないように */
   .pane{min-height:120px}
   #settings{gap:6px 10px;padding:6px 10px}
@@ -350,36 +345,12 @@ body:not(.kimari) .kbtn{display:none}
       <span class="glab" id="dLab">1ふくろの数</span>
       <button class="step" id="dDown">−</button><span class="num" id="dVal">3</span><button class="step" id="dUp">＋</button>
     </div>
-    <div class="grp w">
-      <span class="glab">もの</span>
-      <select id="itemSel">
-        <option value="candy">あめ 🍬</option>
-        <option value="mikan">みかん 🍊</option>
-        <option value="cookie">クッキー 🍪</option>
-        <option value="ichigo">いちご 🍓</option>
-        <option value="ball">ボール ⚽</option>
-      </select>
-    </div>
     <div class="grp k">
       <span class="glab">はじめの数</span>
       <button class="step" id="sDown">−</button><span class="num" id="sVal">12</span><button class="step" id="sUp">＋</button>
     </div>
     <div class="grp k">
       <button class="btn sm tog" id="bStrip" aria-pressed="true">ブロックを 見せる</button>
-    </div>
-    <div class="sep"></div>
-    <div class="grp w">
-      <button class="btn sm" id="p1">あめ13こ・3こずつ</button>
-      <button class="btn sm" id="p2">みかん16こ・3人</button>
-    </div>
-    <div class="grp k">
-      <button class="btn sm" id="p3">4でわる（12・13・14…）</button>
-      <button class="btn sm" id="p4">3でわる（9・10・11…）</button>
-    </div>
-    <div class="sep"></div>
-    <div class="grp w">
-      <button class="btn sm tog" id="bHide" aria-pressed="false">しきを かくす</button>
-      <button class="btn sm tog" id="bKuku" aria-pressed="true">九九</button>
     </div>
   </div>
 
@@ -404,10 +375,6 @@ body:not(.kimari) .kbtn{display:none}
         <div id="shikiRow"></div>
         <div id="kotae"></div>
         <div id="tashikame"></div>
-      </div>
-      <div class="card wcard" id="kukuCard">
-        <div class="ctitle" id="kukuTitle">3のだん</div>
-        <div id="kukuList"></div>
       </div>
       <div class="card kcard">
         <div class="ctitle" id="ringTitle">出てきた あまり</div>
@@ -466,18 +433,16 @@ var ITEMS = {
 };
 
 var S = {view:"wake", mode:"zutsu", N:13, D:3, item:"candy", step:0,
-         hide:false, kuku:true, focus:false,
-         kStart:12, kCount:1, kStrip:true};
+         focus:false, kStart:12, kCount:1, kStrip:true};
 var timer=null, L=null;
 var $=function(id){return document.getElementById(id);};
 var stage=$("stage"), contsEl=$("conts"), itemsEl=$("items"), ghostsEl=$("ghosts");
 var itemEls=[], ghostEls=[], contEls=[];
 
 function save(){ try{ localStorage.setItem("warizan2", JSON.stringify(
-  {mode:S.mode,N:S.N,D:S.D,item:S.item,kuku:S.kuku,kStrip:S.kStrip})); }catch(e){} }
+  {mode:S.mode,N:S.N,D:S.D,kStrip:S.kStrip})); }catch(e){} }
 function load(){ try{ var o=JSON.parse(localStorage.getItem("warizan2")||"null");
-  if(o&&o.N){ S.mode=o.mode||S.mode; S.N=o.N; S.D=o.D; S.item=o.item||S.item;
-    if(typeof o.kuku==="boolean") S.kuku=o.kuku;
+  if(o&&o.N){ S.mode=o.mode||S.mode; S.N=o.N; S.D=o.D;
     if(typeof o.kStrip==="boolean") S.kStrip=o.kStrip; } }catch(e){} }
 
 function setH(){ document.documentElement.style.setProperty("--appH", window.innerHeight+"px"); }
@@ -631,8 +596,8 @@ function slotHTML(cls,val,unit){
 function paintShiki(){
   var Q=q(),R=r(),c=inf().c;
   var qs=Math.min(Math.floor(S.step/S.D),Q);
-  var showQ=(S.hide||S.step===0)?null:qs;
-  var showR=(S.hide||S.step<S.N)?null:R;
+  var showQ=(S.step===0)?null:qs;
+  var showR=(S.step<S.N)?null:R;
   var uq=S.mode==="zutsu"?"ふくろ":c;
   $("shikiRow").innerHTML=
     slotHTML("n",S.N,c)+'<span class="slot op"><span class="v">÷</span><span class="u">&nbsp;</span></span>'+
@@ -642,31 +607,14 @@ function paintShiki(){
     '<span class="slot op" style="min-width:2.6em"><span class="v" style="font-size:.62em">あまり</span><span class="u">&nbsp;</span></span>'+
     slotHTML("r",showR,c);
   var k="";
-  if(S.step>=S.N&&!S.hide){
+  if(S.step>=S.N){
     k=(S.mode==="zutsu")?Q+"ふくろ できて、"+R+c+" あまる"
                         :"1人分は "+Q+c+" で、"+R+c+" あまる";
   }
   $("kotae").textContent=k;
   var t=$("tashikame");
-  if(S.step>=S.N&&!S.hide){ t.textContent="たしかめ　"+S.D+" × "+Q+" ＋ "+R+" ＝ "+S.N; t.classList.add("on"); }
+  if(S.step>=S.N){ t.textContent="たしかめ　"+S.D+" × "+Q+" ＋ "+R+" ＝ "+S.N; t.classList.add("on"); }
   else t.classList.remove("on");
-}
-function paintKuku(){
-  $("kukuCard").classList.toggle("off", !S.kuku);
-  if(!S.kuku) return;
-  $("kukuTitle").textContent=S.D+"のだん";
-  var Q=q(), qs=Math.min(Math.floor(S.step/S.D),Q), done=(S.step>=S.N), h="";
-  for(var k=1;k<=qs;k++){
-    h+='<div class="kk done"><span class="mk">✓</span>'+S.D+' × '+k+' ＝ '+(S.D*k)+
-       '<span class="nt">'+(S.mode==="zutsu"?k+"ふくろ":"1人"+k+inf().c)+'</span></div>';
-  }
-  if(done&&S.D*(Q+1)>S.N){
-    h+='<div class="kk over"><span class="mk">×</span>'+S.D+' × '+(Q+1)+' ＝ '+(S.D*(Q+1))+
-       '<span class="nt">'+S.N+'より 大きい</span></div>';
-  }
-  var box=$("kukuList");
-  box.innerHTML=h||'<div id="kukuEmpty">すすめると、ふえていきます</div>';
-  requestAnimationFrame(function(){ box.scrollTop=box.scrollHeight; });
 }
 function paintMsgW(){
   var c=inf().c,nm=inf().name,Q=q(),R=r(),m="";
@@ -824,7 +772,7 @@ function setView(v){
 
 var fixT=0;
 function drawW(){
-  paint(); paintShiki(); paintKuku(); paintMsgW();
+  paint(); paintShiki(); paintMsgW();
   /* メッセージの 行数で ステージの 高さが かわるので、1フレームあとに ならべ直す */
   if(fixT) cancelAnimationFrame(fixT);
   fixT=requestAnimationFrame(function(){ fixT=0; relayout(); paint(); });
@@ -1121,16 +1069,8 @@ function setMode(m){
 }
 tap("mZutsu",function(){ setMode("zutsu"); });
 tap("mNin",  function(){ setMode("nin"); });
-$("itemSel").addEventListener("change",function(){ S.item=this.value; rebuild(); });
 
-tap("p1",function(){ S.item="candy"; $("itemSel").value="candy"; S.N=13; S.D=3; setMode("zutsu"); });
-tap("p2",function(){ S.item="mikan"; $("itemSel").value="mikan"; S.N=16; S.D=3; setMode("nin"); });
-tap("p3",function(){ S.D=4; S.kStart=12; S.kCount=1; setView("kimari"); });
-tap("p4",function(){ S.D=3; S.kStart=9;  S.kCount=1; setView("kimari"); });
 
-tap("bHide",function(){ S.hide=!S.hide; $("bHide").setAttribute("aria-pressed",S.hide);
-  $("bHide").textContent=S.hide?"しきを 見せる":"しきを かくす"; paintShiki(); });
-tap("bKuku",function(){ S.kuku=!S.kuku; $("bKuku").setAttribute("aria-pressed",S.kuku); paintKuku(); save(); });
 tap("bStrip",function(){ S.kStrip=!S.kStrip; $("bStrip").setAttribute("aria-pressed",S.kStrip);
   paintK(); save(); });
 tap("bFocus",function(){ S.focus=!S.focus;
@@ -1173,10 +1113,8 @@ window.addEventListener("resize",function(){
 load(); dLoad(); setH();
 dtap($("dHintBtn"),function(){ W.hint=!W.hint; dRender(); });
 S.kStart=S.D*3;
-$("itemSel").value=S.item;
 $("mZutsu").setAttribute("aria-pressed",S.mode==="zutsu");
 $("mNin").setAttribute("aria-pressed",S.mode==="nin");
-$("bKuku").setAttribute("aria-pressed",S.kuku);
 $("bStrip").setAttribute("aria-pressed",S.kStrip);
 $("sVal").textContent=S.kStart;
 buildItems(); buildConts();
