@@ -82,7 +82,26 @@ body:not(.kimari) #ktable{display:none}
 #bandAmari{border-top:1px dashed var(--amari);background:var(--amari-l)}
 #bandAmari .bl{color:var(--amari);font-weight:700}
 
+#stage,#ktable{cursor:pointer}
+/* おした ことが わかるように ひかる */
+#stage.tapped,#ktable.tapped{background:#f5edda}
 #conts,#items,#ghosts{position:absolute;inset:0;pointer-events:none}
+
+/* 「ここを おす」の しるし */
+#tapHint{position:absolute;left:50%;top:51%;transform:translate(-50%,-50%);z-index:4;
+  pointer-events:none;white-space:nowrap;font-family:var(--f-text);
+  font-size:clamp(14px,1.7vw,25px);color:#fff;
+  background:#2f6fa8;border:2px solid #22527d;border-radius:999px;
+  box-shadow:0 2px 6px rgba(34,82,125,.28);
+  padding:11px 24px;opacity:0;transition:opacity .35s}
+#tapHint.on{opacity:1;animation:tapPulse 1.6s ease-in-out infinite}
+@keyframes tapPulse{
+  0%,100%{box-shadow:0 2px 6px rgba(34,82,125,.28)}
+  50%{box-shadow:0 2px 6px rgba(34,82,125,.28),0 0 0 9px rgba(47,111,168,.14)}
+}
+.ktap{margin-top:12px;display:inline-block;font-family:var(--f-text);
+  font-size:clamp(13px,1.5vw,21px);color:#fff;background:#2f6fa8;
+  border:2px solid #22527d;border-radius:999px;padding:9px 20px}
 #items{z-index:3}
 #ghosts{z-index:2}
 
@@ -276,7 +295,8 @@ body:not(.drill) #drill{display:none}
    金は「答え合わせ」に とってあるので すすむボタンには 使わない） */
 .btn.main{background:#2f6fa8;color:#fff;border-color:#22527d;font-weight:700;flex:1;min-width:180px}
 .btn.main:active{background:#22527d;color:#fff}
-.btn.sm{padding:7px 11px;font-size:clamp(12px,1.15vw,15px)}
+.btn.sm{padding:7px 11px;font-size:clamp(12px,1.15vw,15px);min-height:0}
+#ctrl .btn{min-height:52px}
 .btn.tog[aria-pressed="true"]{background:var(--gold);color:#3A2600;border-color:var(--gold-d);font-weight:700}
 body.kimari .wbtn{display:none}
 body:not(.kimari) .kbtn{display:none}
@@ -295,6 +315,7 @@ body:not(.kimari) .kbtn{display:none}
   .dlv{min-width:0;font-size:clamp(11px,3vw,15px);padding:8px 3px}
 }
 @media (prefers-reduced-motion:reduce){
+  #tapHint.on{animation:none}
   .item,.cont,.ghost,#tashikame,.ring{transition:none!important}
 }
 </style>
@@ -369,6 +390,7 @@ body:not(.kimari) .kbtn{display:none}
       <div id="conts"></div>
       <div id="ghosts"></div>
       <div id="items"></div>
+      <div id="tapHint"></div>
     </section>
 
     <section id="ktable" class="pane">
@@ -596,6 +618,11 @@ function paint(){
     } else ge.classList.remove("on");
   }
   $("amariLab").textContent = done ? ("あまり　"+R+inf().c+(R===0?"（ぴったり！）":"")) : "あまり";
+
+  /* さいしょだけ「ここを おす」を 出す（下のボタンに 手を のばさなくても いいように） */
+  var hint=$("tapHint");
+  if(S.step===0){ hint.textContent="ここを おすと 1つずつ すすむよ ▶"; hint.classList.add("on"); }
+  else hint.classList.remove("on");
 }
 function slotHTML(cls,val,unit){
   var v=(val===null)?'<span class="v blank">?</span>':'<span class="v">'+val+'</span>';
@@ -645,8 +672,8 @@ function paintMsgW(){
   var c=inf().c,nm=inf().name,Q=q(),R=r(),m="";
   if(S.step===0){
     m=(S.mode==="zutsu")
-      ?"「1つ すすむ」を おして、<em>"+S.D+c+"ずつ</em> ふくろに 入れていこう。"
-      :"「1つ すすむ」を おして、<em>1"+c+"ずつ じゅんばんに</em> "+S.D+"人に くばっていこう。";
+      ?"上の えを おすと すすむよ。<em>"+S.D+c+"ずつ</em> ふくろに 入れていこう。"
+      :"上の えを おすと すすむよ。<em>1"+c+"ずつ じゅんばんに</em> "+S.D+"人に くばっていこう。";
   } else if(S.step<S.N){
     if(S.mode==="zutsu"){
       var inBag=S.step%S.D, bags=Math.floor(S.step/S.D);
@@ -712,7 +739,8 @@ function paintK(){
   $("krows").innerHTML=h;
   var last=rows[rows.length-1];
   $("kend").innerHTML = (S.kCount>=14) ? "" :
-    '<div style="opacity:.6">つぎは '+(last.n+1)+' ÷ '+S.D+' … あまりは いくつ？</div>';
+    '<div style="opacity:.6">つぎは '+(last.n+1)+' ÷ '+S.D+' … あまりは いくつ？</div>'+
+    (S.kCount<=1 ? '<div class="ktap">ここを おすと つぎの しきが 出るよ ▶</div>' : '');
   var pane=$("ktable");
   requestAnimationFrame(function(){ pane.scrollTop=pane.scrollHeight; });
 
@@ -738,7 +766,7 @@ function paintK(){
   /* メッセージ */
   var m;
   if(S.kCount===1){
-    m="わられる数を 1ずつ 大きく していくよ。あまりは どう かわるかな。";
+    m="上の 表を おすと つぎの しきが 出るよ。あまりは どう かわるかな。";
   } else if(last.r===0){
     m="あまりが <em>0</em> に もどった。"+last.n+" は "+S.D+"で <em>わりきれる</em>。";
   } else {
@@ -1050,6 +1078,18 @@ function dCheck(){
 }
 
 function tap(id,fn){ var el=$(id); if(el) el.addEventListener("click",function(e){ e.preventDefault(); fn(); }); }
+
+/* iPad では 画面の いちばん下の ボタンが おしにくいので、絵そのものを おせるように する */
+function flash(el){ el.classList.add("tapped");
+  setTimeout(function(){ el.classList.remove("tapped"); },140); }
+stage.addEventListener("click",function(){
+  if(S.view!=="wake"||S.step>=S.N) return;
+  stopAuto(); flash(stage); next();
+});
+$("ktable").addEventListener("click",function(){
+  if(S.view!=="kimari"||S.kCount>=14) return;
+  flash($("ktable")); S.kCount++; paintK();
+});
 
 tap("tabW",function(){ setView("wake"); });
 tap("tabK",function(){ setView("kimari"); });
