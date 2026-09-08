@@ -87,21 +87,6 @@ body:not(.kimari) #ktable{display:none}
 #stage.tapped,#ktable.tapped{background:#f5edda}
 #conts,#items,#ghosts{position:absolute;inset:0;pointer-events:none}
 
-/* 「ここを おす」の しるし */
-#tapHint{position:absolute;left:50%;top:51%;transform:translate(-50%,-50%);z-index:4;
-  pointer-events:none;white-space:nowrap;font-family:var(--f-text);
-  font-size:clamp(14px,1.7vw,25px);color:#fff;
-  background:#2f6fa8;border:2px solid #22527d;border-radius:999px;
-  box-shadow:0 2px 6px rgba(34,82,125,.28);
-  padding:11px 24px;opacity:0;transition:opacity .35s}
-#tapHint.on{opacity:1;animation:tapPulse 1.6s ease-in-out infinite}
-@keyframes tapPulse{
-  0%,100%{box-shadow:0 2px 6px rgba(34,82,125,.28)}
-  50%{box-shadow:0 2px 6px rgba(34,82,125,.28),0 0 0 9px rgba(47,111,168,.14)}
-}
-.ktap{margin-top:12px;display:inline-block;font-family:var(--f-text);
-  font-size:clamp(13px,1.5vw,21px);color:#fff;background:#2f6fa8;
-  border:2px solid #22527d;border-radius:999px;padding:9px 20px}
 #items{z-index:3}
 #ghosts{z-index:2}
 
@@ -310,7 +295,6 @@ body:not(.kimari) .kbtn{display:none}
   .dlv{min-width:0;font-size:clamp(11px,3vw,15px);padding:8px 3px}
 }
 @media (prefers-reduced-motion:reduce){
-  #tapHint.on{animation:none}
   .item,.cont,.ghost,#tashikame,.ring{transition:none!important}
 }
 </style>
@@ -361,7 +345,6 @@ body:not(.kimari) .kbtn{display:none}
       <div id="conts"></div>
       <div id="ghosts"></div>
       <div id="items"></div>
-      <div id="tapHint"></div>
     </section>
 
     <section id="ktable" class="pane">
@@ -583,11 +566,6 @@ function paint(){
     } else ge.classList.remove("on");
   }
   $("amariLab").textContent = done ? ("あまり　"+R+inf().c+(R===0?"（ぴったり！）":"")) : "あまり";
-
-  /* さいしょだけ「ここを おす」を 出す（下のボタンに 手を のばさなくても いいように） */
-  var hint=$("tapHint");
-  if(S.step===0){ hint.textContent="ここを おすと 1つずつ すすむよ ▶"; hint.classList.add("on"); }
-  else hint.classList.remove("on");
 }
 function slotHTML(cls,val,unit){
   var v=(val===null)?'<span class="v blank">?</span>':'<span class="v">'+val+'</span>';
@@ -687,8 +665,7 @@ function paintK(){
   $("krows").innerHTML=h;
   var last=rows[rows.length-1];
   $("kend").innerHTML = (S.kCount>=14) ? "" :
-    '<div style="opacity:.6">つぎは '+(last.n+1)+' ÷ '+S.D+' … あまりは いくつ？</div>'+
-    (S.kCount<=1 ? '<div class="ktap">ここを おすと つぎの しきが 出るよ ▶</div>' : '');
+    '<div style="opacity:.6">つぎは '+(last.n+1)+' ÷ '+S.D+' … あまりは いくつ？</div>';
   var pane=$("ktable");
   requestAnimationFrame(function(){ pane.scrollTop=pane.scrollHeight; });
 
