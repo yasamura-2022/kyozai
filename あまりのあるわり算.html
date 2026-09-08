@@ -267,6 +267,10 @@ body:not(.drill) #drill{display:none}
 #msg .hot{color:var(--amari);font-weight:700}
 
 /* ---- そうさ ---- */
+/* すすむボタンは 絵の すぐ下に おく（画面いちばん下の 端を ねらわなくて いいように） */
+#go{display:flex}
+#go .btn{min-height:58px;width:100%}
+body.drill #go{display:none}
 #ctrl{display:flex;gap:8px;align-items:stretch;flex-wrap:wrap}
 .btn{border:1px solid var(--line2);background:var(--paper);border-radius:12px;
   padding:10px 16px;font-size:clamp(14px,1.5vw,20px);transition:transform .08s,background .2s}
@@ -388,16 +392,19 @@ body:not(.kimari) .kbtn{display:none}
     <div id="dPad"></div>
   </section>
 
+  <div id="go">
+    <button class="btn main wbtn" id="bNext">1つ すすむ ▶</button>
+    <button class="btn main kbtn" id="kNext">つぎの しき ▶</button>
+  </div>
+
   <div id="msg"><div id="msgIn"></div></div>
 
   <footer id="ctrl">
     <button class="btn wbtn" id="bBack">◀ もどる</button>
-    <button class="btn main wbtn" id="bNext">1つ すすむ ▶</button>
     <button class="btn wbtn" id="bAuto">じどう</button>
     <button class="btn wbtn" id="bReset">はじめから</button>
 
     <button class="btn kbtn" id="kBack">◀ もどす</button>
-    <button class="btn main kbtn" id="kNext">つぎの しき ▶</button>
     <button class="btn kbtn" id="kAll">ぜんぶ 出す</button>
     <button class="btn kbtn" id="kReset">はじめから</button>
   </footer>
