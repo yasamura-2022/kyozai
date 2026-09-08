@@ -268,8 +268,8 @@ body:not(.drill) #drill{display:none}
 
 /* ---- そうさ ---- */
 /* すすむボタンは 絵の すぐ下に おく（画面いちばん下の 端を ねらわなくて いいように） */
-#go{display:flex}
-#go .btn{min-height:58px;width:100%}
+#go{display:flex;justify-content:center}
+#go .btn{min-height:58px;width:100%;max-width:520px}
 body.drill #go{display:none}
 #ctrl{display:flex;gap:8px;align-items:stretch;flex-wrap:wrap}
 .btn{border:1px solid var(--line2);background:var(--paper);border-radius:12px;
@@ -297,6 +297,16 @@ body:not(.kimari) .kbtn{display:none}
   #dPad{grid-template-columns:repeat(3,1fr)}
   #dQ{font-size:clamp(14px,3.2vw,21px)}
   .dlv{min-width:0;font-size:clamp(11px,3vw,15px);padding:8px 3px}
+}
+/* Googleサイトの わくが たてに みじかいとき、まわりを つめて 絵を 大きくする */
+@media (max-height:620px){
+  #app{padding:6px 10px 8px;gap:5px}
+  #mondai{font-size:clamp(13px,1.5vw,20px)}
+  #go .btn{min-height:46px;font-size:clamp(13px,1.4vw,18px)}
+  #ctrl .btn{min-height:40px;padding:6px 12px;font-size:clamp(12px,1.2vw,16px)}
+  #msg{min-height:2.5em;padding:5px 10px;font-size:clamp(12px,1.4vw,19px)}
+  #settings{padding:5px 9px;gap:5px 10px}
+  .card{padding:7px 9px}
 }
 @media (prefers-reduced-motion:reduce){
   .item,.cont,.ghost,#tashikame,.ring{transition:none!important}
@@ -459,10 +469,16 @@ function tryLayout(sz,oneRow,loose){
   var W=stage.clientWidth, H=stage.clientHeight;
   if(W<80||H<80) return null;
   var pad=14, lab=Math.max(15,Math.min(22,H*0.038)), cell=sz*1.14;
-  var poolH=H*0.255, amariH=H*0.235, workY=poolH+2, workH=H-poolH-amariH-4;
 
+  /* 「のこり」と「あまり」の 置き場は、いる ぶんだけ 高さを とる。
+     まえは 画面の 25.5%／23.5% で 固定していたので、よこに 広くて たてが みじかい
+     画面（Googleサイトの わく）だと あきばしょが 大きく のこり、あめが 小さくなっていた */
   var pc=Math.max(1,Math.floor((W-2*pad)/cell)); pc=Math.min(pc,Math.max(S.N,1));
   var pr=Math.ceil(Math.max(S.N,1)/pc);
+  var poolH=Math.min(H*0.45, lab+pr*cell+6);
+  var amariH=Math.min(H*0.40, lab+cell+8);
+  var workY=poolH+2, workH=H-poolH-amariH-4;
+  if(workH<cell+lab && !loose) return null;
   if(pr*cell>poolH-lab-4 && !loose) return null;
   var pX=Math.max(0,(W-pc*cell)/2), pY=lab+Math.max(0,(poolH-lab-pr*cell)/2);
 
