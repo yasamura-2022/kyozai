@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>リコーダーの ゆびづかい</title>
+<style>
+  :root{
+    --ink:#2b2118;
+    --paper:#fdf6e3;
+    --card:#fffdf7;
+    --line:#e7d9b8;
+    --gold:#c9a227;
+    --ok:#5a8a4c;
+    --ng:#d34b4b;
+    --flash:#ffe14d;
+    /* 青＝おなじ もんだいの 中で つづき（ほかの アプリと そろえる） */
+    --blue:#2f6fa8;
+    --blue-dark:#23557f;
+  }
+  /* このアプリの色（リコーダー）
+     accent は すみれ。つづきの ボタンは 算数アプリと そろえて 青 #2f6fa8
+     ひだりて＝だいだい ／ みぎて＝みどり（かけ算の筆算と 同じ 2色の 使い方） */
+  body{--accent:#6a5f9e;--accent-dark:#4b4275;--accent-soft:#eceaf6;
+       --lh:#e08b3a;--lh-dark:#b06618;--lh-soft:#fbeada;
+       --rh:#4f8f6a;--rh-dark:#33684b;--rh-soft:#e2f0e7}
+
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:'Hiragino Maru Gothic ProN','Yu Gothic',sans-serif;
+    background:
+      radial-gradient(circle at 15% 10%,#fef0d0 0,transparent 40%),
+      radial-gradient(circle at 85% 90%,#fbe6cf 0,transparent 45%),
+      var(--paper);
+    color:var(--ink);
+    display:flex;flex-direction:column;align-items:center;
+    position:fixed;inset:0;width:100%;
+    height:var(--fh,100dvh);
+    padding:6px 8px 10px;
+    overflow:hidden;
+    overscroll-behavior:none;
+    touch-action:manipulation;
+  }
+  button{
+    touch-action:manipulation;
+    -webkit-user-select:none;user-select:none;
+    -webkit-touch-callout:none;
+  }
+  .app{width:100%;max-width:620px;height:100%;display:flex;flex-direction:column;gap:6px;min-height:0}
+  #viewMiru,#viewOsae,#viewNagasu{flex:1;min-height:0;display:flex;flex-direction:column;gap:6px}
+
+  header{text-align:center}
+  h1{font-size:clamp(16px,4.4vw,23px);letter-spacing:.04em}
+  h1 .em{color:var(--accent)}
+
+  /* ===== 学習ステップ タブ ===== */
+  .tabs{display:flex;gap:6px;margin-bottom:2px}
+  .tab{
+    flex:1;border:2px solid var(--line);border-radius:14px;background:var(--card);
+    padding:10px 4px;cursor:pointer;color:#8a7a5f;font-weight:800;
+    font-size:clamp(11px,3vw,15px);display:flex;flex-direction:column;align-items:center;gap:1px;
+    line-height:1.15;word-break:keep-all;transition:transform .08s;
+  }
+  .tab .step{font-size:11px;font-weight:700;opacity:.7}
+  .tab.on{color:var(--ink);border-color:var(--gold);background:#fffdf7;box-shadow:0 3px 0 #a5811a}
+  .tab.on .step{color:var(--gold);opacity:1}
+  .tab:active{transform:translateY(1px)}
+
+  /* ===== カード ===== */
+  .stage{
+    background:var(--card);border:3px solid var(--line);border-radius:18px;
+    padding:8px 10px;text-align:center;transition:border-color .2s,background .2s;
+    display:flex;flex-direction:column;justify-content:center;gap:5px;overflow:hidden;
+    flex:1;min-height:0;
+  }
+  .stage.correct{border-color:var(--ok);background:#f2f9ee}
+  .stage.wrong{border-color:var(--ng);background:#fcf0f0}
+  .sect{text-align:left;font-weight:800;letter-spacing:.06em;color:#a99a7c;
+    font-size:calc(clamp(10px,2.8vw,13px) * var(--shrink,1))}
+  .ask{font-weight:800;color:#8a7a5f;font-size:calc(clamp(12px,3.4vw,16px) * var(--shrink,1))}
+  .askrow{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap}
+  .say{line-height:1.6;font-weight:700;color:#5d5040;word-break:keep-all;min-height:1.6em;
+    font-size:calc(clamp(11px, calc(var(--fh,100vh) * 0.026), 17px) * var(--shrink,1))}
+  .say b{color:var(--accent-dark)}
+  .say em{font-style:normal;color:var(--blue-dark)}
+  .say .op{color:#c2551a}
+  .verdict{min-height:1.3em;font-weight:800;line-height:1.35;
+    font-size:calc(clamp(12px,3.3vw,16px) * var(--shrink,1))}
+  .verdict.ok{color:var(--ok)}
+  .verdict.ng{color:var(--ng)}
+  .legend{color:#a99a7c;font-weight:800;
+    font-size:calc(clamp(9px,2.5vw,12px) * var(--shrink,1))}
+
+  .hintbtn{flex:none;border:2px solid var(--line);border-radius:12px;background:#fff;color:#8a7a5f;
+    font-weight:800;padding:6px 14px;cursor:pointer;
+    font-size:calc(clamp(11px,3vw,14px) * var(--shrink,1));
+    min-height:calc(38px * var(--shrink,1))}
+  .hintbtn.on{background:var(--flash);border-color:var(--gold);color:var(--ink)}
+
+  /* ===== 音の なまえ ===== */
+  .nm{font-weight:800;letter-spacing:.02em;white-space:nowrap}
+  .nm .hi{font-size:.5em;vertical-align:.7em;margin-left:.02em;color:var(--accent)}
+  .bigname{color:var(--accent-dark);line-height:1.1;
+    font-size:calc(clamp(28px, calc(var(--fh,100vh) * 0.085), 62px) * var(--shrink,1))}
+
+  /* ===== 音の ふだ ===== */
+  .notebar{display:flex;gap:5px;justify-content:center;flex-wrap:wrap}
+  .ntag{border:2px solid var(--line);border-radius:12px;background:#fff;color:#6f5d3d;
+    padding:5px 10px;font-weight:800;cursor:pointer;white-space:nowrap;
+    font-size:calc(clamp(13px,3.4vw,18px) * var(--shrink,1))}
+  .ntag.on{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 3px 0 var(--accent-dark)}
+  .ntag.on .hi{color:#fff}
+
+  /* ===== ゆびの 図 ===== */
+  .fingrow{display:flex;align-items:stretch;justify-content:center;gap:10px;min-height:0;flex:1}
+  .fingcol{display:flex;flex-direction:column;align-items:center;gap:2px;min-height:0;height:100%}
+  .fingcol .cap{font-weight:800;color:#a99a7c;line-height:1;
+    font-size:calc(clamp(9px,2.5vw,12px) * var(--shrink,1))}
+  .fingcol .cap.now{color:var(--accent-dark)}
+  .fingcol .cap.big{font-size:calc(clamp(11px,3.1vw,15px) * var(--shrink,1))}
+
+  .fig{display:block;height:100%;width:auto;overflow:visible}
+  .figwrap{min-height:0;flex:1;align-self:stretch;display:flex;align-items:center;justify-content:center}
+  .fig .body{fill:#f7e9cd;stroke:#8a7a5f;stroke-width:3}
+  .fig .win{fill:#8a7a5f}
+  .fig .hole{fill:#fff;stroke:#6f5d3d;stroke-width:2.5}
+  .fig .hole.on{fill:var(--ink)}
+  .fig .lead{stroke:#c8b795;stroke-width:2;stroke-dasharray:3 3}
+  .fig .lb{fill:#8a7a5f;font-weight:800;font-size:14px}
+  .fig .lb.sm{font-size:11px}
+  .fig .lb.l{fill:var(--lh-dark)}
+  .fig .lb.r{fill:var(--rh-dark)}
+  .fig .band{stroke-width:5;stroke-linecap:round}
+  .fig .band.l{stroke:var(--lh)}
+  .fig .band.r{stroke:var(--rh)}
+  /* 前の音から かわる あな。青＝ふさぐ ／ だいだい＝はなす */
+  .fig .ring{fill:none;stroke-width:3.5;stroke-dasharray:5 4}
+  .fig .ring.cl{stroke:var(--blue)}
+  .fig .ring.op{stroke:#e2621c}
+  .fig .ring.bad{stroke:var(--ng);stroke-dasharray:none}
+  .fig.tapfig .hole{cursor:pointer}
+
+  /* ===== ゆびの ひょう（一覧） ===== */
+  .chart{display:flex;gap:4px;justify-content:center;align-items:flex-end;flex-wrap:nowrap;flex-shrink:0}
+  .citem{display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;
+    border:2px solid transparent;border-radius:10px;padding:2px 3px}
+  .citem.on{border-color:var(--accent);background:var(--accent-soft)}
+  .citem .cn{font-weight:800;color:#6f5d3d;line-height:1;
+    font-size:calc(clamp(11px,2.9vw,15px) * var(--shrink,1))}
+  .citem.on .cn{color:var(--accent-dark)}
+  .cfig{height:calc(clamp(52px, calc(var(--fh,100vh) * 0.115), 104px) * var(--shrink,1))}
+
+  /* ===== ながれてくる 音（レーン） ===== */
+  .lane{position:relative;width:100%;overflow:hidden;flex-shrink:0;
+    --uw:calc(clamp(34px, calc(var(--fh,100vh) * 0.062), 62px) * var(--shrink,1));
+    height:calc(clamp(74px, calc(var(--fh,100vh) * 0.155), 132px) * var(--shrink,1))}
+  .lane .base{position:absolute;left:0;right:0;bottom:calc(1.5em + 4px);border-top:2px dashed #e2d3ae}
+  .lane .cursor{position:absolute;top:0;bottom:0;width:calc(var(--uw) * 1);
+    background:var(--flash);opacity:.4;border-radius:10px}
+  .strip{position:absolute;top:0;bottom:0;left:0;display:flex;align-items:stretch;
+    transition:transform .18s ease-out}
+  .fchip{position:relative;flex:none;display:block}
+  .fchip .pdot{position:absolute;left:50%;transform:translate(-50%,50%);
+    width:calc(var(--uw) * .3);height:calc(var(--uw) * .3);border-radius:50%;
+    background:#c8b795}
+  .fchip .pbar{position:absolute;left:50%;transform:translateX(-50%);height:2px;
+    background:#e2d3ae;width:calc(100% - 4px)}
+  .fchip .pname{position:absolute;left:50%;bottom:0;transform:translateX(-50%);
+    color:#a99a7c;line-height:1.2;white-space:nowrap;
+    font-size:calc(clamp(12px,3.2vw,17px) * var(--shrink,1))}
+  .fchip.past{opacity:.4}
+  .fchip.now .pdot{background:var(--accent);width:calc(var(--uw) * .42);height:calc(var(--uw) * .42);
+    box-shadow:0 0 0 4px var(--accent-soft)}
+  .fchip.now .pname{color:var(--accent-dark);font-size:calc(clamp(16px,4.4vw,24px) * var(--shrink,1))}
+
+  /* ===== 拍（はく） ===== */
+  .beats{display:flex;gap:7px;justify-content:center;flex-shrink:0}
+  .beats i{width:calc(clamp(9px,2.4vw,13px) * var(--shrink,1));height:calc(clamp(9px,2.4vw,13px) * var(--shrink,1));
+    border-radius:50%;background:#e7d9b8;display:block}
+  .beats i.on{background:var(--accent);transform:scale(1.3)}
+  .count{font-weight:800;color:var(--accent);line-height:1;
+    font-size:calc(clamp(30px, calc(var(--fh,100vh) * 0.09), 64px) * var(--shrink,1))}
+
+  /* ===== えらぶ ボタン ===== */
+  .ops{display:flex;gap:6px}
+  .op-btn{position:relative;flex:1;border-radius:14px;padding:8px 2px;
+    font-size:clamp(11px,3vw,15px);font-weight:700;cursor:pointer;
+    background:var(--card);color:var(--ink);border:2px solid var(--line);transition:transform .08s;
+    white-space:nowrap}
+  .op-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);box-shadow:0 3px 0 var(--accent-dark)}
+  .op-btn:active{transform:translateY(2px)}
+  .lvbar{display:flex;gap:4px;justify-content:center;flex-wrap:wrap;flex-shrink:0}
+  .lvtag{border:2px solid var(--line);border-radius:12px;background:#fff;padding:4px 8px;
+    font-weight:800;color:#8a7a5f;cursor:pointer;white-space:nowrap;
+    font-size:calc(clamp(10px,2.8vw,13px) * var(--shrink,1))}
+  .lvtag.on{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 3px 0 var(--accent-dark)}
+
+  /* ===== せってい（3つだけ） ===== */
+  .setrow{display:flex;gap:6px;align-items:stretch;flex-shrink:0}
+  .setbox{flex:1;border:2px solid var(--line);border-radius:12px;background:var(--card);
+    padding:4px 5px;display:flex;flex-direction:column;align-items:center;gap:3px;min-width:0}
+  .setbox .t{font-weight:800;color:#a99a7c;line-height:1;white-space:nowrap;
+    font-size:calc(clamp(9px,2.4vw,11px) * var(--shrink,1))}
+  .setbox .row{display:flex;gap:4px;align-items:center}
+  .stp{border:2px solid var(--line);border-radius:9px;background:#fff;color:#6f5d3d;font-weight:800;
+    cursor:pointer;min-width:calc(30px * var(--shrink,1));padding:2px 0;
+    font-size:calc(clamp(13px,3.4vw,17px) * var(--shrink,1))}
+  .stp:active{background:#fff4df}
+  .setbox .v{font-weight:800;color:var(--accent-dark);min-width:2.6em;
+    font-variant-numeric:tabular-nums;
+    font-size:calc(clamp(13px,3.6vw,18px) * var(--shrink,1))}
+  .tgl{border:2px solid var(--line);border-radius:10px;background:#fff;color:#8a7a5f;font-weight:800;
+    cursor:pointer;padding:4px 10px;white-space:nowrap;
+    font-size:calc(clamp(11px,2.9vw,14px) * var(--shrink,1))}
+  .tgl.on{background:var(--accent);border-color:var(--accent);color:#fff}
+
+  /* ===== てんすう ===== */
+  .score{display:flex;gap:8px;flex-shrink:0}
+  .score .box{flex:1;background:var(--card);border:2px solid var(--line);border-radius:12px;padding:5px 4px;text-align:center}
+  .score .n{font-size:clamp(18px,5.2vw,23px);font-weight:800;font-variant-numeric:tabular-nums;line-height:1}
+  .score .t{font-size:10px;color:#8a7a5f;margin-top:2px}
+  .score .streak .n{color:var(--gold)}
+  .score .correct .n{color:var(--ok)}
+
+  /* ===== ボタン =====
+     青＝おなじ もんだいの 中で つづき ／ 金＝こたえあわせ ／ みどり＝つぎの もんだい
+     茶グレー＝もどす・やりなおす */
+  .actions{display:flex;gap:8px;flex-shrink:0}
+  .btn{flex:1;border:none;border-radius:14px;padding:12px 4px;font-size:clamp(13px,3.8vw,18px);
+    font-weight:800;cursor:pointer;transition:transform .08s;color:#fff;white-space:nowrap}
+  .btn:active{transform:translateY(2px)}
+  .btn.play{background:var(--blue);box-shadow:0 4px 0 var(--blue-dark)}
+  .btn.show{background:var(--gold);box-shadow:0 4px 0 #a5811a}
+  .btn.next{background:#5a8a4c;box-shadow:0 4px 0 #446838}
+  .btn.sub{background:#a99a7c;box-shadow:0 4px 0 #85795f}
+  .btn:disabled{opacity:.45;box-shadow:none}
+  /* おおもとの ボタンは 絵の 下・ことばの 上に よこ一本で おく
+     （画面いちばん下の 端は 指が とどきにくい。あまりのあるわり算と 同じ） */
+  .gobar{display:flex;justify-content:center;flex-shrink:0}
+  .gobar .btn{max-width:520px}
+
+  .hidden{display:none !important}
+  .tapped{animation:tapflash .45s ease-out}
+  @keyframes tapflash{0%{background:#fff6d9}100%{background:var(--card)}}
+
+  @media(max-height:720px){
+    h1{font-size:15px}
+    .tab{padding:7px 4px;font-size:13px}
+    .tab .step{font-size:10px}
+    .op-btn{padding:6px 2px;font-size:13px}
+    .score .box{padding:3px}
+    .score .n{font-size:19px}
+    .score .t{font-size:9px}
+    .btn{padding:10px 4px}
+  }
+  @media(max-height:560px){
+    header{display:none}
+    .app{gap:5px}
+    #viewMiru,#viewOsae,#viewNagasu{gap:5px}
+  }
+  /* 横向き（iPad横・PC）：ことばを 左、リコーダーの 図を 右に わける。
+     たてに ならべると 図が つぶれて、ゆびの なまえが 読めなく なる */
+  @media(orientation:landscape) and (max-height:820px){
+    header{display:none}
+    .app{gap:5px;max-width:min(97vw,980px)}
+    .tab{padding:6px 4px;font-size:13px}
+    .tab .step{font-size:10px}
+    .score .box{padding:3px}
+    .stage{padding:8px 12px}
+    #vStage,#oStage,#tStage{
+      display:grid;gap:4px 14px;justify-content:stretch;
+      grid-template-columns:minmax(0,1fr) minmax(0,1.1fr)}
+    #vStage{grid-template-rows:auto auto auto 1fr;
+      grid-template-areas:"a f" "b f" "c f" ". f"}
+    #vStage>.notebar{grid-area:a;align-self:center}
+    #vStage>.say{grid-area:b;align-self:center}
+    #vStage>.legend{grid-area:c;align-self:center}
+    #oStage{grid-template-rows:auto auto auto auto 1fr;
+      grid-template-areas:"a f" "b f" "c f" "d f" ". f"}
+    #oStage>.askrow{grid-area:a;align-self:center}
+    #oStage>.bigname{grid-area:b;align-self:center}
+    #oStage>.chart{grid-area:c;align-self:center}
+    #oStage>.verdict{grid-area:d;align-self:center}
+    #tStage{grid-template-rows:auto auto auto auto auto 1fr;
+      grid-template-areas:"a f" "b f" "c f" "d f" "e f" ". f"}
+    #tStage>.sect{grid-area:a}
+    #tStage>.lane{grid-area:b;align-self:center}
+    #tStage>.beats{grid-area:c;align-self:center}
+    #tStage>.gobar{grid-area:d;align-self:center}
+    #tStage>.say{grid-area:e;align-self:center}
+    #vStage>.fingrow,#tStage>.fingrow,#oStage>.figwrap{
+      grid-area:f;height:100%;min-height:0}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header><h1><span class="em">リコーダー</span>の ゆびづかい</h1></header>
+
+  <div class="tabs">
+    <button class="tab on" data-v="Miru"><span class="step">ステップ１</span>ゆびを 見る</button>
+    <button class="tab" data-v="Osae"><span class="step">ステップ２</span>ゆびを おさえる</button>
+    <button class="tab" data-v="Nagasu"><span class="step">ステップ３</span>ながして ふく</button>
+  </div>
+
+  <!-- ============ ステップ１：ゆびを 見る ============ -->
+  <div id="viewMiru">
+    <div class="stage" id="vStage">
+      <div class="notebar" id="vBar"></div>
+      <div class="fingrow">
+        <div class="fingcol" style="flex:1;min-height:0">
+          <div class="cap now big" id="vCap"></div>
+          <div class="figwrap" id="vBig"></div>
+        </div>
+      </div>
+      <p class="say" id="vSay"></p>
+      <div class="legend">● ふさぐ　　○ あける　　<span style="color:var(--lh-dark)">■ ひだりて</span>　<span style="color:var(--rh-dark)">■ みぎて</span></div>
+    </div>
+    <div class="chart" id="vChart"></div>
+    <div class="actions">
+      <button class="btn sub" id="vDown">◀ ひくい 音</button>
+      <button class="btn play" id="vHear">♪ 音を きく</button>
+      <button class="btn sub" id="vUp">たかい 音 ▶</button>
+    </div>
+  </div>
+
+  <!-- ============ ステップ２：ゆびを おさえる ============ -->
+  <div id="viewOsae" class="hidden">
+    <div class="ops" id="oOps"></div>
+    <div class="score">
+      <div class="box correct"><div class="n" id="oCorrect">0</div><div class="t">せいかい</div></div>
+      <div class="box"><div class="n" id="oTotal">0</div><div class="t">やったもんだい</div></div>
+      <div class="box streak"><div class="n" id="oStreak">0/10</div><div class="t">れんぞく</div></div>
+    </div>
+    <div class="stage" id="oStage">
+      <div class="askrow">
+        <span class="ask">この 音の ゆびは？</span>
+        <button class="hintbtn" id="oHear">♪ 音</button>
+        <button class="hintbtn" id="oHint">ゆびの ひょう</button>
+      </div>
+      <div class="bigname nm" id="oName"></div>
+      <div class="figwrap" id="oFig"></div>
+      <div class="chart hidden" id="oChart"></div>
+      <p class="verdict" id="oVerdict"></p>
+    </div>
+    <div class="actions">
+      <button class="btn sub" id="oClear">ぜんぶ けす</button>
+      <button class="btn show" id="oAns">こたえ</button>
+      <button class="btn next" id="oNext">つぎの もんだい →</button>
+    </div>
+  </div>
+
+  <!-- ============ ステップ３：ながして ふく ============ -->
+  <div id="viewNagasu" class="hidden">
+    <div class="lvbar" id="tLv"></div>
+    <div class="stage" id="tStage">
+      <div class="sect" id="tSect"></div>
+      <div class="lane" id="tLane">
+        <div class="cursor" id="tCursor"></div>
+        <div class="base"></div>
+        <div class="strip" id="tStrip"></div>
+      </div>
+      <div class="fingrow">
+        <div class="fingcol" style="flex:1.4;min-height:0">
+          <div class="cap now">いま</div>
+          <div class="figwrap" id="tBig"></div>
+        </div>
+        <div class="fingcol" style="flex:1;min-height:0">
+          <div class="cap" id="tNextCap">つぎ</div>
+          <div class="figwrap" id="tNext"></div>
+        </div>
+      </div>
+      <div class="beats" id="tBeats"><i></i><i></i><i></i><i></i></div>
+      <div class="gobar"><button class="btn play" id="tGo">▶ はじめる</button></div>
+      <p class="say" id="tSay"></p>
+    </div>
+    <div class="setrow">
+      <div class="setbox">
+        <div class="t">はやさ</div>
+        <div class="row">
+          <button class="stp" id="tSlow">−</button>
+          <span class="v" id="tTempo">60</span>
+          <button class="stp" id="tFast">＋</button>
+        </div>
+      </div>
+      <div class="setbox">
+        <div class="t">音</div>
+        <button class="tgl on" id="tSound">♪ あり</button>
+      </div>
+      <div class="setbox">
+        <div class="t">くりかえし</div>
+        <button class="tgl on" id="tLoop">あり</button>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="btn sub" id="tBack">◀ もどす</button>
+      <button class="btn play" id="tStep">1つ すすむ ▶</button>
+      <button class="btn next" id="tNextPh">つぎの れんしゅう →</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===================================================================
+   リコーダーの ゆびづかい
+   ・ソプラノリコーダー ジャーマン式（ファ が ●●●●●○○○）
+   ・fing は [おやゆび(うら), 左1, 左2, 左3, 右1, 右2, 右3, 右4]
+     1＝ふさぐ（●）／0＝あける（○）
+   ・外部の 読みこみは なし。音は WebAudio で つくる
+=================================================================== */
+
+/* ---------- 音と ゆび ---------- */
+const NOTES={
+  C5:{nm:'ド',hi:0,f:523.25,fing:[1,1,1,1,1,1,1,1]},
+  D5:{nm:'レ',hi:0,f:587.33,fing:[1,1,1,1,1,1,1,0]},
+  E5:{nm:'ミ',hi:0,f:659.26,fing:[1,1,1,1,1,1,0,0]},
+  F5:{nm:'ファ',hi:0,f:698.46,fing:[1,1,1,1,1,0,0,0]},
+  G5:{nm:'ソ',hi:0,f:783.99,fing:[1,1,1,1,0,0,0,0]},
+  A5:{nm:'ラ',hi:0,f:880.00,fing:[1,1,1,0,0,0,0,0]},
+  B5:{nm:'シ',hi:0,f:987.77,fing:[1,1,0,0,0,0,0,0]},
+  C6:{nm:'ド',hi:1,f:1046.50,fing:[1,0,1,0,0,0,0,0]},
+  D6:{nm:'レ',hi:1,f:1174.66,fing:[0,0,1,0,0,0,0,0]}
+};
+const PITCH=['C5','D5','E5','F5','G5','A5','B5','C6','D6'];
+/* いま 3年で つかう ところ（ミ〜たかいド）を まん中に おく */
+const RANGES=[
+  {t:'ソラシ',keys:['G5','A5','B5']},
+  {t:'ミファソラシド',keys:['E5','F5','G5','A5','B5','C6']},
+  {t:'ぜんぶ',keys:['C5','D5','E5','F5','G5','A5','B5','C6','D6']}
+];
+/* ゆびの なまえ。ひだり／みぎを つけないと どの ゆびか きまらない */
+const FHAND=['うらの','ひだりの','ひだりの','ひだりの','みぎの','みぎの','みぎの','みぎの'];
+const FFIN=['おやゆび','ひとさしゆび','なかゆび','くすりゆび','ひとさしゆび','なかゆび','くすりゆび','こゆび'];
+/* おなじ てなら まとめて 言う。
+   「ひだりの ひとさしゆびと ひだりの くすりゆび」は 長くて 読めない */
+function fingerWords(list){
+  const g=[];
+  list.forEach(h=>{
+    const last=g[g.length-1];
+    if(last&&last.hand===FHAND[h])last.f.push(FFIN[h]);
+    else g.push({hand:FHAND[h],f:[FFIN[h]]});
+  });
+  return g.map(x=>{
+    /* かたての ゆびが ぜんぶ かわる ときは まとめて 言う
+       （「ひとさしゆびとなかゆびとくすりゆびとこゆび」は 読めない） */
+    if(x.hand==='みぎの'&&x.f.length===4)return 'みぎての ゆび ぜんぶ';
+    if(x.hand==='ひだりの'&&x.f.length===3)return 'ひだりての ゆび ぜんぶ';
+    return x.hand+' '+x.f.join('と ');
+  }).join('と ');
+}
+const FSHORT=['おやゆび','ひとさし','なか','くすり','ひとさし','なか','くすり','こ'];
+
+/* 音の なまえの HTML（たかい ドは ▲を つける） */
+function nmHTML(k){
+  const n=NOTES[k];
+  return '<span class="nm">'+n.nm+(n.hi?'<span class="hi">▲</span>':'')+'</span>';
+}
+function nmPlain(k){const n=NOTES[k];return n.nm+(n.hi?'（たかい）':'');}
+
+/* ---------- れんしゅうの フレーズ（4分の4びょうし・自作） ---------- */
+const PHRASES=[
+  {t:'ソ と ラ',      notes:[['G5',1],['A5',1],['G5',1],['A5',1],['G5',1],['A5',1],['G5',2]]},
+  {t:'ラ と シ',      notes:[['A5',1],['B5',1],['A5',1],['B5',1],['A5',1],['B5',1],['A5',2]]},
+  {t:'ソラシ',        notes:[['G5',1],['A5',1],['B5',2],['B5',1],['A5',1],['G5',2]]},
+  {t:'シ と ド',      notes:[['B5',1],['C6',1],['B5',1],['C6',1],['B5',1],['C6',1],['B5',2]]},
+  {t:'ミファソ',      notes:[['E5',1],['F5',1],['G5',2],['G5',1],['F5',1],['E5',2]]},
+  {t:'かいだん のぼる',notes:[['E5',1],['F5',1],['G5',1],['A5',1],['B5',1],['C6',3]]},
+  {t:'かいだん おりる',notes:[['C6',1],['B5',1],['A5',1],['G5',1],['F5',1],['E5',3]]},
+  {t:'とんで いく',   notes:[['G5',1],['B5',1],['A5',1],['C6',1],['B5',1],['G5',3]]},
+  {t:'ながい音',      notes:[['G5',4],['A5',4],['B5',4],['C6',4]]},
+  {t:'まぜまぜ',      notes:[['G5',1],['A5',1],['B5',1],['A5',1],['G5',1],['E5',1],['F5',1],['G5',1],
+                             ['A5',1],['B5',1],['C6',1],['B5',1],['A5',1],['G5',3]]}
+];
+PHRASES.forEach(p=>{
+  let b=0;p.startAt=[];
+  p.notes.forEach(n=>{p.startAt.push(b);b+=n[1];});
+  p.total=b;
+});
+
+/* ---------- ほぞん ---------- */
+const KEY='recorder_yubi_v1';
+const S={note:'G5',range:1,ph:0,tempo:60,sound:1,loop:1,correct:0,total:0,streak:0};
+try{const s=JSON.parse(localStorage.getItem(KEY)||'{}');Object.keys(S).forEach(k=>{if(s[k]!==undefined)S[k]=s[k];});}catch(e){}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
+
+/* ===================================================================
+   音（WebAudio）。リコーダーらしく、もとの音＋うすい ばいおん
+=================================================================== */
+let AC=null;
+function ac(){
+  if(!AC){try{AC=new (window.AudioContext||window.webkitAudioContext)();}catch(e){return null;}}
+  if(AC.state==='suspended')AC.resume();
+  return AC;
+}
+function playNote(freq,sec){
+  const a=ac();if(!a)return;
+  const t=a.currentTime+0.01, dur=Math.max(0.14,Math.min(2.2,sec));
+  const g=a.createGain();
+  g.gain.setValueAtTime(0.0001,t);
+  g.gain.exponentialRampToValueAtTime(0.20,t+0.035);
+  g.gain.setValueAtTime(0.20,t+dur*0.65);
+  g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  g.connect(a.destination);
+  [[1,1],[2,0.16],[3,0.05]].forEach(h=>{
+    const o=a.createOscillator(),og=a.createGain();
+    o.type='sine';o.frequency.value=freq*h[0];og.gain.value=h[1];
+    o.connect(og);og.connect(g);o.start(t);o.stop(t+dur+0.05);
+  });
+  /* いきの 音を すこし（笛らしく なる） */
+  const nb=a.createBuffer(1,Math.floor(a.sampleRate*0.06),a.sampleRate),d=nb.getChannelData(0);
+  for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*(1-i/d.length);
+  const ns=a.createBufferSource(),ng=a.createGain(),bp=a.createBiquadFilter();
+  ns.buffer=nb;bp.type='bandpass';bp.frequency.value=freq*2;bp.Q=0.8;ng.gain.value=0.05;
+  ns.connect(bp);bp.connect(ng);ng.connect(a.destination);ns.start(t);
+}
+function playKey(k,sec){const n=NOTES[k];if(n)playNote(n.f,sec||0.7);}
+
+/* ===================================================================
+   ゆびの 図（SVG）
+=================================================================== */
+const HY=[100,128,156,196,224,252,278];   /* まえの あな 1〜7 の たかさ */
+const TX=28,TY=100;                        /* うらの あな */
+const CX=74, R=9;
+function fingSVG(f,o){
+  o=o||{};
+  const lab=!!o.labels, tap=!!o.tap;
+  const vb=lab?'0 0 200 320':'12 0 96 320';
+  let s='<svg class="fig'+(o.cls?' '+o.cls:'')+(tap?' tapfig':'')+'" viewBox="'+vb+'" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">';
+  /* 本体（うたくち → かん → あさがお） */
+  s+='<path class="body" d="M62 8 Q62 3 74 3 Q86 3 86 8 L86 42 L92 50 L92 288 L98 298 L98 312 L50 312 L50 298 L56 288 L56 50 L62 42 Z"/>';
+  s+='<rect class="win" x="69" y="52" width="10" height="13" rx="3"/>';
+  /* うらの あな */
+  s+='<line class="lead" x1="'+(TX+11)+'" y1="'+TY+'" x2="56" y2="'+TY+'"/>';
+  s+='<circle class="hole'+(f[0]?' on':'')+'" cx="'+TX+'" cy="'+TY+'" r="'+(R-0.5)+'"/>';
+  if(lab){
+    s+='<text class="lb sm" x="'+TX+'" y="'+(TY-31)+'" text-anchor="middle">うら</text>';
+    s+='<text class="lb sm" x="'+TX+'" y="'+(TY-16)+'" text-anchor="middle">おやゆび</text>';
+  }
+  /* まえの あな */
+  for(let i=0;i<7;i++){
+    const hi=i+1, y=HY[i], r=(i===6?R-1.5:R);
+    s+='<circle class="hole'+(f[hi]?' on':'')+'" cx="'+CX+'" cy="'+y+'" r="'+r+'"/>';
+  }
+  /* かわる あなの しるし */
+  if(o.mark){
+    o.mark.forEach(m=>{
+      const y=(m.h===0?TY:HY[m.h-1]), x=(m.h===0?TX:CX);
+      s+='<circle class="ring '+m.k+'" cx="'+x+'" cy="'+y+'" r="'+(R+6)+'"/>';
+    });
+  }
+  if(lab){
+    /* て の おびと ゆびの なまえ */
+    s+='<path class="band l" d="M100 '+(HY[0]-4)+' L100 '+(HY[2]+4)+'" fill="none"/>';
+    s+='<path class="band r" d="M100 '+(HY[3]-4)+' L100 '+(HY[6]+4)+'" fill="none"/>';
+    s+='<text class="lb l" x="100" y="82" text-anchor="start">ひだりて</text>';
+    s+='<text class="lb r" x="100" y="180" text-anchor="start">みぎて</text>';
+    for(let i=0;i<7;i++){
+      s+='<text class="lb '+(i<3?'l':'r')+'" x="110" y="'+(HY[i]+5)+'" text-anchor="start">'+FSHORT[i+1]+'</text>';
+    }
+  }
+  /* さわる ところ（ゆびで おしやすい 大きさ） */
+  if(tap){
+    s+='<circle data-h="0" cx="'+TX+'" cy="'+TY+'" r="17" fill="rgba(0,0,0,0)"/>';
+    for(let i=0;i<7;i++)s+='<circle data-h="'+(i+1)+'" cx="'+CX+'" cy="'+HY[i]+'" r="16" fill="rgba(0,0,0,0)"/>';
+  }
+  return s+'</svg>';
+}
+
+/* 前の音 → いまの音 で かわる あな */
+function diffMarks(prevKey,curKey){
+  if(!prevKey||!NOTES[prevKey]||prevKey===curKey)return null;
+  const a=NOTES[prevKey].fing,b=NOTES[curKey].fing,m=[];
+  for(let i=0;i<8;i++){if(a[i]!==b[i])m.push({h:i,k:b[i]?'cl':'op'});}
+  return m.length?m:null;
+}
+function diffText(prevKey,curKey){
+  const m=diffMarks(prevKey,curKey);
+  if(!m)return '';
+  const cl=m.filter(x=>x.k==='cl').map(x=>x.h);
+  const op=m.filter(x=>x.k==='op').map(x=>x.h);
+  let p=[];
+  if(op.length)p.push('<span class="op">'+fingerWords(op)+'を はなす</span>');
+  if(cl.length)p.push('<em>'+fingerWords(cl)+'を ふさぐ</em>');
+  return '<b>'+NOTES[prevKey].nm+' → '+NOTES[curKey].nm+'</b>　'+p.join('、');
+}
+
+/* ===================================================================
+   ステップ１：ゆびを 見る
+=================================================================== */
+let vPrev=null;
+function vKeys(){return RANGES[2].keys;}
+function vRender(){
+  const keys=vKeys();
+  document.getElementById('vBar').innerHTML=keys.map(k=>
+    '<button class="ntag'+(k===S.note?' on':'')+'" data-k="'+k+'">'+nmHTML(k)+'</button>').join('');
+  document.getElementById('vChart').innerHTML=keys.map(k=>
+    '<div class="citem'+(k===S.note?' on':'')+'" data-k="'+k+'"><div class="cn">'+nmHTML(k)+'</div>'
+    +fingSVG(NOTES[k].fing,{cls:'cfig'})+'</div>').join('');
+  document.getElementById('vCap').textContent=nmPlain(S.note)+' の ゆび';
+  document.getElementById('vBig').innerHTML=
+    fingSVG(NOTES[S.note].fing,{labels:true,mark:diffMarks(vPrev,S.note)});
+  const d=diffText(vPrev,S.note);
+  document.getElementById('vSay').innerHTML= d ? d :
+    'おとの ふだか、下の ひょうを おすと、その 音の ゆびが 大きく 出るよ。';
+  refit();
+}
+function vPick(k,hear){
+  if(k===S.note){if(hear)playKey(k);return;}
+  vPrev=S.note;S.note=k;save();vRender();
+  if(hear)playKey(k);
+}
+document.getElementById('vBar').addEventListener('click',e=>{
+  const b=e.target.closest('[data-k]');if(b)vPick(b.dataset.k,true);
+});
+document.getElementById('vChart').addEventListener('click',e=>{
+  const b=e.target.closest('[data-k]');if(b)vPick(b.dataset.k,true);
+});
+document.getElementById('vHear').onclick=()=>playKey(S.note,0.9);
+document.getElementById('vUp').onclick=()=>{
+  const ks=vKeys(),i=ks.indexOf(S.note);if(i<ks.length-1)vPick(ks[i+1],true);
+};
+document.getElementById('vDown').onclick=()=>{
+  const ks=vKeys(),i=ks.indexOf(S.note);if(i>0)vPick(ks[i-1],true);
+};
+
+/* ===================================================================
+   ステップ２：ゆびを おさえる
+=================================================================== */
+const O={key:'G5',f:[0,0,0,0,0,0,0,0],done:false};
+function oOps(){
+  document.getElementById('oOps').innerHTML=RANGES.map((r,i)=>
+    '<button class="op-btn'+(i===S.range?' active':'')+'" data-i="'+i+'">'+r.t+'</button>').join('');
+}
+function oScore(){
+  document.getElementById('oCorrect').textContent=S.correct;
+  document.getElementById('oTotal').textContent=S.total;
+  document.getElementById('oStreak').textContent=S.streak+'/10';
+}
+function oNew(){
+  const ks=RANGES[S.range].keys;
+  let k;do{k=ks[Math.floor(Math.random()*ks.length)];}while(ks.length>1&&k===O.key);
+  O.key=k;O.f=[0,0,0,0,0,0,0,0];O.done=false;
+  document.getElementById('oName').innerHTML=nmHTML(k)+(NOTES[k].hi?'<span style="font-size:.34em;color:#a99a7c;margin-left:.2em">たかい ド</span>':'');
+  document.getElementById('oVerdict').textContent='';
+  document.getElementById('oStage').className='stage';
+  document.getElementById('oChart').classList.add('hidden');
+  document.getElementById('oHint').classList.remove('on');
+  document.getElementById('oAns').disabled=false;
+  oFig();refit();
+}
+function oFig(mark){
+  document.getElementById('oFig').innerHTML=
+    fingSVG(O.done?NOTES[O.key].fing:O.f,{labels:true,tap:!O.done,mark:mark});
+}
+document.getElementById('oOps').addEventListener('click',e=>{
+  const b=e.target.closest('[data-i]');if(!b)return;
+  S.range=+b.dataset.i;save();oOps();oNew();
+});
+document.getElementById('oFig').addEventListener('click',e=>{
+  if(O.done)return;
+  const c=e.target.closest('[data-h]');if(!c)return;
+  const h=+c.dataset.h;O.f[h]=O.f[h]?0:1;oFig();
+});
+document.getElementById('oClear').onclick=()=>{
+  if(O.done)return;O.f=[0,0,0,0,0,0,0,0];oFig();
+};
+document.getElementById('oHear').onclick=()=>playKey(O.key,0.9);
+document.getElementById('oHint').onclick=()=>{
+  const c=document.getElementById('oChart'),b=document.getElementById('oHint');
+  if(c.classList.contains('hidden')){
+    c.innerHTML=RANGES[S.range].keys.map(k=>
+      '<div class="citem"><div class="cn">'+nmHTML(k)+'</div>'+fingSVG(NOTES[k].fing,{cls:'cfig'})+'</div>').join('');
+    c.classList.remove('hidden');b.classList.add('on');
+  }else{c.classList.add('hidden');b.classList.remove('on');}
+  refit();
+};
+document.getElementById('oAns').onclick=()=>{
+  if(O.done)return;
+  const want=NOTES[O.key].fing;
+  /* まだ 1つも ふさいで いない ときは 丸つけしない */
+  if(O.f.every(x=>!x)){
+    document.getElementById('oVerdict').className='verdict';
+    document.getElementById('oVerdict').textContent='まだ あなを ふさいで いないよ';
+    return;
+  }
+  const ok=want.every((x,i)=>x===O.f[i]);
+  O.done=true;
+  document.getElementById('oAns').disabled=true;
+  S.total++;
+  const v=document.getElementById('oVerdict');
+  if(ok){
+    S.correct++;S.streak=Math.min(10,S.streak+1);
+    document.getElementById('oStage').className='stage correct';
+    v.className='verdict ok';v.textContent='よくできました！　'+nmPlain(O.key)+' の ゆびだね';
+    oFig();
+  }else{
+    S.streak=0;
+    document.getElementById('oStage').className='stage wrong';
+    const mk=[];for(let i=0;i<8;i++)if(want[i]!==O.f[i])mk.push({h:i,k:'bad'});
+    v.className='verdict ng';
+    v.innerHTML='もう一回！　あかい ○の ところが ちがったよ。ただしい ゆびは これ';
+    oFig(mk);
+  }
+  playKey(O.key,0.9);
+  save();oScore();refit();
+};
+document.getElementById('oNext').onclick=oNew;
+
+/* ===================================================================
+   ステップ３：ながして ふく
+=================================================================== */
+const T={i:0,b:0,playing:false,timer:null,next:0};
+function beatMs(){return 60000/S.tempo;}
+function tLv(){
+  document.getElementById('tLv').innerHTML=PHRASES.map((p,i)=>
+    '<button class="lvtag'+(i===S.ph?' on':'')+'" data-i="'+i+'">'+(i+1)+'</button>').join('');
+}
+function tStrip(){
+  const ph=PHRASES[S.ph];
+  document.getElementById('tSect').textContent='れんしゅう '+(S.ph+1)+'　「'+ph.t+'」';
+  document.getElementById('tStrip').innerHTML=ph.notes.map((n,i)=>{
+    const p=PITCH.indexOf(n[0]);
+    const cls=i===T.i?'now':(i<T.i?'past':'');
+    return '<div class="fchip '+cls+'" style="width:calc(var(--uw) * '+n[1]+')">'
+      +'<span class="pbar" style="bottom:calc(1.5em + '+(9+p*8.4)+'%)"></span>'
+      +'<span class="pdot" style="bottom:calc(1.5em + '+(9+p*8.4)+'%)"></span>'
+      +'<span class="pname">'+nmHTML(n[0])+'</span></div>';
+  }).join('');
+  tStripPos();
+}
+function tStripPos(){
+  const lane=document.getElementById('tLane'),strip=document.getElementById('tStrip');
+  const ph=PHRASES[S.ph], anchor=Math.round((lane.clientWidth||300)*0.22);
+  const cur=document.getElementById('tCursor');
+  cur.style.left=anchor+'px';
+  /* ながい音は ますも ながい。しるしの 幅を 音の 長さに あわせる */
+  cur.style.width='calc(var(--uw) * '+(ph.notes[T.i]?ph.notes[T.i][1]:1)+')';
+  strip.style.transform='translateX(calc('+anchor+'px - var(--uw) * '+(ph.startAt[T.i]||0)+'))';
+}
+function tShow(sound){
+  const ph=PHRASES[S.ph], n=ph.notes[T.i], k=n[0];
+  const prev=T.i>0?ph.notes[T.i-1][0]:null;
+  const nx=T.i<ph.notes.length-1?ph.notes[T.i+1][0]:null;
+  document.getElementById('tBig').innerHTML=fingSVG(NOTES[k].fing,{labels:true,mark:diffMarks(prev,k)});
+  if(nx){
+    document.getElementById('tNextCap').innerHTML='つぎ　'+nmHTML(nx);
+    document.getElementById('tNext').innerHTML=fingSVG(NOTES[nx].fing,{});
+  }else{
+    document.getElementById('tNextCap').textContent='おわり';
+    document.getElementById('tNext').innerHTML='';
+  }
+  const d=diffText(prev,k);
+  document.getElementById('tSay').innerHTML = d ? d :
+    (T.playing?'<b>'+nmPlain(k)+'</b> を ふこう':'▶ はじめる を おすと ながれて くるよ。「1つ すすむ ▶」で 1音ずつ たしかめられる');
+  tStrip();
+  if(sound&&S.sound)playNote(NOTES[k].f, n[1]*beatMs()*0.9/1000);
+}
+function tBeats(on){
+  document.querySelectorAll('#tBeats i').forEach((el,i)=>el.classList.toggle('on',on===i));
+}
+function tSyncBtn(){
+  document.getElementById('tGo').textContent=T.playing?'■ とめる':'▶ はじめる';
+  document.getElementById('tStep').disabled=T.playing;
+  document.getElementById('tBack').disabled=T.playing;
+}
+function tStop(){
+  T.playing=false;
+  if(T.timer){clearTimeout(T.timer);T.timer=null;}
+  tBeats(-1);tSyncBtn();tShow(false);
+}
+function tStart(){
+  ac();
+  T.playing=true;T.i=0;T.b=0;tSyncBtn();tShow(false);
+  /* 「1・2・3・4」を 出してから はじめる */
+  let c=1;
+  const say=document.getElementById('tSay');
+  const cnt=()=>{
+    if(!T.playing)return;
+    if(c<=4){
+      say.innerHTML='<span class="count">'+c+'</span>';
+      tBeats((c-1)%4);
+      c++;T.timer=setTimeout(cnt,beatMs());
+    }else{
+      T.next=performance.now();tTick();
+    }
+  };
+  cnt();
+}
+function tTick(){
+  if(!T.playing)return;
+  const ph=PHRASES[S.ph];
+  if(T.b>=ph.total){
+    if(S.loop){T.b=0;}
+    else{tStop();return;}
+  }
+  tBeats(T.b%4);
+  const idx=ph.startAt.indexOf(T.b);
+  if(idx>=0){T.i=idx;tShow(true);}
+  T.b++;
+  T.next+=beatMs();
+  T.timer=setTimeout(tTick,Math.max(8,T.next-performance.now()));
+}
+document.getElementById('tGo').onclick=()=>{T.playing?tStop():tStart();};
+/* 絵や レーンを おしても 1つ すすむ。ボタンが 主役なので ことばでは 出さない
+   （画面の 下が とどきにくい ときの 逃げ道。あまりのあるわり算と 同じ かんがえ） */
+function tTapNext(el){
+  if(T.playing)return;
+  el.classList.add('tapped');setTimeout(()=>el.classList.remove('tapped'),460);
+  document.getElementById('tStep').click();
+}
+document.getElementById('tLane').addEventListener('click',function(){tTapNext(this);});
+document.getElementById('tBig').addEventListener('click',function(){tTapNext(this);});
+document.getElementById('tStep').onclick=()=>{
+  const ph=PHRASES[S.ph];
+  if(T.i<ph.notes.length-1){T.i++;tShow(true);}
+  else{T.i=0;tShow(true);}
+};
+document.getElementById('tBack').onclick=()=>{
+  if(T.i>0){T.i--;tShow(true);}
+};
+document.getElementById('tNextPh').onclick=()=>{
+  tStop();S.ph=(S.ph+1)%PHRASES.length;T.i=0;save();tLv();tShow(false);refit();
+};
+document.getElementById('tLv').addEventListener('click',e=>{
+  const b=e.target.closest('[data-i]');if(!b)return;
+  tStop();S.ph=+b.dataset.i;T.i=0;save();tLv();tShow(false);refit();
+});
+document.getElementById('tSlow').onclick=()=>{S.tempo=Math.max(50,S.tempo-10);tSet();};
+document.getElementById('tFast').onclick=()=>{S.tempo=Math.min(120,S.tempo+10);tSet();};
+function tSet(){document.getElementById('tTempo').textContent=S.tempo;save();}
+document.getElementById('tSound').onclick=()=>{
+  S.sound=S.sound?0:1;save();
+  const b=document.getElementById('tSound');
+  b.classList.toggle('on',!!S.sound);b.textContent=S.sound?'♪ あり':'なし';
+};
+document.getElementById('tLoop').onclick=()=>{
+  S.loop=S.loop?0:1;save();
+  const b=document.getElementById('tLoop');
+  b.classList.toggle('on',!!S.loop);b.textContent=S.loop?'あり':'なし';
+};
+
+/* ===================================================================
+   タブ
+=================================================================== */
+document.querySelectorAll('.tab').forEach(t=>{
+  t.onclick=()=>{
+    tStop();
+    document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x===t));
+    ['Miru','Osae','Nagasu'].forEach(v=>
+      document.getElementById('view'+v).classList.toggle('hidden',v!==t.dataset.v));
+    if(t.dataset.v==='Nagasu')tShow(false);
+    refit();
+  };
+});
+
+/* ===================================================================
+   1画面に 収める
+=================================================================== */
+function refit(){fitShrink();}
+function frameHeight(){
+  const c=document.documentElement.clientHeight||0;
+  const w=window.innerHeight||0;
+  const v=(window.visualViewport&&window.visualViewport.height)||0;
+  return Math.min.apply(null,[c,w,v].filter(x=>x>0))||w||c;
+}
+function fitToFrame(){
+  document.documentElement.style.setProperty('--fh',frameHeight()+'px');
+  fitShrink();
+}
+let shrinkPass=0;
+function fitShrink(){
+  document.documentElement.style.setProperty('--shrink','1');
+  shrinkPass=0;
+  requestAnimationFrame(shrinkStep);
+}
+function overflowInfo(){
+  let worst={over:0,ratio:1};
+  const check=el=>{
+    if(!el||el.clientHeight<=0)return;
+    const over=el.scrollHeight-el.clientHeight;
+    if(over>worst.over)worst={over:over,ratio:el.clientHeight/el.scrollHeight};
+  };
+  check(document.querySelector('.app'));
+  document.querySelectorAll('.stage').forEach(st=>{if(st.offsetParent!==null)check(st);});
+  return worst;
+}
+function shrinkStep(){
+  const appEl=document.querySelector('.app');
+  if(!appEl)return;
+  const w=overflowInfo(),over=w.over;
+  if(over>2&&shrinkPass<6){
+    const cur=parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--shrink'))||1;
+    const next=Math.max(.55,cur*Math.max(.8,w.ratio));
+    document.documentElement.style.setProperty('--shrink',next.toFixed(3));
+    shrinkPass++;
+    requestAnimationFrame(shrinkStep);
+  }else{
+    tStripPos();
+  }
+}
+window.addEventListener('resize',fitToFrame);
+if(window.visualViewport)window.visualViewport.addEventListener('resize',fitToFrame);
+window.addEventListener('orientationchange',()=>setTimeout(fitToFrame,200));
+window.addEventListener('load',fitToFrame);
+
+/* ---------- はじめの ひょうじ ---------- */
+vRender();
+oOps();oScore();oNew();
+tLv();tSet();
+document.getElementById('tSound').classList.toggle('on',!!S.sound);
+document.getElementById('tSound').textContent=S.sound?'♪ あり':'なし';
+document.getElementById('tLoop').classList.toggle('on',!!S.loop);
+document.getElementById('tLoop').textContent=S.loop?'あり':'なし';
+tShow(false);
+fitToFrame();
+</script>
+</body>
+</html>
