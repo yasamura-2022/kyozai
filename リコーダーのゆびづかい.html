@@ -151,6 +151,21 @@
   .citem.on .cn{color:var(--accent-dark)}
   .cfig{height:calc(clamp(52px, calc(var(--fh,100vh) * 0.115), 104px) * var(--shrink,1))}
 
+  /* ===== いっしょに ふく（ステップ２）=====
+     こたえあわせの あとに 出す。音が 鳴っている あいだ バーが たまる＝
+     「いつから いつまで ふくか」が 目で わかる。やすみで いきを すう */
+  .blowzone{display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0}
+  .blowzone .btn{flex:none;width:min(100%,420px)}
+  .blowbar{width:min(100%,420px);border:2px solid var(--line);border-radius:8px;
+    background:#f4ecd8;overflow:hidden;
+    height:calc(clamp(9px,2.4vw,14px) * var(--shrink,1))}
+  .blowbar i{display:block;height:100%;width:0;background:var(--blue);border-radius:8px}
+  .blowbar.rest i{background:#cbbb96}
+  .blowtxt{font-weight:800;color:#5d5040;line-height:1.3;min-height:1.4em;
+    font-size:calc(clamp(11px,3vw,15px) * var(--shrink,1))}
+  .blowtxt .fu{color:var(--blue-dark);font-size:1.5em;letter-spacing:.08em}
+  .blowtxt .cnt{color:#a99a7c}
+
   /* ===== ながれてくる 音（レーン） ===== */
   .lane{position:relative;width:100%;overflow:hidden;flex-shrink:0;
     --uw:calc(clamp(34px, calc(var(--fh,100vh) * 0.062), 62px) * var(--shrink,1));
@@ -276,12 +291,13 @@
     #vStage>.notebar{grid-area:a;align-self:center}
     #vStage>.say{grid-area:b;align-self:center}
     #vStage>.legend{grid-area:c;align-self:center}
-    #oStage{grid-template-rows:auto auto auto auto 1fr;
-      grid-template-areas:"a f" "b f" "c f" "d f" ". f"}
+    #oStage{grid-template-rows:auto auto auto auto auto 1fr;
+      grid-template-areas:"a f" "b f" "c f" "d f" "e f" ". f"}
     #oStage>.askrow{grid-area:a;align-self:center}
     #oStage>.bigname{grid-area:b;align-self:center}
     #oStage>.chart{grid-area:c;align-self:center}
-    #oStage>.verdict{grid-area:d;align-self:center}
+    #oStage>.blowzone{grid-area:d;align-self:center}
+    #oStage>.verdict{grid-area:e;align-self:center}
     #tStage{grid-template-rows:auto auto auto auto auto 1fr;
       grid-template-areas:"a f" "b f" "c f" "d f" "e f" ". f"}
     #tStage>.sect{grid-area:a}
@@ -342,6 +358,11 @@
       <div class="bigname nm" id="oName"></div>
       <div class="figwrap" id="oFig"></div>
       <div class="chart hidden" id="oChart"></div>
+      <div class="blowzone hidden" id="oBlowZone">
+        <button class="btn play" id="oBlow">♪ いっしょに ふく</button>
+        <div class="blowbar" id="oBlowBar"><i id="oBlowFill"></i></div>
+        <div class="blowtxt" id="oBlowTxt"></div>
+      </div>
       <p class="verdict" id="oVerdict"></p>
     </div>
     <div class="actions">
@@ -353,6 +374,7 @@
 
   <!-- ============ ステップ３：ながして ふく ============ -->
   <div id="viewNagasu" class="hidden">
+    <div class="ops" id="tOps"></div>
     <div class="lvbar" id="tLv"></div>
     <div class="stage" id="tStage">
       <div class="sect" id="tSect"></div>
@@ -420,10 +442,13 @@ const NOTES={
 };
 const PITCH=['C5','D5','E5','F5','G5','A5','B5','C6','D6'];
 /* いま 3年で つかう ところ（ミ〜たかいド）を まん中に おく */
+/* ステップ１の ひょうに 出す 音。低いド・レから 高いレまで ぜんぶ */
+const ALLKEYS=['C5','D5','E5','F5','G5','A5','B5','C6','D6'];
 const RANGES=[
   {t:'ソラシ',keys:['G5','A5','B5']},
+  {t:'ドレミ',keys:['C5','D5','E5']},
   {t:'ミファソラシド',keys:['E5','F5','G5','A5','B5','C6']},
-  {t:'ぜんぶ',keys:['C5','D5','E5','F5','G5','A5','B5','C6','D6']}
+  {t:'ぜんぶ',keys:ALLKEYS}
 ];
 /* ゆびの なまえ。ひだり／みぎを つけないと どの ゆびか きまらない */
 const FHAND=['うらの','ひだりの','ひだりの','ひだりの','みぎの','みぎの','みぎの','みぎの'];
@@ -455,29 +480,53 @@ function nmHTML(k){
 function nmPlain(k){const n=NOTES[k];return n.nm+(n.hi?'（たかい）':'');}
 
 /* ---------- れんしゅうの フレーズ（4分の4びょうし・自作） ---------- */
-const PHRASES=[
-  {t:'ソ と ラ',      notes:[['G5',1],['A5',1],['G5',1],['A5',1],['G5',1],['A5',1],['G5',2]]},
-  {t:'ラ と シ',      notes:[['A5',1],['B5',1],['A5',1],['B5',1],['A5',1],['B5',1],['A5',2]]},
-  {t:'ソラシ',        notes:[['G5',1],['A5',1],['B5',2],['B5',1],['A5',1],['G5',2]]},
-  {t:'シ と ド',      notes:[['B5',1],['C6',1],['B5',1],['C6',1],['B5',1],['C6',1],['B5',2]]},
-  {t:'ミファソ',      notes:[['E5',1],['F5',1],['G5',2],['G5',1],['F5',1],['E5',2]]},
-  {t:'かいだん のぼる',notes:[['E5',1],['F5',1],['G5',1],['A5',1],['B5',1],['C6',3]]},
-  {t:'かいだん おりる',notes:[['C6',1],['B5',1],['A5',1],['G5',1],['F5',1],['E5',3]]},
-  {t:'とんで いく',   notes:[['G5',1],['B5',1],['A5',1],['C6',1],['B5',1],['G5',3]]},
-  {t:'ながい音',      notes:[['G5',4],['A5',4],['B5',4],['C6',4]]},
+/* レベルは 音の かずで 分ける。2つの音から はじめる。
+   レベルも れんしゅうも はじめから ぜんぶ えらべる（鍵は かけない） */
+const LEVELS=[
+ {t:'2つの音',ph:[
+  {t:'ソ と ラ',  notes:[['G5',1],['A5',1],['G5',1],['A5',1],['G5',1],['A5',1],['G5',2]]},
+  {t:'ラ と シ',  notes:[['A5',1],['B5',1],['A5',1],['B5',1],['A5',1],['B5',1],['A5',2]]},
+  {t:'シ と ド',  notes:[['B5',1],['C6',1],['B5',1],['C6',1],['B5',1],['C6',1],['B5',2]]},
+  {t:'ミ と ファ',notes:[['E5',1],['F5',1],['E5',1],['F5',1],['E5',1],['F5',1],['E5',2]]},
+  {t:'ド と レ',  notes:[['C5',1],['D5',1],['C5',1],['D5',1],['C5',1],['D5',1],['C5',2]]},
+  {t:'レ と ミ',  notes:[['D5',1],['E5',1],['D5',1],['E5',1],['D5',1],['E5',1],['D5',2]]}
+ ]},
+ {t:'3つの音',ph:[
+  {t:'ソラシ',  notes:[['G5',1],['A5',1],['B5',2],['B5',1],['A5',1],['G5',2]]},
+  {t:'ミファソ',notes:[['E5',1],['F5',1],['G5',2],['G5',1],['F5',1],['E5',2]]},
+  {t:'ドレミ',  notes:[['C5',1],['D5',1],['E5',2],['E5',1],['D5',1],['C5',2]]},
+  {t:'ラシド',  notes:[['A5',1],['B5',1],['C6',2],['C6',1],['B5',1],['A5',2]]}
+ ]},
+ {t:'4つの音',ph:[
+  {t:'ドレミファ',  notes:[['C5',1],['D5',1],['E5',1],['F5',1],['F5',1],['E5',1],['D5',1],['C5',1]]},
+  {t:'レミファソ',  notes:[['D5',1],['E5',1],['F5',1],['G5',1],['G5',1],['F5',1],['E5',1],['D5',1]]},
+  {t:'ミファソラ',  notes:[['E5',1],['F5',1],['G5',1],['A5',1],['A5',1],['G5',1],['F5',1],['E5',1]]},
+  {t:'ソラシド',    notes:[['G5',1],['A5',1],['B5',1],['C6',1],['C6',1],['B5',1],['A5',1],['G5',1]]}
+ ]},
+ {t:'ぜんぶの音',ph:[
+  {t:'かいだん のぼる',notes:[['C5',1],['D5',1],['E5',1],['F5',1],['G5',1],['A5',1],['B5',1],['C6',1]]},
+  {t:'かいだん おりる',notes:[['C6',1],['B5',1],['A5',1],['G5',1],['F5',1],['E5',1],['D5',1],['C5',1]]},
+  {t:'とんで いく',   notes:[['C5',1],['E5',1],['D5',1],['F5',1],['E5',1],['G5',3]]},
+  {t:'ながい音',      notes:[['C5',4],['E5',4],['G5',4],['C6',4]]},
   {t:'まぜまぜ',      notes:[['G5',1],['A5',1],['B5',1],['A5',1],['G5',1],['E5',1],['F5',1],['G5',1],
-                             ['A5',1],['B5',1],['C6',1],['B5',1],['A5',1],['G5',3]]}
+                             ['E5',1],['D5',1],['C5',1],['D5',1],['E5',1],['G5',3]]}
+ ]}
 ];
-PHRASES.forEach(p=>{
+LEVELS.forEach(L=>L.ph.forEach(p=>{
   let b=0;p.startAt=[];
   p.notes.forEach(n=>{p.startAt.push(b);b+=n[1];});
   p.total=b;
-});
+}));
+function PH(){return LEVELS[S.lv].ph[S.ph];}
 
 /* ---------- ほぞん ---------- */
 const KEY='recorder_yubi_v1';
-const S={note:'G5',range:1,ph:0,tempo:60,sound:1,loop:1,correct:0,total:0,streak:0};
+const S={note:'G5',range:2,lv:0,ph:0,tempo:60,sound:1,loop:1,correct:0,total:0,streak:0};
 try{const s=JSON.parse(localStorage.getItem(KEY)||'{}');Object.keys(S).forEach(k=>{if(s[k]!==undefined)S[k]=s[k];});}catch(e){}
+/* 古い ほぞんが のこっていても はみ出さないように する */
+if(!(S.range>=0&&S.range<RANGES.length))S.range=2;
+if(!(S.lv>=0&&S.lv<LEVELS.length))S.lv=0;
+if(!(S.ph>=0&&S.ph<LEVELS[S.lv].ph.length))S.ph=0;
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
 
 /* ===================================================================
@@ -585,7 +634,7 @@ function diffText(prevKey,curKey){
    ステップ１：ゆびを 見る
 =================================================================== */
 let vPrev=null;
-function vKeys(){return RANGES[2].keys;}
+function vKeys(){return ALLKEYS;}   /* ならびが かわっても ずれないよう 直に 持つ */
 function vRender(){
   const keys=vKeys();
   document.getElementById('vBar').innerHTML=keys.map(k=>
@@ -637,6 +686,7 @@ function oNew(){
   const ks=RANGES[S.range].keys;
   let k;do{k=ks[Math.floor(Math.random()*ks.length)];}while(ks.length>1&&k===O.key);
   O.key=k;O.f=[0,0,0,0,0,0,0,0];O.done=false;
+  oBlowReset();document.getElementById('oBlowZone').classList.add('hidden');
   document.getElementById('oName').innerHTML=nmHTML(k)+(NOTES[k].hi?'<span style="font-size:.34em;color:#a99a7c;margin-left:.2em">たかい ド</span>':'');
   document.getElementById('oVerdict').textContent='';
   document.getElementById('oStage').className='stage';
@@ -699,7 +749,54 @@ document.getElementById('oAns').onclick=()=>{
     oFig(mk);
   }
   playKey(O.key,0.9);
+  /* ここから「ふいて みよう」。正解でも まちがいでも 出す
+     （まちがいの ときは 正しい ゆびが 画面に 出ているので、それを 見ながら ふける） */
+  oBlowReset();
+  document.getElementById('oBlowZone').classList.remove('hidden');
   save();oScore();refit();
+};
+
+/* ---------- いっしょに ふく ----------
+   こたえあわせの あとに 出す。ゆびの 形は 画面に 出たまま なので、
+   それを 見ながら 音に あわせて ふく。丸つけは しない */
+const BLOW={on:false,timer:null,n:0};
+const BLOW_ON=2000, BLOW_REST=1400, BLOW_TIMES=4;
+function oBlowSync(){
+  document.getElementById('oBlow').textContent=BLOW.on?'■ とめる':'♪ いっしょに ふく';
+}
+function oBlowReset(msg){
+  BLOW.on=false;
+  if(BLOW.timer){clearTimeout(BLOW.timer);BLOW.timer=null;}
+  const f=document.getElementById('oBlowFill');
+  f.style.transition='none';f.style.width='0%';
+  document.getElementById('oBlowBar').classList.remove('rest');
+  document.getElementById('oBlowTxt').innerHTML=msg||'ゆびは そのまま。音に あわせて ふいて みよう';
+  oBlowSync();
+}
+function oBlowStep(){
+  if(!BLOW.on)return;
+  if(BLOW.n>=BLOW_TIMES){oBlowReset('よくできました！　もう一回 ふく ときは ♪を おしてね');return;}
+  BLOW.n++;
+  playKey(O.key,BLOW_ON/1000);
+  const bar=document.getElementById('oBlowBar'), f=document.getElementById('oBlowFill');
+  bar.classList.remove('rest');
+  f.style.transition='none';f.style.width='0%';
+  requestAnimationFrame(()=>{
+    f.style.transition='width '+BLOW_ON+'ms linear';f.style.width='100%';
+  });
+  document.getElementById('oBlowTxt').innerHTML=
+    '<span class="fu">ふーっ</span>　<span class="cnt">'+BLOW.n+' / '+BLOW_TIMES+'</span>';
+  BLOW.timer=setTimeout(()=>{
+    if(!BLOW.on)return;
+    bar.classList.add('rest');
+    f.style.transition='width '+BLOW_REST+'ms linear';f.style.width='0%';
+    document.getElementById('oBlowTxt').textContent='いきを すって';
+    BLOW.timer=setTimeout(oBlowStep,BLOW_REST);
+  },BLOW_ON);
+}
+document.getElementById('oBlow').onclick=()=>{
+  if(BLOW.on){oBlowReset();return;}
+  ac();BLOW.on=true;BLOW.n=0;oBlowSync();oBlowStep();
 };
 document.getElementById('oNext').onclick=oNew;
 
@@ -708,13 +805,17 @@ document.getElementById('oNext').onclick=oNew;
 =================================================================== */
 const T={i:0,b:0,playing:false,timer:null,next:0};
 function beatMs(){return 60000/S.tempo;}
+function tOps(){
+  document.getElementById('tOps').innerHTML=LEVELS.map((L,i)=>
+    '<button class="op-btn'+(i===S.lv?' active':'')+'" data-lv="'+i+'">'+L.t+'</button>').join('');
+}
 function tLv(){
-  document.getElementById('tLv').innerHTML=PHRASES.map((p,i)=>
-    '<button class="lvtag'+(i===S.ph?' on':'')+'" data-i="'+i+'">'+(i+1)+'</button>').join('');
+  document.getElementById('tLv').innerHTML=LEVELS[S.lv].ph.map((p,i)=>
+    '<button class="lvtag'+(i===S.ph?' on':'')+'" data-i="'+i+'">'+p.t+'</button>').join('');
 }
 function tStrip(){
-  const ph=PHRASES[S.ph];
-  document.getElementById('tSect').textContent='れんしゅう '+(S.ph+1)+'　「'+ph.t+'」';
+  const ph=PH();
+  document.getElementById('tSect').textContent=LEVELS[S.lv].t+'　れんしゅう '+(S.ph+1)+'　「'+ph.t+'」';
   document.getElementById('tStrip').innerHTML=ph.notes.map((n,i)=>{
     const p=PITCH.indexOf(n[0]);
     const cls=i===T.i?'now':(i<T.i?'past':'');
@@ -727,7 +828,7 @@ function tStrip(){
 }
 function tStripPos(){
   const lane=document.getElementById('tLane'),strip=document.getElementById('tStrip');
-  const ph=PHRASES[S.ph], anchor=Math.round((lane.clientWidth||300)*0.22);
+  const ph=PH(), anchor=Math.round((lane.clientWidth||300)*0.22);
   const cur=document.getElementById('tCursor');
   cur.style.left=anchor+'px';
   /* ながい音は ますも ながい。しるしの 幅を 音の 長さに あわせる */
@@ -735,7 +836,7 @@ function tStripPos(){
   strip.style.transform='translateX(calc('+anchor+'px - var(--uw) * '+(ph.startAt[T.i]||0)+'))';
 }
 function tShow(sound){
-  const ph=PHRASES[S.ph], n=ph.notes[T.i], k=n[0];
+  const ph=PH(), n=ph.notes[T.i], k=n[0];
   const prev=T.i>0?ph.notes[T.i-1][0]:null;
   /* 大きい 図は 「いま」だけ。
      「つぎ」の ゆびの 図は 出さない＝ふきながら 見る ひまが ない（2026-09-11 指摘）。
@@ -780,7 +881,7 @@ function tStart(){
 }
 function tTick(){
   if(!T.playing)return;
-  const ph=PHRASES[S.ph];
+  const ph=PH();
   if(T.b>=ph.total){
     if(S.loop){T.b=0;}
     else{tStop();return;}
@@ -803,7 +904,7 @@ function tTapNext(el){
 document.getElementById('tLane').addEventListener('click',function(){tTapNext(this);});
 document.getElementById('tBig').addEventListener('click',function(){tTapNext(this);});
 document.getElementById('tStep').onclick=()=>{
-  const ph=PHRASES[S.ph];
+  const ph=PH();
   if(T.i<ph.notes.length-1){T.i++;tShow(true);}
   else{T.i=0;tShow(true);}
 };
@@ -811,11 +912,16 @@ document.getElementById('tBack').onclick=()=>{
   if(T.i>0){T.i--;tShow(true);}
 };
 document.getElementById('tNextPh').onclick=()=>{
-  tStop();S.ph=(S.ph+1)%PHRASES.length;T.i=0;save();tLv();tShow(false);refit();
+  /* おなじ レベルの 中を まわる。レベルを 上げるのは 先生か 子どもが ボタンで きめる */
+  tStop();S.ph=(S.ph+1)%LEVELS[S.lv].ph.length;T.i=0;save();tLv();tShow(false);refit();
 };
 document.getElementById('tLv').addEventListener('click',e=>{
   const b=e.target.closest('[data-i]');if(!b)return;
   tStop();S.ph=+b.dataset.i;T.i=0;save();tLv();tShow(false);refit();
+});
+document.getElementById('tOps').addEventListener('click',e=>{
+  const b=e.target.closest('[data-lv]');if(!b)return;
+  tStop();S.lv=+b.dataset.lv;S.ph=0;T.i=0;save();tOps();tLv();tShow(false);refit();
 });
 document.getElementById('tSlow').onclick=()=>{S.tempo=Math.max(50,S.tempo-10);tSet();};
 document.getElementById('tFast').onclick=()=>{S.tempo=Math.min(120,S.tempo+10);tSet();};
@@ -836,7 +942,7 @@ document.getElementById('tLoop').onclick=()=>{
 =================================================================== */
 document.querySelectorAll('.tab').forEach(t=>{
   t.onclick=()=>{
-    tStop();
+    tStop();oBlowReset();
     document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x===t));
     ['Miru','Osae','Nagasu'].forEach(v=>
       document.getElementById('view'+v).classList.toggle('hidden',v!==t.dataset.v));
@@ -898,7 +1004,7 @@ window.addEventListener('load',fitToFrame);
 /* ---------- はじめの ひょうじ ---------- */
 vRender();
 oOps();oScore();oNew();
-tLv();tSet();
+tOps();tLv();tSet();
 document.getElementById('tSound').classList.toggle('on',!!S.sound);
 document.getElementById('tSound').textContent=S.sound?'♪ あり':'なし';
 document.getElementById('tLoop').classList.toggle('on',!!S.loop);
