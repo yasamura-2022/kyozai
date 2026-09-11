@@ -372,13 +372,13 @@
         </div>
       </div>
       <p class="say" id="vSay"></p>
-      <div class="legend">● ふさぐ　○ あける　　こい 指＝おさえる　　<span style="color:var(--lh-dark)">■ ひだりて</span>　<span style="color:var(--rh-dark)">■ みぎて</span></div>
+      <div class="legend">● ふさぐ　○ あける　　こい 指＝おさえる　　<span style="color:var(--lh-dark)">■ 左手</span>　<span style="color:var(--rh-dark)">■ 右手</span></div>
     </div>
     <div class="chart" id="vChart"></div>
     <div class="actions">
       <button class="btn sub" id="vDown">◀ ひくい 音</button>
-      <button class="btn play" id="vHear">♪ 音を きく</button>
-      <button class="btn sub" id="vUp">たかい 音 ▶</button>
+      <button class="btn play" id="vHear">♪ 音を 聞く</button>
+      <button class="btn sub" id="vUp">高い 音 ▶</button>
     </div>
   </div>
 
@@ -389,7 +389,7 @@
       <div class="askrow">
         <span class="ask">この 音の 指は？</span>
         <button class="hintbtn" id="oHear">♪ 音</button>
-        <button class="hintbtn" id="oHint">指の ひょう</button>
+        <button class="hintbtn" id="oHint">指の 表</button>
       </div>
       <div class="bigname nm" id="oName"></div>
       <div class="figwrap" id="oFig"></div>
@@ -402,9 +402,9 @@
       <p class="verdict" id="oVerdict"></p>
     </div>
     <div class="actions">
-      <button class="btn sub" id="oClear">全部 けす</button>
-      <button class="btn show" id="oAns">こたえ</button>
-      <button class="btn next" id="oNext">つぎの もんだい →</button>
+      <button class="btn sub" id="oClear">全部 消す</button>
+      <button class="btn show" id="oAns">答え</button>
+      <button class="btn next" id="oNext">次の 問題 →</button>
     </div>
   </div>
 
@@ -421,7 +421,7 @@
       </div>
       <div class="fingrow">
         <div class="fingcol" style="flex:1;min-height:0">
-          <div class="cap now">いま</div>
+          <div class="cap now">今</div>
           <div class="figwrap" id="tBig"></div>
         </div>
       </div>
@@ -431,7 +431,7 @@
     </div>
     <div class="setrow">
       <div class="setbox">
-        <div class="t">はやさ</div>
+        <div class="t">速さ</div>
         <div class="row">
           <button class="stp" id="tSlow">−</button>
           <span class="v" id="tTempo">60</span>
@@ -449,8 +449,8 @@
     </div>
     <div class="actions">
       <button class="btn sub" id="tBack">◀ もどす</button>
-      <button class="btn play" id="tStep">1つ すすむ ▶</button>
-      <button class="btn next" id="tNextPh">つぎの 練習 →</button>
+      <button class="btn play" id="tStep">1つ 進む ▶</button>
+      <button class="btn next" id="tNextPh">次の 練習 →</button>
     </div>
   </div>
 </div>
@@ -488,7 +488,7 @@ const RANGES=[
   {t:'全部',keys:ALLKEYS}
 ];
 /* ゆびの なまえ。ひだり／みぎを つけないと どの ゆびか きまらない */
-const FHAND=['うらの','ひだりの','ひだりの','ひだりの','みぎの','みぎの','みぎの','みぎの'];
+const FHAND=['うらの','左の','左の','左の','右の','右の','右の','右の'];
 const FFIN=['親指','人さし指','中指','薬指','人さし指','中指','薬指','小指'];
 /* おなじ てなら まとめて 言う。
    「ひだりの ひとさしゆびと ひだりの くすりゆび」は 長くて 読めない */
@@ -502,8 +502,8 @@ function fingerWords(list){
   return g.map(x=>{
     /* かたての ゆびが ぜんぶ かわる ときは まとめて 言う
        （「ひとさしゆびとなかゆびとくすりゆびとこゆび」は 読めない） */
-    if(x.hand==='みぎの'&&x.f.length===4)return 'みぎての 指 全部';
-    if(x.hand==='ひだりの'&&x.f.length===3)return 'ひだりての 指 全部';
+    if(x.hand==='右の'&&x.f.length===4)return '右手の 指 全部';
+    if(x.hand==='左の'&&x.f.length===3)return '左手の 指 全部';
     return x.hand+' '+x.f.join('と ');
   }).join('と ');
 }
@@ -513,7 +513,7 @@ function nmHTML(k){
   const n=NOTES[k];
   return '<span class="nm">'+n.nm+(n.hi?'<span class="hi">▲</span>':'')+'</span>';
 }
-function nmPlain(k){const n=NOTES[k];return n.nm+(n.hi?'（たかい）':'');}
+function nmPlain(k){const n=NOTES[k];return n.nm+(n.hi?'（高い）':'');}
 
 /* ---------- れんしゅうの フレーズ（4分の4びょうし・自作） ---------- */
 /* レベルは 音の かずで 分ける。2つの音から はじめる。
@@ -543,7 +543,7 @@ const LEVELS=[
   {t:'かいだん のぼる',notes:[['C5',1],['D5',1],['E5',1],['F5',1],['G5',1],['A5',1],['B5',1],['C6',1]]},
   {t:'かいだん おりる',notes:[['C6',1],['B5',1],['A5',1],['G5',1],['F5',1],['E5',1],['D5',1],['C5',1]]},
   {t:'とんで いく',   notes:[['C5',1],['E5',1],['D5',1],['F5',1],['E5',1],['G5',3]]},
-  {t:'ながい音',      notes:[['C5',4],['E5',4],['G5',4],['C6',4]]},
+  {t:'長い音',      notes:[['C5',4],['E5',4],['G5',4],['C6',4]]},
   {t:'まぜまぜ',      notes:[['G5',1],['A5',1],['B5',1],['A5',1],['G5',1],['E5',1],['F5',1],['G5',1],
                              ['E5',1],['D5',1],['C5',1],['D5',1],['E5',1],['G5',3]]}
  ]}
@@ -750,8 +750,8 @@ function fingSVG(f,o){
     t+='<text class="lb sm" x="74" y="'+(fy(TY)+4)+'" text-anchor="middle">うら</text>';
     /* ての なまえは どちらも てのひらの 上。下に おくと「うらの あな」と かさなる */
     const rTop=Math.min(fy(HY[3]),fy(HY[6])), lTop=pinkyRowY();
-    t+='<text class="lb r" x="'+(RPALM_X+PALM_W/2)+'" y="'+(rTop-PALM_PAD-6)+'" text-anchor="middle">みぎて</text>';
-    t+='<text class="lb l" x="'+(LPALM_X+PALM_W/2)+'" y="'+(lTop-PALM_PAD-6)+'" text-anchor="middle">ひだりて</text>';
+    t+='<text class="lb r" x="'+(RPALM_X+PALM_W/2)+'" y="'+(rTop-PALM_PAD-6)+'" text-anchor="middle">右手</text>';
+    t+='<text class="lb l" x="'+(LPALM_X+PALM_W/2)+'" y="'+(lTop-PALM_PAD-6)+'" text-anchor="middle">左手</text>';
   }
   return '<svg class="fig'+(o.cls?' '+o.cls:'')+(tap?' tapfig':'')+'" viewBox="'+vb
     +'" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">'
@@ -794,7 +794,7 @@ function vRender(){
     fingSVG(NOTES[S.note].fing,{labels:true,mark:diffMarks(vPrev,S.note)});
   const d=diffText(vPrev,S.note);
   document.getElementById('vSay').innerHTML= d ? d :
-    'おとの ふだか、下の ひょうを おすと、その 音の 指が 大きく 出るよ。';
+    '音の ふだか、下の 表を おすと、その 音の 指が 大きく 出るよ。';
   refit();
 }
 function vPick(k,hear){
@@ -830,7 +830,7 @@ function oNew(){
   let k;do{k=ks[Math.floor(Math.random()*ks.length)];}while(ks.length>1&&k===O.key);
   O.key=k;O.f=[0,0,0,0,0,0,0,0];O.done=false;
   oBlowReset();document.getElementById('oBlowZone').classList.add('hidden');
-  document.getElementById('oName').innerHTML=nmHTML(k)+(NOTES[k].hi?'<span style="font-size:.34em;color:#a99a7c;margin-left:.2em">たかい '+NOTES[k].nm+'</span>':'');
+  document.getElementById('oName').innerHTML=nmHTML(k)+(NOTES[k].hi?'<span style="font-size:.34em;color:#a99a7c;margin-left:.2em">高い '+NOTES[k].nm+'</span>':'');
   document.getElementById('oVerdict').textContent='';
   document.getElementById('oStage').className='stage';
   document.getElementById('oChart').classList.add('hidden');
@@ -888,7 +888,7 @@ document.getElementById('oAns').onclick=()=>{
     document.getElementById('oStage').className='stage wrong';
     const mk=[];for(let i=0;i<8;i++)if(want[i]!==O.f[i])mk.push({h:i,k:'bad'});
     v.className='verdict ng';
-    v.innerHTML='おしい！　あかい ○の ところが ちがったよ。正しい 指は これ';
+    v.innerHTML='おしい！　赤い ○の ところが ちがったよ。正しい 指は これ';
     oFig(mk);
   }
   playKey(O.key,0.9);
@@ -913,7 +913,7 @@ function oBlowReset(msg){
   const f=document.getElementById('oBlowFill');
   f.style.transition='none';f.style.width='0%';
   document.getElementById('oBlowBar').classList.remove('rest');
-  document.getElementById('oBlowTxt').innerHTML=msg||'指は そのまま。音に あわせて ふいて みよう';
+  document.getElementById('oBlowTxt').innerHTML=msg||'指は そのまま。音に 合わせて ふいて みよう';
   oBlowSync();
 }
 function oBlowStep(){
@@ -933,7 +933,7 @@ function oBlowStep(){
     if(!BLOW.on)return;
     bar.classList.add('rest');
     f.style.transition='width '+BLOW_REST+'ms linear';f.style.width='0%';
-    document.getElementById('oBlowTxt').textContent='いきを すって';
+    document.getElementById('oBlowTxt').textContent='息を すって';
     BLOW.timer=setTimeout(oBlowStep,BLOW_REST);
   },BLOW_ON);
 }
@@ -994,7 +994,7 @@ function tBeats(on){
   document.querySelectorAll('#tBeats i').forEach((el,i)=>el.classList.toggle('on',on===i));
 }
 function tSyncBtn(){
-  document.getElementById('tGo').textContent=T.playing?'■ とめる':'▶ 始める';
+  document.getElementById('tGo').textContent=T.playing?'■ 止める':'▶ 始める';
   document.getElementById('tStep').disabled=T.playing;
   document.getElementById('tBack').disabled=T.playing;
 }
@@ -1009,13 +1009,14 @@ function tStop(){
 function tStart(){
   ac();
   T.playing=true;T.i=0;T.b=0;tSyncBtn();tShow(false);
-  /* 3拍カウントしてから 始める。子どもが息を整えやすい長さにする */
+  /* 4拍 カウントしてから 始める（4分の4拍子の 4）。
+     拍の 点も 4つ ぜんぶ 光って、何拍子か 目でも わかる */
   let c=1;
   const say=document.getElementById('tSay');
   say.classList.remove('hidden');
   const cnt=()=>{
     if(!T.playing)return;
-    if(c<=3){
+    if(c<=4){
       say.innerHTML='<span class="count">'+c+'</span>';
       tBeats((c-1)%4);
       c++;T.timer=setTimeout(cnt,beatMs());
