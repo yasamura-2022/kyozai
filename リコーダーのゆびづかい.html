@@ -22,8 +22,8 @@
      accent は すみれ。つづきの ボタンは 算数アプリと そろえて 青 #2f6fa8
      ひだりて＝だいだい ／ みぎて＝みどり（かけ算の筆算と 同じ 2色の 使い方） */
   body{--accent:#6a5f9e;--accent-dark:#4b4275;--accent-soft:#eceaf6;
-       --lh:#e08b3a;--lh-dark:#b06618;--lh-soft:#fbeada;
-       --rh:#4f8f6a;--rh-dark:#33684b;--rh-soft:#e2f0e7}
+       --lh:#e08b3a;--lh-dark:#b06618;--lh-soft:#fbeada;--lh-mid:#f2d3ab;
+       --rh:#4f8f6a;--rh-dark:#33684b;--rh-soft:#e2f0e7;--rh-mid:#c4ddce}
 
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}
   html,body{height:100%}
@@ -133,13 +133,15 @@
   .fig .lb.r{fill:var(--rh-dark)}
   /* ての 絵。ふさぐ ゆびは 本体に くっつき、はなす ゆびは 白くて うしろに 引く
      ＝じぶんの 手を その 形に すれば いい（字を 読まなくて よい） */
+  /* 手の甲と ゆびは おなじ 色。ちがう 色に すると 手に 見えず、
+     子どもが こわいと 言う（2026-09-11 指摘）。
+     ふさぐ ゆびだけ すこし こい 色に する（同じ 色あい の まま） */
   .fig .palm{stroke-width:2.5}
-  .fig .palm.l{fill:var(--lh-soft);stroke:var(--lh-dark)}
-  .fig .palm.r{fill:var(--rh-soft);stroke:var(--rh-dark)}
+  .fig .palm.l,.fig .fg.l{fill:var(--lh-soft);stroke:var(--lh-dark)}
+  .fig .palm.r,.fig .fg.r{fill:var(--rh-soft);stroke:var(--rh-dark)}
   .fig .fg{stroke-width:2.5}
-  .fig .fg.l{fill:var(--lh);stroke:var(--lh-dark)}
-  .fig .fg.r{fill:var(--rh);stroke:var(--rh-dark)}
-  .fig .fg.off{fill:#fff}
+  .fig .fg.l.on{fill:var(--lh-mid)}
+  .fig .fg.r.on{fill:var(--rh-mid)}
   /* 前の音から かわる あな。青＝ふさぐ ／ だいだい＝はなす */
   .fig .ring{fill:none;stroke-width:3.5;stroke-dasharray:5 4}
   .fig .ring.cl{stroke:var(--blue)}
@@ -570,7 +572,8 @@ function playKey(k,sec){const n=NOTES[k];if(n)playNote(n.f,sec||0.7);}
    ゆびの 図（SVG）
 =================================================================== */
 const HY=[100,128,156,196,224,252,278];   /* まえの あな 1〜7 の たかさ */
-const TX=28,TY=100;                        /* うらの あな */
+const TX=28,TY=76;   /* うらの あな。うたくち寄り（この 向きでは 下）に おく＝
+                        ひだりての ゆびを 左から のばしても ぶつからない */
 const CX=74, R=9;
 const VBH=320;
 /* うたくちを 下に する（2026-09-11 要望＝「子どもが 持つ 方向と 同じに」）。
@@ -586,37 +589,46 @@ function fy(v){return FLIP?VBH-v:v;}
    ゆびの 高さは その あなと そろえてあるので、どの ゆびか 一目で わかる
    （2026-09-11 要望＝「一瞬で 何指か 文字を 見るのが 大変」。
      ゆびの なまえの 字は この 絵に おきかえた。ことばは 下の メッセージに ある） */
-const FG_H=16;        /* ゆびの ふとさ */
-const TIP_ON=95;      /* ふさぐ ときの ゆびの 先（本体の 右はしは 92） */
-const TIP_OFF=117;    /* はなす ときの ゆびの 先 */
-const PALM_X=150, PALM_W=26, PALM_PAD=10;
-function fingerBar(cy,on,cls){
-  const tip=on?TIP_ON:TIP_OFF;
-  return '<rect class="fg '+cls+(on?'':' off')+'" x="'+tip+'" y="'+(cy-FG_H/2)
-    +'" width="'+(PALM_X+8-tip)+'" height="'+FG_H+'" rx="'+(FG_H/2)+'"/>';
+const FG_H=16;                       /* ゆびの ふとさ */
+const R_TIP_ON=95, R_TIP_OFF=117;    /* みぎて：本体の 右はしは 92 */
+const L_TIP_ON=53, L_TIP_OFF=31;     /* ひだりて：本体の 左はしは 56 */
+const TH_TIP_ON=19, TH_TIP_OFF=-3;   /* おやゆび：うらの あなは 28 */
+const RPALM_X=150, LPALM_X=-40, PALM_W=26, PALM_PAD=10;
+function palmRect(cls,ys,x){
+  const top=Math.min.apply(null,ys), bot=Math.max.apply(null,ys);
+  return '<rect class="palm '+cls+'" x="'+x+'" y="'+(top-PALM_PAD)+'" width="'+PALM_W
+    +'" height="'+(bot-top+PALM_PAD*2)+'" rx="13"/>';
+}
+function fgRect(cy,on,cls,x,w){
+  return '<rect class="fg '+cls+(on?' on':'')+'" x="'+Math.min(x,x+w)+'" y="'+(cy-FG_H/2)
+    +'" width="'+Math.abs(w)+'" height="'+FG_H+'" rx="'+(FG_H/2)+'"/>';
 }
 function handsSVG(f){
   let s='';
-  /* みぎて（あな 4〜7）と ひだりて（あな 1〜3）。上下は fy() で きまる */
-  [[ 'r',[4,5,6,7] ],[ 'l',[1,2,3] ]].forEach(hd=>{
-    const cls=hd[0], hs=hd[1];
-    const ys=hs.map(h=>fy(HY[h-1]));
-    const top=Math.min.apply(null,ys), bot=Math.max.apply(null,ys);
-    s+='<rect class="palm '+cls+'" x="'+PALM_X+'" y="'+(top-PALM_PAD)+'" width="'+PALM_W
-      +'" height="'+(bot-top+PALM_PAD*2)+'" rx="13"/>';
-    hs.forEach((h,i)=>{s+=fingerBar(ys[i],!!f[h],cls);});
+  /* みぎて（あな 4〜7）＝リコーダーの 右。てのひらは 右、ゆびは 左へ のびる */
+  const rh=[4,5,6,7], rys=rh.map(h=>fy(HY[h-1]));
+  s+=palmRect('r',rys,RPALM_X);
+  rh.forEach((h,i)=>{
+    const on=!!f[h], tip=on?R_TIP_ON:R_TIP_OFF;
+    s+=fgRect(rys[i],on,'r',tip,RPALM_X+8-tip);
   });
-  /* ひだりての おやゆび。うらの あなは 本体の 左に あるので、下から のびる たて長の ゆび */
-  const ty=fy(TY), on=!!f[0];
-  const tipY=ty+(on?14:34), botY=ty+72;
-  s+='<rect class="fg l'+(on?'':' off')+'" x="'+(TX-FG_H/2)+'" y="'+tipY
-    +'" width="'+FG_H+'" height="'+(botY-tipY)+'" rx="'+(FG_H/2)+'"/>';
+  /* ひだりて（あな 1〜3＋うらの おやゆび）＝リコーダーの 左。
+     てのひらは 左、ゆびは 右へ のびる（2026-09-11 要望＝「左手は リコーダーの 左に」）。
+     いちばん 下の ゆびが おやゆびで、うらの あなに とどく */
+  const lh=[3,2,1,0], lys=lh.map(h=>h===0?fy(TY):fy(HY[h-1]));
+  s+=palmRect('l',lys,LPALM_X);
+  const lx=LPALM_X+PALM_W-8;
+  lh.forEach((h,i)=>{
+    const on=!!f[h];
+    const tip=(h===0)?(on?TH_TIP_ON:TH_TIP_OFF):(on?L_TIP_ON:L_TIP_OFF);
+    s+=fgRect(lys[i],on,'l',lx,tip-lx);
+  });
   return s;
 }
 function fingSVG(f,o){
   o=o||{};
   const lab=!!o.labels, tap=!!o.tap;
-  const vb=lab?'0 0 200 320':'12 0 96 320';
+  const vb=lab?'-62 0 262 320':'12 0 96 320';   /* 字ありは 左右に 手が つく */
   let g='',t='';
   /* ---- かたち（反転させる かたまり）---- */
   /* 本体（うたくち → かん → あさがお） */
@@ -645,12 +657,13 @@ function fingSVG(f,o){
   /* ---- ての 絵と ことば（反転させない。あなの 高さだけ 合わせる）---- */
   if(lab){
     t+=handsSVG(f);
-    t+='<text class="lb sm" x="'+TX+'" y="'+(fy(TY)-31)+'" text-anchor="middle">うら</text>';
-    t+='<text class="lb sm" x="'+TX+'" y="'+(fy(TY)-16)+'" text-anchor="middle">おやゆび</text>';
-    const lBot=Math.max(fy(HY[0]),fy(HY[2])), rTop=Math.min(fy(HY[3]),fy(HY[6]));
-    const cx=PALM_X+PALM_W/2;
-    t+='<text class="lb r" x="'+cx+'" y="'+(rTop-PALM_PAD-6)+'" text-anchor="middle">みぎて</text>';
-    t+='<text class="lb l" x="'+cx+'" y="'+(lBot+PALM_PAD+16)+'" text-anchor="middle">ひだりて</text>';
+    /* うらの あなだと わかるように ひとこと（おやゆびは 絵で わかる） */
+    /* 本体に かからないよう、右はしを そろえて 左へ のばす */
+    t+='<text class="lb sm" x="46" y="'+(fy(TY)+26)+'" text-anchor="end">うらの あな</text>';
+    /* ての なまえは どちらも てのひらの 上。下に おくと「うらの あな」と かさなる */
+    const rTop=Math.min(fy(HY[3]),fy(HY[6])), lTop=Math.min(fy(HY[0]),fy(HY[2]));
+    t+='<text class="lb r" x="'+(RPALM_X+PALM_W/2)+'" y="'+(rTop-PALM_PAD-6)+'" text-anchor="middle">みぎて</text>';
+    t+='<text class="lb l" x="'+(LPALM_X+PALM_W/2)+'" y="'+(lTop-PALM_PAD-6)+'" text-anchor="middle">ひだりて</text>';
   }
   return '<svg class="fig'+(o.cls?' '+o.cls:'')+(tap?' tapfig':'')+'" viewBox="'+vb
     +'" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">'
