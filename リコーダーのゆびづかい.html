@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>リコーダーの ゆびづかい</title>
+<title>リコーダーの 指づかい</title>
 <style>
   :root{
     --ink:#2b2118;
@@ -69,6 +69,7 @@
 
   /* ===== カード ===== */
   .stage{
+    position:relative;
     background:var(--card);border:3px solid var(--line);border-radius:18px;
     padding:8px 10px;text-align:center;transition:border-color .2s,background .2s;
     display:flex;flex-direction:column;justify-content:center;gap:5px;overflow:hidden;
@@ -123,7 +124,6 @@
   .fig{display:block;height:100%;width:auto;overflow:visible}
   .figwrap{min-height:0;flex:1;align-self:stretch;display:flex;align-items:center;justify-content:center}
   .fig .body{fill:#f7e9cd;stroke:#8a7a5f;stroke-width:3}
-  .fig .win{fill:#8a7a5f}
   .fig .hole{fill:#fff;stroke:#6f5d3d;stroke-width:2.5}
   .fig .hole.on{fill:var(--ink)}
   .fig .lead{stroke:#c8b795;stroke-width:2;stroke-dasharray:3 3}
@@ -142,6 +142,28 @@
   .fig .fg{stroke-width:2.5}
   .fig .fg.l.on{fill:var(--lh-mid)}
   .fig .fg.r.on{fill:var(--rh-mid)}
+  /* 指は「形＋短い名前」の二重の手がかりで見分ける。
+     ひとさし・なか・くすり・こゆびは長さと曲がり方を少し変える。 */
+  .fig .digitOutline{fill:none;stroke-width:20;stroke-linecap:round;stroke-linejoin:round}
+  .fig .digitOutline.l{stroke:var(--lh-dark)}
+  .fig .digitOutline.r{stroke:var(--rh-dark)}
+  .fig .digitFill{fill:none;stroke-width:15;stroke-linecap:round;stroke-linejoin:round}
+  .fig .digitFill.l{stroke:var(--lh-soft)}
+  .fig .digitFill.r{stroke:var(--rh-soft)}
+  .fig .digitFill.l.on{stroke:var(--lh-mid)}
+  .fig .digitFill.r.on{stroke:var(--rh-mid)}
+  .fig .digitFill.pinky{stroke-width:12}
+  .fig .digitOutline.pinky{stroke-width:17}
+  .fig .digitFill.thumb{stroke-width:18}
+  .fig .digitOutline.thumb{stroke-width:23}
+  /* dominant-baseline は ふるい iPad の Safari で 効かず、字が 上に ずれる。
+     y を じかに ずらして たてに そろえる（どの ブラウザでも 同じに なる） */
+  .fig .ftag{font-weight:900;font-size:9px;text-anchor:middle;pointer-events:none}
+  .fig .ftag.l{fill:var(--lh-dark)}
+  .fig .ftag.r{fill:var(--rh-dark)}
+  .fig .ftagbg.l{fill:#fff8ef;stroke:var(--lh-dark);stroke-width:1.4}
+  .fig .ftagbg.r{fill:#f3faf6;stroke:var(--rh-dark);stroke-width:1.4}
+  .fig.tapfig [data-h]{cursor:pointer}
   /* 前の音から かわる あな。青＝ふさぐ ／ だいだい＝はなす */
   .fig .ring{fill:none;stroke-width:3.5;stroke-dasharray:5 4}
   .fig .ring.cl{stroke:var(--blue)}
@@ -202,8 +224,18 @@
   .beats i{width:calc(clamp(9px,2.4vw,13px) * var(--shrink,1));height:calc(clamp(9px,2.4vw,13px) * var(--shrink,1));
     border-radius:50%;background:#e7d9b8;display:block}
   .beats i.on{background:var(--accent);transform:scale(1.3)}
-  .count{font-weight:800;color:var(--accent);line-height:1;
+  .count{display:inline-block;font-weight:800;color:var(--accent);line-height:1.1;
+    padding:.08em 0 .14em;
     font-size:calc(clamp(30px, calc(var(--fh,100vh) * 0.09), 64px) * var(--shrink,1))}
+  /* カウントの 1・2・3 は 絵の 上に かさねて 出す。
+     ふつうに ならべると、カウントの あいだだけ リコーダーが 小さく なり、
+     ふき始める ちょうど その ときに 大きさが もどって 気が ちる
+     （2026-09-12 に 直した。たて 810×1080 で 481px → 391px → 481px と 動いていた）。
+     かさねれば 絵の 大きさは 変わらない */
+  #tSay{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);
+    margin:0;min-height:0;pointer-events:none;z-index:3}
+  #tSay .count{background:rgba(255,253,247,.88);border-radius:20px;
+    padding:.02em .3em .1em;box-shadow:0 3px 14px rgba(90,70,40,.18)}
 
   /* ===== えらぶ ボタン ===== */
   .ops{display:flex;gap:6px}
@@ -312,7 +344,8 @@
     #tStage>.lane{grid-area:b;align-self:center}
     #tStage>.beats{grid-area:c;align-self:center}
     #tStage>.gobar{grid-area:d;align-self:center}
-    #tStage>.say{grid-area:e;align-self:center}
+    /* #tSay は かさねて 出すので ます目に 入れない
+       （入れると その ます目の 中に 出て、絵の まん中に こない） */
     #vStage>.fingrow,#tStage>.fingrow,#oStage>.figwrap{
       grid-area:f;height:100%;min-height:0}
   }
@@ -320,12 +353,12 @@
 </head>
 <body>
 <div class="app">
-  <header><h1><span class="em">リコーダー</span>の ゆびづかい</h1></header>
+  <header><h1><span class="em">リコーダー</span>の 指づかい</h1></header>
 
   <div class="tabs">
-    <button class="tab on" data-v="Miru"><span class="step">ステップ１</span>ゆびを 見る</button>
-    <button class="tab" data-v="Osae"><span class="step">ステップ２</span>ゆびを おさえる</button>
-    <button class="tab" data-v="Nagasu"><span class="step">ステップ３</span>ながして ふく</button>
+    <button class="tab on" data-v="Miru"><span class="step">ステップ１</span>指を 見る</button>
+    <button class="tab" data-v="Osae"><span class="step">ステップ２</span>指を おさえる</button>
+    <button class="tab" data-v="Nagasu"><span class="step">ステップ３</span>メロディーの練習をする</button>
   </div>
 
   <!-- ============ ステップ１：ゆびを 見る ============ -->
@@ -339,7 +372,7 @@
         </div>
       </div>
       <p class="say" id="vSay"></p>
-      <div class="legend">● ふさぐ　　○ あける　　<span style="color:var(--lh-dark)">■ ひだりて</span>　<span style="color:var(--rh-dark)">■ みぎて</span></div>
+      <div class="legend">● ふさぐ　○ あける　　こい 指＝おさえる　　<span style="color:var(--lh-dark)">■ ひだりて</span>　<span style="color:var(--rh-dark)">■ みぎて</span></div>
     </div>
     <div class="chart" id="vChart"></div>
     <div class="actions">
@@ -352,16 +385,11 @@
   <!-- ============ ステップ２：ゆびを おさえる ============ -->
   <div id="viewOsae" class="hidden">
     <div class="ops" id="oOps"></div>
-    <div class="score">
-      <div class="box correct"><div class="n" id="oCorrect">0</div><div class="t">せいかい</div></div>
-      <div class="box"><div class="n" id="oTotal">0</div><div class="t">やったもんだい</div></div>
-      <div class="box streak"><div class="n" id="oStreak">0/10</div><div class="t">れんぞく</div></div>
-    </div>
     <div class="stage" id="oStage">
       <div class="askrow">
-        <span class="ask">この 音の ゆびは？</span>
+        <span class="ask">この 音の 指は？</span>
         <button class="hintbtn" id="oHear">♪ 音</button>
-        <button class="hintbtn" id="oHint">ゆびの ひょう</button>
+        <button class="hintbtn" id="oHint">指の ひょう</button>
       </div>
       <div class="bigname nm" id="oName"></div>
       <div class="figwrap" id="oFig"></div>
@@ -374,7 +402,7 @@
       <p class="verdict" id="oVerdict"></p>
     </div>
     <div class="actions">
-      <button class="btn sub" id="oClear">ぜんぶ けす</button>
+      <button class="btn sub" id="oClear">全部 けす</button>
       <button class="btn show" id="oAns">こたえ</button>
       <button class="btn next" id="oNext">つぎの もんだい →</button>
     </div>
@@ -398,8 +426,8 @@
         </div>
       </div>
       <div class="beats" id="tBeats"><i></i><i></i><i></i><i></i></div>
-      <div class="gobar"><button class="btn play" id="tGo">▶ はじめる</button></div>
-      <p class="say" id="tSay"></p>
+      <div class="gobar"><button class="btn play" id="tGo">▶ 始める</button></div>
+      <p class="say hidden" id="tSay" aria-hidden="true"></p>
     </div>
     <div class="setrow">
       <div class="setbox">
@@ -422,7 +450,7 @@
     <div class="actions">
       <button class="btn sub" id="tBack">◀ もどす</button>
       <button class="btn play" id="tStep">1つ すすむ ▶</button>
-      <button class="btn next" id="tNextPh">つぎの れんしゅう →</button>
+      <button class="btn next" id="tNextPh">つぎの 練習 →</button>
     </div>
   </div>
 </div>
@@ -453,14 +481,15 @@ const PITCH=['C5','D5','E5','F5','G5','A5','B5','C6','D6'];
 /* ステップ１の ひょうに 出す 音。低いド・レから 高いレまで ぜんぶ */
 const ALLKEYS=['C5','D5','E5','F5','G5','A5','B5','C6','D6'];
 const RANGES=[
+  /* 3年生での導入順と、選ぶ音の数をしぼるための区切り */
   {t:'ソラシ',keys:['G5','A5','B5']},
   {t:'ドレミ',keys:['C5','D5','E5']},
-  {t:'ミファソラシド',keys:['E5','F5','G5','A5','B5','C6']},
-  {t:'ぜんぶ',keys:ALLKEYS}
+  {t:'ミ〜高いド',keys:['E5','F5','G5','A5','B5','C6']},
+  {t:'全部',keys:ALLKEYS}
 ];
 /* ゆびの なまえ。ひだり／みぎを つけないと どの ゆびか きまらない */
 const FHAND=['うらの','ひだりの','ひだりの','ひだりの','みぎの','みぎの','みぎの','みぎの'];
-const FFIN=['おやゆび','ひとさしゆび','なかゆび','くすりゆび','ひとさしゆび','なかゆび','くすりゆび','こゆび'];
+const FFIN=['親指','人さし指','中指','薬指','人さし指','中指','薬指','小指'];
 /* おなじ てなら まとめて 言う。
    「ひだりの ひとさしゆびと ひだりの くすりゆび」は 長くて 読めない */
 function fingerWords(list){
@@ -473,8 +502,8 @@ function fingerWords(list){
   return g.map(x=>{
     /* かたての ゆびが ぜんぶ かわる ときは まとめて 言う
        （「ひとさしゆびとなかゆびとくすりゆびとこゆび」は 読めない） */
-    if(x.hand==='みぎの'&&x.f.length===4)return 'みぎての ゆび ぜんぶ';
-    if(x.hand==='ひだりの'&&x.f.length===3)return 'ひだりての ゆび ぜんぶ';
+    if(x.hand==='みぎの'&&x.f.length===4)return 'みぎての 指 全部';
+    if(x.hand==='ひだりの'&&x.f.length===3)return 'ひだりての 指 全部';
     return x.hand+' '+x.f.join('と ');
   }).join('と ');
 }
@@ -510,7 +539,7 @@ const LEVELS=[
   {t:'ミファソラ',  notes:[['E5',1],['F5',1],['G5',1],['A5',1],['A5',1],['G5',1],['F5',1],['E5',1]]},
   {t:'ソラシド',    notes:[['G5',1],['A5',1],['B5',1],['C6',1],['C6',1],['B5',1],['A5',1],['G5',1]]}
  ]},
- {t:'ぜんぶの音',ph:[
+ {t:'全部の音',ph:[
   {t:'かいだん のぼる',notes:[['C5',1],['D5',1],['E5',1],['F5',1],['G5',1],['A5',1],['B5',1],['C6',1]]},
   {t:'かいだん おりる',notes:[['C6',1],['B5',1],['A5',1],['G5',1],['F5',1],['E5',1],['D5',1],['C5',1]]},
   {t:'とんで いく',   notes:[['C5',1],['E5',1],['D5',1],['F5',1],['E5',1],['G5',3]]},
@@ -584,79 +613,114 @@ const VBH=320;
 const FLIP=1;
 function fy(v){return FLIP?VBH-v:v;}
 /* ===== ての 絵 =====
-   ふさぐ ゆび … 色が つき、リコーダーの 本体まで のびる
-   はなす ゆび … 白くて、うしろに 引いた 長さで 止まる
-   ゆびの 高さは その あなと そろえてあるので、どの ゆびか 一目で わかる
-   （2026-09-11 要望＝「一瞬で 何指か 文字を 見るのが 大変」。
-     ゆびの なまえの 字は この 絵に おきかえた。ことばは 下の メッセージに ある） */
-const FG_H=16;                       /* ゆびの ふとさ */
-const PK_H=13;                       /* こゆびは 細く する＝どの ゆびか 形で わかる */
-const TH_H=21;                       /* おやゆびは 太く する */
-const R_TIP_ON=95, R_TIP_OFF=117;    /* みぎて：本体の 右はしは 92 */
-const L_TIP_ON=53, L_TIP_OFF=31;     /* ひだりて：本体の 左はしは 56 */
-const RPALM_X=150, LPALM_X=-40, PALM_W=26, PALM_PAD=10;
-/* ななめの ゆび（おやゆび）。はしを まるく した ぼうを かたむけて おく */
-function capsule(x1,y1,x2,y2,h,cls){
-  const dx=x2-x1, dy=y2-y1;
-  const len=Math.sqrt(dx*dx+dy*dy), ang=Math.atan2(dy,dx)*180/Math.PI;
-  const mx=(x1+x2)/2, my=(y1+y2)/2;
-  return '<rect class="'+cls+'" x="'+(mx-(len+h)/2).toFixed(1)+'" y="'+(my-h/2).toFixed(1)
-    +'" width="'+(len+h).toFixed(1)+'" height="'+h+'" rx="'+(h/2)
-    +'" transform="rotate('+ang.toFixed(1)+' '+mx.toFixed(1)+' '+my.toFixed(1)+')"/>';
+   3年生が一目で見分けられるように、次の3点をそろえる。
+   1) 5本の指を必ず同じ並びで見せる
+   2) 指ごとに長さ・太さ・曲がり方を変える
+   3) 指の外側に「ひと／なか／くすり／こ／おや」の短い名札を置く
+   おさえる指は少し濃くし、本体まで届く。はなす指は少し曲げて本体から離す。 */
+const RPALM_X=151, LPALM_X=-43, PALM_W=29, PALM_PAD=10;
+const R_TIP_ON=96, R_TIP_OFF=118;
+const L_TIP_ON=52, L_TIP_OFF=30;
+/* ゆびの 先は まるい（stroke-linecap:round）ので、線の はしより 10 だけ 外に のびる。
+   見た目の 先＝ひだり 52+10＝62／みぎ 96-10＝86。あなは 65〜83 なので、
+   どちらも あなの 3 手前で 止まる＝あなの ●○ が かくれない。
+   ここを 数字だけ 見て そろえようと すると、ひだりが あなに かぶる（2026-09-12 に 確認） */
+
+function digitPath(side,cy,tip,base,on,kind,dataH,bend){
+  bend=bend||0;
+  const dir=side==='l'?1:-1;
+  const c1=base+dir*18, c2=tip-dir*12;
+  const ty=cy+(on?0:bend);
+  const d='M '+base+' '+cy+' C '+c1+' '+cy+', '+c2+' '+ty+', '+tip+' '+ty;
+  const dh=(dataH===undefined||dataH===null)?'':' data-h="'+dataH+'"';
+  const extra=kind?' '+kind:'';
+  return '<path class="digitOutline '+side+extra+'"'+dh+' d="'+d+'"/>'
+    +'<path class="digitFill '+side+extra+(on?' on':'')+'"'+dh+' d="'+d+'"/>';
 }
-/* よこに のびる ゆび */
-function fgBar(cy,tip,base,h,cls,on){
-  return '<rect class="fg '+cls+(on?' on':'')+'" x="'+Math.min(tip,base)+'" y="'+(cy-h/2)
-    +'" width="'+Math.abs(tip-base)+'" height="'+h+'" rx="'+(h/2)+'"/>';
+function tagPill(x,y,txt,side,w){
+  w=w||25;
+  return '<rect class="ftagbg '+side+'" x="'+(x-w/2)+'" y="'+(y-8)+'" width="'+w+'" height="16" rx="8"/>'
+    +'<text class="ftag '+side+'" x="'+x+'" y="'+(y+3.2)+'">'+txt+'</text>';
 }
-function pinkyRowY(){return fy(HY[2])-(fy(HY[1])-fy(HY[2]));}  /* ひだりての こゆびの 列 */
-function handsSVG(f){
+function pinkyRowY(){return fy(HY[2])-(fy(HY[1])-fy(HY[2]));}
+function handsSVG(f,tap){
   let s='';
-  /* ===== みぎて（あな 4〜7）＝リコーダーの 右 ===== */
+
+  /* ===== みぎて：人差し・中・薬・小の順を固定 ===== */
   const rh=[4,5,6,7], rys=rh.map(h=>fy(HY[h-1]));
   const rTop=Math.min.apply(null,rys), rBot=Math.max.apply(null,rys);
   s+='<rect class="palm r" x="'+RPALM_X+'" y="'+(rTop-PALM_PAD)+'" width="'+PALM_W
-    +'" height="'+(rBot-rTop+PALM_PAD+22)+'" rx="13"/>';
-  /* みぎての おやゆび。下から 回りこんで リコーダーを ささえる（あなは ふさがない）
-     ＝ゆびが 5本 そろうので、どれが 何指か 形で わかる */
-  s+=capsule(RPALM_X+PALM_W/2, rBot+16, RPALM_X-4, rBot+38, TH_H, 'fg r');
-  s+=capsule(RPALM_X-4, rBot+38, 101, rBot+27, TH_H-2, 'fg r');
+    +'" height="'+(rBot-rTop+PALM_PAD+24)+'" rx="14"/>';
+  const rNames=['ひと','なか','くすり','こ'];
+  const rBends=[-5,-2,2,5];
   rh.forEach((h,i)=>{
     const on=!!f[h], tip=on?R_TIP_ON:R_TIP_OFF;
-    s+=fgBar(rys[i],tip,RPALM_X+8,(h===7?PK_H:FG_H),'r',on);
+    s+=digitPath('r',rys[i],tip,RPALM_X+6,on,h===7?'pinky':'',tap?h:null,rBends[i]);
+    s+=tagPill(191,rys[i]+(on?0:rBends[i]),rNames[i],'r',rNames[i]==='くすり'?31:25);
   });
-  /* ===== ひだりて（あな 1〜3＋うら）＝リコーダーの 左 ===== */
+  /* みぎのおやゆびは支える指。下から回り込んで本体を受ける形にし、
+     ほかの4本と違う役目だと分かるようにする。操作対象にはしない。 */
+  const rty=rBot+30;
+  const rsx=RPALM_X+10, rsy=rBot+20;
+  const rex=107, rey=rBot+31;
+  const rd='M '+rsx+' '+rsy
+    +' C '+(RPALM_X-2)+' '+(rBot+46)+', 126 '+(rBot+48)+', '+rex+' '+rey;
+  s+='<path class="digitOutline r thumb" d="'+rd+'"/>'
+    +'<path class="digitFill r thumb" d="'+rd+'"/>';
+  s+=tagPill(184,rty+9,'おや','r',25);
+
+  /* ===== ひだりて：小指も含め5本を見せ、前3本の位置関係を固定 ===== */
   const lh=[3,2,1], lys=lh.map(h=>fy(HY[h-1]));
-  const lBot=Math.max.apply(null,lys);
-  /* つかわない こゆび。描かないと「どれが 何指か」が わからなく なるので 出す。
-     みじかくて 本体から はなれた まま＝ここは つかわない、が 見て わかる */
-  const pkY=pinkyRowY();
+  const lBot=Math.max.apply(null,lys), pkY=pinkyRowY();
   const lTop=Math.min(pkY,Math.min.apply(null,lys));
-  const lbase=LPALM_X+PALM_W-8;
+  const lbase=LPALM_X+PALM_W-5;
   s+='<rect class="palm l" x="'+LPALM_X+'" y="'+(lTop-PALM_PAD)+'" width="'+PALM_W
-    +'" height="'+(lBot-lTop+PALM_PAD+24)+'" rx="13"/>';
-  s+=fgBar(pkY,8,lbase,PK_H,'l',false);
+    +'" height="'+(lBot-lTop+PALM_PAD+25)+'" rx="14"/>';
+  /* 使わない左小指：短く、常に本体から離す。 */
+  s+=digitPath('l',pkY,8,lbase,false,'pinky',null,-5);
+  s+=tagPill(-57,pkY-5,'こ','l',22);
+  const lNames={1:'ひと',2:'なか',3:'くすり'};
+  const lBends={1:5,2:1,3:-4};
   lh.forEach((h,i)=>{
     const on=!!f[h], tip=on?L_TIP_ON:L_TIP_OFF;
-    s+=fgBar(lys[i],tip,lbase,FG_H,'l',on);
+    s+=digitPath('l',lys[i],tip,lbase,on,'',tap?h:null,lBends[h]);
+    const nm=lNames[h];
+    s+=tagPill(-57,lys[i]+(on?0:lBends[h]),nm,'l',nm==='くすり'?31:25);
   });
-  /* ひだりての おやゆび。てのひらの 下から 回りこんで、うらの あなへ とどく。
-     はなす ときは 下へ ふり下ろす（みじかく するのでは なく 向きで 見せる） */
+
+  /* 左おやゆび：裏穴へ回り込む。まっすぐではなく『折れ曲がって回り込む』形にして、
+     ほかの指とちがうことが一目で分かるようにする。ここはタップして切り替えられる。 */
   const on0=!!f[0], ty=fy(TY);
-  const bx=LPALM_X+PALM_W+6, by=lBot+42;
-  s+=capsule(LPALM_X+PALM_W/2, lBot+14, bx, by, TH_H, 'fg l'+(on0?' on':''));
-  s+=capsule(bx, by, (on0?10:20), (on0?ty+10:ty+32), TH_H-2, 'fg l'+(on0?' on':''));
+  const dh=tap?' data-h="0"':'';
+  const sx=LPALM_X+PALM_W/2, sy=lBot+18;
+  if(on0){
+    const ex=12, ey=ty+8;
+    const mx1=LPALM_X+PALM_W+10, my1=lBot+42;
+    const mx2=0, my2=ty+30;
+    const d='M '+sx+' '+sy
+      +' C '+mx1+' '+my1+', '+mx2+' '+my2+', '+ex+' '+ey;
+    s+='<path class="digitOutline l thumb"'+dh+' d="'+d+'"/>'
+      +'<path class="digitFill l thumb on"'+dh+' d="'+d+'"/>';
+  }else{
+    const ex=28, ey=ty+42;
+    const mx1=LPALM_X+PALM_W+14, my1=lBot+50;
+    const mx2=16, my2=ty+54;
+    const d='M '+sx+' '+sy
+      +' C '+mx1+' '+my1+', '+mx2+' '+my2+', '+ex+' '+ey;
+    s+='<path class="digitOutline l thumb"'+dh+' d="'+d+'"/>'
+      +'<path class="digitFill l thumb"'+dh+' d="'+d+'"/>';
+  }
+  s+=tagPill(-57,lBot+40,'おや','l',25);
   return s;
 }
 function fingSVG(f,o){
   o=o||{};
   const lab=!!o.labels, tap=!!o.tap;
-  const vb=lab?'-62 0 262 320':'12 0 96 320';   /* 字ありは 左右に 手が つく */
+  const vb=lab?'-76 0 292 320':'12 0 96 320';   /* 字ありは 左右に 手が つく */
   let g='',t='';
   /* ---- かたち（反転させる かたまり）---- */
   /* 本体（うたくち → かん → あさがお） */
   g+='<path class="body" d="M62 8 Q62 3 74 3 Q86 3 86 8 L86 42 L92 50 L92 288 L98 298 L98 312 L50 312 L50 298 L56 288 L56 50 L62 42 Z"/>';
-  g+='<rect class="win" x="69" y="52" width="10" height="13" rx="3"/>';
   /* うらの あな */
   g+='<line class="lead" x1="'+(TX+11)+'" y1="'+TY+'" x2="56" y2="'+TY+'"/>';
   g+='<circle class="hole'+(f[0]?' on':'')+'" cx="'+TX+'" cy="'+TY+'" r="'+(R-0.5)+'"/>';
@@ -679,7 +743,7 @@ function fingSVG(f,o){
   }
   /* ---- ての 絵と ことば（反転させない。あなの 高さだけ 合わせる）---- */
   if(lab){
-    t+=handsSVG(f);
+    t+=handsSVG(f,tap);
     /* うらの あなだと わかるように ひとこと（おやゆびは 絵で わかる） */
     /* 「うら」は 点線が つく ところ（本体の 中）に 小さく。
        あなの まわりは おやゆびが 回りこむので あけておく */
@@ -725,12 +789,12 @@ function vRender(){
   document.getElementById('vChart').innerHTML=keys.map(k=>
     '<div class="citem'+(k===S.note?' on':'')+'" data-k="'+k+'"><div class="cn">'+nmHTML(k)+'</div>'
     +fingSVG(NOTES[k].fing,{cls:'cfig'})+'</div>').join('');
-  document.getElementById('vCap').textContent=nmPlain(S.note)+' の ゆび';
+  document.getElementById('vCap').textContent=nmPlain(S.note)+' の 指';
   document.getElementById('vBig').innerHTML=
     fingSVG(NOTES[S.note].fing,{labels:true,mark:diffMarks(vPrev,S.note)});
   const d=diffText(vPrev,S.note);
   document.getElementById('vSay').innerHTML= d ? d :
-    'おとの ふだか、下の ひょうを おすと、その 音の ゆびが 大きく 出るよ。';
+    'おとの ふだか、下の ひょうを おすと、その 音の 指が 大きく 出るよ。';
   refit();
 }
 function vPick(k,hear){
@@ -760,17 +824,13 @@ function oOps(){
   document.getElementById('oOps').innerHTML=RANGES.map((r,i)=>
     '<button class="op-btn'+(i===S.range?' active':'')+'" data-i="'+i+'">'+r.t+'</button>').join('');
 }
-function oScore(){
-  document.getElementById('oCorrect').textContent=S.correct;
-  document.getElementById('oTotal').textContent=S.total;
-  document.getElementById('oStreak').textContent=S.streak+'/10';
-}
+function oScore(){}
 function oNew(){
   const ks=RANGES[S.range].keys;
   let k;do{k=ks[Math.floor(Math.random()*ks.length)];}while(ks.length>1&&k===O.key);
   O.key=k;O.f=[0,0,0,0,0,0,0,0];O.done=false;
   oBlowReset();document.getElementById('oBlowZone').classList.add('hidden');
-  document.getElementById('oName').innerHTML=nmHTML(k)+(NOTES[k].hi?'<span style="font-size:.34em;color:#a99a7c;margin-left:.2em">たかい ド</span>':'');
+  document.getElementById('oName').innerHTML=nmHTML(k)+(NOTES[k].hi?'<span style="font-size:.34em;color:#a99a7c;margin-left:.2em">たかい '+NOTES[k].nm+'</span>':'');
   document.getElementById('oVerdict').textContent='';
   document.getElementById('oStage').className='stage';
   document.getElementById('oChart').classList.add('hidden');
@@ -821,14 +881,14 @@ document.getElementById('oAns').onclick=()=>{
   if(ok){
     S.correct++;S.streak=Math.min(10,S.streak+1);
     document.getElementById('oStage').className='stage correct';
-    v.className='verdict ok';v.textContent='よくできました！　'+nmPlain(O.key)+' の ゆびだね';
+    v.className='verdict ok';v.textContent='よくできました！　'+nmPlain(O.key)+' の 指だね';
     oFig();
   }else{
     S.streak=0;
     document.getElementById('oStage').className='stage wrong';
     const mk=[];for(let i=0;i<8;i++)if(want[i]!==O.f[i])mk.push({h:i,k:'bad'});
     v.className='verdict ng';
-    v.innerHTML='もう一回！　あかい ○の ところが ちがったよ。ただしい ゆびは これ';
+    v.innerHTML='おしい！　あかい ○の ところが ちがったよ。正しい 指は これ';
     oFig(mk);
   }
   playKey(O.key,0.9);
@@ -853,7 +913,7 @@ function oBlowReset(msg){
   const f=document.getElementById('oBlowFill');
   f.style.transition='none';f.style.width='0%';
   document.getElementById('oBlowBar').classList.remove('rest');
-  document.getElementById('oBlowTxt').innerHTML=msg||'ゆびは そのまま。音に あわせて ふいて みよう';
+  document.getElementById('oBlowTxt').innerHTML=msg||'指は そのまま。音に あわせて ふいて みよう';
   oBlowSync();
 }
 function oBlowStep(){
@@ -898,7 +958,7 @@ function tLv(){
 }
 function tStrip(){
   const ph=PH();
-  document.getElementById('tSect').textContent=LEVELS[S.lv].t+'　れんしゅう '+(S.ph+1)+'　「'+ph.t+'」';
+  document.getElementById('tSect').textContent=LEVELS[S.lv].t+'　練習 '+(S.ph+1)+'　「'+ph.t+'」';
   document.getElementById('tStrip').innerHTML=ph.notes.map((n,i)=>{
     const p=PITCH.indexOf(n[0]);
     const cls=i===T.i?'now':(i<T.i?'past':'');
@@ -922,12 +982,11 @@ function tShow(sound){
   const ph=PH(), n=ph.notes[T.i], k=n[0];
   const prev=T.i>0?ph.notes[T.i-1][0]:null;
   /* 大きい 図は 「いま」だけ。
-     「つぎ」の ゆびの 図は 出さない＝ふきながら 見る ひまが ない（2026-09-11 指摘）。
-     つぎに 来る 音は 上の レーンの なまえで 分かる */
+     ステップ3では下の説明文は出さず、指の図とレーンだけで練習する。 */
   document.getElementById('tBig').innerHTML=fingSVG(NOTES[k].fing,{labels:true,mark:diffMarks(prev,k)});
-  const d=diffText(prev,k);
-  document.getElementById('tSay').innerHTML = d ? d :
-    (T.playing?'<b>'+nmPlain(k)+'</b> を ふこう':'▶ はじめる を おすと ながれて くるよ。「1つ すすむ ▶」で 1音ずつ たしかめられる');
+  const say=document.getElementById('tSay');
+  say.innerHTML='';
+  say.classList.add('hidden');
   tStrip();
   if(sound&&S.sound)playNote(NOTES[k].f, n[1]*beatMs()*0.9/1000);
 }
@@ -935,28 +994,34 @@ function tBeats(on){
   document.querySelectorAll('#tBeats i').forEach((el,i)=>el.classList.toggle('on',on===i));
 }
 function tSyncBtn(){
-  document.getElementById('tGo').textContent=T.playing?'■ とめる':'▶ はじめる';
+  document.getElementById('tGo').textContent=T.playing?'■ とめる':'▶ 始める';
   document.getElementById('tStep').disabled=T.playing;
   document.getElementById('tBack').disabled=T.playing;
 }
 function tStop(){
   T.playing=false;
   if(T.timer){clearTimeout(T.timer);T.timer=null;}
+  const say=document.getElementById('tSay');
+  say.innerHTML='';
+  say.classList.add('hidden');
   tBeats(-1);tSyncBtn();tShow(false);
 }
 function tStart(){
   ac();
   T.playing=true;T.i=0;T.b=0;tSyncBtn();tShow(false);
-  /* 「1・2・3・4」を 出してから はじめる */
+  /* 3拍カウントしてから 始める。子どもが息を整えやすい長さにする */
   let c=1;
   const say=document.getElementById('tSay');
+  say.classList.remove('hidden');
   const cnt=()=>{
     if(!T.playing)return;
-    if(c<=4){
+    if(c<=3){
       say.innerHTML='<span class="count">'+c+'</span>';
       tBeats((c-1)%4);
       c++;T.timer=setTimeout(cnt,beatMs());
     }else{
+      say.innerHTML='';
+      say.classList.add('hidden');
       T.next=performance.now();tTick();
     }
   };
