@@ -222,9 +222,16 @@ body:not(.drill) #drill{display:none}
 .dfld.fixed{border-bottom-color:transparent;animation:none;background:transparent}
 @keyframes dglow{0%,100%{box-shadow:0 0 0 0 rgba(0,0,0,0)}50%{box-shadow:0 0 0 5px var(--gold-l)}}
 
-#dHint{font-family:var(--f-text);font-size:clamp(12px,1.35vw,18px);color:var(--muted);
-  text-align:center;line-height:1.45;min-height:1.3em}
+/* ヒントは 計算が 苦手な子の いちばんの 足場なので、小さくしない */
+#dHint{font-family:var(--f-text);font-size:clamp(13px,1.6vw,21px);color:var(--muted);
+  text-align:center;line-height:1.5;min-height:1.3em}
 #dHint em{font-style:normal;color:var(--gold-d);font-weight:700}
+#dHint .hrow{display:block}
+/* ますの 色と そろえる＝ヒントの 行と 入れる ますが 目で つながる */
+#dHint .hq{color:var(--gold-d);font-weight:700}
+#dHint .hr{color:var(--amari);font-weight:700}
+#dHint .hsub{color:var(--ink);font-weight:700}
+#dHint .hno{color:var(--muted);text-decoration:line-through}
 #dVerdict{font-family:var(--f-text);font-size:clamp(13px,1.5vw,21px);text-align:center;
   line-height:1.45;min-height:1.4em}
 #dVerdict.ok{color:var(--ok);font-weight:700}
@@ -866,7 +873,11 @@ function dNew(){
     tries++;
   }while(W.N<10&&tries<40);
   if(W.lv==="bun") W.wp=dRnd(0,WPS.length-1);
-  W.f=["",""]; W.idx=0; W.locked=false; W.hint=false; W.pick=-1;
+  /* W.hint は ここで 消さない＝ヒントは 押したままに する。
+     まえは もんだいが かわるたび 消えていたので、計算が 苦手な子が
+     20問ぶん 押し直すことに なっていた（2026-09-12 教室で）。
+     いらない子は はじめから 押さないだけ */
+  W.f=["",""]; W.idx=0; W.locked=false; W.pick=-1;
   $("dStage").className="";
   $("dVerdict").className="";
   dRender();
@@ -914,9 +925,19 @@ function dRender(){
     q.innerHTML="こたえと あまりを 入れよう。";
     eq.innerHTML=W.N+" ÷ "+W.D+" ＝ "+dFld(0)+" "+dAma()+" "+dFld(1,"rr");
     pk.innerHTML="";
-    hn.innerHTML=W.hint?("<em>"+W.D+"のだん</em>　"+W.D+"×"+W.Q+"＝"+(W.D*W.Q)+"、"+
-      W.D+"×"+(W.Q+1)+"＝"+(W.D*(W.Q+1))+"。"+W.N+" を こえない いちばん 大きいのは <em>"+
-      W.D+"×"+W.Q+"＝"+(W.D*W.Q)+"</em>"):"";
+    /* まえは 九九の こたえ（20）を さいごに 金で 光らせていたので、
+       それを こたえの ますに 書く子が いた（2026-09-12 教室で）。
+       どの数が こたえで、あまりは 何を 計算するのかに 名前を つける。
+       こたえの 数（かけた数）と あまりの 数は 出さない＝□ で しめす */
+    hn.innerHTML=W.hint?(
+      '<span class="hrow"><em>'+W.D+'のだん</em>　'+W.D+'×'+W.Q+'＝'+(W.D*W.Q)+'　'+
+        W.D+'×'+(W.Q+1)+'＝'+(W.D*(W.Q+1))+'　→　'+W.N+' を こえないのは <em>'+
+        W.D+'×'+W.Q+'＝'+(W.D*W.Q)+'</em></span>'+
+      '<span class="hrow"><span class="hq">こたえ</span>の ますは <em>かけた数</em>（'+
+        W.D+'×□ の □）。<span class="hno">'+(W.D*W.Q)+'</span> では ないよ</span>'+
+      '<span class="hrow"><span class="hr">あまり</span>の ますは わられる数 − 九九の こたえ　'+
+        '<span class="hsub">'+W.N+' − '+(W.D*W.Q)+'</span></span>'
+    ):"";
   }
   $("dHintBtn").setAttribute("aria-pressed",W.hint);
   $("dPic").innerHTML=(W.locked&&W.lv!=="moto")?dStrip():"";
