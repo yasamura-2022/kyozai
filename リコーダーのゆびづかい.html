@@ -362,13 +362,9 @@
         <div class="strip" id="tStrip"></div>
       </div>
       <div class="fingrow">
-        <div class="fingcol" style="flex:1.4;min-height:0">
+        <div class="fingcol" style="flex:1;min-height:0">
           <div class="cap now">いま</div>
           <div class="figwrap" id="tBig"></div>
-        </div>
-        <div class="fingcol" style="flex:1;min-height:0">
-          <div class="cap" id="tNextCap">つぎ</div>
-          <div class="figwrap" id="tNext"></div>
         </div>
       </div>
       <div class="beats" id="tBeats"><i></i><i></i><i></i><i></i></div>
@@ -741,15 +737,10 @@ function tStripPos(){
 function tShow(sound){
   const ph=PHRASES[S.ph], n=ph.notes[T.i], k=n[0];
   const prev=T.i>0?ph.notes[T.i-1][0]:null;
-  const nx=T.i<ph.notes.length-1?ph.notes[T.i+1][0]:null;
+  /* 大きい 図は 「いま」だけ。
+     「つぎ」の ゆびの 図は 出さない＝ふきながら 見る ひまが ない（2026-09-11 指摘）。
+     つぎに 来る 音は 上の レーンの なまえで 分かる */
   document.getElementById('tBig').innerHTML=fingSVG(NOTES[k].fing,{labels:true,mark:diffMarks(prev,k)});
-  if(nx){
-    document.getElementById('tNextCap').innerHTML='つぎ　'+nmHTML(nx);
-    document.getElementById('tNext').innerHTML=fingSVG(NOTES[nx].fing,{});
-  }else{
-    document.getElementById('tNextCap').textContent='おわり';
-    document.getElementById('tNext').innerHTML='';
-  }
   const d=diffText(prev,k);
   document.getElementById('tSay').innerHTML = d ? d :
     (T.playing?'<b>'+nmPlain(k)+'</b> を ふこう':'▶ はじめる を おすと ながれて くるよ。「1つ すすむ ▶」で 1音ずつ たしかめられる');
