@@ -141,7 +141,7 @@ body.kimari .wcard{display:none}
 
 /* 九九の ひょう。列の 見出しで「どの数が なにか」を 1回だけ しめす＝
    行ごとに ことばを くりかえさない（2026-09-12） */
-#kukuCard{flex:1;min-height:clamp(78px,15vh,170px);display:flex;flex-direction:column}
+#kukuCard{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden}
 body.kimari #kukuCard{display:none}
 .kkgrid{display:grid;grid-template-columns:1fr .6em 1fr .6em 1.35fr;
   gap:0 .08em;align-items:center;text-align:center}
@@ -173,9 +173,6 @@ body:not(.kimari) .kcard{display:none}
 .slot .v.blank{color:var(--line2)}
 #kotae{margin-top:8px;text-align:center;font-family:var(--f-text);
   font-size:clamp(13px,1.35vw,19px);min-height:1.4em;line-height:1.4}
-#tashikame{margin-top:6px;text-align:center;font-size:clamp(12px,1.2vw,17px);
-  color:var(--ok);opacity:0;transition:opacity .4s;min-height:1.4em;line-height:1.4}
-#tashikame.on{opacity:1}
 
 #ringRow{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
 .ring{width:2.1em;height:2.1em;border-radius:50%;display:grid;place-items:center;
@@ -322,14 +319,13 @@ body:not(.kimari) .kbtn{display:none}
   #dQ{font-size:clamp(14px,3.2vw,21px)}
   .dlv{min-width:0;font-size:clamp(11px,3vw,15px);padding:8px 3px}
 }
-/* Googleサイトの わくが たてに みじかいとき、まわりを つめて 絵を 大きくする */
-@media (max-height:620px){
+/* Googleサイトの わくが たてに みじかいとき、まわりを つめて 絵と 九九に 場所を まわす */
+@media (max-height:700px){
   #app{padding:6px 10px 8px;gap:5px}
   /* 九九の ひょうに 場所を まわす。式と たしかめが のこるので 意味は 失われない */
   #kotae{display:none}
   .card{padding:7px 9px}
   /* 「いま つかった 九九」と「大きすぎる 九九」の 2行が かならず 見えるだけの 場所を とる */
-  #kukuCard{min-height:116px}
   #kukuHead{font-size:clamp(9px,1.05vw,13px);margin-bottom:3px}
   .kk{font-size:clamp(14px,1.5vw,19px);padding:2px 4px}
   #shikiRow{font-size:clamp(17px,2vw,27px)}
@@ -340,8 +336,16 @@ body:not(.kimari) .kbtn{display:none}
   #settings{padding:5px 9px;gap:5px 10px}
   .card{padding:7px 9px}
 }
+/* とても みじかい わく（480px くらい）で 設定を 出したままでも 九九が 見えるように */
+@media (max-height:520px){
+  #shikiRow{font-size:clamp(15px,1.75vw,23px)}
+  .card{padding:5px 8px}
+  .ctitle{margin-bottom:3px}
+  #kukuHead{margin-bottom:2px}
+  #kotae{display:none}
+}
 @media (prefers-reduced-motion:reduce){
-  .item,.cont,.ghost,#tashikame,.ring{transition:none!important}
+  .item,.cont,.ghost,.ring{transition:none!important}
 }
 </style>
 </head>
@@ -403,7 +407,6 @@ body:not(.kimari) .kbtn{display:none}
         <div class="ctitle">しき</div>
         <div id="shikiRow"></div>
         <div id="kotae"></div>
-        <div id="tashikame"></div>
       </div>
       <div class="card wcard" id="kukuCard">
         <div class="ctitle" id="kukuTitle">3のだん</div>
@@ -654,9 +657,6 @@ function paintShiki(){
                         :"1人分は "+Q+c+" で、"+R+c+" あまる";
   }
   $("kotae").textContent=k;
-  var t=$("tashikame");
-  if(S.step>=S.N){ t.textContent="たしかめ　"+S.D+" × "+Q+" ＋ "+R+" ＝ "+S.N; t.classList.add("on"); }
-  else t.classList.remove("on");
 }
 /* わる数の だんを、ふくろが できるたび 1行ずつ ふやす。
    数の 色は しきカードと そろえる＝わる数＝ふつう／こたえ＝金／つかった数＝みどり（ふくろの色） */
@@ -678,10 +678,16 @@ function paintKuku(){
   /* 場所が すこししか ないときに いちばん 見せたいのは
      「いま つかった 九九」と「大きすぎる 九九」の 2行。
      いちばん下まで 送ると、大きすぎる 行だけに なってしまう */
-  requestAnimationFrame(function(){
+  function toLast(){
     var ds=box.querySelectorAll(".kk.done"), last=ds.length?ds[ds.length-1]:null;
-    box.scrollTop = last ? last.offsetTop : box.scrollHeight;
-  });
+    if(!last){ box.scrollTop=box.scrollHeight; return; }
+    /* offsetTop は 一覧からの きょりに ならない（#kukuList に position が ない）ので
+       じっさいの 位置を 測って 送る。まえは いつも いちばん下まで 行ってしまい、
+       場所が せまいと「大きすぎる 九九」だけが 見えていた */
+    box.scrollTop += last.getBoundingClientRect().top - box.getBoundingClientRect().top;
+  }
+  requestAnimationFrame(toLast);
+  setTimeout(toLast,90);   /* わくの 高さが あとから 決まるので もう一度 */
 }
 function paintMsgW(){
   var c=inf().c,nm=inf().name,Q=q(),R=r(),m="";
