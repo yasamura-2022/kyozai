@@ -222,16 +222,18 @@ body:not(.drill) #drill{display:none}
 .dfld.fixed{border-bottom-color:transparent;animation:none;background:transparent}
 @keyframes dglow{0%,100%{box-shadow:0 0 0 0 rgba(0,0,0,0)}50%{box-shadow:0 0 0 5px var(--gold-l)}}
 
-/* ヒントは 計算が 苦手な子の いちばんの 足場なので、小さくしない */
-#dHint{font-family:var(--f-text);font-size:clamp(13px,1.6vw,21px);color:var(--muted);
+/* ヒントは ことばで 説明しない＝式だけ 出す。
+   これで 困る子は、長い 説明を 順に 読めない（2026-09-12 指摘）。
+   左が こたえの ます（金）、右が あまりの ます（だいだい）。
+   色と ならび順が そのまま 入れる ますを さしている */
+#dHint{font-family:var(--f-text);font-size:clamp(12px,1.35vw,18px);color:var(--muted);
   text-align:center;line-height:1.5;min-height:1.3em}
 #dHint em{font-style:normal;color:var(--gold-d);font-weight:700}
-#dHint .hrow{display:block}
-/* ますの 色と そろえる＝ヒントの 行と 入れる ますが 目で つながる */
-#dHint .hq{color:var(--gold-d);font-weight:700}
-#dHint .hr{color:var(--amari);font-weight:700}
-#dHint .hsub{color:var(--ink);font-weight:700}
-#dHint .hno{color:var(--muted);text-decoration:line-through}
+#dHint.eqs{display:flex;justify-content:center;align-items:center;
+  gap:clamp(14px,3vw,54px);flex-wrap:wrap;
+  font-size:clamp(17px,2.4vw,32px);font-weight:700;line-height:1.2}
+#dHint .hq{color:var(--gold-d)}
+#dHint .hr{color:var(--amari)}
 #dVerdict{font-family:var(--f-text);font-size:clamp(13px,1.5vw,21px);text-align:center;
   line-height:1.45;min-height:1.4em}
 #dVerdict.ok{color:var(--ok);font-weight:700}
@@ -914,29 +916,24 @@ function dRender(){
           ' aria-pressed="'+(W.pick===v)+'"'+(W.locked?" disabled":"")+'>'+v+wp.u+'</button>';
     }
     pk.innerHTML=ph;
-    hn.innerHTML=W.hint?wp.hint(W.N,W.D,W.Q,W.R):"";
+    hn.className=""; hn.innerHTML=W.hint?wp.hint(W.N,W.D,W.Q,W.R):"";
   }else if(W.lv==="moto"){
     q.innerHTML="<b>"+W.D+"</b>で わったら <b>"+W.Q+"</b> あまり <b>"+W.R+"</b> でした。わられる数は いくつですか。";
     eq.innerHTML=dFld(0)+" ÷ "+W.D+" ＝ "+W.Q+" "+dAma()+" "+W.R;
     pk.innerHTML="";
-    hn.innerHTML=W.hint?("わる数 × こたえ ＋ あまり で わられる数に もどるよ。<em>"+
-      W.D+" × "+W.Q+" ＋ "+W.R+"</em>"):"";
+    hn.className=W.hint?"eqs":"";
+    hn.innerHTML=W.hint?('<span class="hq">'+W.D+' × '+W.Q+' ＋ '+W.R+' ＝ ?</span>'):"";
   }else{
     q.innerHTML="こたえと あまりを 入れよう。";
     eq.innerHTML=W.N+" ÷ "+W.D+" ＝ "+dFld(0)+" "+dAma()+" "+dFld(1,"rr");
     pk.innerHTML="";
-    /* まえは 九九の こたえ（20）を さいごに 金で 光らせていたので、
-       それを こたえの ますに 書く子が いた（2026-09-12 教室で）。
-       どの数が こたえで、あまりは 何を 計算するのかに 名前を つける。
-       こたえの 数（かけた数）と あまりの 数は 出さない＝□ で しめす */
+    /* ことばで 説明しない。式を 2つ ならべるだけ。
+       左（金）＝こたえの ます、右（だいだい）＝あまりの ます。
+       「5 × ? ＝ 15」の 形なので、15 を こたえに 書く まちがいが 起きない */
+    hn.className=W.hint?"eqs":"";
     hn.innerHTML=W.hint?(
-      '<span class="hrow"><em>'+W.D+'のだん</em>　'+W.D+'×'+W.Q+'＝'+(W.D*W.Q)+'　'+
-        W.D+'×'+(W.Q+1)+'＝'+(W.D*(W.Q+1))+'　→　'+W.N+' を こえないのは <em>'+
-        W.D+'×'+W.Q+'＝'+(W.D*W.Q)+'</em></span>'+
-      '<span class="hrow"><span class="hq">こたえ</span>の ますは <em>かけた数</em>（'+
-        W.D+'×□ の □）。<span class="hno">'+(W.D*W.Q)+'</span> では ないよ</span>'+
-      '<span class="hrow"><span class="hr">あまり</span>の ますは わられる数 − 九九の こたえ　'+
-        '<span class="hsub">'+W.N+' − '+(W.D*W.Q)+'</span></span>'
+      '<span class="hq">'+W.D+' × ? ＝ '+(W.D*W.Q)+'</span>'+
+      '<span class="hr">'+W.N+' − '+(W.D*W.Q)+' ＝ ?</span>'
     ):"";
   }
   $("dHintBtn").setAttribute("aria-pressed",W.hint);
