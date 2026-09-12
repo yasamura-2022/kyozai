@@ -162,8 +162,13 @@ body.kimari #kukuCard{display:none}
    しきカードの こたえ（金）と 同じ色なので、どの数が こたえか 目で つながる */
 .chip{display:inline-block;background:var(--gold);color:#3A2600;
   border-radius:8px;padding:1px .42em;min-width:1.1em;line-height:1.25}
-/* 大きすぎる 九九には わけを そえる（なぜ そこで とまるか） */
-.kknote{grid-column:1/-1;font-size:.58em;font-weight:700;margin-top:2px;letter-spacing:.02em}
+/* 大きすぎる 九九には わけを そえる（なぜ そこで とまるか）。
+   「13より 大きい」のは 15 のことなので、つかった数の 列の 下に おく
+   （行ぜんたいの 下に 置くと、どの数の ことか 分からない。2026-09-12 指摘） */
+/* 1行に つめると 8px まで 小さくなって 読めない。
+   2行に おりかえして 字を 大きく する（「13より／大きい」で 切れる） */
+.kknote{grid-column:5;font-size:clamp(11px,1.2vw,16px);font-weight:700;
+  margin-top:2px;letter-spacing:0;line-height:1.25;word-break:keep-all}
 #kukuEmpty{font-size:clamp(11px,1.15vw,14px);color:var(--muted);padding:4px 6px;text-align:center}
 body:not(.kimari) .kcard{display:none}
 
