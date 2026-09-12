@@ -956,7 +956,10 @@ function dNew(){
      いらない子は はじめから 押さないだけ */
   W.f=["",""]; W.idx=0; W.locked=false; W.pick=-1;
   $("dStage").className="";
-  $("dVerdict").className="";
+  /* 色だけでなく 文も 消す。まえは 消していなかったので、つぎの もんだいに
+     うつっても 前の「せいかい！」と 前の たしかめ算が のこっていた
+     （16÷3 の 画面に「たしかめ 4 × 4 ＋ 1 ＝ 17」。2026-09-12 指摘） */
+  $("dVerdict").className=""; $("dVerdict").innerHTML="";
   dRender();
 }
 
