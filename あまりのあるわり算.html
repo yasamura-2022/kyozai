@@ -69,7 +69,7 @@ select{font-family:inherit;font-size:14px;background:var(--paper);color:var(--in
   border:1px solid var(--line2);border-radius:9px;padding:6px 8px}
 
 /* ---- 本体 ---- */
-#main{flex:1;min-height:0;display:flex;gap:12px}
+#main{flex:1;min-height:0;display:flex;gap:12px;overflow:hidden}
 .pane{flex:1;min-width:0;position:relative;background:var(--paper);
   border:1px solid var(--line);border-radius:16px;overflow:hidden}
 body.kimari #stage{display:none}
@@ -133,11 +133,33 @@ body:not(.kimari) #ktable{display:none}
 #kend{margin-top:10px;font-family:var(--f-text);font-size:clamp(13px,1.4vw,20px);color:var(--muted)}
 
 /* ---- 右パネル ---- */
-#rail{flex:none;width:clamp(180px,19%,280px);display:flex;flex-direction:column;gap:10px}
+#rail{flex:none;width:clamp(206px,21.5%,304px);display:flex;flex-direction:column;gap:10px}
 .card{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:10px 12px}
 .ctitle{font-size:12px;color:var(--muted);letter-spacing:.1em;margin-bottom:6px}
-.wcard{flex:1;display:flex;flex-direction:column;justify-content:center}
+.wcard{flex:none}
 body.kimari .wcard{display:none}
+
+/* 九九の ひょう。列の 見出しで「どの数が なにか」を 1回だけ しめす＝
+   行ごとに ことばを くりかえさない（2026-09-12） */
+#kukuCard{flex:1;min-height:clamp(78px,15vh,170px);display:flex;flex-direction:column}
+body.kimari #kukuCard{display:none}
+.kkgrid{display:grid;grid-template-columns:1fr .6em 1fr .6em 1.35fr;
+  gap:0 .08em;align-items:center;text-align:center}
+#kukuHead{font-size:clamp(10px,1.18vw,15px);color:var(--muted);
+  margin-bottom:5px;padding:0 4px;line-height:1.2}
+#kukuHead .hd{font-weight:700}
+#kukuHead .hq{color:var(--gold-d)}
+#kukuHead .hu{color:var(--ok)}
+#kukuList{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:3px}
+.kk{padding:3px 4px;border-radius:8px;font-size:clamp(15px,1.72vw,24px);
+  font-weight:700;background:#F4F1E6;color:var(--muted)}
+.kk .kq{color:var(--gold-d)}
+.kk .ku{color:var(--ok)}
+.kk.done{background:var(--ok-l);color:var(--ink)}
+.kk.now{background:var(--gold-l);box-shadow:0 0 0 2px var(--gold)}
+.kk.over{background:var(--amari-l);color:var(--amari)}
+.kk.over .kq,.kk.over .ku{color:var(--amari)}
+#kukuEmpty{font-size:clamp(11px,1.15vw,14px);color:var(--muted);padding:4px 6px;text-align:center}
 body:not(.kimari) .kcard{display:none}
 
 #shikiRow{display:flex;align-items:flex-end;justify-content:center;gap:.18em;flex-wrap:wrap;padding-bottom:2px;
@@ -154,13 +176,6 @@ body:not(.kimari) .kcard{display:none}
 #tashikame{margin-top:6px;text-align:center;font-size:clamp(12px,1.2vw,17px);
   color:var(--ok);opacity:0;transition:opacity .4s;min-height:1.4em;line-height:1.4}
 #tashikame.on{opacity:1}
-
-.kk{display:flex;align-items:center;gap:8px;padding:2px 8px;border-radius:8px;
-  font-size:clamp(13px,1.35vw,20px);background:#f7f1e2;color:var(--muted)}
-.kk.done{background:var(--ok-l);color:var(--ink)}
-.kk.over{background:var(--amari-l);color:var(--amari);font-weight:700}
-.kk .mk{font-size:.85em;flex:none;width:1.4em;text-align:center}
-.kk .nt{margin-left:auto;font-size:.62em;font-weight:400}
 
 #ringRow{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
 .ring{width:2.1em;height:2.1em;border-radius:50%;display:grid;place-items:center;
@@ -310,6 +325,14 @@ body:not(.kimari) .kbtn{display:none}
 /* Googleサイトの わくが たてに みじかいとき、まわりを つめて 絵を 大きくする */
 @media (max-height:620px){
   #app{padding:6px 10px 8px;gap:5px}
+  /* 九九の ひょうに 場所を まわす。式と たしかめが のこるので 意味は 失われない */
+  #kotae{display:none}
+  .card{padding:7px 9px}
+  /* 「いま つかった 九九」と「大きすぎる 九九」の 2行が かならず 見えるだけの 場所を とる */
+  #kukuCard{min-height:116px}
+  #kukuHead{font-size:clamp(9px,1.05vw,13px);margin-bottom:3px}
+  .kk{font-size:clamp(14px,1.5vw,19px);padding:2px 4px}
+  #shikiRow{font-size:clamp(17px,2vw,27px)}
   #mondai{font-size:clamp(13px,1.5vw,20px)}
   #go .btn{min-height:46px;font-size:clamp(13px,1.4vw,18px)}
   #ctrl .btn{min-height:40px;padding:6px 12px;font-size:clamp(12px,1.2vw,16px)}
@@ -381,6 +404,15 @@ body:not(.kimari) .kbtn{display:none}
         <div id="shikiRow"></div>
         <div id="kotae"></div>
         <div id="tashikame"></div>
+      </div>
+      <div class="card wcard" id="kukuCard">
+        <div class="ctitle" id="kukuTitle">3のだん</div>
+        <div id="kukuHead" class="kkgrid">
+          <span class="hd">わる数</span><span></span>
+          <span class="hd hq">こたえ</span><span></span>
+          <span class="hd hu">つかった数</span>
+        </div>
+        <div id="kukuList"></div>
       </div>
       <div class="card kcard">
         <div class="ctitle" id="ringTitle">出てきた あまり</div>
@@ -626,6 +658,31 @@ function paintShiki(){
   if(S.step>=S.N){ t.textContent="たしかめ　"+S.D+" × "+Q+" ＋ "+R+" ＝ "+S.N; t.classList.add("on"); }
   else t.classList.remove("on");
 }
+/* わる数の だんを、ふくろが できるたび 1行ずつ ふやす。
+   数の 色は しきカードと そろえる＝わる数＝ふつう／こたえ＝金／つかった数＝みどり（ふくろの色） */
+function paintKuku(){
+  $("kukuTitle").textContent=S.D+"のだん";
+  var Q=q(), qs=Math.min(Math.floor(S.step/S.D),Q), done=(S.step>=S.N), h="", k;
+  for(k=1;k<=qs;k++){
+    h+='<div class="kkgrid kk done'+((k===qs&&!done)?" now":"")+'">'+
+       '<span>'+S.D+'</span><span>×</span><span class="kq">'+k+'</span>'+
+       '<span>＝</span><span class="ku">'+(S.D*k)+'</span></div>';
+  }
+  if(done&&S.D*(Q+1)>S.N){
+    h+='<div class="kkgrid kk over">'+
+       '<span>'+S.D+'</span><span>×</span><span class="kq">'+(Q+1)+'</span>'+
+       '<span>＝</span><span class="ku">'+(S.D*(Q+1))+'</span></div>';
+  }
+  var box=$("kukuList");
+  box.innerHTML=h||'<div id="kukuEmpty">すすむと ふえます</div>';
+  /* 場所が すこししか ないときに いちばん 見せたいのは
+     「いま つかった 九九」と「大きすぎる 九九」の 2行。
+     いちばん下まで 送ると、大きすぎる 行だけに なってしまう */
+  requestAnimationFrame(function(){
+    var ds=box.querySelectorAll(".kk.done"), last=ds.length?ds[ds.length-1]:null;
+    box.scrollTop = last ? last.offsetTop : box.scrollHeight;
+  });
+}
 function paintMsgW(){
   var c=inf().c,nm=inf().name,Q=q(),R=r(),m="";
   if(S.step===0){
@@ -781,7 +838,7 @@ function setView(v){
 
 var fixT=0;
 function drawW(){
-  paint(); paintShiki(); paintMsgW();
+  paint(); paintShiki(); paintKuku(); paintMsgW();
   /* メッセージの 行数で ステージの 高さが かわるので、1フレームあとに ならべ直す */
   if(fixT) cancelAnimationFrame(fixT);
   fixT=requestAnimationFrame(function(){ fixT=0; relayout(); paint(); });
