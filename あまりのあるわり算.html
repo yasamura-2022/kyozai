@@ -156,9 +156,14 @@ body.kimari #kukuCard{display:none}
 .kk .kq{color:var(--gold-d)}
 .kk .ku{color:var(--ok)}
 .kk.done{background:var(--ok-l);color:var(--ink)}
-.kk.now{background:var(--gold-l);box-shadow:0 0 0 2px var(--gold)}
 .kk.over{background:var(--amari-l);color:var(--amari)}
 .kk.over .kq,.kk.over .ku{color:var(--amari)}
+/* いま つかっている 九九の「こたえ」だけ 金の ふだに する。
+   しきカードの こたえ（金）と 同じ色なので、どの数が こたえか 目で つながる */
+.chip{display:inline-block;background:var(--gold);color:#3A2600;
+  border-radius:8px;padding:1px .42em;min-width:1.1em;line-height:1.25}
+/* 大きすぎる 九九には わけを そえる（なぜ そこで とまるか） */
+.kknote{grid-column:1/-1;font-size:.58em;font-weight:700;margin-top:2px;letter-spacing:.02em}
 #kukuEmpty{font-size:clamp(11px,1.15vw,14px);color:var(--muted);padding:4px 6px;text-align:center}
 body:not(.kimari) .kcard{display:none}
 
@@ -664,14 +669,16 @@ function paintKuku(){
   $("kukuTitle").textContent=S.D+"のだん";
   var Q=q(), qs=Math.min(Math.floor(S.step/S.D),Q), done=(S.step>=S.N), h="", k;
   for(k=1;k<=qs;k++){
-    h+='<div class="kkgrid kk done'+((k===qs&&!done)?" now":"")+'">'+
-       '<span>'+S.D+'</span><span>×</span><span class="kq">'+k+'</span>'+
+    var kq=(k===qs)?'<b class="chip">'+k+'</b>':k;   /* いま つかっている 九九の こたえ */
+    h+='<div class="kkgrid kk done">'+
+       '<span>'+S.D+'</span><span>×</span><span class="kq">'+kq+'</span>'+
        '<span>＝</span><span class="ku">'+(S.D*k)+'</span></div>';
   }
   if(done&&S.D*(Q+1)>S.N){
     h+='<div class="kkgrid kk over">'+
        '<span>'+S.D+'</span><span>×</span><span class="kq">'+(Q+1)+'</span>'+
-       '<span>＝</span><span class="ku">'+(S.D*(Q+1))+'</span></div>';
+       '<span>＝</span><span class="ku">'+(S.D*(Q+1))+'</span>'+
+       '<span class="kknote">'+S.N+'より 大きい</span></div>';
   }
   var box=$("kukuList");
   box.innerHTML=h||'<div id="kukuEmpty">すすむと ふえます</div>';
