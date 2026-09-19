@@ -609,7 +609,7 @@ const SEQ=[              /* 標高（m）で もつ。3か所 とも 同じ 積�
 const PTS=[{n:'A',e:62,x:.245},{n:'B',e:52,x:.50},{n:'C',e:44,x:.755}];
 const DEPTH=25, EMIN=17, EMAX=64;
 const S2={step:0,a:0};
-const S2MAX=6;
+const S2MAX=7;
 const HAI_DEPTH=PTS.map(p=>p.e-42);   /* 火山灰の 上までの ふかさ＝20,10,2 */
 
 /* ボーリングの やぐら（ここを ほって いる、が ひと目で わかる しるし） */
@@ -724,6 +724,23 @@ function drawS2(){
       txt(g,'ふかさ',x-8,top-13,10,'rgba(43,33,24,.6)','right');
       g.restore();
     }
+    /* ⑤ 3本とも <砂 → 火山灰 → どろ> の 順に なって いる
+       ＝解説の「粒の大きさや形，色を 相互に 関係付けて 調べ」。
+       ここが 「なぜ ちがって 見えるのか」の 答えに つながる */
+    if(S2.step===5&&drawn&&a<0.5){
+      const eT=Math.min(50,p.e),eB=Math.max(28,p.e-DEPTH);
+      if(eT>eB){
+        const y=top+(p.e-eT)*mpp,hh=(eT-eB)*mpp;
+        g.save();g.strokeStyle='#c9a227';g.lineWidth=3.5;
+        rr(g,x-3,y-3,cw+6,hh+6,7);g.stroke();g.restore();
+      }
+      if(i===2){   /* いちばん 右の 柱の よこに 名前を 出す */
+        for(const [e,nm] of [[43,'砂'],[40,'火山灰'],[33,'どろ']]){
+          const y=top+(p.e-e)*mpp;
+          txt(g,'→ '+nm,x+cw+8,y,clamp(w*.019,10,13),'#9a7a1e','left');
+        }
+      }
+    }
     /* ④ 火山灰までの ふかさ */
     if(S2.step===4&&a<0.5){
       const y1=top,y2=top+HAI_DEPTH[i]*mpp;
@@ -736,7 +753,7 @@ function drawS2(){
     }
   }
   /* ⑥ 火山灰の 層を つなぐ */
-  if(S2.step>=6&&a>0.8){
+  if(S2.step>=7&&a>0.8){
     g.save();
     const xa=w*PTS[0].x-cw/2,xb=w*PTS[2].x+cw/2;
     for(const L of SEQ){
@@ -771,10 +788,11 @@ const M2=[
  'A・B・C の 3か所で、地面を まっすぐ 下に ほる（<b>ボーリング</b>）。地面の 高さ（<b>標高</b>）は 3か所とも ちがう。',
  '<b>A</b>を 25m ほった。出て きた 物を <b>上から 順に</b> ならべたのが 下の 柱。いちばん 上が 地面。',
  '<b>B</b>も 同じように 25m ほって ならべた。れきの 層が うすい。',
- '<b>C</b>も ほった。3本 そろった。同じ 層が ありそうかな。',
+ '<b>C</b>も ほった。3本 そろった。ずいぶん <b>ちがって 見える</b>ね。同じ 層は あるのかな。',
  '白い <b>火山灰の 層</b>までの ふかさは Aが 20m、Bが 10m、Cが 2m。<b>地面から</b> くらべると ばらばら。',
+ 'でも つぶを よく 見ると、どの 柱も <b>砂 → 火山灰 → どろ</b> の 順。<b>同じ 重なり</b>が ありそうだ。',
  '3本を <b>標高で そろえて</b>、ほった 場所に もどして みると…',
- '火山灰の 層が 横に <b class="ok">ひとつづき</b>に なった。ほかの 層も つながる ＝ <b>層は 横に 広がって いる</b>。'
+ '火山灰の 層が 横に <b class="ok">ひとつづき</b>に なった。<b>ちがって 見えたのは、ほり始めた 地面の 高さが ちがう</b>から。層は 横に 広がって いる。'
 ];
 function showS2(){
   S2.step=clamp(S2.step,0,S2MAX);
@@ -1727,7 +1745,7 @@ window.addEventListener('orientationchange',()=>setTimeout(paint,120));
 
 function loop(){
   /* ②の「標高で そろえる」 */
-  const t2=(S2.step>=5)?1:0;
+  const t2=(S2.step>=6)?1:0;
   const move2=Math.abs(S2.a-t2)>0.002;
   if(move2)S2.a+=(t2-S2.a)*0.13; else S2.a=t2;
   /* ④の 断層の ずれ */
