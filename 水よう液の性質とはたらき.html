@@ -214,16 +214,13 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;}
 /* 予想を まだ えらんで いない とき＝ここを おすのだと 分かる ように 強く 出す。
    これが ないと「ボタンが グレーアウトして 動かない＝こわれた」と 見える
    （2026-09-19 の 指摘） */
-.guess.need{border:2px solid var(--gold);background:#fff3cf;box-shadow:0 0 0 3px rgba(201,162,39,.18);}
+.guess.need,.cards.need{border:2px solid var(--gold);background:#fff3cf;box-shadow:0 0 0 3px rgba(201,162,39,.18);}
 .guess .gl{font-size:clamp(10.5px,1.25vw,14px);color:#8a6a10;white-space:nowrap;}
 .guess .opts{flex:1;min-width:180px;}
 
 /* ⑤ の 表は 画面いっぱい */
 #s5 .tbl{font-size:clamp(12px,calc(0.92vw + 0.86vh),20px);}
 #s5 .tbl .c{cursor:pointer;}
-#s5 .tbl .c.blank{background:#fff8e6;border:2px dashed var(--gold);color:#b9a165;}
-#s5 .tbl .c.mark-o{box-shadow:0 0 0 2px var(--ok) inset;}
-#s5 .tbl .c.mark-x{box-shadow:0 0 0 2px var(--ng) inset;}
 
 /* ドラッグする カード（①の なまえ／⑤の 性質・とけている物）。
    touch-action:none が ないと iPad で 画面ごと 動いて ドラッグできない */
@@ -261,9 +258,12 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;}
 .tbl .dz1.mark-o{border-style:solid;border-color:var(--ok);background:#e6f0e0;color:#3f7a33;}
 .tbl .dz1.mark-x{border-style:solid;border-color:var(--ng);background:#fbecec;color:#b33c3c;}
 
-/* ⑤ カードを 落とす ます */
-#s5 .tbl .c.dz{cursor:pointer;}
-#s5 .tbl .c.dz.hit{background:#fff3cf;border-color:var(--gold);}
+/* カードを 落とす ます（②の 予想／⑤の まとめ） */
+.tbl .c.dz{cursor:pointer;}
+.tbl .c.dz.hit{background:#fff3cf;border-color:var(--gold);}
+.tbl .c.dz.blank{background:#fff8e6;border:2px dashed var(--gold);color:#b9a165;}
+.tbl .c.mark-o{box-shadow:0 0 0 2px var(--ok) inset;}
+.tbl .c.mark-x{box-shadow:0 0 0 2px var(--ng) inset;}
 
 /* いちばん下の 安全の 注意。解説に 明記が ある。消さない こと */
 #safety{
@@ -317,9 +317,10 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;}
       </div>
       <div class="msg" id="m1"></div>
       <div class="bar">
+        <button class="btn ghost on" data-p="0">もんだい 1</button>
+        <button class="btn ghost" data-p="1">もんだい 2</button>
         <button class="btn show" id="b1check">こたえ</button>
         <button class="btn sub" id="b1undo">カードを もどす</button>
-        <button class="btn next" id="b1next">つぎの もんだい →</button>
         <button class="btn ghost" id="b1ref">カードに せいしつを 出す</button>
       </div>
     </section>
@@ -329,19 +330,12 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;}
         <div class="card"><canvas id="c2"></canvas></div>
         <div class="side">
           <div class="panel" style="flex:1">
-            <div class="ttl" id="t2ttl">① 水よう液を おして えらぶ → ② 下で 予想 → ③「つけて たしかめる」</div>
+            <div class="ttl" id="t2ttl">「性質」の ますに 予想の カードを 入れる → たしかめる</div>
             <div class="tbl" id="t2"></div>
           </div>
         </div>
       </div>
-      <div class="guess" id="g2">
-        <span class="gl" id="g2lb">予想　この 水よう液は…</span>
-        <div class="opts" id="o2">
-          <button class="opt" data-v="acid">酸性</button>
-          <button class="opt" data-v="neut">中性</button>
-          <button class="opt" data-v="alka">アルカリ性</button>
-        </div>
-      </div>
+      <div class="cards" id="p2cards"></div>
       <div class="msg" id="m2"></div>
       <div class="bar">
         <button class="btn ghost on" id="b2litmus">リトマス紙</button>
@@ -906,10 +900,23 @@ function person(g,x,y,s,fan){
    =================================================================== */
 const liqOf=k=>LIQ.find(q=>q.k===k);
 const WATER='rgba(176,212,228,.62)';
-const G1=[['tan'],['hcl','nh3'],['salt','naoh','lime']];
-const SLOT=['A','B','C'];
+/* **もんだいは 2つだけ。ランダムに 作らない**（2026-09-20 の 指摘＝
+   「6つの 組み合わせを 変えても たいして 変わらない。2パターンと
+   初めから しておくのが いい」）。ランダムに 出すと「変わった ふり」に なる
+   ばかりで、先生も「今日は どれを やるか」を 決められない。
+   ・もんだい1（3本）… どの 調べ方も 1本しか 決めない＝2つ 調べれば 決まる
+   ・もんだい2（2本）… **見た目では まったく 分けられない**。においか 蒸発で 分かる
+   　＝「役に立たない 調べ方も ある」ことを 学ぶ
+   **6本 ぜんぶを あてる 問題には できない**。うすい塩酸と うすいアンモニア水、
+   水酸化ナトリウム水よう液と 石灰水は ①の 3つの 調べ方では まったく 同じ 結果に なり、
+   答えが 決まらない。それが そのまま ②（リトマス紙）が いる わけに なる */
+const P1=[
+  {n:'もんだい 1', ks:['tan','hcl','salt']},
+  {n:'もんだい 2', ks:['nh3','lime']},
+];
+let SLOT=['A','B','C'];
 const TESTS=[{k:'look',n:'見た目'},{k:'smell',n:'におい'},{k:'evap',n:'蒸発させると'}];
-const S1={pick:{},cards:[],place:{A:null,B:null,C:null},sel:null,
+const S1={pi:0,pick:{},cards:[],place:{},sel:null,
           done:{look:false,smell:false,evap:false},checked:false,ref:false,
           t:0,an:0,last:'look'};
 const rnd=n=>Math.floor(Math.random()*n);
@@ -974,11 +981,13 @@ function dragDrop(root,cardCls,binCls,onDrop,onTap){
   });
 }
 
-function new1(){
-  const ks=shuffle(G1.map(g=>g[rnd(g.length)]));
-  S1.pick={A:ks[0],B:ks[1],C:ks[2]};
+function new1(i){
+  if(i!=null)S1.pi=i;
+  const ks=shuffle(P1[S1.pi].ks.slice());
+  SLOT=['A','B','C'].slice(0,ks.length);
+  S1.pick={};SLOT.forEach((sl,j)=>{S1.pick[sl]=ks[j];});
   S1.cards=shuffle(ks.slice());
-  S1.place={A:null,B:null,C:null};
+  S1.place={};SLOT.forEach(sl=>{S1.place[sl]=null;});
   S1.sel=null;S1.checked=false;
   S1.done={look:false,smell:false,evap:false};
   S1.an=0;S1.last='look';
@@ -1052,7 +1061,7 @@ function p1build(){
 function t1build(){
   const t=$('t1');
   t.style.gridTemplateColumns='1.22fr 1.02fr .84fr 1.02fr';
-  t.style.gridTemplateRows='repeat(4,1fr)';
+  t.style.gridTemplateRows='repeat('+(SLOT.length+1)+',1fr)';
   /* 見出しが そのまま ボタン。「どの らんを うめるか」を おす */
   let h='<div class="h">なまえ</div>';
   TESTS.forEach(te=>{
@@ -1076,6 +1085,7 @@ function up1(){
   p1build();t1build();
   $('b1ref').classList.toggle('on',S1.ref);
   $('b1ref').textContent=S1.ref?'せいしつを かくす':'カードに せいしつを 出す';
+  [...$('s1').querySelectorAll('.btn.ghost[data-p]')].forEach(b=>b.classList.toggle('on',Number(b.dataset.p)===S1.pi));
   [...$('s1').querySelectorAll('.btn.play')].forEach(b=>b.classList.toggle('on',S1.done[b.dataset.a]));
 }
 function draw1(){
@@ -1084,7 +1094,9 @@ function draw1(){
   bench(g,1000,560);
   const t=S1.t,last=S1.last;
   txt(g,'① ラベルが はがれた 3本。どれが どれ？',500,46,26,'#40525e');
-  const XS=[250,500,750], by=434;
+  const n=SLOT.length;
+  const XS=SLOT.map((_,i)=>500+(i-(n-1)/2)*(n>2?250:290));
+  const by=434;
 
   SLOT.forEach((sl,i)=>{
     const cx=XS[i], q=liqOf(S1.pick[sl]);
@@ -1110,17 +1122,27 @@ function run1(a){
   S1.done[a]=true;S1.last=a;
   if(a==='evap')S1.an=0;
   S1.checked=false;
-  const who=SLOT.filter(sl=>{
+  const hit=SLOT.filter(sl=>{
     const q=liqOf(S1.pick[sl]);
     return a==='look'?q.k==='tan':a==='smell'?q.smell!=='なし':q.evapLeft;
-  }).join('・');
-  let m=a==='look' ? 'あわが 出て いるのは <b>'+who+'</b> だけ。あとの 2本は 見た目が 同じ。'
-      :a==='smell'? 'つんと する においが するのは <b>'+who+'</b>。あとの 2本は においが しない。'
-      :             '白い 物が 残ったのは <b>'+who+'</b>。あとの 2本は 何も 残らなかった。';
+  });
+  const who=hit.join('・'), n=SLOT.length;
+  let m;
+  if(!hit.length||hit.length===n){
+    /* 1本も ちがわない＝その 調べ方では 分けられない。
+       もんだい2の「見た目」が これ。役に立たない 調べ方も ある と 知る */
+    m=a==='look' ? 'どれも <b>無色 とうめい</b>で 同じ。<b>見た目では 分けられない</b>ね。'
+     :a==='smell'? 'どれも においが 同じ。<b>においでは 分けられない</b>ね。'
+     :             'どれも 蒸発させた あとが 同じ。<b>これでは 分けられない</b>ね。';
+  }else{
+    m=a==='look' ? 'あわが 出て いるのは <b>'+who+'</b> だけ。あとの '+(n-hit.length)+'本は 見た目が 同じ。'
+     :a==='smell'? 'つんと する においが するのは <b>'+who+'</b>。あとの '+(n-hit.length)+'本は においが しない。'
+     :             '白い 物が 残ったのは <b>'+who+'</b>。あとの '+(n-hit.length)+'本は 何も 残らなかった。';
+  }
   const decided=SLOT.filter(sl=>cands1(sl).length===1).length;
-  m+= decided===3
-    ? '<br>これで <b>3本 とも</b> 決められそうだ。なまえの カードを A・B・C に 入れよう。'
-    : '<br>まだ <b>'+(3-decided)+'本</b>は 決められない。ほかの 調べ方も やって みよう。';
+  m+= decided===n
+    ? '<br>これで <b>'+n+'本 とも</b> 決められそうだ。なまえの カードを '+SLOT.join('・')+' に 入れよう。'
+    : '<br>まだ <b>'+(n-decided)+'本</b>は 決められない。ほかの 調べ方も やって みよう。';
   $('m1').innerHTML=m;
   up1();
 }
@@ -1141,9 +1163,9 @@ function drop1(cardEl,bin){
   S1.place[sl]=k;
   S1.sel=null;S1.checked=false;
   const n=SLOT.filter(s=>S1.place[s]).length;
-  $('m1').innerHTML=n<3
-    ? '<b>'+sl+'</b>に 入れた。のこり <b>'+(3-n)+'本</b>。まちがえたら <b>入って いる ますを おす</b>と もどせるよ。'
-    : '3本 とも 入れたね。<b>こたえ</b>を おして たしかめよう。';
+  $('m1').innerHTML=n<SLOT.length
+    ? '<b>'+sl+'</b>に 入れた。のこり <b>'+(SLOT.length-n)+'本</b>。まちがえたら <b>入って いる ますを おす</b>と もどせるよ。'
+    : SLOT.length+'本 とも 入れたね。<b>こたえ</b>を おして たしかめよう。';
   up1();
 }
 function check1(){
@@ -1171,17 +1193,16 @@ $('t1').addEventListener('click',e=>{
 });
 $('b1check').addEventListener('click',check1);
 $('b1undo').addEventListener('click',()=>{
-  S1.place={A:null,B:null,C:null};S1.sel=null;S1.checked=false;
+  S1.place={};SLOT.forEach(sl=>{S1.place[sl]=null;});S1.sel=null;S1.checked=false;
   $('m1').innerHTML='カードを ぜんぶ もどした。ますを おしても 1つずつ もどせるよ。';
   up1();
 });
 $('b1ref').addEventListener('click',()=>{S1.ref=!S1.ref;up1();});
-$('b1next').addEventListener('click',()=>{
-  new1();
-  /* 何が かわったのかを ことばで 言う。言わないと
-     「もんだいが かわって いないのでは？」と 見える（2026-09-19 の 指摘） */
-  $('m1').innerHTML='<b>水よう液が かわった</b>よ。下の <b>3まいの カード</b>を 見てね。'+
-    '（'+S1.cards.map(k=>liqOf(k).n).join('・')+'）　どれが どれか、もう 一度 あてよう。';
+$('s1').querySelector('.bar').addEventListener('click',e=>{
+  const b=e.target.closest('.btn.ghost[data-p]');if(!b)return;
+  new1(Number(b.dataset.p));
+  $('m1').innerHTML='<b>'+P1[S1.pi].n+'</b>　ラベルが はがれた 水よう液が <b>'+SLOT.length+'本</b>。'+
+    '（'+S1.cards.map(k=>liqOf(k).n).join('・')+' の どれか）　青い 見出しを おして 調べよう。';
   up1();dirty=true;
 });
 function step1(dt){
@@ -1222,9 +1243,49 @@ function t2build(){
     }else{
       h+='<div class="c'+(d?' on':'')+cur+'">'+(d?btbName(q.sei):'?')+'</div>';
     }
-    h+='<div class="c'+(d?' on s-'+q.sei:'')+cur+'">'+(d?SEI[q.sei].n:'?')+'</div>';
+    /* 性質の ます＝予想の カードを 落とす ところ。
+       予想する 場所と 答えが 出る 場所を 同じに する（2026-09-20 の 指摘＝
+       「えらんだ あと、予想で 何を すれば いいのか 分からない」）。
+       べつの 行に 予想ボタンを 置くと、どこを さわるのか 分からない */
+    const gv=S2.gs[q.k];
+    if(d){
+      h+='<div class="c on s-'+q.sei+(gv?(gv===q.sei?' mark-o':' mark-x'):'')+cur+'">'+SEI[q.sei].n+'</div>';
+    }else if(gv){
+      h+='<div class="c dz on s-'+gv+cur+'" data-k="'+q.k+'" data-c="sei">予想 '+SEI[gv].n+'</div>';
+    }else{
+      h+='<div class="c dz blank'+cur+'" data-k="'+q.k+'" data-c="sei">？</div>';
+    }
   });
   t.innerHTML=h;
+}
+function p2build(){
+  const c=$('p2cards');c.innerHTML='';
+  ['acid','neut','alka'].forEach(v=>{
+    const b=document.createElement('div');
+    b.className='ncard v-'+v+(S2.sel===v?' sel':'');
+    b.dataset.v=v;
+    b.innerHTML=SEI[v].n+'<span class="pr">予想の カード</span>';
+    c.appendChild(b);
+  });
+}
+function drop2(cardEl,cell){
+  const k=cell.dataset.k, v=cardEl?cardEl.dataset.v:S2.sel;
+  const done=!!((S2.done[k]||{})[S2.tool]);
+  if(!v){
+    /* カードを えらんで いない ときに 入って いる ますを おしたら もどす */
+    if(S2.gs[k]&&!done){
+      delete S2.gs[k];S2.sel=null;
+      $('m2').innerHTML='予想を もどした。もう 一度 カードを 入れてね。';
+      up2();dirty=true;
+    }
+    return;
+  }
+  if(done){$('m2').innerHTML='<b>'+liqOf(k).n+'</b>は もう 調べたよ。ほかの 水よう液を 調べよう。';up2();return;}
+  S2.gs[k]=v;S2.sel=null;
+  S2.k=k;S2.shown=false;S2.an=0;S2.run=false;
+  $('m2').innerHTML='<b>'+liqOf(k).full+'</b>を <b>'+SEI[v].n+'</b>だと 予想したね。'+
+    '下の 金色の ボタンで たしかめよう。';
+  up2();dirty=true;
 }
 function draw2(){
   const cv=$('c2'),o=fit(cv);if(!o)return;
@@ -1304,26 +1365,17 @@ function draw2(){
   g.restore();
 }
 function up2(){
-  t2build();
+  t2build();p2build();
   $('b2litmus').classList.toggle('on',S2.tool==='litmus');
   $('b2btb').classList.toggle('on',S2.tool==='btb');
-  $('t2ttl').textContent='① 水よう液を おして えらぶ → ② 下で 予想 → ③「'+
-    (S2.tool==='litmus'?'つけて':'入れて')+' たしかめる」';
-  $('g2lb').innerHTML='予想　<b>'+liqOf(S2.k).full+'</b>は…';
+  $('t2ttl').textContent='「性質」の ますに 予想の カードを 入れる → '+
+    (S2.tool==='litmus'?'リトマス紙を つけて':'BTB液を 入れて')+' たしかめる';
   const need2=!S2.gs[S2.k]&&!S2.shown;
-  $('g2').classList.toggle('need',need2);
+  $('p2cards').classList.toggle('need',need2);
   $('b2go').textContent=S2.shown?'調べた'
-    :need2?'↑ まず 予想を えらぼう'
+    :need2?'↑ 予想の カードを ますに 入れよう'
     :(S2.tool==='litmus'?'リトマス紙を つけて たしかめる':'BTB液を 入れて たしかめる');
-  const q=liqOf(S2.k), g=S2.gs[S2.k];
-  [...$('o2').children].forEach(b=>{
-    b.className='opt'+(b.dataset.v===g?' sel':'');
-    if(S2.shown){
-      if(b.dataset.v===q.sei)b.className='opt right';
-      else if(b.dataset.v===g)b.className='opt wrong';
-    }
-    b.disabled=S2.shown;
-  });
+  const g=S2.gs[S2.k];
   $('b2go').disabled=!g||S2.shown||S2.run;
 }
 function go2(){
@@ -1355,16 +1407,16 @@ function pick2(k){
   S2.k=k;S2.an=0;S2.run=false;
   S2.shown=!!((S2.done[k]||{})[S2.tool]);
   if(S2.shown)S2.an=1;
-  if(!S2.shown)$('m2').innerHTML='<b>'+liqOf(k).full+'</b>は 何性だと 思う？　予想を えらんで から 調べよう。';
+  if(!S2.shown)$('m2').innerHTML='<b>'+liqOf(k).full+'</b>を えらんだ。上の <b>予想の カード</b>を、'+
+    'その 行の <b>「性質」の ます</b>に 入れよう。';
   else $('m2').innerHTML='<b>'+liqOf(k).full+'</b>は <span class="'+(liqOf(k).sei==='acid'?'ac':liqOf(k).sei==='neut'?'nu':'al')+'">'+SEI[liqOf(k).sei].n+'</span>。もう 調べた よ。';
   up2();
 }
 $('t2').addEventListener('click',e=>{
   const b=e.target.closest('.r.pick');if(!b)return;pick2(b.dataset.k);dirty=true;
 });
-$('o2').addEventListener('click',e=>{
-  const b=e.target.closest('.opt');if(!b||b.disabled)return;
-  S2.gs[S2.k]=b.dataset.v;up2();dirty=true;
+dragDrop($('s2'),'ncard','dz',drop2,el=>{
+  S2.sel=(S2.sel===el.dataset.v)?null:el.dataset.v;up2();
 });
 $('b2go').addEventListener('click',()=>{go2();dirty=true;});
 $('b2litmus').addEventListener('click',()=>{S2.tool='litmus';pick2(S2.k);dirty=true;});
@@ -1374,7 +1426,8 @@ $('b2next').addEventListener('click',()=>{
 });
 $('b2reset').addEventListener('click',()=>{
   S2.done={};S2.gs={};S2.k='salt';S2.shown=false;S2.an=0;S2.run=false;
-  $('m2').innerHTML='水よう液を えらんで、何性か 予想して から リトマス紙を つけよう。';
+  $('m2').innerHTML='上の <b>予想の カード</b>（酸性・中性・アルカリ性）を、表の <b>「性質」の ます</b>に 入れよう。'+
+    'そのあと 金色の ボタンで たしかめる。';
   up2();dirty=true;
 });
 function step2(dt){
@@ -1419,6 +1472,12 @@ const F3=[
   msg:'ペットボトルに 二酸化炭素を 入れて 水を 少し 足し、ふって みる。ペットボトルが <b>へこんだ</b>。出て きた 気体は <b>また 水に とける</b>んだね。'},
  {ttl:'炭酸水を 蒸発させる',
   msg:'炭酸水を 蒸発させても <b>何も 残らない</b>。食塩水は 白い つぶが 残ったのに ちがうね。とけて いたのが <b>気体</b>だから、水と いっしょに 空気中へ 出て いった。'},
+ /* いちばん 最後に まとめの こまを 置く。
+    「蒸発させた あと、答えを どう たしかめたら いいのか 分からない」
+    と 言われた（2026-09-20）ので、分かった こと 4つと こたえを 1枚に 出す。
+    **この こまを 消さない こと** */
+ {ttl:'まとめ',
+  msg:'炭酸水には <b>二酸化炭素</b>が とけて いた。水よう液には <b>気体が とけて いる</b>ものが ある。これが ③の こたえ。'},
 ];
 function t3build(){
   const t=$('t3');
@@ -1552,7 +1611,7 @@ function draw3(){
     }else{
       txt(g,'ふって みよう',780,250,24,'#8a96a0');
     }
-  }else{
+  }else if(f===6){
     const cx=320,by=452;
     grp(g,cx,430,1.3,()=>{
       burner(g,cx,by,1);
@@ -1579,6 +1638,22 @@ function draw3(){
       txt(g,'何も 残らない',780,244,30,'#3d7f95');
       txt(g,'とけて いたのは 気体',780,300,20,'#6f7d86');
     }
+  }else{
+    /* まとめ。③の こたえを 1枚で たしかめる */
+    box(g,116,104,768,352,20,'#ffffff','#4b8fa8',3);
+    txt(g,'炭酸水を 調べて 分かった こと',500,146,25,'#3d6a7d');
+    const its=['ふったり 温めたり すると あわが 出る',
+               'あわは 石灰水を 白く にごらせた',
+               '出て きた 気体は また 水に とける',
+               '蒸発させても 何も 残らない'];
+    its.forEach((x,i)=>{
+      const y=196+i*45;
+      circ(g,190,y,13,'#e3eff3','#4b8fa8',2);
+      txt(g,String(i+1),190,y+1,15,'#3d6a7d');
+      txt(g,x,214,y,20,'#40525e','left');
+    });
+    box(g,156,386,688,54,13,'#e3eff3','#4b8fa8',2);
+    txt(g,'炭酸水には 二酸化炭素（気体）が とけて いた',500,413,22,'#3d6a7d');
   }
   g.restore();
 }
@@ -1647,7 +1722,11 @@ const MET={
      exn:'磁石に つくか', ex0:'つく', ex1:'つかない',
      res:'#e9d9a6', bar:'#8d8f93'},
 };
-const S4={liq:'hcl',met:'al',f:0,t:0,an:0,gs:null};
+/* rev＝④の 最後の こまで「3つの 見方」を 何こ 見せたか（0〜3）。
+   前は いっぺんに ぜんぶ 出て いて「いきなり 全て 答えが 出てくるのが 残念」
+   と 言われた（2026-09-20）。1つずつ 子どもが おして 出す。
+   **いっぺんに 出す形に もどさない こと** */
+const S4={liq:'hcl',met:'al',f:0,t:0,an:0,gs:null,rev:0};
 const react4=()=>S4.liq==='hcl';
 
 function l4build(){
@@ -1678,7 +1757,7 @@ function t4build(){
     M.n+'を 入れる',
     r?'とけた 液を 蒸発させる':'（とけないので ここまで）',
     '出てきた 物は 元の '+M.n+'と 同じ？',
-    '3つの 見方で くらべる',
+    '3つの 見方で くらべる'+(S4.f===4?'（'+S4.rev+' / 3）':''),
   ];
   t.innerHTML=steps.map((x,i)=>
     '<div class="stp'+(i<S4.f?' done':i===S4.f?' now':'')+'"><i>'+(i+1)+'</i>'+x+'</div>'
@@ -1791,7 +1870,7 @@ function draw4(){
     const rows=[['見た目',M.look0,M.look1],['塩酸に 入れると',M.hcl0,M.hcl1],[M.exn,M.ex0,M.ex1]];
     rows.forEach((rw,j)=>{
       const y=y0+58+j*rh;
-      const on=S4.an>(j+1)*0.3;
+      const on=j<S4.rev;
       box(g,cols[0],y,cw[0],rh-6,10,'#f6eed9',null);
       txt(g,rw[0],cols[0]+cw[0]/2,y+(rh-6)/2,19,'#5a4a2a');
       box(g,cols[1],y,cw[1],rh-6,10,'#ffffff','#d9cba8',2);
@@ -1800,7 +1879,7 @@ function draw4(){
       if(on)txt(g,rw[2],cols[2]+cw[2]/2,y+(rh-6)/2,rw[2].length>9?15:17,'#96693f');
       else  txt(g,'?',cols[2]+cw[2]/2,y+(rh-6)/2,24,'#c9bda2');
     });
-    if(S4.an>1){
+    if(S4.rev>=3){
       box(g,x0,y0+58+3*rh+10,820,58,12,'#fdf3e6','#96693f',3);
       txt(g,'3つ とも ちがう → 出てきたのは 元の '+M.n+'とは「ちがう 新しい 物」',500,y0+58+3*rh+39,20,'#8a4f1c');
     }
@@ -1813,9 +1892,12 @@ function up4(){
   $('g4').style.display=need4?'flex':'none';
   $('g4').classList.toggle('need',need4);
   [...$('o4').children].forEach(b=>{b.className='opt'+(b.dataset.v===S4.gs?' sel':'');});
-  const last=S4.f>=4, stop=(S4.f===1&&!react4());
+  const stop=(S4.f===1&&!react4());
+  const last=(S4.f>=4&&S4.rev>=3);
+  const revName=['見た目を くらべる ▶','塩酸に 入れて みる ▶',MET[S4.met].exn+' ▶'];
   $('b4go').disabled=last||stop||need4;
-  $('b4go').textContent=need4?'↑ まず 予想を えらぼう':'1つ すすむ ▶';
+  $('b4go').textContent=need4?'↑ まず 予想を えらぼう'
+    :(S4.f===4?revName[Math.min(S4.rev,2)]:'1つ すすむ ▶');
   $('b4back').disabled=S4.f===0;
   const M=MET[S4.met];
   if(S4.f===0)$('m4').innerHTML='試験管に <b>'+(react4()?'うすい 塩酸':'食塩水')+'</b>を 入れた。ここに <b>'+M.n+'</b>を 入れると どう なると 思う？　右の じゅんばんで 進むよ。';
@@ -1825,12 +1907,22 @@ function up4(){
   if(S4.f===2&&S4.an>=1)$('m4').innerHTML='とけた 液を 蒸発させると、<b>'+(S4.met==='al'?'白い 物':'黄色っぽい 物')+'</b>が 出て きた。'+
     'とけた '+M.n+'が 出て きたの かな？';
   if(S4.f===3&&!S4.gs)$('m4').innerHTML='出てきた 物は、<b>元の '+M.n+'と 同じ</b>だと 思う？　予想を えらぼう。';
+  if(S4.f===4){
+    const okg=S4.gs==='diff';
+    const rn=['見た目','塩酸に 入れた とき',M.exn];
+    if(S4.rev===0)$('m4').innerHTML='まず <b>見た目</b>を くらべて みよう。下の ボタンを おしてね。';
+    else if(S4.rev<3)$('m4').innerHTML='<b>'+rn[S4.rev-1]+'</b>は ちがった。つぎの 見方も くらべて みよう。';
+    else $('m4').innerHTML=(okg?'<span class="ok">予想の とおり！</span>　':'<span class="ng">予想とは ちがった。</span>　')+
+      '3つ とも ちがった。出てきたのは <b>元の '+M.n+'とは ちがう 新しい 物</b>。'+
+      'うすい塩酸は '+M.n+'を <b>べつの 物に 変えた</b>んだね。';
+  }
 }
 function go4(n){
   const nf=clamp(n,0,4);
   if(nf===1&&!react4()){S4.f=1;S4.an=0;up4();return;}
-  S4.f=nf;S4.an=(nf===0)?0:0;
+  S4.f=nf;S4.an=0;
   if(nf===3)S4.an=1;
+  if(nf!==4)S4.rev=0;
   up4();
 }
 $('l4').addEventListener('click',e=>{
@@ -1841,17 +1933,20 @@ $('m4sel').addEventListener('click',e=>{
   const b=e.target.closest('.liq');if(!b)return;
   S4.met=b.dataset.k;S4.f=0;S4.an=0;S4.gs=null;up4();dirty=true;
 });
-$('b4go').addEventListener('click',()=>{go4(S4.f+1);dirty=true;});
+$('b4go').addEventListener('click',()=>{
+  if(S4.f===4){                 /* 最後の こまは 見方を 1つずつ ふやす */
+    if(S4.rev<3){S4.rev++;up4();dirty=true;}
+    return;
+  }
+  go4(S4.f+1);dirty=true;
+});
 $('b4back').addEventListener('click',()=>{go4(S4.f-1);dirty=true;});
-$('b4reset').addEventListener('click',()=>{S4.f=0;S4.an=0;S4.gs=null;up4();dirty=true;});
+$('b4reset').addEventListener('click',()=>{S4.f=0;S4.an=0;S4.gs=null;S4.rev=0;up4();dirty=true;});
 $('c4').addEventListener('click',()=>{if(!$('b4go').disabled){go4(S4.f+1);dirty=true;}});
 $('o4').addEventListener('click',e=>{
   const b=e.target.closest('.opt');if(!b)return;
-  S4.gs=b.dataset.v;S4.f=4;S4.an=0;up4();
-  const M=MET[S4.met], ok=S4.gs==='diff';
-  $('m4').innerHTML=(ok?'<span class="ok">予想の とおり！</span>　':'<span class="ng">予想とは ちがった。</span>　')+
-    '3つの 調べ方 ぜんぶで ちがいが 出た。出てきたのは <b>元の '+M.n+'とは ちがう 新しい 物</b>。'+
-    '塩酸は '+M.n+'を <b>べつの 物に 変えた</b>んだね。';
+  S4.gs=b.dataset.v;S4.f=4;S4.an=0;S4.rev=0;up4();
+  $('m4').innerHTML='予想したね。では <b>3つの 見方</b>で <b>1つずつ</b> くらべて みよう。下の ボタンを おしてね。';
   dirty=true;
 });
 function step4(dt){
@@ -1930,7 +2025,17 @@ function up5(){
 }
 function drop5(cardEl,cell){
   const v=cardEl?cardEl.dataset.v:S5.sel;
-  if(!v)return;
+  if(!v){
+    /* カードを えらんで いない ときに 入って いる ますを おしたら 1まいだけ もどす
+       （2026-09-20 の 要望）。①の A・B・C の ますと 同じ やり方 */
+    const a0=S5.ans[cell.dataset.k];
+    if(a0&&a0[cell.dataset.c]){
+      a0[cell.dataset.c]=null;S5.checked=false;
+      $('m5').innerHTML='1まい もどした。入れ直してね。';
+      up5();
+    }
+    return;
+  }
   const col=P5.find(o=>o.v===v).col;
   if(cell.dataset.c!==col){
     $('m5').innerHTML='その カードは <b>'+(col==='tok'?'とけて いる 物':'性質')+'</b>の らんに 入れる カードだよ。';
@@ -1939,7 +2044,7 @@ function drop5(cardEl,cell){
   const a=S5.ans[cell.dataset.k]||(S5.ans[cell.dataset.k]={});
   a[col]=v;
   S5.checked=false;S5.sel=null;
-  $('m5').innerHTML='カードを ドラッグして ますに 入れよう。カードを おして から ますを おしても 入るよ。';
+  $('m5').innerHTML='カードを ドラッグして ますに 入れよう。まちがえたら <b>入って いる ますを おす</b>と もどせるよ。';
   up5();
 }
 dragDrop($('s5'),'ncard','dz',drop5,el=>{
@@ -1974,7 +2079,7 @@ $('b5check').addEventListener('click',()=>{
 });
 $('b5reset').addEventListener('click',()=>{
   S5.ans={};S5.checked=false;S5.sel=null;
-  $('m5').innerHTML='①〜④で 調べた ことを 1つの 表に まとめよう。上の カードを ますに 入れてね。';
+  $('m5').innerHTML='ぜんぶ けした。上の カードを ますに 入れてね。<b>入って いる ますを おす</b>と 1まいだけ もどせるよ。';
   up5();
 });
 
@@ -2012,10 +2117,12 @@ function frame(ts){
 addEventListener('resize',()=>{dirty=true;});
 addEventListener('orientationchange',()=>{setTimeout(()=>{dirty=true;},250);});
 
-new1();
-$('m1').innerHTML='ラベルが はがれた 水よう液が <b>3本</b>。下の 3つの 調べ方を つかって、どれが どれか あてよう。';
+new1(0);
+$('m1').innerHTML='<b>もんだい 1</b>　ラベルが はがれた 水よう液が <b>3本</b>。'+
+  '青い 見出し（見た目・におい・蒸発させると）を おして 調べ、なまえの カードを A・B・C に 入れよう。';
 up1();
-$('m2').innerHTML='水よう液を えらんで、何性か 予想して から リトマス紙を つけよう。';
+$('m2').innerHTML='上の <b>予想の カード</b>（酸性・中性・アルカリ性）を、表の <b>「性質」の ます</b>に 入れよう。'+
+  'そのあと 金色の ボタンで たしかめる。';
 up2();
 up3();
 up4();
