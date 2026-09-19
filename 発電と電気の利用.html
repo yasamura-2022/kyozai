@@ -71,6 +71,7 @@ nav{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;}
 @media (orientation:landscape) and (min-width:700px){
   .cols.two{grid-template-columns:1.42fr .58fr;grid-template-rows:1fr;}
   .cols.wide{grid-template-columns:1.72fr .28fr;grid-template-rows:1fr;}
+  .segs{flex-direction:column;}
 }
 .card{
   position:relative;background:var(--card);border:1px solid var(--line);
@@ -108,7 +109,12 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;}
 .panel{
   background:var(--card);border:1px solid var(--line);border-radius:14px;
   padding:7px 8px;min-height:0;display:flex;flex-direction:column;gap:5px;
+  overflow:hidden;   /* 場所が せまい ときに 下の 文の 上へ はみ出さない ため */
 }
+/* えらぶ ところ。たてに 長い 画面では 2つを よこに ならべて、
+   表の 場所を あける（たてに ならべると 表が つぶれる） */
+.segs{flex:0 0 auto;display:flex;flex-direction:row;gap:6px;}
+.segs .panel{flex:1;min-width:0;}
 .panel .ttl{font-size:clamp(11px,1.25vw,13px);color:var(--dim);text-align:center;}
 .seg{display:flex;gap:4px;}
 .seg button{
@@ -192,6 +198,11 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;}
 .bin.k-move{border-color:var(--k-move);}   .bin.k-move .bt{color:#1f6b60;}
 .bin.hit{background:#fff3cf;}
 
+/* まどが 小さい ときは、えらぶ ところの 見出しを 消して 表に 場所を まわす
+   （ボタンの ことばだけで 何を えらぶか わかる） */
+@media (max-height:620px) and (max-width:700px){
+  .segs .ttl{display:none;}
+}
 @media (max-height:620px){
   #app{padding:5px 8px 7px;gap:4px;}
   .msg{padding:6px 10px;min-height:38px;font-size:clamp(11px,1.5vw,15px);}
@@ -222,18 +233,20 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;}
       <div class="cols two">
         <div class="card"><canvas id="c1"></canvas></div>
         <div class="side">
-          <div class="panel" style="flex:0 0 auto">
-            <div class="ttl">電気を つくる もの</div>
-            <div class="seg" id="g1dev">
-              <button data-v="hand" class="on">手回し発電機</button>
-              <button data-v="solar">光電池</button>
+          <div class="segs">
+            <div class="panel">
+              <div class="ttl">電気を つくる もの</div>
+              <div class="seg" id="g1dev">
+                <button data-v="hand" class="on">手回し発電機</button>
+                <button data-v="solar">光電池</button>
+              </div>
             </div>
-          </div>
-          <div class="panel" style="flex:0 0 auto">
-            <div class="ttl">つなぐ もの</div>
-            <div class="seg" id="g1load">
-              <button data-v="bulb" class="on">豆電球</button>
-              <button data-v="motor">モーター</button>
+            <div class="panel">
+              <div class="ttl">つなぐ もの</div>
+              <div class="seg" id="g1load">
+                <button data-v="bulb" class="on">豆電球</button>
+                <button data-v="motor">モーター</button>
+              </div>
             </div>
           </div>
           <div class="panel" style="flex:1">
@@ -787,7 +800,7 @@ function draw1(){
 function tbl1(){
   const el=$('t1');
   el.style.gridTemplateColumns='1.15fr 1fr 1fr';
-  el.style.gridTemplateRows='repeat(4,1fr)';
+  el.style.gridTemplateRows='repeat(4,minmax(0,1fr))';
   const rows=S1ROW[S1.dev];
   let s='<div class="h">'+(S1.dev==='hand'?'回し方':'光の 強さ')+'</div><div class="h">豆電球</div><div class="h">モーター</div>';
   for(let i=0;i<3;i++){
