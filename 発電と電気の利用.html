@@ -1,0 +1,1443 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
+<title>発電と電気の利用</title>
+<style>
+/* =========================================================
+   発電と電気の利用（6年 理科 A(4) 電気の利用）
+   学習指導要領解説 理科編 より
+   ・「電気は，つくりだしたり蓄えたりすることができること」
+   ・「電気は，光，音，熱，運動などに変換することができること」
+   ・「身の回りには，電気の性質や働きを利用した道具があること」
+   ・内容の取扱い「電気をつくりだす道具として，手回し発電機，光電池などを扱う」
+   ・「電気を蓄える物として，例えば，コンデンサーなどの蓄電器」
+   ・「蓄電した電気を使って，発光ダイオードと豆電球の点灯時間を比較する」
+   ・「目的に合わせてセンサーを使い，モーターの動きや発光ダイオードの点灯を制御する」
+   だから この アプリは 「つくる → ためる → かえる → くらべる → くらしの中」で 組む。
+   電流の 大きさ（A）・電圧（V）・オームの法則・エネルギー保存は
+   中学校 第1分野の 内容なので 入れない。数で 表すのは
+   「回した 回数」と「光って いた 時間」だけに する。
+   電気は 目に 見えないので、導線の 中を すすむ 金色の 矢を 出して
+   「向き」と「量（数と 速さ）」だけを 表す。これは モデルだと 画面に 明記する。
+   外部読み込みは なし。1ファイルで 動く。
+   ========================================================= */
+:root{
+  --paper:#fdf6e3;
+  --card:#fffdf7;
+  --ink:#2b2118;
+  --dim:#7a6a52;
+  --line:#e7d9b8;
+  --gold:#c9a227;      /* こたえ合わせ */
+  --blue:#2f6fa8;      /* 同じ 画面の 中で すすむ */
+  --ok:#5a8a4c;        /* べつの もんだいへ */
+  --sub:#a99a7c;       /* もどる・やりなおす */
+  --ng:#d34b4b;
+  /* はたらきの 色（③⑤で そろえる。ここを 変えると 全部 変わる） */
+  --k-light:#d9a520;   /* 光 */
+  --k-sound:#6b5bb5;   /* 音 */
+  --k-heat:#d2622a;    /* 熱 */
+  --k-move:#2f8a7e;    /* 運動 */
+  --elec:#ffd45e;      /* 電気の 流れ */
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;margin:0;overflow:hidden;}
+body{
+  /* 外から フォントを 読まない。端末に 入って いる まるい 書体を 上から さがす */
+  font-family:'Zen Maru Gothic','Hiragino Maru Gothic ProN','ヒラギノ丸ゴ ProN W4','Klee One','BIZ UDPGothic','Hiragino Sans','Yu Gothic UI',Meiryo,sans-serif;
+  background:var(--paper);color:var(--ink);font-weight:700;-webkit-text-size-adjust:100%;
+}
+#app{height:100%;display:flex;flex-direction:column;padding:8px 10px 10px;gap:6px;max-width:1240px;margin:0 auto;}
+
+/* ---- 見出しと タブ ---- */
+header{flex:0 0 auto;display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:center;}
+h1{margin:0;font-size:clamp(15px,2.1vw,21px);letter-spacing:.04em;}
+h1 .sub{color:#9a7c1e;font-size:.7em;margin-left:8px;}
+nav{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;}
+.tab{
+  font:inherit;font-size:clamp(11px,1.45vw,15px);color:var(--dim);
+  background:#f6eed9;border:1px solid var(--line);
+  border-radius:999px;padding:7px 13px;min-height:40px;cursor:pointer;
+}
+.tab.on{color:#3a2c05;background:#f5d97a;border-color:var(--gold);}
+.tab:focus-visible,button:focus-visible{outline:3px solid var(--gold);outline-offset:2px;}
+
+/* ---- ステージ ---- */
+#main{flex:1;min-height:0;position:relative;}
+.stage{position:absolute;inset:0;display:none;flex-direction:column;gap:6px;}
+.stage.on{display:flex;}
+.cols{flex:1;min-height:0;display:grid;grid-template-rows:1.5fr 1fr;grid-template-columns:1fr;gap:6px;}
+@media (orientation:landscape) and (min-width:700px){
+  .cols.two{grid-template-columns:1.42fr .58fr;grid-template-rows:1fr;}
+  .cols.wide{grid-template-columns:1.72fr .28fr;grid-template-rows:1fr;}
+}
+.card{
+  position:relative;background:var(--card);border:1px solid var(--line);
+  border-radius:16px;overflow:hidden;min-height:0;
+}
+canvas{position:absolute;inset:0;width:100%;height:100%;display:block;}
+.side{display:flex;flex-direction:column;gap:6px;min-height:0;}
+.msg{
+  /* display:flex に すると <b> や <span> が flex の 子に なり、語の とちゅうで
+     折り返して しまう。block の まま 中央ぞろえに する */
+  flex:0 0 auto;background:#f7f0dd;border:1px solid var(--line);border-radius:14px;
+  padding:9px 12px;font-size:clamp(12px,1.55vw,16px);line-height:1.5;text-align:center;
+  min-height:44px;display:block;
+}
+.msg b{color:#9a7c1e;}
+.msg .ok{color:#3f7a33;}
+.msg .ng{color:#b33c3c;}
+
+/* ---- ボタン ---- */
+.bar{flex:0 0 auto;display:flex;gap:7px;flex-wrap:wrap;justify-content:center;align-items:center;}
+.btn{
+  font:inherit;font-size:clamp(12px,1.45vw,15px);color:#fff;border:none;border-radius:14px;
+  padding:10px 15px;min-height:44px;cursor:pointer;background:#6a7f9b;
+}
+.btn:active{transform:scale(.97);}
+.btn.play{background:var(--blue);}            /* 同じ 画面の 中で すすむ */
+.btn.show{background:var(--gold);color:#3a2c05;} /* こたえ合わせ */
+.btn.next{background:var(--ok);}              /* べつの もんだいへ */
+.btn.sub{background:var(--sub);}              /* もどる・やりなおす */
+.btn.ghost{background:#f6eed9;color:var(--dim);border:1px solid var(--line);}
+.btn.ghost.on{background:#f5d97a;color:#3a2c05;border-color:var(--gold);}
+.btn[disabled]{opacity:.42;}
+
+/* ---- 右の パネル ---- */
+.panel{
+  background:var(--card);border:1px solid var(--line);border-radius:14px;
+  padding:7px 8px;min-height:0;display:flex;flex-direction:column;gap:5px;
+}
+.panel .ttl{font-size:clamp(11px,1.25vw,13px);color:var(--dim);text-align:center;}
+.seg{display:flex;gap:4px;}
+.seg button{
+  flex:1;font:inherit;font-size:clamp(11px,1.25vw,14px);color:var(--dim);
+  background:#f6eed9;border:1px solid var(--line);border-radius:11px;
+  padding:7px 2px;min-height:40px;cursor:pointer;
+}
+.seg button.on{background:#f5d97a;color:#3a2c05;border-color:var(--gold);}
+
+/* 記録の 表（①） */
+.tbl{flex:1;min-height:0;display:grid;gap:3px;font-size:clamp(10px,1.18vw,13px);}
+.tbl div{
+  display:flex;align-items:center;justify-content:center;text-align:center;
+  border-radius:9px;padding:2px 3px;line-height:1.25;
+}
+.tbl .h{background:#f1e6c8;color:#6a5a3a;font-size:.92em;}
+.tbl .r{background:#f6eed9;color:#6a5a3a;font-size:.92em;}
+.tbl .c{background:#fbf6e8;border:1px solid var(--line);color:var(--dim);}
+.tbl .c.on{background:#fff3cf;border-color:var(--gold);color:#5a4718;}
+.tbl .c.now{box-shadow:0 0 0 2px var(--blue) inset;}
+
+/* 記録の 棒（②） */
+.recs{flex:1;min-height:0;display:flex;flex-direction:column;gap:4px;justify-content:center;}
+.rec{display:grid;grid-template-columns:3.6em 1fr;gap:5px;align-items:center;font-size:clamp(10px,1.2vw,13px);}
+.rec .lb{color:var(--dim);text-align:right;}
+.rec .bw{position:relative;height:clamp(16px,2.4vh,24px);background:#f2ead6;border-radius:7px;overflow:hidden;}
+.rec .bf{position:absolute;inset:0 auto 0 0;background:linear-gradient(90deg,#f0c94f,#d9a520);border-radius:7px;}
+.rec .vt{position:absolute;right:5px;top:50%;transform:translateY(-50%);color:#4a3c1a;font-size:.95em;}
+
+/* はたらきの カード（③） */
+.kinds{flex:1;min-height:0;display:grid;grid-template-rows:repeat(4,1fr);gap:5px;}
+.kind{
+  border:2px dashed var(--line);border-radius:12px;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:1px;color:var(--dim);
+  font-size:clamp(10px,1.2vw,13px);background:#fbf6e8;padding:2px;
+}
+.kind b{font-size:clamp(13px,1.7vw,18px);}
+.kind span{font-size:.92em;line-height:1.2;text-align:center;}
+.kind.on{border-style:solid;}
+.kind.k-light.on{border-color:var(--k-light);background:#fdf3d8;color:#8a6a10;}
+.kind.k-sound.on{border-color:var(--k-sound);background:#eeecf8;color:#4b3f8f;}
+.kind.k-heat.on{border-color:var(--k-heat);background:#fceadf;color:#a34a1c;}
+.kind.k-move.on{border-color:var(--k-move);background:#e4f2ef;color:#1f6b60;}
+
+/* えらぶ ボタン（④の 予想） */
+.opts{flex:0 0 auto;display:grid;grid-template-columns:repeat(3,1fr);gap:7px;}
+.opt{
+  font:inherit;font-size:clamp(11px,1.35vw,15px);color:var(--dim);background:#f6eed9;
+  border:2px solid var(--line);border-radius:13px;padding:8px 4px;min-height:46px;cursor:pointer;line-height:1.3;
+}
+.opt.sel{border-color:var(--gold);background:#fff3cf;color:#5a4718;}
+.opt.right{border-color:var(--ok);background:#e6f0e0;color:#3f7a33;}
+.opt.wrong{border-color:var(--ng);}
+
+/* ⑤ なかま分け */
+#sortWrap{flex:1;min-height:0;display:flex;flex-direction:column;gap:6px;}
+.chips{
+  flex:0 0 auto;display:flex;flex-wrap:wrap;gap:6px;justify-content:center;
+  background:var(--card);border:1px solid var(--line);border-radius:14px;padding:7px;min-height:56px;
+}
+.chip{
+  font:inherit;font-size:clamp(11px,1.4vw,15px);color:var(--ink);background:#f5d97a;
+  border:2px solid var(--gold);border-radius:12px;padding:7px 12px;min-height:42px;cursor:pointer;
+}
+.chip.sel{background:#fff;box-shadow:0 0 0 3px var(--blue);}
+.bins{flex:1;min-height:0;display:grid;grid-template-columns:repeat(4,1fr);gap:6px;}
+@media (max-width:640px){.bins{grid-template-columns:repeat(2,1fr);}}
+.bin{
+  border:2px dashed var(--line);border-radius:14px;background:var(--card);
+  display:flex;flex-direction:column;gap:3px;padding:5px 4px;min-height:0;cursor:pointer;overflow:hidden;
+}
+.bin .bt{text-align:center;font-size:clamp(12px,1.5vw,16px);}
+.bin .bi{flex:1;min-height:0;display:flex;flex-wrap:wrap;gap:3px;align-content:flex-start;justify-content:center;overflow:hidden;}
+.bin .bi span{
+  font-size:clamp(9px,1.1vw,12px);background:#f6eed9;border:1px solid var(--line);
+  border-radius:8px;padding:3px 6px;color:var(--dim);
+}
+.bin.k-light{border-color:var(--k-light);} .bin.k-light .bt{color:#8a6a10;}
+.bin.k-sound{border-color:var(--k-sound);} .bin.k-sound .bt{color:#4b3f8f;}
+.bin.k-heat{border-color:var(--k-heat);}   .bin.k-heat .bt{color:#a34a1c;}
+.bin.k-move{border-color:var(--k-move);}   .bin.k-move .bt{color:#1f6b60;}
+.bin.hit{background:#fff3cf;}
+
+@media (max-height:620px){
+  #app{padding:5px 8px 7px;gap:4px;}
+  .msg{padding:6px 10px;min-height:38px;font-size:clamp(11px,1.5vw,15px);}
+  .btn{min-height:40px;padding:8px 12px;}
+  .seg button{min-height:36px;}
+  .opt{min-height:42px;}
+  .chip{min-height:38px;padding:5px 10px;}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>発電と 電気の 利用<span class="sub">つくる・ためる・かえる</span></h1>
+    <nav id="tabs">
+      <button class="tab on" data-s="1">① 電気を つくる</button>
+      <button class="tab" data-s="2">② 電気を ためる</button>
+      <button class="tab" data-s="3">③ 電気を かえる</button>
+      <button class="tab" data-s="4">④ くらべる</button>
+      <button class="tab" data-s="5">⑤ くらしの 中</button>
+    </nav>
+  </header>
+
+  <div id="main">
+
+    <!-- ① 電気を つくる -->
+    <section class="stage on" id="s1">
+      <div class="cols two">
+        <div class="card"><canvas id="c1"></canvas></div>
+        <div class="side">
+          <div class="panel" style="flex:0 0 auto">
+            <div class="ttl">電気を つくる もの</div>
+            <div class="seg" id="g1dev">
+              <button data-v="hand" class="on">手回し発電機</button>
+              <button data-v="solar">光電池</button>
+            </div>
+          </div>
+          <div class="panel" style="flex:0 0 auto">
+            <div class="ttl">つなぐ もの</div>
+            <div class="seg" id="g1load">
+              <button data-v="bulb" class="on">豆電球</button>
+              <button data-v="motor">モーター</button>
+            </div>
+          </div>
+          <div class="panel" style="flex:1">
+            <div class="ttl" id="t1ttl">しらべた こと</div>
+            <div class="tbl" id="t1"></div>
+          </div>
+        </div>
+      </div>
+      <div class="msg" id="m1"></div>
+      <div class="bar" id="b1"></div>
+    </section>
+
+    <!-- ② 電気を ためる -->
+    <section class="stage" id="s2">
+      <div class="cols two">
+        <div class="card"><canvas id="c2"></canvas></div>
+        <div class="side">
+          <div class="panel" style="flex:1">
+            <div class="ttl">回した 回数 と 光って いた 時間</div>
+            <div class="recs" id="r2"></div>
+          </div>
+        </div>
+      </div>
+      <div class="msg" id="m2"></div>
+      <div class="bar">
+        <button class="btn play" id="b2crank">ハンドルを 回す ▶</button>
+        <button class="btn ghost" data-t="10">10回まで</button>
+        <button class="btn ghost" data-t="20">20回まで</button>
+        <button class="btn ghost" data-t="30">30回まで</button>
+        <button class="btn play" id="b2use">豆電球に つなぐ ▶</button>
+        <button class="btn sub" id="b2reset">はじめから</button>
+      </div>
+    </section>
+
+    <!-- ③ 電気を かえる -->
+    <section class="stage" id="s3">
+      <div class="cols two">
+        <div class="card"><canvas id="c3"></canvas></div>
+        <div class="side">
+          <div class="panel" style="flex:1">
+            <div class="ttl">電気が かわった もの</div>
+            <div class="kinds" id="k3">
+              <div class="kind k-light" data-k="light"><b>光</b><span id="k3light">まだ</span></div>
+              <div class="kind k-sound" data-k="sound"><b>音</b><span id="k3sound">まだ</span></div>
+              <div class="kind k-heat"  data-k="heat"><b>熱</b><span id="k3heat">まだ</span></div>
+              <div class="kind k-move"  data-k="move"><b>運動</b><span id="k3move">まだ</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="msg" id="m3"></div>
+      <div class="bar" id="b3sel"></div>
+      <div class="bar">
+        <button class="btn play on" id="b3run">回して いる ▶</button>
+        <button class="btn ghost" id="b3rev">つなぐ 向きを 逆に する</button>
+        <button class="btn ghost on" id="b3snd">音 あり</button>
+      </div>
+    </section>
+
+    <!-- ④ くらべる -->
+    <section class="stage" id="s4">
+      <div class="cols wide">
+        <div class="card"><canvas id="c4"></canvas></div>
+        <div class="side">
+          <div class="panel" style="flex:1">
+            <div class="ttl">予想</div>
+            <div class="opts" id="o4" style="grid-template-columns:1fr;grid-template-rows:repeat(3,1fr);flex:1"></div>
+          </div>
+        </div>
+      </div>
+      <div class="msg" id="m4"></div>
+      <div class="bar">
+        <button class="btn play" id="b4start">じっけん スタート ▶</button>
+        <button class="btn ghost on" id="b4fast">10倍 早送り</button>
+        <button class="btn sub" id="b4reset">もう 一度</button>
+      </div>
+    </section>
+
+    <!-- ⑤ くらしの 中 -->
+    <section class="stage" id="s5">
+      <div id="sortWrap">
+        <div class="chips" id="chips5"></div>
+        <div class="bins" id="bins5">
+          <div class="bin k-light" data-k="light"><div class="bt">光</div><div class="bi"></div></div>
+          <div class="bin k-sound" data-k="sound"><div class="bt">音</div><div class="bi"></div></div>
+          <div class="bin k-heat"  data-k="heat"><div class="bt">熱</div><div class="bi"></div></div>
+          <div class="bin k-move"  data-k="move"><div class="bt">運動</div><div class="bi"></div></div>
+        </div>
+      </div>
+      <div class="card" id="w5s" style="flex:1;min-height:0;display:none"><canvas id="c5"></canvas></div>
+      <div class="msg" id="m5"></div>
+      <div class="bar">
+        <button class="btn ghost on" id="b5m1">なかま分け</button>
+        <button class="btn ghost" id="b5m2">センサーで むだなく</button>
+        <span style="width:8px"></span>
+        <button class="btn play" id="b5go">スタート ▶</button>
+        <button class="btn sub" id="b5reset">はじめから</button>
+      </div>
+    </section>
+
+  </div>
+</div>
+<script>
+"use strict";
+const $=id=>document.getElementById(id);
+const TAU=Math.PI*2, D2R=Math.PI/180;
+const clamp=(v,a,b)=>v<a?a:(v>b?b:v);
+const lerp=(a,b,t)=>a+(b-a)*t;
+
+/* ========================= 下じき ========================= */
+function fit(cv){
+  const r=cv.getBoundingClientRect();
+  const d=Math.min(2,window.devicePixelRatio||1);
+  const w=Math.max(1,Math.round(r.width)),h=Math.max(1,Math.round(r.height));
+  if(cv.width!==w*d||cv.height!==h*d){cv.width=w*d;cv.height=h*d;}
+  const g=cv.getContext('2d');
+  g.setTransform(d,0,0,d,0,0);
+  g.clearRect(0,0,w,h);
+  return {g,w,h};
+}
+/* 基準の 大きさで かいて、画面に 合わせて 縮める。
+   どの iPad でも はみ出さない ように するため */
+function base(g,w,h,bw,bh){
+  const s=Math.min(w/bw,h/bh);
+  g.save();g.translate((w-bw*s)/2,(h-bh*s)/2);g.scale(s,s);
+  return s;
+}
+const FONT='"Zen Maru Gothic","Hiragino Maru Gothic ProN","BIZ UDPGothic","Hiragino Sans",sans-serif';
+function txt(g,s,x,y,size,color,align,baseline,weight){
+  g.save();
+  g.font=(weight||700)+' '+size+'px '+FONT;
+  g.textAlign=align||'center';g.textBaseline=baseline||'middle';
+  g.fillStyle=color||'#2b2118';g.fillText(s,x,y);
+  g.restore();
+}
+function rrp(g,x,y,w,h,r){
+  r=Math.min(r,w/2,h/2);
+  g.beginPath();
+  g.moveTo(x+r,y);g.lineTo(x+w-r,y);g.quadraticCurveTo(x+w,y,x+w,y+r);
+  g.lineTo(x+w,y+h-r);g.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  g.lineTo(x+r,y+h);g.quadraticCurveTo(x,y+h,x,y+h-r);
+  g.lineTo(x,y+r);g.quadraticCurveTo(x,y,x+r,y);g.closePath();
+}
+function box(g,x,y,w,h,r,fill,stroke,lw){
+  rrp(g,x,y,w,h,r);
+  if(fill){g.fillStyle=fill;g.fill();}
+  if(stroke){g.strokeStyle=stroke;g.lineWidth=lw||2;g.stroke();}
+}
+function circ(g,x,y,r,fill,stroke,lw){
+  g.beginPath();g.arc(x,y,r,0,TAU);
+  if(fill){g.fillStyle=fill;g.fill();}
+  if(stroke){g.strokeStyle=stroke;g.lineWidth=lw||2;g.stroke();}
+}
+/* 理科室の 机（写真と 同じ 灰色）。金の 矢が よく 見える */
+function desk(g,w,h){
+  const gr=g.createLinearGradient(0,0,0,h);
+  gr.addColorStop(0,'#5d646c');gr.addColorStop(1,'#3d4349');
+  g.fillStyle=gr;g.fillRect(0,0,w,h);
+  g.globalAlpha=.06;g.fillStyle='#fff';
+  for(let i=0;i<70;i++){
+    const x=(i*97.3)%w, y=(i*53.7)%h;
+    g.fillRect(x,y,2,2);
+  }
+  g.globalAlpha=1;
+}
+/* 画面の すみの ことわり書き。電気は 見えない ことを 毎回 出す */
+function legend(g,x,y,s){
+  g.save();g.globalAlpha=.9;
+  box(g,x,y,336,30,9,'rgba(0,0,0,.34)',null);
+  g.restore();
+  arrowDot(g,x+18,y+15,8,0,1);
+  txt(g,s||'金の 矢＝電気の 流れ　目に 見えない ものを 表した 図',x+32,y+16,14,'#ffeab0','left');
+}
+
+/* ========================= 線と 流れ ========================= */
+function bez(x0,y0,cx,cy,x1,y1,n){
+  n=n||34;const p=[];
+  for(let i=0;i<=n;i++){
+    const t=i/n,u=1-t;
+    p.push({x:u*u*x0+2*u*t*cx+t*t*x1, y:u*u*y0+2*u*t*cy+t*t*y1});
+  }
+  return p;
+}
+function plen(pts){
+  let L=0;for(let i=1;i<pts.length;i++){L+=Math.hypot(pts[i].x-pts[i-1].x,pts[i].y-pts[i-1].y);}
+  return L;
+}
+function pat(pts,d){
+  let L=0;
+  for(let i=1;i<pts.length;i++){
+    const a=pts[i-1],b=pts[i],seg=Math.hypot(b.x-a.x,b.y-a.y);
+    if(L+seg>=d){
+      const t=seg<1e-6?0:(d-L)/seg;
+      return {x:lerp(a.x,b.x,t),y:lerp(a.y,b.y,t),a:Math.atan2(b.y-a.y,b.x-a.x)};
+    }
+    L+=seg;
+  }
+  const a=pts[pts.length-2],b=pts[pts.length-1];
+  return {x:b.x,y:b.y,a:Math.atan2(b.y-a.y,b.x-a.x)};
+}
+function wire(g,pts,col,wd){
+  g.save();g.strokeStyle=col;g.lineWidth=wd||9;g.lineJoin='round';g.lineCap='round';
+  g.beginPath();g.moveTo(pts[0].x,pts[0].y);
+  for(let i=1;i<pts.length;i++)g.lineTo(pts[i].x,pts[i].y);
+  g.stroke();g.restore();
+}
+/* 電気の 流れ。向きは 矢の むき、量は 数と 大きさで 表す */
+function arrowDot(g,x,y,r,ang,alpha){
+  g.save();g.translate(x,y);g.rotate(ang);g.globalAlpha=alpha;
+  g.fillStyle='#ffd45e';
+  g.beginPath();
+  g.moveTo(r*1.25,0);g.lineTo(-r*.8,r*.85);g.lineTo(-r*.35,0);g.lineTo(-r*.8,-r*.85);
+  g.closePath();g.fill();
+  g.globalAlpha=alpha*.9;g.fillStyle='#fff8dc';
+  g.beginPath();g.moveTo(r*.55,0);g.lineTo(-r*.3,r*.34);g.lineTo(-r*.3,-r*.34);g.closePath();g.fill();
+  g.restore();
+}
+function flow(g,pts,phase,amt){
+  const a=Math.abs(amt);
+  if(a<0.03)return;
+  const L=plen(pts);
+  /* 量が 多い ほど 矢の 数が ふえ、大きく なる */
+  const gap=lerp(64,28,clamp(a,0,1));
+  const n=Math.max(1,Math.floor(L/gap));
+  const r=lerp(5.5,9.5,clamp(a,0,1));
+  const al=lerp(.55,1,clamp(a,0,1));
+  const dir=amt<0?-1:1;
+  for(let i=0;i<n;i++){
+    const d=(((i*(L/n))+phase*dir)%L+L)%L;
+    const p=pat(pts,d);
+    arrowDot(g,p.x,p.y,r,p.a+(dir<0?Math.PI:0),al);
+  }
+}
+/* 回す 向きの 矢 */
+function spinArrow(g,cx,cy,r,dir,col){
+  g.save();g.strokeStyle=col;g.lineWidth=5;g.lineCap='round';
+  g.beginPath();g.arc(cx,cy,r,-0.35*Math.PI*dir,1.15*Math.PI*dir,dir<0);g.stroke();
+  const a=1.15*Math.PI*dir, hx=cx+Math.cos(a)*r, hy=cy+Math.sin(a)*r;
+  g.translate(hx,hy);g.rotate(a+(dir>0?Math.PI/2:-Math.PI/2));
+  g.fillStyle=col;g.beginPath();g.moveTo(11,0);g.lineTo(-7,7);g.lineTo(-7,-7);g.closePath();g.fill();
+  g.restore();
+}
+
+/* ========================= 道具の 絵 ========================= */
+/* 部品は 中心を (x,y) に して かく。at() で その 場で 拡大できる ように して
+   画面が 小さい ときでも 豆電球や モーターが つぶれない ように する */
+function at(g,x,y,k,fn){g.save();g.translate(x,y);g.scale(k,k);fn(g,0,0);g.restore();}
+const LBL='#f2ede0', LBLD='rgba(0,0,0,.35)';
+function tag(g,s,x,y,size,col){
+  g.save();g.font='700 '+(size||15)+'px '+FONT;
+  const w=g.measureText(s).width+14;
+  box(g,x-w/2,y-(size||15)*.78,w,(size||15)*1.56,7,LBLD,null);
+  g.restore();
+  txt(g,s,x,y,size||15,col||LBL);
+}
+/* 手回し発電機 */
+function drawGen(g,x,y,ang,amt){
+  box(g,x-70,y-48,140,96,14,'#e3e9ee','#93a3ae',3);
+  box(g,x-62,y-40,56,80,9,'rgba(255,255,255,.75)',null);
+  circ(g,x-28,y-6,20,'#c3ced6','#96a4ad',2);
+  circ(g,x+2,y+14,13,'#c3ced6','#96a4ad',2);
+  for(let i=0;i<10;i++){const a=i/10*TAU+ang*.6;
+    g.save();g.translate(x-28,y-6);g.rotate(a);g.fillStyle='#a9b6bf';g.fillRect(19,-2.2,5,4.4);g.restore();}
+  /* 端子（赤・黒） */
+  box(g,x-78,y-28,14,16,4,'#d94b4b','#8f2f2f',2);
+  box(g,x-78,y+12,14,16,4,'#2c3238','#000',2);
+  /* ハンドル */
+  const ax=x+70, ay=y-4;
+  circ(g,ax,ay,8,'#5a666f',null);
+  const ex=ax+Math.cos(ang)*48, ey=ay+Math.sin(ang)*48;
+  g.save();g.strokeStyle='#2f6fa8';g.lineWidth=13;g.lineCap='round';
+  g.beginPath();g.moveTo(ax,ay);g.lineTo(ex,ey);g.stroke();g.restore();
+  circ(g,ex,ey,14,'#2f6fa8','#1e4c74',2);
+  circ(g,ex,ey,6,'#7fb2dd',null);
+  if(Math.abs(amt)>0.03)spinArrow(g,ax,ay,64,amt>0?1:-1,amt>0?'#7fc3ff':'#ffa24a');
+  tag(g,'手回し発電機',x,y+66,16);
+}
+/* 光電池 */
+function drawSolar(g,x,y,light){
+  box(g,x-112,y-48,224,96,7,'#2f6f3f','#1e4a2a',3);
+  for(let i=0;i<3;i++){
+    const cx=x-92+i*66;
+    box(g,cx,y-34,58,68,3,'#2b4f9e',null);
+    g.save();g.globalAlpha=.55;g.strokeStyle='#cfe0ff';g.lineWidth=1.4;
+    for(let k=1;k<5;k++){g.beginPath();g.moveTo(cx+k*11.6,y-34);g.lineTo(cx+k*11.6,y+34);g.stroke();}
+    g.beginPath();g.moveTo(cx,y);g.lineTo(cx+58,y);g.lineWidth=2.6;g.stroke();g.restore();
+    /* 光が 当たって いる ほど 白く 光る */
+    g.save();g.globalAlpha=.22*light;g.fillStyle='#fff';g.fillRect(cx,y-34,58,68);g.restore();
+  }
+  box(g,x-122,y-14,14,28,4,'#d94b4b','#8f2f2f',2);
+  box(g,x+108,y-14,14,28,4,'#2c3238','#000',2);
+  txt(g,'＋',x-115,y-26,14,'#ffdada');
+  txt(g,'−',x+115,y-26,16,'#dfe5ea');
+  tag(g,'光電池',x,y+66,16);
+}
+/* 太陽と 空の ようす */
+function drawSun(g,x,y,light,t){
+  const r=34;
+  g.save();
+  const gr=g.createRadialGradient(x,y,4,x,y,r*2.6);
+  gr.addColorStop(0,'rgba(255,236,160,'+(0.55*light+0.05)+')');
+  gr.addColorStop(1,'rgba(255,236,160,0)');
+  g.fillStyle=gr;g.beginPath();g.arc(x,y,r*2.6,0,TAU);g.fill();
+  g.restore();
+  circ(g,x,y,r,light>0.2?'#ffd84a':'#c9c39a','#e0b93a',2);
+  g.save();g.strokeStyle='#ffd84a';g.lineWidth=5;g.lineCap='round';g.globalAlpha=.3+light*.7;
+  for(let i=0;i<12;i++){
+    const a=i/12*TAU+t*.12, L=r+10+light*20;
+    g.beginPath();g.moveTo(x+Math.cos(a)*(r+7),y+Math.sin(a)*(r+7));
+    g.lineTo(x+Math.cos(a)*L,y+Math.sin(a)*L);g.stroke();
+  }
+  g.restore();
+  if(light<0.8){ /* 雲で かげに なる */
+    const a=light<0.2?1:0.72, cx=x+18, cy=y+14;
+    g.save();g.globalAlpha=a;g.fillStyle='#b9c2c9';
+    g.beginPath();
+    g.arc(cx-34,cy,24,0,TAU);g.arc(cx-2,cy-14,30,0,TAU);g.arc(cx+34,cy,23,0,TAU);
+    g.rect(cx-58,cy,92,26);g.fill();
+    g.restore();
+  }
+}
+/* 豆電球 */
+function drawBulb(g,x,y,b){
+  if(b>0.04){
+    g.save();
+    const gr=g.createRadialGradient(x,y-10,6,x,y-10,110*Math.max(.35,b));
+    gr.addColorStop(0,'rgba(255,238,170,'+(0.85*b)+')');
+    gr.addColorStop(1,'rgba(255,225,120,0)');
+    g.fillStyle=gr;g.beginPath();g.arc(x,y-10,110,0,TAU);g.fill();g.restore();
+  }
+  box(g,x-22,y+16,44,32,6,'#d9b44f','#a8862c',2);
+  g.save();g.strokeStyle='#a8862c';g.lineWidth=1.6;
+  for(let i=0;i<3;i++){g.beginPath();g.moveTo(x-22,y+22+i*8);g.lineTo(x+22,y+22+i*8);g.stroke();}g.restore();
+  circ(g,x,y-10,30,b>0.04?'rgba(255,246,204,'+(0.35+0.6*b)+')':'rgba(236,241,245,.55)','#c9d3da',2.4);
+  /* フィラメント（足 2本＋上の コイル） */
+  g.save();g.strokeStyle=b>0.04?'#ff9c2a':'#9aa7b0';g.lineWidth=2.4;g.lineCap='round';g.lineJoin='round';
+  g.beginPath();g.moveTo(x-9,y+16);g.lineTo(x-8,y-4);
+  for(let i=0;i<=6;i++)g.lineTo(x-8+i*2.7,y-4-(i%2?13:0));
+  g.lineTo(x+8,y-4);g.lineTo(x+9,y+16);g.stroke();g.restore();
+  tag(g,'豆電球',x,y+66,16);
+}
+/* 発光ダイオード */
+function drawLED(g,x,y,b){
+  if(b>0.04){
+    g.save();
+    const gr=g.createRadialGradient(x,y-8,4,x,y-8,90*Math.max(.35,b));
+    gr.addColorStop(0,'rgba(255,120,110,'+(0.8*b)+')');
+    gr.addColorStop(1,'rgba(255,90,80,0)');
+    g.fillStyle=gr;g.beginPath();g.arc(x,y-8,90,0,TAU);g.fill();g.restore();
+  }
+  g.save();g.fillStyle=b>0.04?'#ff5d55':'#c04a45';g.strokeStyle='#8f2f2f';g.lineWidth=2;
+  g.beginPath();
+  g.moveTo(x-17,y+16);g.lineTo(x-17,y-6);g.arc(x,y-6,17,Math.PI,0);g.lineTo(x+17,y+16);g.closePath();
+  g.fill();g.stroke();
+  g.globalAlpha=.55;g.fillStyle='#fff';
+  g.beginPath();g.ellipse(x-6,y-10,5,8,-0.4,0,TAU);g.fill();
+  g.restore();
+  box(g,x-20,y+14,40,7,3,'#d0d7dd','#9aa7b0',1.5);
+  g.save();g.strokeStyle='#9aa7b0';g.lineWidth=4;g.lineCap='round';
+  g.beginPath();g.moveTo(x-9,y+20);g.lineTo(x-9,y+46);g.stroke();
+  g.beginPath();g.moveTo(x+9,y+20);g.lineTo(x+9,y+36);g.stroke();g.restore();
+  tag(g,'発光ダイオード',x,y+66,16);
+}
+/* モーター（プロペラつき） */
+function drawMotor(g,x,y,ang,amt){
+  box(g,x-16,y+18,32,26,5,'#e0821f','#a85c12',2);
+  box(g,x-30,y-4,60,26,7,'#aeb9c1','#7b8891',2);
+  box(g,x-30,y-4,60,9,4,'#cfd8de',null);
+  g.save();g.translate(x,y-14);g.rotate(ang);
+  for(let i=0;i<3;i++){
+    g.save();g.rotate(i/3*TAU);
+    g.fillStyle='#d94b4b';g.strokeStyle='#8f2f2f';g.lineWidth=1.6;
+    g.beginPath();g.moveTo(0,0);
+    g.quadraticCurveTo(14,-10,36,-7);g.quadraticCurveTo(30,4,0,7);g.closePath();
+    g.fill();g.stroke();g.restore();
+  }
+  g.restore();
+  circ(g,x,y-14,7,'#e0821f','#a85c12',2);
+  circ(g,x,y-14,40,null,'rgba(230,130,40,.75)',3);
+  if(Math.abs(amt)>0.04)spinArrow(g,x,y-14,52,amt>0?1:-1,amt>0?'#7fc3ff':'#ffa24a');
+  tag(g,'モーター',x,y+62,16);
+}
+/* 電子オルゴール */
+function drawBuzzer(g,x,y,on,t){
+  box(g,x-40,y-26,80,56,8,'#39424a','#20272d',2);
+  circ(g,x,y-2,17,'#20272d','#555f68',2);
+  for(let i=0;i<3;i++)circ(g,x,y-2,5+i*5,null,'#4e5a63',1.6);
+  box(g,x-34,y-20,20,10,3,'#5a6a75',null);
+  if(on){
+    for(let i=0;i<3;i++){
+      const ph=(t*1.1+i*0.33)%1;
+      g.save();g.globalAlpha=(1-ph)*0.95;
+      txt(g,'♪',x+16+i*22-ph*8,y-24-ph*54,20+i*3,'#ffe08a');
+      g.restore();
+    }
+  }
+  tag(g,'電子オルゴール',x,y+52,16);
+}
+/* 電熱線 */
+function drawHeater(g,x,y,heat,t){
+  box(g,x-56,y+20,112,14,5,'#cfd8de','#9aa7b0',2);
+  box(g,x-50,y-2,12,26,3,'#8f9aa3','#6d7882',2);
+  box(g,x+38,y-2,12,26,3,'#8f9aa3','#6d7882',2);
+  if(heat>0.05){
+    g.save();
+    const gr=g.createRadialGradient(x,y,4,x,y,100*heat);
+    gr.addColorStop(0,'rgba(255,120,40,'+(0.55*heat)+')');
+    gr.addColorStop(1,'rgba(255,120,40,0)');
+    g.fillStyle=gr;g.beginPath();g.arc(x,y,100,0,TAU);g.fill();g.restore();
+  }
+  g.save();
+  g.strokeStyle=heat>0.05?'rgb('+Math.round(lerp(160,255,heat))+','+Math.round(lerp(170,90,heat))+','+Math.round(lerp(180,40,heat))+')':'#9aa7b0';
+  g.lineWidth=5;g.lineCap='round';g.lineJoin='round';
+  g.beginPath();g.moveTo(x-44,y);
+  for(let i=0;i<8;i++){g.lineTo(x-44+i*11+5.5,y+(i%2?13:-13));}
+  g.lineTo(x+44,y);g.stroke();g.restore();
+  if(heat>0.2){
+    g.save();g.strokeStyle='rgba(255,190,140,'+(0.75*heat)+')';g.lineWidth=3;g.lineCap='round';
+    for(let i=0;i<3;i++){
+      const bx=x-26+i*26, ph=(t*0.8+i*0.3)%1;
+      g.beginPath();
+      for(let k=0;k<=8;k++){
+        const yy=y-18-ph*30-k*5, xx=bx+Math.sin((k*0.8)+t*3+i)*6;
+        k?g.lineTo(xx,yy):g.moveTo(xx,yy);
+      }
+      g.globalAlpha=1-ph;g.stroke();
+    }
+    g.restore();
+  }
+  tag(g,'電熱線',x,y+52,16);
+}
+/* コンデンサー */
+function drawCap(g,x,y,level){
+  /* 端子は 2つ とも 右がわに ならべる（写真の 実験キットと 同じ）。
+     こう すると 発電機にも 豆電球にも 右へ まっすぐ つなげる */
+  box(g,x-72,y-40,144,80,8,'#2f6f3f','#1e4a2a',3);
+  box(g,x-60,y-28,44,56,6,'#1f4a2a',null);
+  circ(g,x+10,y,26,'#20252b','#0d1013',2);
+  box(g,x-4,y-26,28,8,3,'#cfd8de',null);
+  txt(g,'＋',x+10,y-3,17,'#e8eef3');
+  box(g,x+60,y-32,14,26,4,'#d94b4b','#8f2f2f',2);
+  box(g,x+60,y+6,14,26,4,'#2c3238','#000',2);
+  tag(g,'コンデンサー',x,y+58,16);
+}
+/* たまって いる 電気の めもり */
+function drawTank(g,x,y,w,h,level,label){
+  box(g,x,y,w,h,10,'rgba(0,0,0,.35)','rgba(255,255,255,.35)',2);
+  const ih=h-10, fy=y+5+ih*(1-clamp(level,0,1));
+  g.save();rrp(g,x+5,y+5,w-10,ih,6);g.clip();
+  const gr=g.createLinearGradient(0,y+h,0,y);
+  gr.addColorStop(0,'#e0a52a');gr.addColorStop(1,'#ffe083');
+  g.fillStyle=gr;g.fillRect(x+5,fy,w-10,y+5+ih-fy);
+  g.restore();
+  g.save();g.strokeStyle='rgba(255,255,255,.4)';g.lineWidth=1.6;
+  for(let i=1;i<4;i++){const yy=y+5+ih*i/4;g.beginPath();g.moveTo(x+5,yy);g.lineTo(x+w-5,yy);g.stroke();}
+  g.restore();
+  if(label)txt(g,label,x+w/2,y-14,14,'#ffeab0');
+}
+/* スイッチ */
+function drawSwitch(g,x,y,on){
+  box(g,x-34,y-4,68,20,6,'#e3e9ee','#93a3ae',2);
+  circ(g,x-20,y-4,6,'#5a666f',null);
+  circ(g,x+20,y-4,6,'#5a666f',null);
+  g.save();g.translate(x-20,y-4);g.rotate(on?0:-0.55);
+  g.strokeStyle='#5a666f';g.lineWidth=7;g.lineCap='round';
+  g.beginPath();g.moveTo(0,0);g.lineTo(40,0);g.stroke();g.restore();
+  tag(g,on?'スイッチ つないだ':'スイッチ 切れて いる',x,y+34,14);
+}
+
+/* =========================================================
+   ① 電気を つくる
+   内容の取扱い「電気をつくりだす道具として，手回し発電機，光電池などを扱う」
+   ふりかえりの 表は 授業で つかった ワークシートと 同じ ならびに して ある。
+   ========================================================= */
+const S1={dev:'hand',load:'bulb',cond:0,light:2,ang:0,mang:0,phase:0,seen:{},t:0};
+const S1ROW={
+  hand:['ゆっくり 時計回り','逆向きに 回す','速く 回す'],
+  solar:['日なた','うすぐもり','日かげ']
+};
+const S1CELL={
+  'hand-bulb':['暗く 光る','①と 同じ 明るさで 光る','明るく 光る'],
+  'hand-motor':['ゆっくり 回る','①と 逆に 回る','速く 回る'],
+  'solar-bulb':['明るく 光る','暗く 光る','光らない'],
+  'solar-motor':['速く 回る','ゆっくり 回る','回らない']
+};
+const S1MSG={
+  'hand-bulb':['ゆっくり 回すと 豆電球は <b>暗く</b> 光った。','逆向きに 回しても 豆電球は <b>同じように</b> 光った。','速く 回すと 豆電球は <b>明るく</b> 光った。電気の 量が ふえたね。'],
+  'hand-motor':['ゆっくり 回すと モーターは <b>ゆっくり</b> 回った。','逆向きに 回すと モーターは <b>逆向きに</b> 回った。電気の 向きが 変わったんだね。','速く 回すと モーターは <b>速く</b> 回った。'],
+  'solar-bulb':['日なたでは <b>明るく</b> 光った。','うすぐもりでは <b>暗く</b> 光った。','日かげでは <b>光らない</b>。'],
+  'solar-motor':['日なたでは <b>速く</b> 回った。','うすぐもりでは <b>ゆっくり</b> 回った。','日かげでは <b>回らない</b>。']
+};
+function s1amt(){
+  if(S1.dev==='hand')return [0,0.42,-0.42,0.95][S1.cond];
+  return [0.03,0.45,0.92][S1.light];
+}
+function s1idx(){ return S1.dev==='hand' ? (S1.cond-1) : (2-S1.light); }
+function s1bright(a){a=Math.abs(a);return a<0.12?0:clamp((a-0.10)/0.85,0,1);}
+function s1paths(){
+  const K=1.34, DX=285, DY=196;
+  const TL={x:DX-26*K,y:DY+52*K}, TR={x:DX+26*K,y:DY+52*K};
+  if(S1.dev==='hand'){
+    const gx=762,gy=392,gR={x:gx-71*K,y:gy-20*K},gK={x:gx-71*K,y:gy+20*K};
+    return {K,DX,DY,TL,TR,gx,gy,
+      red:bez(gR.x,gR.y,470,86,TL.x,TL.y),
+      blk:bez(TR.x,TR.y,520,534,gK.x,gK.y),
+      ret:[{x:gK.x,y:gK.y},{x:gx-36*K,y:gK.y},{x:gx-36*K,y:gR.y},{x:gR.x,y:gR.y}]};
+  }
+  const sx=692,sy=408,SK=1.3;
+  return {K,DX,DY,TL,TR,sx,sy,SK,
+    red:bez(sx-115*SK,sy,450,120,TL.x,TL.y),
+    blk:bez(TR.x,TR.y,470,548,sx+115*SK,sy),
+    ret:[{x:sx+115*SK,y:sy},{x:sx-115*SK,y:sy}]};
+}
+function post(g,x,y,col){box(g,x-8,y-9,16,18,4,col,'#20272d',2);}
+function draw1(){
+  const {g,w,h}=fit($('c1'));
+  desk(g,w,h);
+  base(g,w,h,1000,560);
+  const P=s1paths(), amt=s1amt(), b=s1bright(amt), K=P.K;
+  const loop=P.red.concat([P.TL,P.TR],P.blk,P.ret);
+  wire(g,P.red,'#c4302b',9);
+  wire(g,P.blk,'#1d2126',9);
+  flow(g,loop,S1.phase,amt);
+  post(g,P.TL.x,P.TL.y,'#d94b4b');post(g,P.TR.x,P.TR.y,'#2c3238');
+  if(S1.load==='bulb')at(g,P.DX,P.DY,K,(q,x,y)=>drawBulb(q,x,y,b));
+  else at(g,P.DX,P.DY,K,(q,x,y)=>drawMotor(q,x,y,S1.mang,amt));
+  if(S1.dev==='hand')at(g,P.gx,P.gy,K,(q,x,y)=>drawGen(q,x,y,S1.ang,amt));
+  else{
+    const li=[0.06,0.5,1][S1.light];
+    /* 光が 当たって いる ことを 目で 見せる（日かげでは 出ない） */
+    if(li>0.15){
+      g.save();
+      const gr=g.createLinearGradient(858,128,P.sx,P.sy-58);
+      gr.addColorStop(0,'rgba(255,232,150,'+(0.34*li)+')');
+      gr.addColorStop(1,'rgba(255,232,150,0)');
+      g.fillStyle=gr;
+      g.beginPath();g.moveTo(814,140);g.lineTo(902,140);
+      g.lineTo(P.sx+152,P.sy-56);g.lineTo(P.sx-152,P.sy-56);g.closePath();g.fill();
+      g.restore();
+    }
+    at(g,858,128,1.5,(q,x,y)=>drawSun(q,x,y,li,S1.t));
+    at(g,P.sx,P.sy,P.SK,(q,x,y)=>drawSolar(q,x,y,li));
+  }
+  const now=S1.dev==='hand'
+    ? (S1.cond===0?'ハンドルを 回して みよう':S1ROW.hand[S1.cond-1])
+    : S1ROW.solar[2-S1.light];
+  tag(g,now,S1.dev==='hand'?440:300,40,24,'#fff3cf');
+  legend(g,14,518);
+  g.restore();
+}
+function tbl1(){
+  const el=$('t1');
+  el.style.gridTemplateColumns='1.15fr 1fr 1fr';
+  el.style.gridTemplateRows='repeat(4,1fr)';
+  const rows=S1ROW[S1.dev];
+  let s='<div class="h">'+(S1.dev==='hand'?'回し方':'光の 強さ')+'</div><div class="h">豆電球</div><div class="h">モーター</div>';
+  for(let i=0;i<3;i++){
+    s+='<div class="r">'+(S1.dev==='hand'?'①②③'[i]+' ':'')+rows[i]+'</div>';
+    for(const ld of ['bulb','motor']){
+      const k=S1.dev+'-'+ld+'-'+i, has=S1.seen[k];
+      const now=(ld===S1.load&&i===s1idx());
+      s+='<div class="c'+(has?' on':'')+(now?' now':'')+'">'+(has?S1CELL[S1.dev+'-'+ld][i]:'—')+'</div>';
+    }
+  }
+  el.innerHTML=s;
+  $('t1ttl').textContent=S1.dev==='hand'?'実験１　手回し発電機での 発電':'実験　光電池での 発電';
+}
+function bar1(){
+  const el=$('b1');
+  if(S1.dev==='hand'){
+    el.innerHTML='<button class="btn ghost'+(S1.cond===1?' on':'')+'" data-c="1">① ゆっくり 時計回り</button>'
+      +'<button class="btn ghost'+(S1.cond===2?' on':'')+'" data-c="2">② 逆向きに 回す</button>'
+      +'<button class="btn ghost'+(S1.cond===3?' on':'')+'" data-c="3">③ 速く 回す</button>'
+      +'<button class="btn sub" data-c="0">止める</button>';
+  }else{
+    el.innerHTML='<button class="btn ghost'+(S1.light===2?' on':'')+'" data-l="2">日なた</button>'
+      +'<button class="btn ghost'+(S1.light===1?' on':'')+'" data-l="1">うすぐもり</button>'
+      +'<button class="btn ghost'+(S1.light===0?' on':'')+'" data-l="0">日かげ</button>';
+  }
+}
+function up1(say){
+  const i=s1idx();
+  if(i>=0&&i<3&&!(S1.dev==='hand'&&S1.cond===0))S1.seen[S1.dev+'-'+S1.load+'-'+i]=true;
+  tbl1();bar1();
+  let m='';
+  if(S1.dev==='hand'&&S1.cond===0){
+    m='ハンドルを 回すと 電気が つくれる。回し方を 変えて みよう。';
+  }else if(say!==false){
+    m=S1MSG[S1.dev+'-'+S1.load][i];
+  }
+  /* 6つ そろったら まとめ */
+  let all=true;
+  for(const ld of ['bulb','motor'])for(let k=0;k<3;k++)if(!S1.seen[S1.dev+'-'+ld+'-'+k])all=false;
+  if(all){
+    m+=S1.dev==='hand'
+      ? '<br>回す <b>速さ</b>を 変えると 電気の 量が 変わり、はたらきの 大きさが 変わる。回す <b>向き</b>を 変えると 電気の 向きが 変わり、モーターの 回る 向きが 変わる。'
+      : '<br>光電池は 光が <b>強い ほど</b> 電気を たくさん つくる。日かげでは つくれない。';
+  }
+  $('m1').innerHTML=m;
+  dirty=true;
+}
+$('g1dev').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;
+  S1.dev=b.dataset.v;
+  [...$('g1dev').children].forEach(x=>x.classList.toggle('on',x===b));
+  up1(S1.dev==='hand'&&S1.cond===0?false:true);
+});
+$('g1load').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;
+  S1.load=b.dataset.v;
+  [...$('g1load').children].forEach(x=>x.classList.toggle('on',x===b));
+  up1();
+});
+$('b1').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.c!==undefined)S1.cond=Number(b.dataset.c);
+  if(b.dataset.l!==undefined)S1.light=Number(b.dataset.l);
+  up1();
+});
+
+/* =========================================================
+   ② 電気を ためる（蓄電）
+   「電気を蓄える物として，例えば，コンデンサーなどの蓄電器」
+   回した 回数（電気の 量）と 光って いた 時間（はたらき）を 結ぶ。
+   ========================================================= */
+const S2={turns:0,level:0,crank:false,use:false,ang:0,phase:0,t:0,start:0,recs:[],shown:0};
+const S2FULL=40, S2SEC=30;           /* 40回 回すと いっぱい。いっぱいで 30秒 光る */
+const rev=p=>p.slice().reverse();
+const S2K=1.16;
+const S2P=(()=>{
+  const K=S2K;
+  const cx=212,cy=296, R={x:cx+67*K,y:cy-19*K}, K2={x:cx+67*K,y:cy+19*K};
+  const gx=724,gy=142, gR={x:gx-71*K,y:gy-20*K}, gK={x:gx-71*K,y:gy+20*K};
+  const bx=736,by=392, TL={x:bx-26*K,y:by+52*K}, TR={x:bx+26*K,y:by+52*K};
+  const sw={x:430,y:470}, swL={x:sw.x-34*K,y:sw.y}, swR={x:sw.x+34*K,y:sw.y};
+  return {K,cx,cy,R,K2,gx,gy,gR,gK,bx,by,TL,TR,sw,swL,swR,
+    red1:bez(R.x,R.y,480,168,gR.x,gR.y),
+    blk1:bez(K2.x,K2.y,490,256,gK.x,gK.y),
+    red2:bez(R.x,R.y,300,436,TL.x,TL.y),
+    blk2a:bez(K2.x,K2.y,312,500,swL.x,swL.y),
+    blk2b:bez(swR.x,swR.y,590,540,TR.x,TR.y),
+    capIn:[{x:R.x,y:R.y},{x:cx+20,y:R.y},{x:cx+20,y:K2.y},{x:K2.x,y:K2.y}],
+    genIn:[{x:gK.x,y:gK.y},{x:gx-36*K,y:gK.y},{x:gx-36*K,y:gR.y},{x:gR.x,y:gR.y}]};
+})();
+function draw2(){
+  const {g,w,h}=fit($('c2'));
+  desk(g,w,h);
+  base(g,w,h,1000,560);
+  const P=S2P,K=P.K;
+  wire(g,P.red1,'#c4302b',9);wire(g,P.blk1,'#1d2126',9);
+  wire(g,P.red2,'#c4302b',9);wire(g,P.blk2a,'#1d2126',9);wire(g,P.blk2b,'#1d2126',9);
+  const b=S2.use?clamp((S2.level-0.02)*3.4,0,1):0;
+  if(S2.crank&&!S2.use&&S2.level<1){
+    /* ためて いる とき＝発電機から コンデンサーへ */
+    flow(g,rev(P.red1).concat(P.capIn,P.blk1,P.genIn),S2.phase,0.8);
+  }else if(S2.use&&b>0){
+    /* つかう とき＝コンデンサーから 豆電球へ */
+    flow(g,P.red2.concat([P.TL,P.TR],rev(P.blk2b),[P.swR,P.swL],rev(P.blk2a),rev(P.capIn)),S2.phase,clamp(S2.level*2.6,0.12,1));
+  }
+  post(g,P.TL.x,P.TL.y,'#d94b4b');post(g,P.TR.x,P.TR.y,'#2c3238');
+  at(g,P.sw.x,P.sw.y,K,(q,x,y)=>drawSwitch(q,x,y,S2.use));
+  at(g,P.bx,P.by,K,(q,x,y)=>drawBulb(q,x,y,b));
+  at(g,P.gx,P.gy,K,(q,x,y)=>drawGen(q,x,y,S2.ang,S2.crank&&!S2.use?0.8:0));
+  at(g,P.cx,P.cy,K,(q,x,y)=>drawCap(q,x,y,S2.level));
+  drawTank(g,36,150,66,300,S2.level,'たまって いる 電気');
+  tag(g,'回した 回数　'+Math.floor(S2.turns)+'回',P.gx,P.gy-98,21,'#fff3cf');
+  if(S2.use||S2.shown>0)tag(g,'光って いた 時間　'+(S2.use?S2.t:S2.shown).toFixed(1)+'秒',P.bx,P.by-118,21,'#fff3cf');
+  legend(g,14,524);
+  g.restore();
+}
+function recs2(){
+  const el=$('r2');
+  if(!S2.recs.length){el.innerHTML='<div class="rec" style="grid-template-columns:1fr"><div class="lb" style="text-align:center">まだ ありません</div></div>';return;}
+  el.innerHTML=S2.recs.map(r=>
+    '<div class="rec"><div class="lb">'+r.turns+'回</div><div class="bw"><div class="bf" style="width:'
+    +clamp(r.sec/S2SEC*100,3,100).toFixed(0)+'%"></div><div class="vt">'+r.sec.toFixed(1)+'秒</div></div></div>'
+  ).join('');
+}
+function up2btn(){
+  $('b2crank').textContent=S2.crank?'止める ■':'ハンドルを 回す ▶';
+  $('b2crank').disabled=S2.use;
+  $('b2use').textContent=S2.use?'つないで いる':'豆電球に つなぐ ▶';
+  $('b2use').disabled=S2.use||S2.level<0.05;
+}
+function s2end(){
+  S2.recs.push({turns:S2.start,sec:S2.t});
+  if(S2.recs.length>4)S2.recs.shift();
+  S2.shown=S2.t;S2.use=false;S2.level=0;S2.turns=0;
+  recs2();up2btn();
+  let m='<b>'+S2.start+'回</b> 回した 電気で、<b>'+S2.t.toFixed(1)+'秒</b> 光った。';
+  const rs=S2.recs;
+  if(rs.length>=2){
+    const a=rs[rs.length-2],c=rs[rs.length-1];
+    if(a.turns!==c.turns)m+='<br>回した 回数が '+(c.turns>a.turns?'ふえる':'へる')+'と、光る 時間も <b>'+(c.turns>a.turns?'長く':'短く')+'</b> なった。電気の 量が 変わったんだね。';
+  }
+  $('m2').innerHTML=m;
+}
+$('b2crank').addEventListener('click',()=>{
+  if(S2.use)return;
+  S2.crank=!S2.crank;up2btn();
+  if(S2.crank)$('m2').innerHTML='回して いる。電気が コンデンサーに <b>たまって いく</b>。';
+  dirty=true;
+});
+$('b2use').addEventListener('click',()=>{
+  if(S2.level<0.05)return;
+  S2.crank=false;S2.use=true;S2.t=0;S2.start=Math.floor(S2.turns);
+  up2btn();
+  $('m2').innerHTML='スイッチを つないだ。<b>発電機を 止めて いても</b> 豆電球が 光る。電気は ためて おけるんだね。';
+  dirty=true;
+});
+$('b2reset').addEventListener('click',()=>{
+  S2.turns=0;S2.level=0;S2.crank=false;S2.use=false;S2.t=0;S2.shown=0;S2.recs=[];
+  recs2();up2btn();
+  $('m2').innerHTML='ハンドルを 回して、コンデンサーに 電気を ためて みよう。';
+  dirty=true;
+});
+[...document.querySelectorAll('#s2 .btn.ghost')].forEach(b=>{
+  b.addEventListener('click',()=>{
+    if(S2.use)return;
+    S2.turns=Number(b.dataset.t);S2.level=clamp(S2.turns/S2FULL,0,1);S2.crank=false;
+    up2btn();
+    $('m2').innerHTML='<b>'+S2.turns+'回</b> 回した。めもりを 見て みよう。';
+    dirty=true;
+  });
+});
+function step2(dt){
+  let anim=false;
+  if(S2.crank&&!S2.use){
+    S2.ang+=dt*TAU*2.2;
+    const before=Math.floor(S2.turns);
+    S2.turns=Math.min(S2FULL,S2.turns+dt*2.2);
+    S2.level=clamp(S2.turns/S2FULL,0,1);
+    if(S2.level>=1){S2.crank=false;up2btn();$('m2').innerHTML='コンデンサーが <b>いっぱい</b>に なった。これ以上は ためられない。';}
+    if(Math.floor(S2.turns)!==before)anim=true;
+    anim=true;
+  }
+  if(S2.use){
+    S2.t+=dt;
+    S2.level=Math.max(0,S2.level-dt/S2SEC);
+    if(S2.level<=0.02)s2end();
+    anim=true;
+  }
+  if(anim){S2.phase+=dt*170;}
+  return anim;
+}
+
+/* =========================================================
+   ③ 電気を かえる（変換）
+   「電気は，光，音，熱，運動などに変換することができること」
+   豆電球・発光ダイオード（光）／電子オルゴール（音）／電熱線（熱）／モーター（運動）
+   ========================================================= */
+const DEV3=[
+  {k:'bulb',  n:'豆電球',        kind:'light',y:248,msg:'電気が <b>光</b>に かわった。豆電球は さわると あたたかい。光の ほかに <b>熱</b>にも かわって いる。'},
+  {k:'led',   n:'発光ダイオード',kind:'light',y:248,msg:'電気が <b>光</b>に かわった。'},
+  {k:'buzzer',n:'電子オルゴール',kind:'sound',y:258,msg:'電気が <b>音</b>に かわった。'},
+  {k:'heater',n:'電熱線',        kind:'heat', y:262,msg:'電気が <b>熱</b>に かわった。電熱線が 熱く なる。'},
+  {k:'motor', n:'モーター',      kind:'move', y:248,msg:'電気が <b>運動</b>に かわった。'}
+];
+const KN={light:'光',sound:'音',heat:'熱',move:'運動'};
+const S3={sel:'bulb',rev:false,run:true,snd:true,ang:0,mang:0,phase:0,t:0,heat:0,done:{}};
+function dev3(){return DEV3.find(d=>d.k===S3.sel);}
+/* 逆に つないだ とき、はたらくか どうか */
+function s3works(){
+  if(!S3.run)return false;
+  if(!S3.rev)return true;
+  return !(S3.sel==='led'||S3.sel==='buzzer');
+}
+function draw3(){
+  const {g,w,h}=fit($('c3'));
+  desk(g,w,h);
+  base(g,w,h,1000,560);
+  const K=1.3, d=dev3(), DX=286, DY=d.y-40;
+  const A={x:DX-26*K,y:DY+52*K}, B={x:DX+26*K,y:DY+52*K};
+  const TL=S3.rev?B:A, TR=S3.rev?A:B;
+  const gx=768,gy=392,gR={x:gx-71*K,y:gy-20*K},gK={x:gx-71*K,y:gy+20*K};
+  const red=bez(gR.x,gR.y,480,96,TL.x,TL.y), blk=bez(TR.x,TR.y,520,534,gK.x,gK.y);
+  const genIn=[{x:gK.x,y:gK.y},{x:gx-36*K,y:gK.y},{x:gx-36*K,y:gR.y},{x:gR.x,y:gR.y}];
+  const amt=S3.run?0.8:0, on=s3works();
+  wire(g,red,'#c4302b',9);wire(g,blk,'#1d2126',9);
+  if(S3.run)flow(g,red.concat([TL,TR],blk,genIn),S3.phase,S3.rev?-0.8:0.8);
+  post(g,A.x,A.y,S3.rev?'#2c3238':'#d94b4b');post(g,B.x,B.y,S3.rev?'#d94b4b':'#2c3238');
+  const b=on?1:0;
+  at(g,DX,DY,K,(q,x,y)=>{
+    if(S3.sel==='bulb')drawBulb(q,x,y,b);
+    if(S3.sel==='led')drawLED(q,x,y,b);
+    if(S3.sel==='buzzer')drawBuzzer(q,x,y,on,S3.t);
+    if(S3.sel==='heater')drawHeater(q,x,y,S3.heat,S3.t);
+    if(S3.sel==='motor')drawMotor(q,x,y,S3.mang,on?(S3.rev?-0.8:0.8):0);
+  });
+  at(g,gx,gy,K,(q,x,y)=>drawGen(q,x,y,S3.ang,S3.rev?-amt:amt));
+  if(S3.run&&!on){
+    tag(g,'はたらかない',DX,56,23,'#ffd0a0');
+  }else if(on){
+    const kd=d.kind;
+    const col={light:'#ffe08a',sound:'#cfc6ff',heat:'#ffc2a0',move:'#a9e6dc'}[kd];
+    tag(g,'電気　→　'+KN[kd],DX,50,26,col);
+  }
+  if(!S3.run)tag(g,'発電機を 止めた',gx,gy-104,21,'#ffd0a0');
+  legend(g,14,518);
+  g.restore();
+}
+function up3(){
+  const d=dev3();
+  $('b3sel').innerHTML=DEV3.map(x=>'<button class="btn ghost'+(x.k===S3.sel?' on':'')+'" data-d="'+x.k+'">'+x.n+'</button>').join('');
+  $('b3run').textContent=S3.run?'回して いる ▶':'回す ▶';
+  $('b3run').classList.toggle('on',S3.run);
+  $('b3rev').classList.toggle('on',S3.rev);
+  $('b3rev').textContent=S3.rev?'逆向きに つないで いる':'つなぐ 向きを 逆に する';
+  $('b3snd').classList.toggle('on',S3.snd);
+  $('b3snd').textContent=S3.snd?'音 あり':'音 なし';
+  if(s3works())S3.done[d.kind]=(S3.done[d.kind]||[]).includes(d.n)?S3.done[d.kind]:(S3.done[d.kind]||[]).concat(d.n);
+  for(const k of ['light','sound','heat','move']){
+    const list=S3.done[k];
+    $('k3'+k).textContent=list?list.join('・'):'まだ';
+    document.querySelector('#k3 [data-k="'+k+'"]').classList.toggle('on',!!list);
+  }
+  let m;
+  if(!S3.run){
+    m='発電機を 止めると、はたらきも 止まる。電気が 流れて いる あいだ だけ はたらく。';
+  }else if(!s3works()){
+    m=S3.sel==='led'
+      ? '<span class="ng">光らない。</span>発光ダイオードは つなぐ <b>向きが 合う とき だけ</b> 光る。豆電球は 向きが 変わっても 光ったね。'
+      : '<span class="ng">鳴らない。</span>電子オルゴールも つなぐ <b>向き</b>が ある。';
+  }else{
+    m=d.msg;
+    if(S3.rev&&S3.sel==='motor')m='つなぐ 向きを 逆に すると、モーターは <b>逆向き</b>に 回る。';
+    if(S3.rev&&S3.sel==='bulb')m='豆電球は つなぐ <b>向きを 変えても</b> 同じように 光る。';
+    if(S3.rev&&S3.sel==='heater')m='電熱線は つなぐ <b>向きを 変えても</b> 同じように 熱く なる。';
+  }
+  const n=['light','sound','heat','move'].filter(k=>S3.done[k]).length;
+  if(n===4)m+='<br>電気は <b>光・音・熱・運動</b>に かえて つかう ことが できる。';
+  $('m3').innerHTML=m;
+  sound3();
+  dirty=true;
+}
+$('b3sel').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;
+  S3.sel=b.dataset.d;S3.heat=0;up3();
+});
+$('b3run').addEventListener('click',()=>{S3.run=!S3.run;up3();});
+$('b3rev').addEventListener('click',()=>{S3.rev=!S3.rev;up3();});
+$('b3snd').addEventListener('click',()=>{S3.snd=!S3.snd;up3();});
+
+/* 音は その場で つくる（外の 音の ファイルは 読めない）。
+   30台 いっせいに 鳴ると 教室が 成り立たないので 先生が 消せる ように する */
+let AC=null,melT=null,melI=0;
+function audio(){
+  if(AC===null){try{AC=new (window.AudioContext||window.webkitAudioContext)();}catch(e){AC=false;}}
+  return AC||null;
+}
+function beep(f,dur,vol){
+  const a=audio();if(!a)return;
+  if(a.state==='suspended')a.resume();
+  const o=a.createOscillator(),g=a.createGain();
+  o.type='triangle';o.frequency.value=f;
+  g.gain.setValueAtTime(0,a.currentTime);
+  g.gain.linearRampToValueAtTime(vol,a.currentTime+0.02);
+  g.gain.exponentialRampToValueAtTime(0.0001,a.currentTime+dur);
+  o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+dur+0.05);
+}
+const MEL=[523.25,587.33,659.25,783.99,659.25,587.33,523.25,659.25];
+function sound3(){
+  const want=(step===3&&S3.sel==='buzzer'&&s3works()&&S3.snd);
+  if(want&&!melT){
+    melI=0;
+    melT=setInterval(()=>{beep(MEL[melI%MEL.length],0.3,0.1);melI++;},340);
+  }else if(!want&&melT){clearInterval(melT);melT=null;}
+}
+function step3(dt){
+  if(!S3.run)return false;
+  S3.ang+=dt*TAU*1.6*(S3.rev?-1:1);
+  S3.phase+=dt*170;
+  S3.t+=dt;
+  if(s3works()){
+    if(S3.sel==='motor')S3.mang+=dt*TAU*2.2*(S3.rev?-1:1);
+    if(S3.sel==='heater')S3.heat=Math.min(1,S3.heat+dt*0.5);
+  }else if(S3.sel==='heater')S3.heat=Math.max(0,S3.heat-dt*0.6);
+  return true;
+}
+
+/* =========================================================
+   ④ くらべる（豆電球と 発光ダイオード）
+   「蓄電した電気を使って，発光ダイオードと豆電球の点灯時間を比較することが考えられる」
+   ＝ 授業で つかった ワークシート（２枚目）と 同じ しらべ方。
+   ========================================================= */
+const S4={phase:'yosou',guess:-1,t:0,fast:true,ph:0};
+const T_BULB=30, T_LED=300;          /* 同じだけ ためた 電気で 光る 時間 */
+const O4=['豆電球の ほうが 長い','発光ダイオードの ほうが 長い','どちらも 同じくらい'];
+function fmtT(s){
+  if(s<60)return s.toFixed(1)+'秒';
+  return Math.floor(s/60)+'分'+String(Math.floor(s%60))+'秒';
+}
+function s4lv(){
+  return {b:clamp(1-S4.t/T_BULB,0,1), l:clamp(1-S4.t/T_LED,0,1)};
+}
+function group4(g,cx,kind,lv,tSec,alive){
+  const K=1.16;
+  const cy=326, R={x:cx-146+67*K,y:cy-19*K}, KK={x:cx-146+67*K,y:cy+19*K};
+  const DX=cx+116, DY=214, TL={x:DX-26*K,y:DY+52*K}, TR={x:DX+26*K,y:DY+52*K};
+  const red=bez(R.x,R.y,cx+10,196,TL.x,TL.y), blk=bez(TR.x,TR.y,cx+36,430,KK.x,KK.y);
+  const capIn=[{x:R.x,y:R.y},{x:cx-146+20,y:R.y},{x:cx-146+20,y:KK.y},{x:KK.x,y:KK.y}];
+  wire(g,red,'#c4302b',8);wire(g,blk,'#1d2126',8);
+  if(alive&&S4.phase==='run')flow(g,red.concat([TL,TR],blk,capIn),S4.ph,clamp(lv*2.6,0.25,1));
+  post(g,TL.x,TL.y,'#d94b4b');post(g,TR.x,TR.y,'#2c3238');
+  const b=alive?clamp(lv*3.4,0,1):0;
+  at(g,DX,DY,K,(q,x,y)=>{if(kind==='bulb')drawBulb(q,x,y,b);else drawLED(q,x,y,b);});
+  at(g,cx-146,cy,K,(q,x,y)=>drawCap(q,x,y,lv));
+  /* たまって いる 電気の めもり */
+  const bx=cx-152,by=452,bw=304;
+  box(g,bx,by,bw,24,8,'rgba(0,0,0,.35)','rgba(255,255,255,.3)',2);
+  g.save();rrp(g,bx+3,by+3,bw-6,18,5);g.clip();
+  const gr=g.createLinearGradient(bx,0,bx+bw,0);
+  gr.addColorStop(0,'#e0a52a');gr.addColorStop(1,'#ffe083');
+  g.fillStyle=gr;g.fillRect(bx+3,by+3,(bw-6)*lv,18);g.restore();
+  txt(g,'のこって いる 電気',bx+bw/2,by+42,16,'#d9dde1');
+  tag(g,fmtT(tSec),cx,106,32,alive?'#fff3cf':'#c8ccd0');
+  if(!alive&&S4.phase!=='yosou')tag(g,'消えた',DX,DY-110,21,'#ffd0a0');
+  if(kind==='bulb'&&alive&&S4.phase==='run'&&S4.t>T_BULB*0.25){
+    g.save();g.strokeStyle='rgba(255,180,130,.9)';g.lineWidth=3;g.lineCap='round';
+    for(let i=0;i<3;i++){
+      const px=DX-28+i*28, ph=(S4.ph/90+i*0.33)%1;
+      g.beginPath();
+      for(let k=0;k<=7;k++){const yy=DY-52-ph*30-k*6,xx=px+Math.sin(k*0.8+S4.ph/30+i)*6;k?g.lineTo(xx,yy):g.moveTo(xx,yy);}
+      g.globalAlpha=1-ph;g.stroke();
+    }
+    g.restore();
+    tag(g,'あつく なる',DX-96,DY-52,19,'#ffc2a0');
+  }
+}
+function draw4(){
+  const {g,w,h}=fit($('c4'));
+  desk(g,w,h);
+  base(g,w,h,1000,560);
+  const lv=s4lv();
+  const go=S4.phase!=='yosou';
+  group4(g,250,'bulb',lv.b,go?Math.min(S4.t,T_BULB):0,go&&lv.b>0);
+  group4(g,750,'led', lv.l,go?Math.min(S4.t,T_LED):0, go&&lv.l>0);
+  g.save();g.strokeStyle='rgba(255,255,255,.22)';g.lineWidth=2;g.setLineDash([9,9]);
+  g.beginPath();g.moveTo(500,60);g.lineTo(500,516);g.stroke();g.restore();
+  tag(g,'同じだけ ためた 電気で くらべる',500,32,22,'#fff3cf');
+  legend(g,332,530);
+  g.restore();
+}
+function up4(){
+  $('o4').innerHTML=O4.map((s,i)=>{
+    let c='opt'+(S4.guess===i?' sel':'');
+    if(S4.phase==='done')c='opt'+(i===1?' right':(S4.guess===i?' wrong':''));
+    return '<button class="'+c+'" data-i="'+i+'">'+s+'</button>';
+  }).join('');
+  $('b4start').disabled=(S4.guess<0||S4.phase!=='yosou');
+  $('b4fast').classList.toggle('on',S4.fast);
+  $('b4fast').textContent=S4.fast?'10倍 早送り':'そのままの 速さ';
+  dirty=true;
+}
+$('o4').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b||S4.phase!=='yosou')return;
+  S4.guess=Number(b.dataset.i);
+  $('m4').innerHTML='予想を えらんだね。「じっけん スタート」で たしかめよう。';
+  up4();
+});
+$('b4start').addEventListener('click',()=>{
+  if(S4.guess<0)return;
+  S4.phase='run';S4.t=0;
+  $('m4').innerHTML='同じだけ ためた 電気で、どちらが 長く 光るかな。';
+  up4();
+});
+$('b4fast').addEventListener('click',()=>{S4.fast=!S4.fast;up4();});
+$('b4reset').addEventListener('click',()=>{
+  S4.phase='yosou';S4.guess=-1;S4.t=0;
+  $('m4').innerHTML='同じだけ ためた 電気で、豆電球と 発光ダイオード、どちらが 長く 光ると 思う？';
+  up4();
+});
+function step4(dt){
+  if(S4.phase!=='run')return false;
+  const was=S4.t;
+  S4.t+=dt*(S4.fast?10:1);
+  S4.ph+=dt*150;
+  if(was<T_BULB&&S4.t>=T_BULB){
+    $('m4').innerHTML='豆電球は <b>'+fmtT(T_BULB)+'</b>で 消えた。発光ダイオードは <span class="ok">まだ 光って いる</span>。';
+  }
+  if(S4.t>=T_LED){
+    S4.t=T_LED;S4.phase='done';
+    $('m4').innerHTML='<span class="ok">発光ダイオードの ほうが 長い。</span>'
+      +'豆電球 <b>'+fmtT(T_BULB)+'</b>／発光ダイオード <b>'+fmtT(T_LED)+'</b>＝ <b>'+(T_LED/T_BULB)+'倍</b>。'
+      +'<br>豆電球は 電気の 一部が <b>熱</b>に なって いた。発光ダイオードは ほとんど <b>光</b>に かわるので、'
+      +'同じ 電気で 長く 光る。＝ 電気を <b>むだなく</b> つかえる。';
+    up4();
+  }
+  return true;
+}
+
+/* =========================================================
+   ⑤ くらしの 中の 電気
+   「身の回りには，電気の性質や働きを利用した道具があること」
+   「電気の働きを目的に合わせて制御したり，電気を効率よく利用したりしている物がある」
+   「目的に合わせてセンサーを使い，モーターの動きや発光ダイオードの点灯を制御する」
+   ＝ なかま分け と、センサーで むだなく つかう ところ の 2つ。
+   ========================================================= */
+const TOOLS=[
+  {n:'LEDの 明かり',k:['light']},
+  {n:'テレビ',k:['light','sound']},
+  {n:'ラジオ',k:['sound']},
+  {n:'トースター',k:['heat']},
+  {n:'アイロン',k:['heat']},
+  {n:'ドライヤー',k:['heat','move']},
+  {n:'せんぷうき',k:['move']},
+  {n:'そうじき',k:['move','sound']}
+];
+const S5={mode:'sort',pick:-1,put:{},run:false,t:0};
+const S5IN=[[1,2.5],[4,5.5]];        /* 人が 部屋に いる 時間（ぜんぶで 3時間） */
+const S5ALL=8;
+function s5in(t){return S5IN.some(a=>t>=a[0]&&t<a[1]);}
+function s5used(t){let s=0;for(const a of S5IN)s+=Math.max(0,Math.min(t,a[1])-a[0]);return s;}
+function chips5(){
+  $('chips5').innerHTML=TOOLS.map((x,i)=>S5.put[i]?'':'<button class="chip'+(S5.pick===i?' sel':'')+'" data-i="'+i+'">'+x.n+'</button>').join('')
+    ||'<div style="color:var(--dim);font-size:clamp(11px,1.4vw,15px);align-self:center">ぜんぶ 入れられたね</div>';
+  for(const k of ['light','sound','heat','move']){
+    const el=document.querySelector('#bins5 .bin[data-k="'+k+'"] .bi');
+    el.innerHTML=TOOLS.map((x,i)=>S5.put[i]===k?'<span>'+x.n+'</span>':'').join('');
+  }
+}
+$('chips5').addEventListener('click',e=>{
+  const b=e.target.closest('.chip');if(!b)return;
+  const i=Number(b.dataset.i);
+  S5.pick=(S5.pick===i?-1:i);chips5();
+  if(S5.pick>=0)$('m5').innerHTML='<b>'+TOOLS[i].n+'</b>を えらんだ。何に かえて つかう 道具かな。下の 箱を おそう。';
+});
+$('bins5').addEventListener('click',e=>{
+  const b=e.target.closest('.bin');if(!b)return;
+  if(S5.pick<0){$('m5').innerHTML='まず 上の 道具を えらぼう。';return;}
+  const t=TOOLS[S5.pick],k=b.dataset.k;
+  if(t.k.includes(k)){
+    S5.put[S5.pick]=k;
+    let m='<span class="ok">そうだね。</span>'+t.n+'は 電気を <b>'+KN[k]+'</b>に かえて つかう。';
+    if(t.k.length>1)m+='　'+t.n+'は <b>'+t.k.map(x=>KN[x]).join('と ')+'</b>の 両方を つかう 道具だよ。';
+    S5.pick=-1;chips5();
+    const rest=TOOLS.filter((x,i)=>!S5.put[i]).length;
+    if(rest===0)m+='<br>くらしの 道具は、電気を <b>光・音・熱・運動</b>に かえて つかって いる。';
+    $('m5').innerHTML=m;
+  }else{
+    $('m5').innerHTML='<span class="ng">ちがう 箱だね。</span>'+t.n+'は 何を して くれる 道具かな。もう 一度 考えて みよう。';
+  }
+});
+function drawPerson5(g,x,y,s){
+  g.save();g.translate(x,y);g.scale(s,s);
+  g.fillStyle='#3a4650';
+  g.beginPath();g.arc(0,-46,13,0,TAU);g.fill();
+  g.beginPath();
+  g.moveTo(-15,-30);g.quadraticCurveTo(0,-34,15,-30);
+  g.lineTo(11,2);g.lineTo(4,2);g.lineTo(2,34);g.lineTo(-4,34);
+  g.lineTo(-6,2);g.lineTo(-13,2);g.closePath();g.fill();
+  g.restore();
+}
+function bar5(g,x,y,w,v,max,col,label,val){
+  box(g,x,y,w,30,9,'rgba(0,0,0,.35)','rgba(255,255,255,.3)',2);
+  g.save();rrp(g,x+3,y+3,w-6,24,6);g.clip();
+  g.fillStyle=col;g.fillRect(x+3,y+3,(w-6)*clamp(v/max,0,1),24);g.restore();
+  txt(g,label,x,y-16,17,'#e8eef3','left');
+  txt(g,val,x+w,y-16,19,'#fff3cf','right');
+}
+function draw5(){
+  const {g,w,h}=fit($('c5'));
+  desk(g,w,h);
+  base(g,w,h,1000,560);
+  const t=S5.t, inR=s5in(t), used=s5used(t);
+  /* 部屋 */
+  box(g,50,70,470,360,14,'#2b3138','#79858e',3);
+  box(g,50,370,470,60,0,'#3b434b',null);
+  g.save();g.strokeStyle='#79858e';g.lineWidth=3;g.beginPath();g.moveTo(50,370);g.lineTo(520,370);g.stroke();g.restore();
+  /* 明かり */
+  const on=inR;
+  g.save();g.strokeStyle='#8f9aa3';g.lineWidth=4;
+  g.beginPath();g.moveTo(285,70);g.lineTo(285,116);g.stroke();g.restore();
+  if(on){
+    g.save();
+    const gr=g.createRadialGradient(285,140,10,285,140,220);
+    gr.addColorStop(0,'rgba(255,240,180,.85)');gr.addColorStop(1,'rgba(255,240,180,0)');
+    g.fillStyle=gr;g.beginPath();g.moveTo(285,120);g.lineTo(520,400);g.lineTo(50,400);g.closePath();g.fill();
+    g.restore();
+  }
+  g.save();g.fillStyle=on?'#fff0b0':'#8f9aa3';g.strokeStyle='#6d7882';g.lineWidth=2;
+  g.beginPath();g.moveTo(245,150);g.lineTo(285,116);g.lineTo(325,150);g.closePath();g.fill();g.stroke();g.restore();
+  tag(g,on?'明かり つく':'明かり 消える',285,186,17,on?'#fff3cf':'#c8ccd0');
+  /* センサー */
+  box(g,400,96,84,34,8,'#39424a','#20272d',2);
+  txt(g,'センサー',442,113,15,inR?'#9be29e':'#aab4bc');
+  if(inR){g.save();g.strokeStyle='rgba(155,226,158,.8)';g.lineWidth=3;
+    for(let i=1;i<=3;i++){g.beginPath();g.arc(400,113,10+i*13,2.3,4.0);g.stroke();}g.restore();}
+  if(inR)drawPerson5(g,300,370,1.35);
+  /* 時計 */
+  tag(g,'たった 時間　'+t.toFixed(1)+'時間 ／ '+S5ALL+'時間',285,462,19,'#fff3cf');
+  /* くらべる ぼう */
+  bar5(g,560,150,400,t,S5ALL,'#d96a4a','ずっと つけて おく',t.toFixed(1)+'時間分');
+  bar5(g,560,236,400,used,S5ALL,'#5a8a4c','センサーで つける',used.toFixed(1)+'時間分');
+  /* 人が いた 時間 */
+  txt(g,'人が いた 時間',560,308,16,'#e8eef3','left');
+  box(g,560,320,400,22,7,'rgba(0,0,0,.35)','rgba(255,255,255,.28)',2);
+  for(const a of S5IN){
+    const x0=560+400*a[0]/S5ALL, x1=560+400*Math.min(t,a[1])/S5ALL;
+    if(x1>x0){g.fillStyle='#5a8a4c';rrp(g,x0,323,x1-x0,16,5);g.fill();}
+  }
+  g.save();g.strokeStyle='#ffd45e';g.lineWidth=3;
+  const px=560+400*t/S5ALL;g.beginPath();g.moveTo(px,316);g.lineTo(px,346);g.stroke();g.restore();
+  /* プログラム */
+  box(g,560,382,400,110,12,'rgba(0,0,0,.4)','rgba(255,255,255,.3)',2);
+  txt(g,'コンピュータへの 命令',760,404,16,'#d9dde1');
+  txt(g,'もし 人が いたら → 明かりを つける',760,434,18,'#9be29e');
+  txt(g,'いなければ　　 → 明かりを 消す',760,464,18,'#ffc2a0');
+  g.restore();
+}
+function up5(){
+  const sort=S5.mode==='sort';
+  $('sortWrap').style.display=sort?'flex':'none';
+  $('w5s').style.display=sort?'none':'block';
+  $('b5m1').classList.toggle('on',sort);
+  $('b5m2').classList.toggle('on',!sort);
+  $('b5go').disabled=sort||S5.run;
+  $('b5go').textContent=S5.run?'すすんで いる ▶':'スタート ▶';
+  if(sort){
+    chips5();
+    $('m5').innerHTML='電気を 何に かえて つかう 道具かな。道具を えらんで、下の 箱に 入れよう。';
+  }else{
+    $('m5').innerHTML='夜の 8時間で くらべる。明かりを <b>ずっと つけて おく</b>ときと、<b>人が いる ときだけ つける</b>とき。';
+  }
+  dirty=true;
+}
+$('b5m1').addEventListener('click',()=>{S5.mode='sort';S5.run=false;up5();});
+$('b5m2').addEventListener('click',()=>{S5.mode='sensor';up5();});
+$('b5go').addEventListener('click',()=>{
+  if(S5.mode!=='sensor')return;
+  S5.run=true;S5.t=0;up5();
+});
+$('b5reset').addEventListener('click',()=>{
+  if(S5.mode==='sort'){S5.put={};S5.pick=-1;}
+  else{S5.run=false;S5.t=0;}
+  up5();
+});
+function step5(dt){
+  if(S5.mode!=='sensor'||!S5.run)return false;
+  S5.t+=dt*0.5;                       /* 1秒で 0.5時間 すすむ＝8時間を 16秒で 見る */
+  if(S5.t>=S5ALL){
+    S5.t=S5ALL;S5.run=false;up5();
+    $('m5').innerHTML='<span class="ok">同じ 8時間でも、つかった 電気は ちがう。</span>'
+      +'ずっと つけると <b>8時間分</b>、センサーなら <b>3時間分</b>。'
+      +'<br>センサーで 明かりを <b>制御</b>すると、電気を <b>むだなく</b> つかえる。';
+  }
+  return true;
+}
+
+/* ========================= きりかえ ========================= */
+let step=1, dirty=true, last=0;
+function step1(dt){
+  const a=s1amt();
+  S1.t+=dt;
+  if(Math.abs(a)<0.03)return false;
+  S1.ang+=dt*TAU*a*1.1;
+  S1.mang+=dt*TAU*a*2.4;
+  S1.phase+=dt*(60+150*Math.abs(a));
+  return true;
+}
+function show(n){
+  step=n;
+  [...document.querySelectorAll('.stage')].forEach((el,i)=>el.classList.toggle('on',i===n-1));
+  [...document.querySelectorAll('.tab')].forEach(b=>b.classList.toggle('on',Number(b.dataset.s)===n));
+  sound3();
+  dirty=true;
+}
+$('tabs').addEventListener('click',e=>{
+  const b=e.target.closest('.tab');if(!b)return;show(Number(b.dataset.s));
+});
+function frame(ts){
+  const dt=Math.min(0.05,(ts-last)/1000||0);last=ts;
+  let anim=false;
+  try{
+    if(step===1)anim=step1(dt);
+    if(step===2)anim=step2(dt);
+    if(step===3)anim=step3(dt);
+    if(step===4)anim=step4(dt);
+    if(step===5)anim=step5(dt);
+  }catch(err){console.error(err);}
+  if(dirty||anim){
+    dirty=false;
+    try{
+      if(step===1)draw1();
+      if(step===2)draw2();
+      if(step===3)draw3();
+      if(step===4)draw4();
+      if(step===5)draw5();
+    }catch(err){console.error(err);}
+  }
+  requestAnimationFrame(frame);
+}
+addEventListener('resize',()=>{dirty=true;});
+addEventListener('orientationchange',()=>{setTimeout(()=>{dirty=true;},250);});
+
+up1(false);
+recs2();up2btn();
+$('m2').innerHTML='ハンドルを 回して、コンデンサーに 電気を ためて みよう。';
+up3();
+$('m4').innerHTML='同じだけ ためた 電気で、豆電球と 発光ダイオード、どちらが 長く 光ると 思う？';
+up4();
+up5();
+show(1);
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
