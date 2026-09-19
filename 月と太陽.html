@@ -339,11 +339,23 @@ function arrow(g,x0,y0,x1,y1,color,w,dash){
    「かがやいて いる 側に 太陽が ある」ことを 見つける。
    （時こくで 位置が かわるのは 第4学年の 内容。ここでは 主役に しない）
    ========================================================= */
-/* スタートの 時こく＝太陽と 月が どちらも 空に 見える ころ。
-   太陽と 月を 南を はさんで 同じだけ 開いた ところに 置く（Hs=e/2）。
-   満ちて いく 月は 午後、かけて いく 月は 午前が スタートに なる。 */
+/* スタートの 時こく（2026-09-19 に そろえた）
+   太陽と 月が どちらも 空に ある 時間帯の「はし」＝太陽が 地平線に ある ときを とる。
+   ・満ちて いく 月（三日月・上弦・ふくらんだ月・満月）… 夕方18時（太陽が しずむ ころ）
+   ・かけて いく 月（かけていく月・下弦・明け方の月）… 朝6時（太陽が のぼる ころ）
+   ・新月 … 12時（太陽と 同じ 方向）
+   まん中を とる 作り方（形ごとに 13時30分・15時…と バラバラ）から かえた。
+   ことばで「満ちて いく 月は 夕方、かけて いく 月は 明け方」と 一言で 言えて、
+   教科書の 図（夕方の 西空の 三日月／日の入りに 東から 出る 満月）とも 合う。 */
 function startTime(theta){
-  return ((12+norm180(theta)/30)%24+24)%24;
+  const e=norm180(theta);
+  if(Math.abs(e)<0.5)return 12;
+  return e>0?18:6;
+}
+function startWord(theta){
+  const e=norm180(theta);
+  if(Math.abs(e)<0.5)return '太陽が 真南に ある 12時';
+  return e>0?'太陽が しずむ ころ（18時）':'太陽が のぼる ころ（6時）';
 }
 const SKY={theta:45,t:startTime(45),auto:false};
 function skyPos(H,w,hy,rx,ry){
@@ -377,13 +389,15 @@ function drawSky(){
   const DUSK_T=[52,58,120],  DUSK_B=[233,140,78];
   const DAY_T=[62,124,196],  DAY_B=[176,214,240];
   let top,bot;
-  if(sunUp>=0.22){ const k=clamp((sunUp-0.22)/0.55,0,1); top=mix(DUSK_T,DAY_T,k); bot=mix(DUSK_B,DAY_B,k); }
-  else if(sunUp>=-0.13){ const k=clamp((sunUp+0.13)/0.35,0,1); top=mix(NIGHT_T,DUSK_T,k); bot=mix(NIGHT_B,DUSK_B,k); }
+  /* 太陽が 地平線に ある とき（sunUp=0）が 夕やけ／朝やけの いちばん こい ところ。
+     スタートが 18時・6時 なので、ここが ちょうど その 色に なる */
+  if(sunUp>=0){ const k=clamp(sunUp/0.45,0,1); top=mix(DUSK_T,DAY_T,k); bot=mix(DUSK_B,DAY_B,k); }
+  else if(sunUp>=-0.20){ const k=clamp((sunUp+0.20)/0.20,0,1); top=mix(NIGHT_T,DUSK_T,k); bot=mix(NIGHT_B,DUSK_B,k); }
   else { top=NIGHT_T; bot=NIGHT_B; }
   const gr=g.createLinearGradient(0,0,0,hy);
   gr.addColorStop(0,rgb(top));gr.addColorStop(1,rgb(bot));
   g.fillStyle=gr;g.fillRect(0,0,w,hy);
-  const sa=clamp((-sunUp-0.05)/0.25,0,1);
+  const sa=clamp((-sunUp-0.02)/0.24,0,1);
   if(sa>0){
     for(const s of STARS){
       if(s.y*h>hy*0.95)continue;
@@ -399,30 +413,6 @@ function drawSky(){
   const ps=skyPos(Hs,w,hy,rx,ry), pm=skyPos(Hm,w,hy,rx,ry);
   const sunVisible=Math.abs(Hs)<=91, moonVisible=Math.abs(Hm)<=91;
   const S=Math.min(w,h), sR=S*0.045, mR=S*0.058;
-  /* かがやいて いる 側 → 太陽（この 単元の かなめ） */
-  if(moonVisible){
-    const dx=ps.x-pm.x,dy=ps.y-pm.y,L=Math.hypot(dx,dy)||1,ux=dx/L,uy=dy/L;
-    const x0=pm.x+ux*(mR+7), y0=pm.y+uy*(mR+7);
-    const x1=ps.x-ux*(sR+10), y1=ps.y-uy*(sR+10);
-    g.save();g.globalAlpha=sunVisible?1:.55;
-    arrow(g,x0,y0,x1,y1,'#ffd98e',Math.max(2,S*0.006),[9,7]);
-    g.restore();
-    txt(g,'かがやいて いる 側に 太陽',(x0+x1)/2,(y0+y1)/2-Math.max(14,S*0.032),Math.max(11,S*0.028),'#ffd98e');
-  }
-  if(sunVisible){
-    const g2=g.createRadialGradient(ps.x,ps.y,sR*0.3,ps.x,ps.y,sR*2.6);
-    g2.addColorStop(0,'rgba(255,225,130,.85)');g2.addColorStop(1,'rgba(255,206,77,0)');
-    g.fillStyle=g2;g.beginPath();g.arc(ps.x,ps.y,sR*2.6,0,TAU);g.fill();
-    g.fillStyle='#ffd75e';g.beginPath();g.arc(ps.x,ps.y,sR,0,TAU);g.fill();
-    txt(g,'太陽',ps.x,ps.y-sR-13,Math.max(11,S*0.028),'#fff0b8');
-  }
-  const rot=Math.atan2(ps.y-pm.y,ps.x-pm.x);
-  g.save();if(!moonVisible)g.globalAlpha=.30;
-  drawMoon(g,pm.x,pm.y,mR,SKY.theta,rot,{dark:'rgba(255,255,255,.06)',ringColor:'rgba(255,255,255,.3)'});
-  g.restore();
-  const k=keyIndex(SKY.theta);
-  const ny=(pm.y-mR-13<h*0.10)?(pm.y+mR+14):(pm.y-mR-13);   // 高い ところに あるときは 名前を 下に
-  txt(g,KEY[k.i].name+(moonVisible?'':'（地平線の 下）'),pm.x,ny,Math.max(11,S*0.028),moonVisible?'#fff6d8':'rgba(255,246,216,.5)');
   /* 地面 */
   g.fillStyle='#0d1626';g.fillRect(0,hy,w,h-hy);
   g.strokeStyle='rgba(255,255,255,.25)';g.lineWidth=1.2;
@@ -438,6 +428,48 @@ function drawSky(){
   g.fillStyle='#0a1220';
   for(const tx of [w*0.62,w*0.68]){
     g.beginPath();g.moveTo(tx,hy);g.lineTo(tx-w*0.022,hy);g.lineTo(tx-w*0.011,hy-h*0.075);g.closePath();g.fill();
+  }
+  const sep=Math.hypot(ps.x-pm.x,ps.y-pm.y);
+  const apart=sep>mR+sR+10;          /* 新月は 太陽と かさなる。矢じるしは 出さない */
+  /* かがやいて いる 側 → 太陽（この 単元の かなめ） */
+  if(moonVisible&&apart){
+    const ux=(ps.x-pm.x)/sep,uy=(ps.y-pm.y)/sep;
+    const x0=pm.x+ux*(mR+7), y0=pm.y+uy*(mR+7);
+    const x1=ps.x-ux*(sR+10), y1=ps.y-uy*(sR+10);
+    g.save();g.globalAlpha=sunVisible?1:.55;
+    arrow(g,x0,y0,x1,y1,'#ffd98e',Math.max(2,S*0.006),[9,7]);
+    g.restore();
+    /* 地平線ぎわでは 建物や 空の 色に まぎれるので、字の 下に うすい 板を しく */
+    /* まん中に 置くと 満月（18時）のとき 立って いる 人と かさなる。月がわ 3.5割の ところに 置く。
+       字の 下に うすい 板を しき、画面の 外に はみ出さないよう 中へ おさめる */
+    const fsz=Math.max(11,S*0.028), lt='かがやいて いる 側に 太陽';
+    g.save();
+    g.font='700 '+fsz+'px "Zen Maru Gothic","Hiragino Maru Gothic ProN","BIZ UDPGothic",sans-serif';
+    const bw2=g.measureText(lt).width+fsz*0.9, bh2=fsz*1.7;
+    const lx=clamp(x0+(x1-x0)*0.35,bw2/2+6,w-bw2/2-6);
+    const ly=clamp(y0+(y1-y0)*0.35-Math.max(16,S*0.042),bh2/2+6,h-bh2/2-6);
+    g.fillStyle='rgba(8,11,30,.62)';
+    if(g.roundRect){g.beginPath();g.roundRect(lx-bw2/2,ly-bh2/2,bw2,bh2,bh2/2);g.fill();}
+    else g.fillRect(lx-bw2/2,ly-bh2/2,bw2,bh2);
+    g.restore();
+    txt(g,lt,lx,ly,fsz,'#ffd98e');
+  }
+  /* 月を 先に かき、太陽を あとから かく＝新月は 太陽に まぎれて 見えなく なる */
+  const rot=Math.atan2(ps.y-pm.y,ps.x-pm.x);
+  g.save();if(!moonVisible)g.globalAlpha=.30;
+  drawMoon(g,pm.x,pm.y,mR,SKY.theta,rot,{dark:'rgba(255,255,255,.06)',ringColor:'rgba(255,255,255,.3)'});
+  g.restore();
+  if(sunVisible){
+    const g2=g.createRadialGradient(ps.x,ps.y,sR*0.3,ps.x,ps.y,sR*2.6);
+    g2.addColorStop(0,'rgba(255,225,130,.85)');g2.addColorStop(1,'rgba(255,206,77,0)');
+    g.fillStyle=g2;g.beginPath();g.arc(ps.x,ps.y,sR*2.6,0,TAU);g.fill();
+    g.fillStyle='#ffd75e';g.beginPath();g.arc(ps.x,ps.y,sR,0,TAU);g.fill();
+    txt(g,'太陽',ps.x,ps.y-sR-13,Math.max(11,S*0.028),'#fff0b8');
+  }
+  const k=keyIndex(SKY.theta);
+  if(apart||!sunVisible){
+    const ny=(pm.y-mR-13<h*0.10)?(pm.y+mR+14):(pm.y-mR-13);   /* 高い ところに あるときは 名前を 下に */
+    txt(g,KEY[k.i].name+(moonVisible?'':'（地平線の 下）'),pm.x,ny,Math.max(11,S*0.028),moonVisible?'#fff6d8':'rgba(255,246,216,.5)');
   }
   /* 見上げて いる 人 */
   const kx=w*0.50,ky=hy;
@@ -469,13 +501,17 @@ function upSky(){
   const st=startTime(SKY.theta);
   $('st1').textContent='スタート '+fmtHour(st);
   $('b1reset').disabled=(Math.abs(SKY.t-st)<0.01);
+  const atStart=Math.abs(SKY.t-st)<0.01;
   let s;
-  if(Math.abs(Hm)>91){
-    s='<b>'+KEY[k.i].name+'</b>は いま 地平線の 下。時こくを 動かすと 出て くるよ。';
+  if(k.i===0&&Math.abs(Hs)<=91){
+    s='<b>新月</b>は 太陽と 同じ 方向に ある。光る 面が こちらを むかず、空も 明るいので 見えない。'
+      +'「べつの 日の 月 ▶」で 三日月に すすもう。';
+  }else if(Math.abs(Hm)>91){
+    s='<b>'+KEY[k.i].name+'</b>は いま 地平線の 下。「スタートに もどす」か 時こくを 動かすと 出て くるよ。';
   }else if(Math.abs(Hs)<=91){
     s='<b>'+KEY[k.i].name+'</b>の かがやいて いる 側に <b>太陽</b>が ある。'
       +timeWord(SKY.t)+'の '+dirName(Hm)+'。'
-      +(Math.abs(SKY.t-st)<0.01?'　＜スタート＝太陽と 月が どちらも 空に 見える 時こく＞':'');
+      +(atStart?'　＜スタート＝'+startWord(SKY.theta)+'＞':'');
   }else{
     s='<b>'+KEY[k.i].name+'</b>の かがやいて いる 側に <b>太陽</b>が ある。'
       +'いま 太陽は 地平線の 下だけれど、光る 側は その 太陽の ほうを むいて いる。';
