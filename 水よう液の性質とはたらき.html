@@ -228,10 +228,6 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;}
       <div class="cols two">
         <div class="card"><canvas id="c1"></canvas></div>
         <div class="side">
-          <div class="panel">
-            <div class="ttl">水よう液を えらぶ</div>
-            <div class="liqs" id="l1"></div>
-          </div>
           <div class="panel" style="flex:1">
             <div class="ttl">しらべた こと</div>
             <div class="tbl" id="t1"></div>
@@ -239,21 +235,19 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;}
         </div>
       </div>
       <div class="guess" id="g1" style="display:none">
-        <span class="gl">予想　蒸発させると…</span>
+        <span class="gl">予想　6つを 蒸発させると…</span>
         <div class="opts two" id="o1">
-          <button class="opt" data-v="left">何か 残る</button>
-          <button class="opt" data-v="none">何も 残らない</button>
+          <button class="opt" data-v="all">6つ とも 何か 残る</button>
+          <button class="opt" data-v="some">何も 残らない ものが ある</button>
         </div>
       </div>
       <div class="msg" id="m1"></div>
       <div class="bar">
-        <button class="btn play" data-a="look">見た目を 見る</button>
-        <button class="btn play" data-a="smell">においを かぐ</button>
-        <button class="btn play" data-a="evap">蒸発させる ▶</button>
+        <button class="btn play" id="b1go">見た目を くらべる ▶</button>
+        <button class="btn sub" id="b1back">◀ もどる</button>
         <button class="btn sub" id="b1reset">はじめから</button>
       </div>
     </section>
-
     <!-- ② 性質を 調べる -->
     <section class="stage" id="s2">
       <div class="cols two">
@@ -646,6 +640,150 @@ function steam(g,cx,cy,t,amt,col){
   }
   g.restore();
 }
+/* ========================= ガラス器具 ========================= */
+/* ビーカー。lev=0〜1 で 液の 高さ */
+function beaker(g,cx,by,w,h,lev,col,bub,t){
+  const x=cx-w/2,y=by-h;
+  const ly=by-4-(h-14)*lev;
+  g.save();
+  /* 中の 液 */
+  if(lev>0.01){
+    g.fillStyle=col;g.fillRect(x+3,ly,w-6,by-4-ly);
+    g.fillStyle='rgba(255,255,255,.45)';g.fillRect(x+3,ly,w-6,3);
+  }
+  /* あわ */
+  if(bub){
+    for(let i=0;i<bub;i++){
+      const sd=i*127.7, sp=.16+((i*37)%50)/100*.5;
+      const p=((t*sp+ (sd%1000)/1000)%1);
+      const bx=x+8+((sd*13)%(w-16));
+      const byy=by-6-(by-6-ly)*p;
+      const r=1.6+((i*31)%10)/10*1.9;
+      circ(g,bx,byy,r,'rgba(255,255,255,.82)','rgba(150,190,210,.9)',1);
+    }
+  }
+  /* ガラス */
+  g.strokeStyle='#8fa5b3';g.lineWidth=3;g.lineJoin='round';
+  g.beginPath();
+  g.moveTo(x-5,y-3);g.lineTo(x,y+3);g.lineTo(x,by-8);
+  g.quadraticCurveTo(x,by,x+8,by);g.lineTo(x+w-8,by);
+  g.quadraticCurveTo(x+w,by,x+w,by-8);g.lineTo(x+w,y+3);g.lineTo(x+w+5,y-3);
+  g.stroke();
+  /* 目もり */
+  g.strokeStyle='rgba(140,165,180,.7)';g.lineWidth=1.6;
+  for(let i=1;i<=3;i++){
+    const gy=by-6-(h-16)*i/4;
+    g.beginPath();g.moveTo(x+w-13,gy);g.lineTo(x+w-4,gy);g.stroke();
+  }
+  /* 光 */
+  g.strokeStyle='rgba(255,255,255,.75)';g.lineWidth=4;
+  g.beginPath();g.moveTo(x+8,y+16);g.lineTo(x+8,by-16);g.stroke();
+  g.restore();
+}
+/* 試験管 */
+function tube(g,cx,ty,w,h,lev,col,bub,t,tilt){
+  g.save();
+  g.translate(cx,ty);if(tilt)g.rotate(tilt);g.translate(-cx,-ty);
+  const x=cx-w/2,by=ty+h,r=w/2;
+  const ly=by-r-(h-r-6)*lev;
+  if(lev>0.01){
+    g.save();
+    g.beginPath();
+    g.moveTo(x,ty+4);g.lineTo(x,by-r);g.arc(cx,by-r,r,Math.PI,0,true);g.lineTo(x+w,ty+4);g.closePath();
+    g.clip();
+    g.fillStyle=col;g.fillRect(x,ly,w,by-ly);
+    g.fillStyle='rgba(255,255,255,.4)';g.fillRect(x,ly,w,2.5);
+    if(bub){
+      for(let i=0;i<bub;i++){
+        const sd=i*97.3,sp=.2+((i*41)%50)/100*.7;
+        const p=((t*sp+(sd%1000)/1000)%1);
+        const bx=x+4+((sd*17)%(w-8));
+        const byy=by-8-(by-8-ly)*p;
+        circ(g,bx,byy,1.4+((i*23)%10)/10*1.8,'rgba(255,255,255,.85)','rgba(150,190,210,.9)',1);
+      }
+    }
+    g.restore();
+  }
+  g.strokeStyle='#8fa5b3';g.lineWidth=3;
+  g.beginPath();
+  g.moveTo(x,ty);g.lineTo(x,by-r);g.arc(cx,by-r,r,Math.PI,0,true);g.lineTo(x+w,ty);
+  g.stroke();
+  g.strokeStyle='#7f95a3';g.lineWidth=3.5;
+  g.beginPath();g.moveTo(x-2,ty+2);g.lineTo(x+w+2,ty+2);g.stroke();
+  g.strokeStyle='rgba(255,255,255,.7)';g.lineWidth=3;
+  g.beginPath();g.moveTo(x+6,ty+12);g.lineTo(x+6,by-r-4);g.stroke();
+  g.restore();
+}
+/* 蒸発皿・金あみ・実験用ガスコンロ */
+function burner(g,cx,by,fire){
+  /* コンロ */
+  box(g,cx-52,by-38,104,38,7,'#cfd6db','#9fadb6',2);
+  box(g,cx-40,by-46,80,10,4,'#b9c3ca','#9fadb6',2);
+  circ(g,cx+34,by-19,8,'#e0655a','#a84a42',2);
+  /* ほのお */
+  if(fire>0.01){
+    g.save();g.globalAlpha=clamp(fire,0,1);
+    for(let i=-1;i<=1;i++){
+      const hh=26+Math.abs(i)*-7;
+      g.fillStyle=i===0?'rgba(255,170,60,.9)':'rgba(255,200,90,.75)';
+      g.beginPath();
+      g.moveTo(cx+i*15,by-46);
+      g.quadraticCurveTo(cx+i*15-9,by-46-hh*.6,cx+i*15,by-46-hh);
+      g.quadraticCurveTo(cx+i*15+9,by-46-hh*.6,cx+i*15,by-46);
+      g.closePath();g.fill();
+    }
+    g.fillStyle='rgba(120,190,255,.7)';
+    g.beginPath();g.moveTo(cx,by-46);g.quadraticCurveTo(cx-5,by-56,cx,by-62);
+    g.quadraticCurveTo(cx+5,by-56,cx,by-46);g.closePath();g.fill();
+    g.restore();
+  }
+}
+function dish(g,cx,cy,w,lev,col,resCol,resAmt){
+  const h=w*.28;
+  g.save();
+  /* 中身 */
+  if(lev>0.01){
+    g.save();
+    g.beginPath();g.ellipse(cx,cy,w/2-4,h,0,0,Math.PI);g.lineTo(cx-w/2+4,cy);g.closePath();g.clip();
+    g.fillStyle=col;g.fillRect(cx-w/2,cy-2,w,h*lev+2);
+    g.restore();
+    g.fillStyle=col;
+    g.beginPath();g.ellipse(cx,cy,w/2-4,(h*.34),0,0,TAU);g.fill();
+  }
+  /* 残った 物 */
+  if(resAmt>0.01&&resCol){
+    g.save();g.globalAlpha=clamp(resAmt,0,1);
+    g.fillStyle=resCol;
+    for(let i=0;i<26;i++){
+      const a=(i*2.399);const rr=(i/26)*(w/2-14);
+      const px=cx+Math.cos(a)*rr, py=cy+Math.sin(a)*rr*.3;
+      circ(g,px,py,2.2+((i*13)%10)/10*2.6,resCol,'#a89b80',1.2);
+    }
+    g.restore();
+  }
+  /* 皿 */
+  g.strokeStyle='#9aa7ae';g.lineWidth=3;g.fillStyle='rgba(255,255,255,.18)';
+  g.beginPath();g.ellipse(cx,cy,w/2,h,0,0,Math.PI);g.stroke();
+  g.beginPath();g.ellipse(cx,cy,w/2,h*.34,0,0,TAU);g.stroke();
+  g.restore();
+}
+/* 湯気 */
+function steam(g,cx,cy,t,amt,col){
+  if(amt<0.01)return;
+  g.save();g.globalAlpha=clamp(amt,0,1)*.7;
+  g.strokeStyle=col||'#b9c9d2';g.lineWidth=4;g.lineCap='round';
+  for(let i=0;i<3;i++){
+    const ph=(t*.45+i*.33)%1;
+    const x=cx+(i-1)*24, y=cy-10-ph*70;
+    g.globalAlpha=clamp(amt,0,1)*.6*(1-ph);
+    g.beginPath();
+    g.moveTo(x,y);
+    g.quadraticCurveTo(x+9,y-13,x,y-26);
+    g.quadraticCurveTo(x-9,y-39,x,y-50);
+    g.stroke();
+  }
+  g.restore();
+}
 /* 人（においを かぐ ところ）。解説の「手であおいで かぐ」を 絵で 見せる */
 function person(g,x,y,s,fan){
   /* 左（ビーカーの ほう）を むいて 立ち、手で においを あおぐ。
@@ -673,195 +811,167 @@ function person(g,x,y,s,fan){
    ① 見分ける
    解説「同じように無色透明な水溶液でも，溶けている物を取り出すと
    違った物が出てくることがある」
-   → 見た目・におい だけでは 見分けられない。蒸発させると 分かれる。
-   蒸発の 前には かならず 予想を えらばせる（結果だけ 見せると
-   実験の 記録映像に なって しまう）
+   → ねらいは「見た目と においでは 見分けられない → 蒸発させると 分かれる」。
+   **6つを 一度に 調べる**（2026-09-19 に 作り直し）。
+   前は「1つ えらぶ → 3つの ボタンで 調べる」で、18回 押さないと
+   全体が 見えず、何を する 画面なのか 分からなかった。
+   いまは ボタン 一押しで 6つ とも 調べ、表の 1列が 一度に うまる。
+   「5つが 同じに 見える → 2つ 分かった → まだ 3つ 同じ → 蒸発で 分かれる」
+   という ならびが その場で 見える。**1つずつに もどさない こと**
    =================================================================== */
-const S1={k:'salt',act:'look',t:0,an:0,fire:0,gs:{},done:{},waiting:false};
 const liqOf=k=>LIQ.find(q=>q.k===k);
 const WATER='rgba(176,212,228,.62)';
+const S1={f:0,t:0,an:0,gs:null};
+const F1=[
+ {ttl:'6つの 水よう液', next:'見た目を くらべる ▶',
+  msg:'見た目が そっくりな 水よう液が <b>6つ</b>。どうやって 見分けたら いいかな？　上の えを おしても すすむよ。'},
+ {ttl:'見た目を くらべる', next:'においを かぐ ▶',
+  msg:'あわが 出て いるのは <b>炭酸水</b>だけ。ほかの <b>5つ</b>は 見た目が 同じで 見分けられない。'},
+ {ttl:'においを かぐ　＜手で あおいで かぐ＞', next:'蒸発させる ▶',
+  msg:'<b>つんと する</b>のは <b>うすい塩酸</b>と <b>うすいアンモニア水</b>の 2つ。見た目と あわせても、<b>まだ 3つ</b>は 同じ ままだ。'},
+ {ttl:'蒸発させたら どうなる？', next:'蒸発させる ▶',
+  msg:'のこった <b>3つ</b>は 見た目も においも 同じ。では <b>水を 蒸発させたら</b> どうなると 思う？　予想を えらぼう。'},
+ {ttl:'蒸発させる', next:'',
+  msg:'<b>白い 物が 残った</b>のが 3つ、<b>何も 残らない</b>のが 3つ。同じように 無色とうめいでも、<b>とけて いる 物は ちがった</b>。何も 残らないのは <b>気体</b>が とけて いるから。'},
+];
+/* その ラウンドで はじめて 見分けが ついた もの＝金の わくを つける */
+const NEW1={1:['tan'],2:['hcl','nh3'],4:['tan','hcl','nh3','salt','naoh','lime']};
+const STX=[96,258,420,582,744,906];
 
-function l1build(){
-  const box=$('l1');box.innerHTML='';
-  LIQ.forEach(q=>{
-    const b=document.createElement('button');
-    b.className='liq'+(q.k===S1.k?' on':'');b.dataset.k=q.k;b.textContent=q.n;
-    box.appendChild(b);
-  });
-}
 function t1build(){
-  const t=$('t1');
-  t.style.gridTemplateColumns='1.25fr 1fr 1fr 1.05fr';
+  const t=$('t1'),f=S1.f;
+  t.style.gridTemplateColumns='1.2fr 1.1fr .95fr 1.05fr';
   t.style.gridTemplateRows='repeat(7,1fr)';
   let h='<div class="h">水よう液</div><div class="h">見た目</div><div class="h">におい</div><div class="h">蒸発させると</div>';
   LIQ.forEach(q=>{
-    const d=S1.done[q.k]||{};
-    const cur=q.k===S1.k?' now':'';
     h+='<div class="r">'+q.n+'</div>';
-    h+='<div class="c'+(d.look?' on':'')+cur+'">'+(d.look?q.look:'?')+'</div>';
-    h+='<div class="c'+(d.smell?' on':'')+cur+'">'+(d.smell?q.smell:'?')+'</div>';
-    h+='<div class="c'+(d.evap?(' on s-'+(q.evapLeft?'solid':'gas')):'')+cur+'">'+(d.evap?q.evap:'?')+'</div>';
+    h+='<div class="c'+(f>=1?' on':'')+'">'+(f>=1?q.look:'?')+'</div>';
+    h+='<div class="c'+(f>=2?' on':'')+'">'+(f>=2?q.smell:'?')+'</div>';
+    h+='<div class="c'+(f>=4?(' on s-'+(q.evapLeft?'solid':'gas')):'')+'">'+(f>=4?q.evap:'?')+'</div>';
   });
   t.innerHTML=h;
+}
+/* かぐ 手。においの ラウンドだけ ビーカーの 上に 出す */
+function fanHand(g,x,y,s,t,strong){
+  g.save();g.translate(x,y);g.scale(s,s);
+  const c='#6b7d8a';
+  const a=Math.sin(t*6)*0.3;
+  g.save();g.rotate(a);
+  /* うで */
+  g.strokeStyle=c;g.lineWidth=9;g.lineCap='round';
+  g.beginPath();g.moveTo(26,-2);g.lineTo(2,-2);g.stroke();
+  /* 手のひら＋ゆび。ただの ぼうだと 何か 分からない */
+  rrp(g,-18,-15,20,30,8);g.fillStyle=c;g.fill();
+  g.strokeStyle=c;g.lineWidth=5;g.lineCap='round';
+  for(let i=0;i<3;i++){
+    g.beginPath();g.moveTo(-16,-10+i*10);g.lineTo(-27,-12+i*10);g.stroke();
+  }
+  g.restore();
+  if(strong){
+    /* においが 立ちのぼる ようす */
+    g.strokeStyle='#cf5138';g.lineWidth=4;g.lineCap='round';g.setLineDash([7,8]);
+    for(let i=0;i<3;i++){
+      g.globalAlpha=.8-i*.2;
+      g.beginPath();g.arc(6,40,22+i*13,-2.55,-0.75);g.stroke();
+    }
+  }
+  g.restore();
+}
+function chip1(g,cx,y,s,col,bg,bd){
+  box(g,cx-74,y,148,32,10,bg,bd,2);
+  txt(g,s,cx,y+16,s.length>7?12:13.5,col);
 }
 function draw1(){
   const cv=$('c1'),o=fit(cv);if(!o)return;
   const g=o.g;base(g,o.w,o.h,1000,560);
   bench(g,1000,560);
-  const q=liqOf(S1.k), d=S1.done[S1.k]||{};
-  const t=S1.t;
+  const f=S1.f,t=S1.t;
+  txt(g,'① '+F1[f].ttl,500,38,f===2?20:23,'#40525e');
 
-  if(S1.act==='evap'){
-    /* 蒸発させる。金あみの 上の 蒸発皿を あたためる */
-    const cx=330, by=452;
-    grp(g,cx,430,1.3,()=>{
-      burner(g,cx,by,S1.fire);
-      /* 金あみ */
-      box(g,cx-62,by-104,124,9,3,'#b6bfc6','#96a2aa',2);
-      g.strokeStyle='#96a2aa';g.lineWidth=4;
-      g.beginPath();g.moveTo(cx-58,by-95);g.lineTo(cx-58,by-46);g.moveTo(cx+58,by-95);g.lineTo(cx+58,by-46);g.stroke();
-      const lev=Math.max(0,1-S1.an*1.05);
-      dish(g,cx,by-112,150,lev,WATER,q.res,S1.an>0.82?(S1.an-0.82)/0.18:0);
-      steam(g,cx,by-132,t,S1.fire*(lev>0.02?1:0));
-      if(S1.an>0.98&&!q.evapLeft){
-        /* とけて いた 気体は 空気中へ 出て いった（目に 見えない ものの 図） */
-        g.save();
-        for(let i=0;i<7;i++){
-          const p=((t*.35+i*.14)%1);
-          g.globalAlpha=.55*(1-p);
-          circ(g,cx-52+i*17,by-142-p*96,4.5,'rgba(120,175,200,.45)','#4b8fa8',1.4);
+  LIQ.forEach((q,i)=>{
+    const cx=STX[i], by=424;
+    const isNew=(NEW1[f]||[]).indexOf(q.k)>=0;
+    if(f===4){
+      grp(g,cx,by,0.78,()=>{
+        burner(g,cx,by,1);
+        box(g,cx-62,by-104,124,9,3,'#b6bfc6','#96a2aa',2);
+        g.strokeStyle='#96a2aa';g.lineWidth=4;
+        g.beginPath();g.moveTo(cx-58,by-95);g.lineTo(cx-58,by-46);g.moveTo(cx+58,by-95);g.lineTo(cx+58,by-46);g.stroke();
+        const lev=Math.max(0,1-S1.an*1.05);
+        dish(g,cx,by-112,150,lev,WATER,q.res,S1.an>0.8?(S1.an-0.8)/0.2:0);
+        steam(g,cx,by-132,t+i*0.7,lev>0.02?1:0);
+        if(S1.an>0.96&&!q.evapLeft){
+          /* とけて いた 気体は 空気中へ 出て いった（目に 見えない ものの 図） */
+          g.save();
+          for(let j=0;j<4;j++){
+            const pp=((t*.34+j*.25+i*.13)%1);
+            g.globalAlpha=.5*(1-pp);
+            circ(g,cx-26+j*17,by-150-pp*74,5,'rgba(120,175,200,.45)','#4b8fa8',1.4);
+          }
+          g.restore();
         }
-        g.restore();
-      }
-      txt(g,q.full,cx,by+40,q.full.length>12?17:21,'#40525e');
-    });
-    if(S1.an>0.98&&!q.evapLeft)legend(g,26,22,'小さな ○＝とけて いた 気体　目に 見えない ものを 表した 図');
-    /* 結果の カード */
-    if(S1.an>0.98){
-      const col=q.evapLeft?'#96693f':'#4b8fa8';
-      box(g,588,122,376,300,18,'#ffffff',col,3);
-      txt(g,'蒸発させると',776,166,21,'#6f7d86');
-      txt(g,q.evap,776,220,q.evap.length>8?27:32,col);
-      g.strokeStyle='#e3e9ed';g.lineWidth=2;
-      g.beginPath();g.moveTo(618,262);g.lineTo(934,262);g.stroke();
-      txt(g,'とけて いたのは',776,296,20,'#6f7d86');
-      txt(g,ST[q.st].n,776,344,36,ST[q.st].c);
-      txt(g,q.in,776,386,19,'#6f7d86');
+      });
     }else{
-      txt(g,'あたためて いる…',776,262,25,'#8a96a0');
+      beaker(g,cx,by,116,196,.58,WATER,q.k==='tan'?13:0,t);
+      if(f===2)fanHand(g,cx+10,by-240,1.5,t+i*0.5,q.smell!=='なし');
     }
-  }else if(S1.act==='smell'){
-    const cx=290, by=470;
-    grp(g,470,400,1.18,()=>{
-      beaker(g,cx,by,176,246,.62,WATER,q.k==='tan'?16:0,t);
-      txt(g,q.full,cx,by+40,q.full.length>12?17:21,'#40525e');
-      person(g,700,446,1.55,t);
-      /* 手で あおいで かぐ */
-      g.save();g.strokeStyle='#9fb2bd';g.lineWidth=4;g.lineCap='round';g.setLineDash([9,9]);
-      for(let i=0;i<3;i++){
-        g.globalAlpha=.4+.2*Math.sin(t*3-i);
-        g.beginPath();g.arc(cx,by-182,150+i*28,-1.0,.3);g.stroke();
-      }
+    if(isNew&&f!==4){
+      /* その ラウンドで はじめて 見分けが ついた ものだけ 光らせる。
+         ④は 6つ ぜんぶ 分かれる ので つけない（ぜんぶ 光ると しるしに ならない） */
+      g.save();g.setLineDash([8,7]);
+      box(g,cx-78,by-204,156,282,14,null,'#c9a227',3);
       g.restore();
-      txt(g,'手で あおいで かぐ',700,306,19,'#6f7d86');
-    });
-    if(d.smell){
-      const strong=q.smell!=='なし';
-      box(g,516,92,468,110,16,'#ffffff',strong?'#cf5138':'#8fa5b3',3);
-      txt(g,'におい',750,124,19,'#6f7d86');
-      txt(g,q.smell,750,168,34,strong?'#cf5138':'#5b6b76');
     }
-  }else{
-    const cx=300, by=474;
-    grp(g,cx,420,1.34,()=>{
-      beaker(g,cx,by,190,262,.62,WATER,q.k==='tan'?20:0,t);
-      txt(g,q.full,cx,by+40,q.full.length>12?17:21,'#40525e');
-    });
-    if(d.look){
-      box(g,588,138,376,246,18,'#ffffff','#8fa5b3',3);
-      txt(g,'見た目',776,182,20,'#6f7d86');
-      txt(g,q.look,776,240,31,q.k==='tan'?'#3d7f95':'#5b6b76');
-      if(q.k!=='tan')txt(g,'水と 見分けが つかない',776,306,19,'#8a96a0');
-      else txt(g,'ほかの 水よう液とは ちがう',776,306,19,'#8a96a0');
-    }
+    txt(g,q.n,cx,by+24,q.n.length>6?11.5:14,'#40525e');
+    /* 調べた 結果の ふだ */
+    if(f===1)chip1(g,cx,by+38,q.look,q.k==='tan'?'#8a6a10':'#8a96a0',q.k==='tan'?'#fdf3d8':'#f1f4f6',q.k==='tan'?'#c9a227':'#ccd5da');
+    if(f===2)chip1(g,cx,by+38,q.smell,q.smell==='なし'?'#8a96a0':'#a8402c',q.smell==='なし'?'#f1f4f6':'#fbe9e4','#ccd5da');
+    if(f===4&&S1.an>0.96)chip1(g,cx,by+38,q.evap,q.evapLeft?'#7d5730':'#3d6a7d',q.evapLeft?'#f4ece3':'#e3eff3',q.evapLeft?'#96693f':'#4b8fa8');
+  });
+
+  if(f===3){
+    box(g,236,104,528,92,16,'#ffffff','#c9a227',3);
+    txt(g,'水を 蒸発させたら、何か 残る？',500,136,24,'#8a6a10');
+    txt(g,'下で 予想を えらぼう',500,172,17,'#8a96a0');
   }
+  if(f===4&&S1.an>0.96)legend(g,330,506,'小さな ○＝とけて いた 気体　目に 見えない ものを 表した 図');
   g.restore();
 }
 function up1(){
-  l1build();t1build();
-  const q=liqOf(S1.k);
-  $('g1').style.display=S1.waiting?'flex':'none';
-  [...$('o1').children].forEach(b=>{b.className='opt';b.disabled=false;});
-  if(S1.waiting){
-    $('m1').innerHTML='<b>'+q.full+'</b>を 蒸発させたら、何か 残ると 思う？　予想を えらんで から すすもう。';
-  }
+  t1build();
+  const f=S1.f;
+  $('g1').style.display=(f===3&&!S1.gs)?'flex':'none';
+  [...$('o1').children].forEach(b=>{b.className='opt'+(b.dataset.v===S1.gs?' sel':'');});
+  const go=$('b1go');
+  go.textContent=F1[f].next||'しらべ おわり';
+  /* 予想が すんで いれば f=3 からも 進める。
+     ただの (f===3) に すると、もどった ときに 行き止まりに なる */
+  go.disabled=(f===3&&!S1.gs)||(f>=F1.length-1);
+  $('b1back').disabled=f===0;
+  $('m1').innerHTML=F1[f].msg;
 }
-function act1(a){
-  const q=liqOf(S1.k);
-  S1.act=a;S1.an=0;S1.fire=0;S1.waiting=false;
-  const d=S1.done[S1.k]||(S1.done[S1.k]={});
-  if(a==='look'){
-    d.look=1;
-    $('m1').innerHTML='<b>'+q.full+'</b>の 見た目は <b>'+q.look+'</b>。'+
-      (q.k==='tan'?'あわが 出て いる ものが あるね。':'水と 同じに 見える。見た目だけでは 見分けられない。');
-  }else if(a==='smell'){
-    d.smell=1;
-    $('m1').innerHTML='<b>'+q.full+'</b>の においは <b>'+q.smell+'</b>。'+
-      (q.smell==='なし'?'においでも 見分けられない ものが ある。':'においで 分かる ものも ある。');
-  }else{
-    if(!S1.gs[S1.k]){S1.waiting=true;up1();return;}
-    runEvap();
-    return;
-  }
+function go1(n){
+  const nf=clamp(n,0,F1.length-1);
+  if(nf===4&&!S1.gs){S1.f=3;S1.an=0;up1();return;}
+  S1.f=nf;S1.an=(nf===4)?0:1;
   up1();
 }
-function runEvap(){
-  const q=liqOf(S1.k);
-  S1.act='evap';S1.an=0;S1.fire=0;S1.waiting=false;
-  (S1.done[S1.k]||(S1.done[S1.k]={})).evap=1;
-  const want=q.evapLeft?'left':'none';
-  const got=S1.gs[S1.k];
-  const okw=got===want;
-  let s=(okw?'<span class="ok">予想の とおり！</span>　':'<span class="ng">予想とは ちがった。</span>　')+
-    '<b>'+q.full+'</b>を 蒸発させると <b>'+q.evap+'</b>。';
-  s+=q.evapLeft
-    ? 'とけて いたのは <b>固体</b>の '+q.in+'。'
-    : 'とけて いたのは <b>気体</b>の '+q.in+'。水と いっしょに 空気中へ 出て いった。';
-  const n=LIQ.filter(x=>(S1.done[x.k]||{}).evap).length;
-  if(n===6)s+='<br>6つ ぜんぶ 調べた。<b>何も 残らない</b>ものが 3つ＝<b>気体が とけて いる</b> 水よう液だ。';
-  $('m1').innerHTML=s;
-  up1();
-}
-$('l1').addEventListener('click',e=>{
-  const b=e.target.closest('.liq');if(!b)return;
-  S1.k=b.dataset.k;S1.an=0;S1.fire=0;S1.waiting=false;
-  if(S1.act==='evap'&&!(S1.done[S1.k]||{}).evap)S1.act='look';
-  if(S1.act==='evap')S1.an=1;
-  const q=liqOf(S1.k);
-  $('m1').innerHTML='<b>'+q.full+'</b>を えらんだ。見た目・におい・蒸発させる の 3つで 調べて みよう。';
-  up1();dirty=true;
-});
-$('s1').querySelector('.bar').addEventListener('click',e=>{
-  const b=e.target.closest('.btn');if(!b||!b.dataset.a)return;
-  act1(b.dataset.a);dirty=true;
-});
+$('b1go').addEventListener('click',()=>{go1(S1.f+1);dirty=true;});
+$('b1back').addEventListener('click',()=>{go1(S1.f-1);dirty=true;});
+$('b1reset').addEventListener('click',()=>{S1.f=0;S1.an=0;S1.gs=null;up1();dirty=true;});
+$('c1').addEventListener('click',()=>{if(!$('b1go').disabled){go1(S1.f+1);dirty=true;}});
 $('o1').addEventListener('click',e=>{
   const b=e.target.closest('.opt');if(!b)return;
-  S1.gs[S1.k]=b.dataset.v;runEvap();dirty=true;
-});
-$('b1reset').addEventListener('click',()=>{
-  S1.done={};S1.gs={};S1.act='look';S1.an=0;S1.fire=0;S1.waiting=false;
-  $('m1').innerHTML='6つの 水よう液を、見た目・におい・蒸発させる の 3つで 調べて みよう。';
-  up1();dirty=true;
+  S1.gs=b.dataset.v;
+  const ok=S1.gs==='some';
+  S1.f=4;S1.an=0;up1();
+  $('m1').innerHTML=(ok?'<span class="ok">予想の とおり！</span>　':'<span class="ng">予想とは ちがった。</span>　')+F1[4].msg;
+  dirty=true;
 });
 function step1(dt){
   S1.t+=dt;
-  if(S1.act==='evap'&&!S1.waiting){
-    S1.fire=Math.min(1,S1.fire+dt*2.2);
-    S1.an=Math.min(1,S1.an+dt*0.42);
-    return true;
-  }
-  return S1.act==='smell'||liqOf(S1.k).k==='tan';
+  if(S1.f===4&&S1.an<1){S1.an=Math.min(1,S1.an+dt*0.42);if(S1.an>=1)up1();}
+  return true;
 }
 
 /* ===================================================================
@@ -1626,8 +1736,7 @@ function frame(ts){
 addEventListener('resize',()=>{dirty=true;});
 addEventListener('orientationchange',()=>{setTimeout(()=>{dirty=true;},250);});
 
-$('m1').innerHTML='6つの 水よう液を、見た目・においを かぐ・蒸発させる の 3つで 調べて みよう。';
-up1();
+up1();   /* ① の 文は F1[f].msg が もつ */
 $('m2').innerHTML='水よう液を えらんで、何性か 予想して から リトマス紙を つけよう。';
 up2();
 up3();
