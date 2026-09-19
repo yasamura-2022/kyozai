@@ -6,9 +6,17 @@
 <title>月と太陽</title>
 <style>
 /* =========================================================
-   月と太陽（6年 理科）
-   太陽・月・地球の ならびから、月の 見える 形が きまることを
-   「宇宙から 見た 図」と「地球に いる 子どもの 目線」で ならべて 見せる。
+   月と太陽（6年 理科 B(5)）
+   学習指導要領解説 理科編 より
+   ・「月の輝いている側に太陽があること。また、月の形の見え方は、
+   　 太陽と月との位置関係によって変わること」
+   ・「地球から見た太陽と月との位置関係で扱うものとする」
+   　（地球の外から位置関係を捉えるのは中学校第2分野）
+   ・「実際に観察した月の形の見え方を、モデルや図によって表現する」
+   ・「数日後の月の見え方を予測する活動が考えられる」
+   ・「昼間に観察できる月も考えられる」「太陽を直接見ないように」
+   だから この アプリは ぜんぶ「地球に いる 自分から 見た 関係」で 組む。
+   まるい 図は「モデル実験の 置きかた」として だけ つかう。
    外部読み込みは なし。1ファイルで 動く。
    ========================================================= */
 :root{
@@ -18,14 +26,9 @@
   --ink:#f3f2ec;
   --dim:rgba(243,242,236,.66);
   --gold:#ffd98e;
-  --gold-d:#b8862f;
-  --blue:#2f6fa8;     /* 同じ もんだいの 中で すすむ */
+  --blue:#2f6fa8;     /* 同じ 画面の 中で すすむ */
   --ok:#57b660;       /* べつの もんだいへ */
   --sub:#6c6455;      /* もどる・やりなおす */
-  --sun:#ffce4d;
-  --moonlit:#fff6d8;
-  --moondark:#464e70;
-  --earth:#4a8fd0;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
 html,body{height:100%;margin:0;overflow:hidden;}
@@ -56,28 +59,24 @@ nav{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;}
 #main{flex:1;min-height:0;position:relative;}
 .stage{position:absolute;inset:0;display:none;flex-direction:column;gap:6px;}
 .stage.on{display:flex;}
+.stage > .card{flex:1;min-height:0;}
 .cols{flex:1;min-height:0;display:grid;grid-template-rows:1.45fr 1fr;grid-template-columns:1fr;gap:6px;}
 @media (orientation:landscape) and (min-width:700px){
   .cols.two{grid-template-columns:1.28fr .82fr;grid-template-rows:1fr;}
 }
-.stage > .card{flex:1;min-height:0;}
 .card{
   position:relative;background:var(--panel);border:1px solid var(--line);
   border-radius:16px;overflow:hidden;min-height:0;
 }
 canvas{position:absolute;inset:0;width:100%;height:100%;display:block;}
 .side{display:flex;flex-direction:column;gap:6px;min-height:0;}
-.viewbox{position:relative;flex:1;min-height:120px;background:#080b1e;border:1px solid var(--line);border-radius:16px;overflow:hidden;}
+.viewbox{position:relative;flex:1;min-height:110px;background:#080b1e;border:1px solid var(--line);border-radius:16px;overflow:hidden;}
 .viewbox .cap{
   position:absolute;top:6px;left:0;right:0;text-align:center;
   font-size:clamp(11px,1.3vw,14px);color:var(--dim);pointer-events:none;
 }
 .name{text-align:center;font-size:clamp(16px,2.6vw,26px);color:var(--gold);}
 .name small{display:block;color:var(--dim);font-size:.55em;margin-top:2px;}
-
-/* ---- すすむバー（メッセージの すぐ上） ---- */
-.gobar{display:flex;justify-content:center;}
-.gobar .btn{width:100%;max-width:520px;}
 .msg{
   flex:0 0 auto;background:rgba(0,0,0,.34);border:1px solid var(--line);border-radius:14px;
   padding:8px 12px;font-size:clamp(12px,1.6vw,16px);line-height:1.5;text-align:center;min-height:44px;
@@ -101,9 +100,6 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;}
 .btn.ghost{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.25);}
 .btn.ghost.on{background:var(--gold);color:#2a2410;border-color:var(--gold);}
 .btn[disabled]{opacity:.4;}
-.dots{display:flex;gap:6px;align-items:center;justify-content:center;}
-.dots i{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.25);display:block;}
-.dots i.on{background:var(--gold);}
 .field{display:flex;align-items:center;gap:8px;font-size:clamp(11px,1.4vw,14px);color:var(--dim);}
 input[type=range]{
   -webkit-appearance:none;appearance:none;width:clamp(120px,22vw,220px);height:10px;border-radius:5px;
@@ -115,8 +111,9 @@ input[type=range]::-webkit-slider-thumb{
 }
 input[type=range]::-moz-range-thumb{width:24px;height:24px;border-radius:50%;background:var(--gold);border:3px solid #fff;}
 .clock{font-size:clamp(15px,2.2vw,22px);color:var(--gold);min-width:5.2em;text-align:center;font-variant-numeric:tabular-nums;}
-/* ---- クイズの えらぶ ボタン ---- */
+/* ---- えらぶ ボタン ---- */
 .opts{flex:0 0 auto;display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+.opts.two{grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(2,1fr);flex:1;min-height:0;}
 .opt{
   position:relative;background:rgba(255,255,255,.06);border:2px solid rgba(255,255,255,.2);
   border-radius:14px;cursor:pointer;padding:0;min-height:76px;overflow:hidden;
@@ -130,45 +127,48 @@ input[type=range]::-moz-range-thumb{width:24px;height:24px;border-radius:50%;bac
   #app{padding:5px 8px 7px;gap:4px;}
   .msg{padding:6px 10px;min-height:38px;}
   .btn{min-height:40px;padding:8px 13px;}
-  .opt{min-height:62px;}
+  .opt{min-height:56px;}
 }
 </style>
 </head>
 <body>
 <div id="app">
   <header>
-    <h1>月と太陽<span class="sub">月の 形は なぜ 変わるのか</span></h1>
+    <h1>月と太陽<span class="sub">かがやいて いる 側に 太陽が ある</span></h1>
     <nav id="tabs">
-      <button class="tab on" data-s="1">① 光を 当てる</button>
-      <button class="tab" data-s="2">② 月を 動かす</button>
-      <button class="tab" data-s="3">③ 地上から 見る</button>
+      <button class="tab on" data-s="1">① 空で 見つける</button>
+      <button class="tab" data-s="2">② モデルで しらべる</button>
+      <button class="tab" data-s="3">③ 予想する</button>
       <button class="tab" data-s="4">④ たしかめる</button>
     </nav>
   </header>
 
   <div id="main">
-    <!-- ① 光を 当てる -->
+    <!-- ① 空で 見つける -->
     <section class="stage on" id="s1">
       <div class="card" id="w1"><canvas id="c1"></canvas></div>
-      <div class="gobar"><button class="btn play" id="b1go">1つ すすむ ▶</button></div>
       <div class="msg" id="m1"></div>
       <div class="bar">
-        <span class="dots" id="d1"></span>
-        <button class="btn sub" id="b1back">◀ もどる</button>
-        <button class="btn sub" id="b1reset">はじめから</button>
+        <span class="field">月の 形</span>
+        <button class="btn sub" id="b1prev">◀ もどす</button>
+        <button class="btn play" id="b1next">べつの 日の 月 ▶</button>
+        <span class="field" style="color:var(--gold)" id="n1">三日月</span>
+        <span class="clock" id="t1">15時</span>
+        <input type="range" id="r1" min="0" max="47" step="1" value="30" aria-label="時こく">
+        <button class="btn ghost" id="b1auto">▶ 時間を すすめる</button>
       </div>
     </section>
 
-    <!-- ② 月を 動かす -->
+    <!-- ② モデルで しらべる -->
     <section class="stage" id="s2">
       <div class="cols two">
         <div class="card" id="w2"><canvas id="c2"></canvas></div>
         <div class="side">
           <div class="viewbox" id="w2v">
             <canvas id="c2v"></canvas>
-            <div class="cap">地球から 見た 月</div>
+            <div class="cap">じぶんから 見た 月</div>
           </div>
-          <div class="name" id="n2">新月<small>月れい 約0日</small></div>
+          <div class="name" id="n2">新月</div>
         </div>
       </div>
       <div class="msg" id="m2"></div>
@@ -176,22 +176,22 @@ input[type=range]::-moz-range-thumb{width:24px;height:24px;border-radius:50%;bac
         <button class="btn sub" id="b2prev">◀ 1つ もどす</button>
         <button class="btn play" id="b2next">1つ すすむ ▶</button>
         <button class="btn ghost" id="b2auto">▶ 自動</button>
-        <button class="btn ghost" id="b2all">8つの 形を 出す</button>
+        <button class="btn ghost" id="b2all">8つの 見え方を 出す</button>
       </div>
     </section>
 
-    <!-- ③ 地上から 見る -->
+    <!-- ③ 予想する -->
     <section class="stage" id="s3">
-      <div class="card" id="w3"><canvas id="c3"></canvas></div>
+      <div class="cols two">
+        <div class="card" id="w3"><canvas id="c3"></canvas></div>
+        <div class="side">
+          <div class="opts two" id="opts3"></div>
+        </div>
+      </div>
       <div class="msg" id="m3"></div>
       <div class="bar">
-        <span class="field">月の 形</span>
-        <button class="btn sub" id="b3prev">◀</button>
-        <button class="btn play" id="b3next">▶</button>
-        <span class="field" style="color:var(--gold)" id="n3">三日月</span>
-        <span class="clock" id="t3">18時</span>
-        <input type="range" id="r3" min="0" max="47" step="1" value="36" aria-label="時こく">
-        <button class="btn ghost" id="b3auto">▶ 時間を すすめる</button>
+        <button class="btn show" id="b3check">こたえ</button>
+        <button class="btn next" id="b3next">つぎの もんだい →</button>
       </div>
     </section>
 
@@ -202,7 +202,7 @@ input[type=range]::-moz-range-thumb{width:24px;height:24px;border-radius:50%;bac
         <div class="side">
           <div class="viewbox" id="w4v">
             <canvas id="c4v"></canvas>
-            <div class="cap" id="cap4">地球から 見た 月</div>
+            <div class="cap" id="cap4">じぶんから 見た 月</div>
           </div>
           <div class="opts" id="opts4"></div>
         </div>
@@ -225,31 +225,27 @@ const norm360=d=>((d%360)+360)%360;
 const norm180=d=>{d=norm360(d);return d>180?d-360:d;};
 
 /* =========================================================
-   月の 位置と 形
-   θ（太陽と 月の 見かけの 角度）… 0=新月 90=上弦 180=満月 270=下弦
-   光る 割合 f=(1-cosθ)/2
+   θ＝地球から見た 太陽と 月の 角度（0=新月 90=上弦 180=満月 270=下弦）
+   光る 割合 f=(1-cosθ)/2。θ<180 は 右が 光る（北半球の 見え方）
+   ことばは ぜんぶ「太陽と 月の 位置の 関係」で 書く。
    ========================================================= */
 const KEY=[
-  {a:0,  name:'新月',       note:'月が 太陽と 同じ 方向に ある。光る 面が 地球の 反対がわを むくので 見えない。'},
-  {a:45, name:'三日月',     note:'太陽の 近く。光る 面の ほんの 少しだけが 地球を むく。'},
-  {a:90, name:'上弦の月',   note:'太陽・月・地球が 直角に ならぶ。光る 面の ちょうど 半分が 見えて、右半分が 光る。'},
-  {a:135,name:'ふくらんだ月',note:'満月に 近づく。光る 部分が どんどん ふえる。'},
-  {a:180,name:'満月',       note:'月が 太陽の 反対がわ。光る 面が まるごと 地球を むく。'},
-  {a:225,name:'かけていく月',note:'満月を すぎると、右がわから かけて いく。'},
-  {a:270,name:'下弦の月',   note:'また 直角に ならぶ。こんどは 左半分が 光って 見える。'},
-  {a:315,name:'明け方の月', note:'新月に もどる 手前。細い 月が 明け方の 東の 空に 見える。'}
+  {a:0,  name:'新月',       note:'月が 太陽と 同じ 方向に ある。かがやいて いる 面が こちらを むかないので 見えない。'},
+  {a:45, name:'三日月',     note:'太陽の すぐ 近く。かがやいて いる 細い ところの 側に 太陽が ある。'},
+  {a:90, name:'上弦の月',   note:'太陽と 90度 はなれて いる。右半分が かがやいて 見える。'},
+  {a:135,name:'ふくらんだ月',note:'太陽から もっと はなれた。かがやいて 見える ところが ふえる。'},
+  {a:180,name:'満月',       note:'太陽と 反対の 方向に ある。まるく かがやいて 見える。'},
+  {a:225,name:'かけていく月',note:'また 太陽に 近づいて いく。右がわから かけて いく。'},
+  {a:270,name:'下弦の月',   note:'また 90度 はなれて いる。こんどは 左半分が かがやいて 見える。'},
+  {a:315,name:'明け方の月', note:'太陽の 近くに もどって きた。かがやいて いる 側に 太陽が ある。'}
 ];
 const keyIndex=t=>{let b=0,bd=999;for(let i=0;i<8;i++){const d=Math.abs(norm180(t-KEY[i].a));if(d<bd){bd=d;b=i;}}return{i:b,d:bd};};
-const moonAge=t=>(29.5*norm360(t)/360);
 const litRatio=t=>(1-Math.cos(t*D2R))/2;
 
-/* ---- 星の 位置（まばたきしないよう 先に きめておく） ---- */
 const STARS=(()=>{let s=20260919,r=()=>(s=(s*1103515245+12345)&0x7fffffff)/0x7fffffff;
   return Array.from({length:150},()=>({x:r(),y:r(),r:r()*1.2+.4,a:r()*.6+.25}));})();
 
-/* =========================================================
-   キャンバスの 下じき
-   ========================================================= */
+/* ========================= 下じき ========================= */
 function fit(cv){
   const r=cv.getBoundingClientRect();
   const d=Math.min(2,window.devicePixelRatio||1);
@@ -278,16 +274,11 @@ function txt(g,s,x,y,size,color,align,weight){
   g.textAlign=align||'center';g.textBaseline='middle';
   g.fillStyle=color||'#f3f2ec';g.fillText(s,x,y);g.restore();
 }
-
-/* ---- 月を かく（θ＝太陽との 角度、rot＝光る がわの 向き） ---- */
+/* ---- 月を かく（θ＝太陽との 角度、rot＝かがやく 側の 向き） ---- */
 function drawMoon(g,cx,cy,R,theta,rot,o){
   o=o||{};
-  const dark=o.dark||'rgba(255,255,255,.055)';
-  const lit=o.lit||'var';
-  // 暗い 面
   g.beginPath();g.arc(cx,cy,R,0,TAU);
-  g.fillStyle=dark;g.fill();
-  // 光る 面
+  g.fillStyle=o.dark||'rgba(255,255,255,.055)';g.fill();
   const p=Math.cos(theta*D2R);
   g.save();
   g.translate(cx,cy);g.rotate(rot);
@@ -295,7 +286,7 @@ function drawMoon(g,cx,cy,R,theta,rot,o){
   g.arc(0,0,R,-Math.PI/2,Math.PI/2,false);
   g.ellipse(0,0,Math.abs(p)*R,R,0,Math.PI/2,-Math.PI/2,p>0);
   g.closePath();
-  g.fillStyle=(lit==='var')?'#fff6d8':lit;
+  g.fillStyle=o.lit||'#fff6d8';
   g.fill();
   if(o.crater!==false&&R>14){
     g.clip();g.rotate(-rot);
@@ -304,244 +295,47 @@ function drawMoon(g,cx,cy,R,theta,rot,o){
     for(const c of cs){g.beginPath();g.arc(c[0]*R,c[1]*R,c[2]*R,0,TAU);g.fill();}
   }
   g.restore();
-  // ふち（見えない ところも わかるように）
   if(o.ring!==false){
     g.save();g.beginPath();g.arc(cx,cy,R,0,TAU);
     g.setLineDash(o.ringDash||[3,4]);
     g.strokeStyle=o.ringColor||'rgba(255,255,255,.28)';g.lineWidth=1.2;g.stroke();g.restore();
   }
 }
-
-/* =========================================================
-   ① 光を 当てる
-   ========================================================= */
-const S1={i:0,t:0};
-const S1TEXT=[
-  ['月は 自分では 光っていない','月は 太陽の ように もえて いない。だから、そのままでは 暗い。'],
-  ['太陽の 光が とどく','太陽から、まっすぐな 光が やってくる。'],
-  ['当たった 半分だけが 光る','光が 当たる 半分は 明るく、その 反対がわは 暗い。<b>いつでも 半分は 光っている。</b>'],
-  ['光るのは いつも 太陽の がわ','月が どこへ 動いても、明るい 半分は <b>いつも 太陽の ほう</b>を むいている。'],
-  ['地球も 同じ','地球も、光が 当たる 半分が 昼、反対がわが 夜。月も 地球も、太陽に てらされている だけ。']
-];
-function draw1(){
-  const {g,w,h}=fit($('c1'));
-  bgSpace(g,w,h);
-  const st=S1.i;
-  const cy=h*0.52;
-  const R=Math.min(w,h);
-  const sunX=w*0.06, sunR=Math.min(w*0.13,h*0.20);
-  const hasEarth=st>=4;
-  const mR=hasEarth?R*0.085:R*0.135;
-  let mx=hasEarth?w*0.80:w*0.66, my=cy;
-  if(st===3){ const a=S1.t*0.9; mx=w*0.66+Math.cos(a)*w*0.06; my=cy+Math.sin(a)*h*0.20; }
-  if(hasEarth){ my=cy-h*0.16; }
-  // 太陽の 光
-  if(st>=1){
-    g.save();
-    g.strokeStyle='rgba(255,206,77,.55)';g.lineWidth=Math.max(2,R*0.006);
-    g.setLineDash([16,10]);g.lineDashOffset=-(S1.t*46)%26;
-    for(let i=0;i<7;i++){
-      const y=h*0.12+i*(h*0.76/6);
-      g.beginPath();g.moveTo(sunX+sunR*0.92,y);g.lineTo(w*0.96,y);g.stroke();
-    }
-    g.restore();
-    g.save();g.fillStyle='rgba(255,206,77,.75)';
-    for(let i=0;i<7;i++){
-      const y=h*0.12+i*(h*0.76/6),x=w*0.96;
-      g.beginPath();g.moveTo(x,y);g.lineTo(x-12,y-6);g.lineTo(x-12,y+6);g.closePath();g.fill();
-    }
-    g.restore();
-    txt(g,'太陽の 光',sunX+sunR*1.35,h*0.055,Math.max(12,R*0.032),'rgba(255,206,77,.9)','left');
-  }
-  // 太陽
-  if(st>=1){
-    const gr=g.createRadialGradient(sunX,cy,sunR*0.2,sunX,cy,sunR*1.6);
-    gr.addColorStop(0,'rgba(255,225,130,.95)');gr.addColorStop(1,'rgba(255,206,77,0)');
-    g.fillStyle=gr;g.beginPath();g.arc(sunX,cy,sunR*1.6,0,TAU);g.fill();
-    g.fillStyle='#ffce4d';g.beginPath();g.arc(sunX,cy,sunR,0,TAU);g.fill();
-    txt(g,'太陽',sunX,cy+sunR+Math.max(12,R*0.03),Math.max(12,R*0.034),'#ffce4d');
-  }
-  // 地球
-  if(hasEarth){
-    const ex=w*0.46, eR=R*0.12;
-    g.save();g.globalAlpha=.55;g.fillStyle='rgba(0,0,0,.55)';
-    g.beginPath();g.moveTo(ex,cy-eR);g.lineTo(w,cy-eR*2.0);g.lineTo(w,cy+eR*2.0);g.lineTo(ex,cy+eR);g.closePath();g.fill();g.restore();
-    drawMoon(g,ex,cy,eR,90,Math.PI,{lit:'#4a8fd0',dark:'#16243d',crater:false,ringColor:'rgba(255,255,255,.35)',ringDash:[2,3]});
-    txt(g,'地球',ex,cy+eR+Math.max(12,R*0.03),Math.max(12,R*0.034),'#9ec9ef');
-    txt(g,'昼',ex-eR*0.5,cy,Math.max(11,R*0.028),'#0d2136');
-    txt(g,'夜',ex+eR*0.5,cy,Math.max(11,R*0.028),'rgba(255,255,255,.8)');
-  }
-  // 月
-  const litOn=st>=2;
-  drawMoon(g,mx,my,mR,litOn?90:90,Math.PI,{
-    lit:litOn?'#fff6d8':'#2b3050',
-    dark:litOn?'#3b4265':'#2b3050',
-    crater:litOn, ringColor:'rgba(255,255,255,.3)'
-  });
-  txt(g,'月',mx,my+mR+Math.max(12,R*0.03),Math.max(12,R*0.034),'#fff6d8');
-  if(litOn){
-    txt(g,'明るい',mx-mR*0.48,my,Math.max(10,mR*0.26),'#5a4a1e');
-    txt(g,'暗い',mx+mR*0.48,my,Math.max(10,mR*0.26),'rgba(255,255,255,.75)');
-  }
-  // 見出し
-  txt(g,S1TEXT[st][0],w/2,h*0.055,Math.max(14,R*0.042),'#ffd98e');
-}
-function up1(){
-  $('m1').innerHTML=S1TEXT[S1.i][1];
-  $('d1').innerHTML=S1TEXT.map((_,i)=>'<i class="'+(i<=S1.i?'on':'')+'"></i>').join('');
-  $('b1go').textContent=(S1.i>=S1TEXT.length-1)?'もう いちど 見る ▶':'1つ すすむ ▶';
-  $('b1back').disabled=S1.i===0;
-  dirty=true;
-}
-$('b1go').onclick=()=>{S1.i=(S1.i>=S1TEXT.length-1)?0:S1.i+1;up1();};
-$('b1back').onclick=()=>{if(S1.i>0){S1.i--;up1();}};
-$('b1reset').onclick=()=>{S1.i=0;up1();};
-$('c1').addEventListener('pointerdown',()=>{S1.i=(S1.i>=S1TEXT.length-1)?0:S1.i+1;up1();});
-
-/* =========================================================
-   宇宙から 見た 図（②と④で つかう）
-   太陽は 左。月は 反時計まわり（北極の 上から 見た 向き）
-   ========================================================= */
-function spaceGeom(w,h,thumbs){
-  const cx=w*0.58, cy=h*0.51;
-  const R=thumbs?Math.min(w*0.215,h*0.265):Math.min(w*0.27,h*0.33);
-  return {cx,cy,R,eR:Math.max(11,R*0.20),mR:Math.max(8,R*0.125),
-          sunX:w*0.045,sunR:Math.min(w*0.115,h*0.19)};
-}
-function moonXY(G,theta){
-  const A=(180+theta)*D2R;
-  return {x:G.cx+G.R*Math.cos(A), y:G.cy-G.R*Math.sin(A)};
-}
-function drawSpace(g,w,h,o){
-  o=o||{};
-  bgSpace(g,w,h,.7);
-  const G=spaceGeom(w,h,o.thumbs);
-  const S=Math.min(w,h);
-  // 太陽の 光（平行に とどく）
+/* ---- 人の しるし（ピクトグラム） ---- */
+function drawPerson(g,cx,cy,s,color){
   g.save();
-  g.strokeStyle='rgba(255,206,77,.30)';g.lineWidth=2;g.setLineDash([14,9]);
-  for(let i=0;i<8;i++){
-    const y=h*0.08+i*(h*0.84/7);
-    g.beginPath();g.moveTo(G.sunX+G.sunR*0.9,y);g.lineTo(w*0.99,y);g.stroke();
-  }
+  g.fillStyle=color||'#ffd98e';
+  g.beginPath();g.arc(cx,cy-s*0.56,s*0.26,0,TAU);g.fill();          /* 頭 */
+  g.beginPath();                                                     /* からだ */
+  g.moveTo(cx-s*0.34,cy+s*0.52);
+  g.quadraticCurveTo(cx-s*0.36,cy-s*0.20,cx,cy-s*0.24);
+  g.quadraticCurveTo(cx+s*0.36,cy-s*0.20,cx+s*0.34,cy+s*0.52);
+  g.closePath();g.fill();
   g.restore();
-  // 太陽
-  const gr=g.createRadialGradient(G.sunX,G.cy,G.sunR*0.2,G.sunX,G.cy,G.sunR*1.7);
-  gr.addColorStop(0,'rgba(255,225,130,.9)');gr.addColorStop(1,'rgba(255,206,77,0)');
-  g.fillStyle=gr;g.beginPath();g.arc(G.sunX,G.cy,G.sunR*1.7,0,TAU);g.fill();
-  g.fillStyle='#ffce4d';g.beginPath();g.arc(G.sunX,G.cy,G.sunR,0,TAU);g.fill();
-  txt(g,'太陽',G.sunX,G.cy+G.sunR+Math.max(12,S*0.03),Math.max(12,S*0.032),'#ffce4d');
-  // 月の 通り道
-  g.save();g.setLineDash([5,6]);g.strokeStyle='rgba(255,255,255,.22)';g.lineWidth=1.5;
-  g.beginPath();g.arc(G.cx,G.cy,G.R,0,TAU);g.stroke();g.restore();
-  // 地球（太陽がわの 半分が 昼）
-  g.save();g.fillStyle='rgba(0,0,0,.45)';
-  g.beginPath();g.moveTo(G.cx,G.cy-G.eR);g.lineTo(w,G.cy-G.eR*1.7);g.lineTo(w,G.cy+G.eR*1.7);g.lineTo(G.cx,G.cy+G.eR);g.closePath();g.fill();g.restore();
-  drawMoon(g,G.cx,G.cy,G.eR,90,Math.PI,{lit:'#4a8fd0',dark:'#16243d',crater:false,ringColor:'rgba(255,255,255,.3)',ringDash:[2,3]});
-  txt(g,'地球',G.cx,G.cy+G.eR+Math.max(11,S*0.028),Math.max(11,S*0.03),'#9ec9ef');
-
-  // 8つの 位置の しるし
-  if(o.spots){
-    for(let i=0;i<8;i++){
-      const q=moonXY(G,KEY[i].a);
-      const on=(o.spotSel===i);
-      g.save();
-      g.beginPath();g.arc(q.x,q.y,G.mR*1.5,0,TAU);
-      g.fillStyle=on?'rgba(255,217,142,.30)':'rgba(255,255,255,.07)';g.fill();
-      g.setLineDash(on?[]:[4,4]);
-      g.strokeStyle=on?'#ffd98e':'rgba(255,255,255,.4)';g.lineWidth=on?3:1.6;g.stroke();
-      g.restore();
-      if(o.spotAnswer===i){
-        g.save();g.beginPath();g.arc(q.x,q.y,G.mR*1.9,0,TAU);
-        g.strokeStyle='#9be29e';g.lineWidth=3.5;g.stroke();g.restore();
-      }
-      txt(g,'①②③④⑤⑥⑦⑧'[i],q.x,q.y,Math.max(12,G.mR*1.15),on?'#ffd98e':'rgba(255,255,255,.72)');
-    }
-  }
-  // 地球から 見た 形（外がわの ふきだし）
-  if(o.thumbs){
-    for(let i=0;i<8;i++){
-      const t=KEY[i].a, A=(180+t)*D2R;
-      const rr=G.R*1.55;
-      const x=G.cx+rr*Math.cos(A), y=G.cy-rr*Math.sin(A);
-      const tR=G.mR*1.45;
-      drawMoon(g,x,y,tR,t,t<180?0:Math.PI,{dark:'rgba(255,255,255,.05)',crater:false,ringColor:'rgba(255,255,255,.22)'});
-      if(o.thumbNames!==false) txt(g,KEY[i].name,x,y+tR+Math.max(9,S*0.022),Math.max(9,S*0.023),'rgba(243,242,236,.7)');
-    }
-  }
-  // いまの 月
-  if(o.theta!==null&&o.theta!==undefined){
-    const p=moonXY(G,o.theta);
-    // 見ている 線
-    g.save();g.setLineDash([4,5]);g.strokeStyle='rgba(255,217,142,.55)';g.lineWidth=1.6;
-    g.beginPath();g.moveTo(G.cx,G.cy);g.lineTo(p.x,p.y);g.stroke();g.restore();
-    // 月の かげ
-    g.save();g.fillStyle='rgba(0,0,0,.4)';
-    g.beginPath();g.moveTo(p.x,p.y-G.mR);g.lineTo(p.x+G.mR*5,p.y-G.mR*1.6);
-    g.lineTo(p.x+G.mR*5,p.y+G.mR*1.6);g.lineTo(p.x,p.y+G.mR);g.closePath();g.fill();g.restore();
-    // 太陽がわの 半分が 光る
-    drawMoon(g,p.x,p.y,G.mR,90,Math.PI,{lit:'#fff6d8',dark:'#464e70',crater:false,ringColor:'rgba(255,255,255,.45)',ringDash:[]});
-    if(o.hideLabel!==true) txt(g,o.label||'月',p.x,p.y-G.mR-Math.max(11,S*0.028),Math.max(11,S*0.03),'#fff6d8');
-    // 観察する 子ども（地球の 上、月の ほうを むいている）
-    const A=(180+o.theta)*D2R;
-    const kx=G.cx+G.eR*Math.cos(A), ky=G.cy-G.eR*Math.sin(A);
-    g.save();g.fillStyle='#ffd98e';
-    g.beginPath();g.arc(kx,ky,Math.max(3.2,G.eR*0.22),0,TAU);g.fill();g.restore();
-  }
-  return G;
+}
+/* ---- やじるし ---- */
+function arrow(g,x0,y0,x1,y1,color,w,dash){
+  const a=Math.atan2(y1-y0,x1-x0), hd=Math.max(7,w*3.4);
+  g.save();
+  g.strokeStyle=color;g.lineWidth=w;g.lineCap='round';
+  if(dash)g.setLineDash(dash);
+  g.beginPath();g.moveTo(x0,y0);g.lineTo(x1-Math.cos(a)*hd*0.8,y1-Math.sin(a)*hd*0.8);g.stroke();
+  g.setLineDash([]);
+  g.fillStyle=color;
+  g.beginPath();g.moveTo(x1,y1);
+  g.lineTo(x1-Math.cos(a-0.42)*hd,y1-Math.sin(a-0.42)*hd);
+  g.lineTo(x1-Math.cos(a+0.42)*hd,y1-Math.sin(a+0.42)*hd);
+  g.closePath();g.fill();
+  g.restore();
 }
 
 /* =========================================================
-   ② 月を 動かす
+   ① 空で 見つける
+   実さいの 空の 見え方。太陽と 月を 同じ 画面に 出して、
+   「かがやいて いる 側に 太陽が ある」ことを 見つける。
+   （時こくで 位置が かわるのは 第4学年の 内容。ここでは 主役に しない）
    ========================================================= */
-const S2={theta:0,thumbs:false,auto:false};
-function draw2(){
-  const a=fit($('c2'));
-  drawSpace(a.g,a.w,a.h,{theta:S2.theta,thumbs:S2.thumbs,thumbNames:true});
-  txt(a.g,'宇宙から 見た ならび（北極の 上から）',a.w/2,a.h*0.045,Math.max(11,Math.min(a.w,a.h)*0.030),'rgba(243,242,236,.7)');
-  const b=fit($('c2v'));
-  b.g.fillStyle='#060917';b.g.fillRect(0,0,b.w,b.h);
-  const R=Math.min(b.w,b.h)*0.34;
-  drawMoon(b.g,b.w/2,b.h*0.55,R,S2.theta,S2.theta<180?0:Math.PI,{dark:'rgba(255,255,255,.05)'});
-}
-function up2(){
-  const k=keyIndex(S2.theta);
-  const nm=(k.d<=6)?KEY[k.i].name:'—';
-  $('n2').innerHTML=nm+'<small>月れい 約'+moonAge(S2.theta).toFixed(1).replace('.0','')+'日　／　光って 見える 部分 '+Math.round(litRatio(S2.theta)*100)+'%</small>';
-  let s;
-  if(k.d<=6){ s='<b>'+KEY[k.i].name+'</b>　'+KEY[k.i].note; }
-  else { s='太陽と 月の 角度は <b>'+Math.round(norm360(S2.theta))+'度</b>。この 角度が 大きいほど、光る 面が 地球の ほうを むく。'; }
-  $('m2').innerHTML=s;
-  $('b2auto').classList.toggle('on',S2.auto);
-  $('b2auto').textContent=S2.auto?'■ とめる':'▶ 自動';
-  $('b2all').classList.toggle('on',S2.thumbs);
-  dirty=true;
-}
-$('b2next').onclick=()=>{S2.auto=false;S2.theta=norm360(Math.round(S2.theta/45)*45+45);up2();};
-$('b2prev').onclick=()=>{S2.auto=false;S2.theta=norm360(Math.round(S2.theta/45)*45-45);up2();};
-$('b2auto').onclick=()=>{S2.auto=!S2.auto;up2();};
-$('b2all').onclick=()=>{S2.thumbs=!S2.thumbs;up2();};
-(function(){
-  const cv=$('c2');let drag=false;
-  const move=e=>{
-    const r=cv.getBoundingClientRect();
-    const G=spaceGeom(r.width,r.height,S2.thumbs);
-    const x=e.clientX-r.left-G.cx, y=r.top+G.cy-e.clientY;
-    const A=Math.atan2(y,x)/D2R;
-    S2.theta=norm360(A-180);up2();
-  };
-  cv.addEventListener('pointerdown',e=>{drag=true;S2.auto=false;cv.setPointerCapture(e.pointerId);move(e);});
-  cv.addEventListener('pointermove',e=>{if(drag)move(e);});
-  cv.addEventListener('pointerup',()=>{drag=false;});
-  cv.addEventListener('pointercancel',()=>{drag=false;});
-})();
-
-/* =========================================================
-   ③ 地上から 見る（子どもの 目線）
-   南を むいて 立つ。左が 東、右が 西。
-   太陽の 時角 Hs=(t-12)*15、月は それより θ おくれて 南中する
-   ========================================================= */
-const S3={theta:45,t:18,auto:false};
+const SKY={theta:45,t:15,auto:false};
 function skyPos(H,w,hy,rx,ry){
   const r=H*D2R;
   return {x:w*0.5+rx*Math.sin(r), y:hy-ry*Math.cos(r)};
@@ -562,27 +356,23 @@ function timeWord(t){
   if(t>=19&&t<23)return '夜';
   return '真夜中';
 }
-function mix(c1,c2,k){return c1.map((v,i)=>Math.round(v+(c2[i]-v)*k));}
+const mix=(c1,c2,k)=>c1.map((v,i)=>Math.round(v+(c2[i]-v)*k));
 const rgb=c=>'rgb('+c.join(',')+')';
-function draw3(){
-  const {g,w,h}=fit($('c3'));
+function drawSky(){
+  const {g,w,h}=fit($('c1'));
   const hy=h*0.78, rx=w*0.42, ry=hy*0.80;
-  const Hs=norm180((S3.t-12)*15), Hm=norm180(Hs-S3.theta);
-  const sunUp=Math.cos(Hs*D2R);            // +1 真上 / 0 地平線 / − 夜
-  // 空の 色
+  const Hs=norm180((SKY.t-12)*15), Hm=norm180(Hs-SKY.theta);
+  const sunUp=Math.cos(Hs*D2R);
   const NIGHT_T=[10,16,48], NIGHT_B=[18,26,66];
-  const DUSK_T=[52,58,120], DUSK_B=[233,140,78];
-  const DAY_T=[62,124,196], DAY_B=[176,214,240];
+  const DUSK_T=[52,58,120],  DUSK_B=[233,140,78];
+  const DAY_T=[62,124,196],  DAY_B=[176,214,240];
   let top,bot;
-  if(sunUp>=0.22){ const k=clamp((sunUp-0.22)/0.55,0,1);
-    top=mix(DUSK_T,DAY_T,k);bot=mix(DUSK_B,DAY_B,k);
-  }else if(sunUp>=-0.13){ const k=clamp((sunUp+0.13)/0.35,0,1);
-    top=mix(NIGHT_T,DUSK_T,k);bot=mix(NIGHT_B,DUSK_B,k);
-  }else{ top=NIGHT_T;bot=NIGHT_B; }
+  if(sunUp>=0.22){ const k=clamp((sunUp-0.22)/0.55,0,1); top=mix(DUSK_T,DAY_T,k); bot=mix(DUSK_B,DAY_B,k); }
+  else if(sunUp>=-0.13){ const k=clamp((sunUp+0.13)/0.35,0,1); top=mix(NIGHT_T,DUSK_T,k); bot=mix(NIGHT_B,DUSK_B,k); }
+  else { top=NIGHT_T; bot=NIGHT_B; }
   const gr=g.createLinearGradient(0,0,0,hy);
   gr.addColorStop(0,rgb(top));gr.addColorStop(1,rgb(bot));
   g.fillStyle=gr;g.fillRect(0,0,w,hy);
-  // 星（暗く なったら 出る）
   const sa=clamp((-sunUp-0.05)/0.25,0,1);
   if(sa>0){
     for(const s of STARS){
@@ -592,120 +382,341 @@ function draw3(){
     }
     g.globalAlpha=1;
   }
-  // 通り道
-  g.save();g.setLineDash([4,7]);g.lineWidth=1.4;
-  g.strokeStyle='rgba(255,255,255,.22)';
+  g.save();g.setLineDash([4,7]);g.lineWidth=1.4;g.strokeStyle='rgba(255,255,255,.20)';
   g.beginPath();
   for(let d=-90;d<=90;d+=3){const p=skyPos(d,w,hy,rx,ry);d===-90?g.moveTo(p.x,p.y):g.lineTo(p.x,p.y);}
   g.stroke();g.restore();
-  // 太陽
-  const ps=skyPos(Hs,w,hy,rx,ry);
-  const sunVisible=Math.abs(Hs)<=91;   // 地平線ぎりぎりでも 出す（夕方の 三日月と ならべて 見せたい）
+  const ps=skyPos(Hs,w,hy,rx,ry), pm=skyPos(Hm,w,hy,rx,ry);
+  const sunVisible=Math.abs(Hs)<=91, moonVisible=Math.abs(Hm)<=91;
+  const S=Math.min(w,h), sR=S*0.045, mR=S*0.058;
+  /* かがやいて いる 側 → 太陽（この 単元の かなめ） */
+  if(moonVisible){
+    const dx=ps.x-pm.x,dy=ps.y-pm.y,L=Math.hypot(dx,dy)||1,ux=dx/L,uy=dy/L;
+    const x0=pm.x+ux*(mR+7), y0=pm.y+uy*(mR+7);
+    const x1=ps.x-ux*(sR+10), y1=ps.y-uy*(sR+10);
+    g.save();g.globalAlpha=sunVisible?1:.55;
+    arrow(g,x0,y0,x1,y1,'#ffd98e',Math.max(2,S*0.006),[9,7]);
+    g.restore();
+    txt(g,'かがやいて いる 側に 太陽',(x0+x1)/2,(y0+y1)/2-Math.max(14,S*0.032),Math.max(11,S*0.028),'#ffd98e');
+  }
   if(sunVisible){
-    const sR=Math.min(w,h)*0.045;
     const g2=g.createRadialGradient(ps.x,ps.y,sR*0.3,ps.x,ps.y,sR*2.6);
     g2.addColorStop(0,'rgba(255,225,130,.85)');g2.addColorStop(1,'rgba(255,206,77,0)');
     g.fillStyle=g2;g.beginPath();g.arc(ps.x,ps.y,sR*2.6,0,TAU);g.fill();
     g.fillStyle='#ffd75e';g.beginPath();g.arc(ps.x,ps.y,sR,0,TAU);g.fill();
-    txt(g,'太陽',ps.x,ps.y-sR-13,Math.max(11,Math.min(w,h)*0.028),'#fff0b8');
+    txt(g,'太陽',ps.x,ps.y-sR-13,Math.max(11,S*0.028),'#fff0b8');
   }
-  // 月（光る がわは いつも 太陽の ほう）
-  const pm=skyPos(Hm,w,hy,rx,ry);
-  const moonVisible=Math.abs(Hm)<=91;
-  const mR=Math.min(w,h)*0.055;
   const rot=Math.atan2(ps.y-pm.y,ps.x-pm.x);
-  g.save();
-  if(!moonVisible)g.globalAlpha=.30;
-  drawMoon(g,pm.x,pm.y,mR,S3.theta,rot,{dark:'rgba(255,255,255,.06)',ringColor:'rgba(255,255,255,.3)'});
+  g.save();if(!moonVisible)g.globalAlpha=.30;
+  drawMoon(g,pm.x,pm.y,mR,SKY.theta,rot,{dark:'rgba(255,255,255,.06)',ringColor:'rgba(255,255,255,.3)'});
   g.restore();
-  const k=keyIndex(S3.theta);
-  txt(g,KEY[k.i].name+(moonVisible?'':'（地平線の 下）'),pm.x,pm.y-mR-13,Math.max(11,Math.min(w,h)*0.028),moonVisible?'#fff6d8':'rgba(255,246,216,.5)');
-  // 地面
+  const k=keyIndex(SKY.theta);
+  const ny=(pm.y-mR-13<h*0.10)?(pm.y+mR+14):(pm.y-mR-13);   // 高い ところに あるときは 名前を 下に
+  txt(g,KEY[k.i].name+(moonVisible?'':'（地平線の 下）'),pm.x,ny,Math.max(11,S*0.028),moonVisible?'#fff6d8':'rgba(255,246,216,.5)');
+  /* 地面 */
   g.fillStyle='#0d1626';g.fillRect(0,hy,w,h-hy);
   g.strokeStyle='rgba(255,255,255,.25)';g.lineWidth=1.2;
   g.beginPath();g.moveTo(0,hy);g.lineTo(w,hy);g.stroke();
-  // 山
   g.fillStyle='#101d2f';
   g.beginPath();g.moveTo(0,hy);g.lineTo(w*0.13,hy-h*0.075);g.lineTo(w*0.27,hy);g.closePath();g.fill();
   g.beginPath();g.moveTo(w*0.72,hy);g.lineTo(w*0.86,hy-h*0.09);g.lineTo(w,hy);g.closePath();g.fill();
-  // 学校
   g.fillStyle='#0a1220';
   const bw=w*0.15,bx=w*0.30,bh=h*0.085;
   g.fillRect(bx,hy-bh,bw,bh);
   g.fillStyle='rgba(255,220,140,'+(sunUp<0.05?0.55:0.15)+')';
   for(let r=0;r<2;r++)for(let c=0;c<4;c++)g.fillRect(bx+bw*0.10+c*bw*0.22,hy-bh+bh*0.18+r*bh*0.40,bw*0.13,bh*0.22);
-  // 木
   g.fillStyle='#0a1220';
   for(const tx of [w*0.62,w*0.68]){
     g.beginPath();g.moveTo(tx,hy);g.lineTo(tx-w*0.022,hy);g.lineTo(tx-w*0.011,hy-h*0.075);g.closePath();g.fill();
   }
-  // 見ている 子ども
+  /* 見上げて いる 人 */
   const kx=w*0.50,ky=hy;
-  g.fillStyle='#ffd98e';
-  g.beginPath();g.arc(kx,ky-h*0.075,h*0.016,0,TAU);g.fill();
-  g.strokeStyle='#ffd98e';g.lineWidth=Math.max(2.5,h*0.008);g.lineCap='round';
-  g.beginPath();g.moveTo(kx,ky-h*0.058);g.lineTo(kx,ky-h*0.018);g.stroke();
-  g.beginPath();g.moveTo(kx,ky-h*0.018);g.lineTo(kx-h*0.016,ky);g.moveTo(kx,ky-h*0.018);g.lineTo(kx+h*0.016,ky);g.stroke();
-  const ang=Math.atan2(pm.y-(ky-h*0.05),pm.x-kx);
-  g.beginPath();g.moveTo(kx,ky-h*0.05);g.lineTo(kx+Math.cos(ang)*h*0.05,ky-h*0.05+Math.sin(ang)*h*0.05);g.stroke();
-  // 方角
-  const fs=Math.max(12,Math.min(w,h)*0.032);
+  drawPerson(g,kx,ky-h*0.045,h*0.085,'#ffd98e');
+  const hx=kx,hy2=ky-h*0.093;                                  // 頭の あたり
+  const ang=Math.atan2(pm.y-hy2,pm.x-hx);
+  g.save();g.setLineDash([4,6]);g.strokeStyle='rgba(255,217,142,.45)';g.lineWidth=Math.max(1.6,h*0.004);
+  g.beginPath();
+  g.moveTo(hx+Math.cos(ang)*h*0.022,hy2+Math.sin(ang)*h*0.022);
+  g.lineTo(pm.x-Math.cos(ang)*mR*1.2,pm.y-Math.sin(ang)*mR*1.2);
+  g.stroke();g.restore();
+  const fs=Math.max(12,S*0.032);
   txt(g,'東',w*0.5-rx,hy+fs,fs,'rgba(255,255,255,.75)');
   txt(g,'南',w*0.5,hy+fs,fs,'rgba(255,255,255,.75)');
   txt(g,'西',w*0.5+rx,hy+fs,fs,'rgba(255,255,255,.75)');
-  txt(g,'南の 空を 見上げた ところ',w*0.5,h*0.05,Math.max(11,Math.min(w,h)*0.03),'rgba(255,255,255,.62)');
+  txt(g,'南の 空を 見上げた ところ',w*0.012,h*0.05,Math.max(11,S*0.03),'rgba(255,255,255,.62)','left');
+  txt(g,'※ 太陽を 直せつ 見ない',w*0.012,h-Math.max(11,S*0.03),Math.max(10,S*0.026),'rgba(255,200,160,.8)','left');
 }
-function up3(){
-  const k=keyIndex(S3.theta);
-  const Hs=norm180((S3.t-12)*15), Hm=norm180(Hs-S3.theta);
-  const hh=Math.floor(S3.t)%24, mm=(S3.t%1)?'30分':'';
-  $('t3').textContent=hh+'時'+mm;
-  $('n3').textContent=KEY[k.i].name;
-  $('r3').value=String(Math.round(S3.t*2));
-  $('b3auto').classList.toggle('on',S3.auto);
-  $('b3auto').textContent=S3.auto?'■ とめる':'▶ 時間を すすめる';
+function upSky(){
+  const k=keyIndex(SKY.theta);
+  const Hs=norm180((SKY.t-12)*15), Hm=norm180(Hs-SKY.theta);
+  const hh=Math.floor(SKY.t)%24, mm=(SKY.t%1)?'30分':'';
+  $('t1').textContent=hh+'時'+mm;
+  $('n1').textContent=KEY[k.i].name;
+  $('r1').value=String(Math.round(SKY.t*2));
+  $('b1auto').classList.toggle('on',SKY.auto);
+  $('b1auto').textContent=SKY.auto?'■ とめる':'▶ 時間を すすめる';
   let s;
   if(Math.abs(Hm)>91){
-    s='<b>'+KEY[k.i].name+'</b>は、いま <b>地平線の 下</b>。'+
-      (Math.abs(Hs)<90?'昼の 空には まだ のぼって こない。':'この 時こくには 見えない。')+
-      '　南中するのは '+fmtT(12+S3.theta/15)+'ごろ。';
+    s='<b>'+KEY[k.i].name+'</b>は いま 地平線の 下。時こくを 動かすと 出て くるよ。';
+  }else if(Math.abs(Hs)<=91){
+    s='<b>'+KEY[k.i].name+'</b>の かがやいて いる 側に <b>太陽</b>が ある。昼でも 月は 見える。'
+      +timeWord(SKY.t)+'の '+dirName(Hm)+'。';
   }else{
-    s=timeWord(S3.t)+'の <b>'+dirName(Hm)+'</b>に <b>'+KEY[k.i].name+'</b>。'+
-      '太陽とは <b>'+Math.round(norm360(S3.theta))+'度</b> はなれて いるので、光って 見えるのは '+
-      Math.round(litRatio(S3.theta)*100)+'%。光る がわは いつも 太陽の ほうを むく。';
+    s='<b>'+KEY[k.i].name+'</b>の かがやいて いる 側に <b>太陽</b>が ある。'
+      +'いま 太陽は 地平線の 下だけれど、光る 側は その 太陽の ほうを むいて いる。';
   }
-  $('m3').innerHTML=s;
+  $('m1').innerHTML=s;
   dirty=true;
 }
-function fmtT(t){t=((t%24)+24)%24;const h=Math.floor(t),m=Math.round((t-h)*60);return h+'時'+(m?String(m).padStart(2,'0')+'分':'');}
-$('b3next').onclick=()=>{S3.theta=norm360(Math.round(S3.theta/45)*45+45);up3();};
-$('b3prev').onclick=()=>{S3.theta=norm360(Math.round(S3.theta/45)*45-45);up3();};
-$('r3').oninput=e=>{S3.auto=false;S3.t=Number(e.target.value)/2;up3();};
-$('b3auto').onclick=()=>{S3.auto=!S3.auto;up3();};
+$('b1next').onclick=()=>{SKY.theta=norm360(Math.round(SKY.theta/45)*45+45);upSky();};
+$('b1prev').onclick=()=>{SKY.theta=norm360(Math.round(SKY.theta/45)*45-45);upSky();};
+$('r1').oninput=e=>{SKY.auto=false;SKY.t=Number(e.target.value)/2;upSky();};
+$('b1auto').onclick=()=>{SKY.auto=!SKY.auto;upSky();};
+
+/* =========================================================
+   ② モデルで しらべる
+   まん中が じぶん。まわりの ボールが 月。光は 一方向から。
+   見るのは いつも「じぶんから」。
+   ========================================================= */
+function spaceGeom(w,h,thumbs){
+  const cx=w*0.58, cy=h*0.51;
+  const R=thumbs?Math.min(w*0.215,h*0.265):Math.min(w*0.27,h*0.33);
+  return {cx,cy,R,eR:Math.max(13,R*0.24),mR:Math.max(8,R*0.125),
+          sunX:w*0.045,sunR:Math.min(w*0.115,h*0.19)};
+}
+function moonXY(G,theta){
+  const A=(180+theta)*D2R;
+  return {x:G.cx+G.R*Math.cos(A), y:G.cy-G.R*Math.sin(A)};
+}
+function drawSpace(g,w,h,o){
+  o=o||{};
+  bgSpace(g,w,h,.55);
+  const G=spaceGeom(w,h,o.thumbs);
+  const S=Math.min(w,h);
+  g.save();
+  g.strokeStyle='rgba(255,206,77,.30)';g.lineWidth=2;g.setLineDash([14,9]);
+  for(let i=0;i<8;i++){
+    const y=h*0.08+i*(h*0.84/7);
+    g.beginPath();g.moveTo(G.sunX+G.sunR*0.9,y);g.lineTo(w*0.99,y);g.stroke();
+  }
+  g.restore();
+  const gr=g.createRadialGradient(G.sunX,G.cy,G.sunR*0.2,G.sunX,G.cy,G.sunR*1.7);
+  gr.addColorStop(0,'rgba(255,225,130,.9)');gr.addColorStop(1,'rgba(255,206,77,0)');
+  g.fillStyle=gr;g.beginPath();g.arc(G.sunX,G.cy,G.sunR*1.7,0,TAU);g.fill();
+  g.fillStyle='#ffce4d';g.beginPath();g.arc(G.sunX,G.cy,G.sunR,0,TAU);g.fill();
+  txt(g,'太陽',G.sunX,G.cy+G.sunR+Math.max(12,S*0.03),Math.max(12,S*0.032),'#ffce4d');
+  g.save();g.setLineDash([5,6]);g.strokeStyle='rgba(255,255,255,.22)';g.lineWidth=1.5;
+  g.beginPath();g.arc(G.cx,G.cy,G.R,0,TAU);g.stroke();g.restore();
+  /* まん中は じぶん */
+  g.save();
+  g.beginPath();g.arc(G.cx,G.cy,G.eR*1.25,0,TAU);
+  g.fillStyle='rgba(255,255,255,.07)';g.fill();
+  g.setLineDash([3,4]);g.strokeStyle='rgba(255,255,255,.25)';g.lineWidth=1.2;g.stroke();
+  g.restore();
+  drawPerson(g,G.cx,G.cy,G.eR*1.75,'#ffd98e');
+  txt(g,'じぶん',G.cx,G.cy+G.eR*1.45,Math.max(11,S*0.029),'#ffd98e');
+  if(o.spots){
+    for(let i=0;i<8;i++){
+      const q=moonXY(G,KEY[i].a);
+      const on=(o.spotSel===i);
+      g.save();
+      g.beginPath();g.arc(q.x,q.y,G.mR*1.5,0,TAU);
+      g.fillStyle=on?'rgba(255,217,142,.30)':'rgba(255,255,255,.07)';g.fill();
+      g.setLineDash(on?[]:[4,4]);
+      g.strokeStyle=on?'#ffd98e':'rgba(255,255,255,.4)';g.lineWidth=on?3:1.6;g.stroke();
+      g.restore();
+      if(o.spotAnswer===i){
+        g.save();g.beginPath();g.arc(q.x,q.y,G.mR*1.9,0,TAU);
+        g.strokeStyle='#9be29e';g.lineWidth=3.5;g.stroke();g.restore();
+      }
+      txt(g,'①②③④⑤⑥⑦⑧'[i],q.x,q.y,Math.max(12,G.mR*1.15),on?'#ffd98e':'rgba(255,255,255,.72)');
+    }
+  }
+  if(o.thumbs){
+    for(let i=0;i<8;i++){
+      const t=KEY[i].a, A=(180+t)*D2R, rr=G.R*1.55;
+      const x=G.cx+rr*Math.cos(A), y=G.cy-rr*Math.sin(A), tR=G.mR*1.45;
+      drawMoon(g,x,y,tR,t,t<180?0:Math.PI,{dark:'rgba(255,255,255,.05)',crater:false,ringColor:'rgba(255,255,255,.22)'});
+      txt(g,KEY[i].name,x,y+tR+Math.max(9,S*0.022),Math.max(9,S*0.023),'rgba(243,242,236,.7)');
+    }
+  }
+  if(o.theta!==null&&o.theta!==undefined){
+    const p=moonXY(G,o.theta);
+    g.save();g.setLineDash([4,5]);g.strokeStyle='rgba(255,217,142,.55)';g.lineWidth=1.6;
+    g.beginPath();g.moveTo(G.cx,G.cy);g.lineTo(p.x,p.y);g.stroke();g.restore();
+    g.save();g.fillStyle='rgba(0,0,0,.4)';
+    g.beginPath();g.moveTo(p.x,p.y-G.mR);g.lineTo(p.x+G.mR*5,p.y-G.mR*1.6);
+    g.lineTo(p.x+G.mR*5,p.y+G.mR*1.6);g.lineTo(p.x,p.y+G.mR);g.closePath();g.fill();g.restore();
+    drawMoon(g,p.x,p.y,G.mR,90,Math.PI,{lit:'#fff6d8',dark:'#464e70',crater:false,ringColor:'rgba(255,255,255,.45)',ringDash:[]});
+    if(o.hideLabel!==true) txt(g,o.label||'月（ボール）',p.x,p.y-G.mR-Math.max(11,S*0.028),Math.max(11,S*0.03),'#fff6d8');
+  }
+  return G;
+}
+const MOD={theta:0,thumbs:false,auto:false};
+function drawModel(){
+  const a=fit($('c2'));
+  drawSpace(a.g,a.w,a.h,{theta:MOD.theta,thumbs:MOD.thumbs});
+  txt(a.g,'モデル　まん中が じぶん　まわりの ボールが 月',a.w/2,a.h*0.045,
+      Math.max(11,Math.min(a.w,a.h)*0.030),'rgba(243,242,236,.7)');
+  const b=fit($('c2v'));
+  b.g.fillStyle='#060917';b.g.fillRect(0,0,b.w,b.h);
+  const R=Math.min(b.w,b.h)*0.34;
+  drawMoon(b.g,b.w/2,b.h*0.55,R,MOD.theta,MOD.theta<180?0:Math.PI,{dark:'rgba(255,255,255,.05)'});
+}
+function upModel(){
+  const k=keyIndex(MOD.theta);
+  const nm=(k.d<=6)?KEY[k.i].name:'—';
+  const side=(litRatio(MOD.theta)<0.02)?'':(norm360(MOD.theta)<180?'右':'左');
+  $('n2').innerHTML=nm+(side?'<small>'+side+'がわが かがやいて 見える</small>'
+                            :'<small>かがやいて いる 面が 見えない</small>');
+  $('m2').innerHTML=(k.d<=6)
+    ? '<b>'+KEY[k.i].name+'</b>　'+KEY[k.i].note
+    : 'ボールの 光る 側は いつも 太陽の ほう。じぶんから 見える 形だけが かわって いく。';
+  $('b2auto').classList.toggle('on',MOD.auto);
+  $('b2auto').textContent=MOD.auto?'■ とめる':'▶ 自動';
+  $('b2all').classList.toggle('on',MOD.thumbs);
+  dirty=true;
+}
+$('b2next').onclick=()=>{MOD.auto=false;MOD.theta=norm360(Math.round(MOD.theta/45)*45+45);upModel();};
+$('b2prev').onclick=()=>{MOD.auto=false;MOD.theta=norm360(Math.round(MOD.theta/45)*45-45);upModel();};
+$('b2auto').onclick=()=>{MOD.auto=!MOD.auto;upModel();};
+$('b2all').onclick=()=>{MOD.thumbs=!MOD.thumbs;upModel();};
+(function(){
+  const cv=$('c2');let drag=false;
+  const move=e=>{
+    const r=cv.getBoundingClientRect();
+    const G=spaceGeom(r.width,r.height,MOD.thumbs);
+    const x=e.clientX-r.left-G.cx, y=r.top+G.cy-e.clientY;
+    MOD.theta=norm360(Math.atan2(y,x)/D2R-180);upModel();
+  };
+  cv.addEventListener('pointerdown',e=>{drag=true;MOD.auto=false;cv.setPointerCapture(e.pointerId);move(e);});
+  cv.addEventListener('pointermove',e=>{if(drag)move(e);});
+  cv.addEventListener('pointerup',()=>{drag=false;});
+  cv.addEventListener('pointercancel',()=>{drag=false;});
+})();
+
+/* =========================================================
+   ③ 予想する
+   解説「数日後の月の見え方を予測する活動が考えられる」
+   ========================================================= */
+const DAYS=[{d:4,step:1},{d:7,step:2},{d:15,step:4},{d:22,step:6}];
+const PRED={today:1,days:7,step:2,ansIdx:2,opts:[],sel:-1,done:false};
+function predNew(){
+  PRED.today=Math.floor(Math.random()*8);
+  const p=DAYS[Math.floor(Math.random()*DAYS.length)];
+  PRED.days=p.d;PRED.step=p.step;
+  PRED.ansIdx=(PRED.today+p.step)%8;
+  PRED.sel=-1;PRED.done=false;
+  PRED.opts=[PRED.ansIdx,(PRED.ansIdx+2)%8,(PRED.ansIdx+4)%8,(PRED.ansIdx+6)%8].sort(()=>Math.random()-0.5);
+  const box=$('opts3');box.innerHTML='';
+  PRED.opts.forEach((ki,n)=>{
+    const b=document.createElement('button');
+    b.className='opt';
+    b.innerHTML='<canvas></canvas><span class="lb">'+'アイウエ'[n]+'</span>';
+    b.onclick=()=>{if(PRED.done)return;PRED.sel=n;refreshPred();dirty=true;};
+    box.appendChild(b);
+  });
+  refreshPred();
+  $('m3').innerHTML='きょうは <b>'+KEY[PRED.today].name+'</b>。<b>'+PRED.days+'日後</b>は どんな 形に 見える？';
+  $('b3check').disabled=false;
+  dirty=true;
+}
+function refreshPred(){
+  [...$('opts3').children].forEach((b,n)=>{
+    b.className='opt'+(PRED.sel===n?' sel':'');
+    if(PRED.done){
+      if(PRED.opts[n]===PRED.ansIdx)b.className='opt right';
+      else if(PRED.sel===n)b.className='opt wrong';
+    }
+  });
+}
+function drawPred(){
+  const {g,w,h}=fit($('c3'));
+  bgSpace(g,w,h,.5);
+  const S=Math.min(w,h);
+  const R=Math.min(w*0.15,h*0.19);
+  const y=PRED.done?h*0.30:h*0.42;
+  const x1=w*0.26, x2=w*0.74;
+  txt(g,'きょう',x1,y-R-Math.max(16,S*0.05),Math.max(12,S*0.034),'rgba(243,242,236,.8)');
+  drawMoon(g,x1,y,R,KEY[PRED.today].a,KEY[PRED.today].a<180?0:Math.PI,{dark:'rgba(255,255,255,.05)'});
+  txt(g,KEY[PRED.today].name,x1,y+R+Math.max(15,S*0.045),Math.max(12,S*0.032),'#fff6d8');
+  arrow(g,x1+R*1.25,y,x2-R*1.35,y,'rgba(255,217,142,.8)',Math.max(2.5,S*0.007));
+  txt(g,PRED.days+'日後',(x1+x2)/2,y-Math.max(18,S*0.052),Math.max(13,S*0.036),'#ffd98e');
+  txt(g,PRED.days+'日後',x2,y-R-Math.max(16,S*0.05),Math.max(12,S*0.034),'rgba(243,242,236,.8)');
+  if(PRED.done){
+    drawMoon(g,x2,y,R,KEY[PRED.ansIdx].a,KEY[PRED.ansIdx].a<180?0:Math.PI,{dark:'rgba(255,255,255,.05)'});
+    txt(g,KEY[PRED.ansIdx].name,x2,y+R+Math.max(15,S*0.045),Math.max(12,S*0.032),'#9be29e');
+    drawMini(g,w/2,h*0.72,Math.min(w*0.14,h*0.17));
+  }else{
+    g.save();g.setLineDash([5,6]);g.strokeStyle='rgba(255,255,255,.3)';g.lineWidth=2;
+    g.beginPath();g.arc(x2,y,R,0,TAU);g.stroke();g.restore();
+    txt(g,'？',x2,y,R*1.1,'rgba(255,217,142,.6)');
+  }
+  [...$('opts3').children].forEach((el,n)=>{
+    const c=fit(el.querySelector('canvas'));
+    c.g.fillStyle='rgba(0,0,0,.25)';c.g.fillRect(0,0,c.w,c.h);
+    const t=KEY[PRED.opts[n]].a;
+    drawMoon(c.g,c.w/2,c.h*0.46,Math.min(c.w,c.h)*0.30,t,t<180?0:Math.PI,{dark:'rgba(255,255,255,.06)',crater:false});
+  });
+}
+/* 小さい モデル図（きょう → ○日後 で 位置が どう かわったか） */
+function drawMini(g,cx,cy,R){
+  const tA=KEY[PRED.today].a, tB=KEY[PRED.ansIdx].a;
+  const pos=t=>{const A=(180+t)*D2R;return{x:cx+R*Math.cos(A),y:cy-R*Math.sin(A)};};
+  g.save();g.strokeStyle='rgba(255,206,77,.35)';g.lineWidth=1.6;g.setLineDash([9,7]);
+  for(let i=-1;i<=1;i++){const y=cy+i*R*0.8;g.beginPath();g.moveTo(cx-R*1.9,y);g.lineTo(cx+R*1.5,y);g.stroke();}
+  g.restore();
+  txt(g,'太陽',cx-R*2.0,cy,Math.max(10,R*0.30),'#ffce4d','right');
+  g.save();g.setLineDash([4,5]);g.strokeStyle='rgba(255,255,255,.22)';g.lineWidth=1.3;
+  g.beginPath();g.arc(cx,cy,R,0,TAU);g.stroke();g.restore();
+  drawPerson(g,cx,cy,R*0.46,'#ffd98e');
+  const a=pos(tA), b=pos(tB);
+  g.save();g.setLineDash([3,4]);g.strokeStyle='rgba(155,226,158,.8)';g.lineWidth=2.4;
+  const A0=Math.atan2(cy-a.y,a.x-cx), A1=A0+norm360(tB-tA)*D2R;
+  g.beginPath();g.arc(cx,cy,R,-A0,-A1,true);g.stroke();g.restore();
+  // なまえは 円の 外がわ（まるの 上に かさねると 読めない）
+  const outer=(t,s2,col)=>{
+    const A=(180+t)*D2R, rr=R+Math.max(17,R*0.34);
+    txt(g,s2,cx+rr*Math.cos(A),cy-rr*Math.sin(A),Math.max(10,R*0.26),col);
+  };
+  drawMoon(g,a.x,a.y,R*0.22,90,Math.PI,{lit:'#fff6d8',dark:'#464e70',crater:false,ringDash:[]});
+  outer(tA,'きょう','rgba(243,242,236,.85)');
+  drawMoon(g,b.x,b.y,R*0.22,90,Math.PI,{lit:'#fff6d8',dark:'#464e70',crater:false,ringDash:[]});
+  outer(tB,PRED.days+'日後','#9be29e');
+}
+$('b3check').onclick=()=>{
+  if(PRED.done)return;
+  if(PRED.sel<0){$('m3').innerHTML='まだ えらんで いないよ。ア〜エから 1つ えらぼう。';return;}
+  PRED.done=true;
+  const right=PRED.opts[PRED.sel]===PRED.ansIdx;
+  const K=KEY[PRED.ansIdx];
+  $('m3').innerHTML=(right?'<span class="ok">せいかい！</span>　'
+                          :'<span class="ng">おしいね。こたえは <b>'+K.name+'</b>。</span>　')
+    +'月は 約1か月（29日ぐらい）で もとの 形に もどる。'+PRED.days+'日 たつと '
+    +'<b>太陽と 月の 位置</b>が ここまで かわるので、'+K.name+'に 見える。';
+  refreshPred();$('b3check').disabled=true;dirty=true;
+};
+$('b3next').onclick=()=>predNew();
 
 /* =========================================================
    ④ たしかめる
    ========================================================= */
-const Q={type:'shape',a:90,opts:[],sel:-1,done:false};
+const Q={type:'shape',a:90,opts:[],sel:-1,done:false,ansIdx:2};
 function qNew(){
   Q.type=Math.random()<0.5?'shape':'place';
   const pool=Q.type==='shape'?[0,1,2,3,4,5,6,7]:[1,2,3,4,5,6,7];
   Q.ansIdx=pool[Math.floor(Math.random()*pool.length)];
   Q.a=KEY[Q.ansIdx].a;
   Q.sel=-1;Q.done=false;
-  if(Q.type==='shape'){
-    // 90度ずつ はなれた 4つを 出す。にている 形が ならばず、
-    // 「どれだけ 光るか」と「どちらが 光るか」の 両方で 見分けられる
-    const others=[2,4,6].map(d=>(Q.ansIdx+d)%8);
-    Q.opts=[Q.ansIdx,...others].sort(()=>Math.random()-0.5);
-  }else{
-    Q.opts=[];
-  }
+  /* 90度ずつ はなれた 4つ。にた 形を ならべない */
+  Q.opts=(Q.type==='shape')
+    ? [Q.ansIdx,(Q.ansIdx+2)%8,(Q.ansIdx+4)%8,(Q.ansIdx+6)%8].sort(()=>Math.random()-0.5)
+    : [];
   buildOpts();
   $('m4').innerHTML=Q.type==='shape'
-    ?'月が この 位置に ある とき、地球からは どの 形に 見える？'
+    ?'月（ボール）が この 位置に ある とき、じぶんからは どの 形に 見える？'
     :'この 形に 見える とき、月は ①〜⑧の どこに ある？　図を おして えらぼう。';
-  $('cap4').textContent=Q.type==='shape'?'どの 形に 見える？':'地球から 見た 月';
+  $('cap4').textContent=Q.type==='shape'?'どの 形に 見える？':'じぶんから 見た 月';
   $('b4check').disabled=false;
   dirty=true;
 }
@@ -715,7 +726,7 @@ function buildOpts(){
   box.style.display='grid';
   Q.opts.forEach((ki,n)=>{
     const b=document.createElement('button');
-    b.className='opt';b.dataset.n=String(n);
+    b.className='opt';
     b.innerHTML='<canvas></canvas><span class="lb">'+'アイウエ'[n]+'</span>';
     b.onclick=()=>{if(Q.done)return;Q.sel=n;refreshOpts();dirty=true;};
     box.appendChild(b);
@@ -726,54 +737,53 @@ function refreshOpts(){
   [...$('opts4').children].forEach((b,n)=>{
     b.className='opt'+(Q.sel===n?' sel':'');
     if(Q.done){
-      const ki=Q.opts[n];
-      if(ki===Q.ansIdx)b.className='opt right';
+      if(Q.opts[n]===Q.ansIdx)b.className='opt right';
       else if(Q.sel===n)b.className='opt wrong';
     }
   });
 }
-function draw4(){
+function drawQuiz(){
   const a=fit($('c4'));
-  const G=drawSpace(a.g,a.w,a.h,{
+  drawSpace(a.g,a.w,a.h,{
     theta:(Q.type==='shape'||Q.done)?Q.a:null,
-    label:Q.type==='shape'?'？の 月':'月',
+    label:Q.type==='shape'?'？の 月':'月（ボール）',
     hideLabel:Q.type!=='shape',
     spots:Q.type==='place',
     spotSel:Q.type==='place'?Q.sel:-1,
     spotAnswer:(Q.type==='place'&&Q.done)?Q.ansIdx:-1
   });
-  txt(a.g,'宇宙から 見た ならび',a.w/2,a.h*0.045,Math.max(11,Math.min(a.w,a.h)*0.030),'rgba(243,242,236,.7)');
-  // 右上の 大きい 月
+  txt(a.g,'モデル　まん中が じぶん',a.w/2,a.h*0.045,Math.max(11,Math.min(a.w,a.h)*0.030),'rgba(243,242,236,.7)');
   const b=fit($('c4v'));
   b.g.fillStyle='#060917';b.g.fillRect(0,0,b.w,b.h);
   if(Q.type==='place'||Q.done){
-    // こたえあわせの あとは、正しい 形を 大きく 出す
     const R=Math.min(b.w,b.h)*0.34;
     drawMoon(b.g,b.w/2,b.h*0.56,R,Q.a,Q.a<180?0:Math.PI,{dark:'rgba(255,255,255,.05)'});
   }else{
     txt(b.g,'？',b.w/2,b.h*0.56,Math.min(b.w,b.h)*0.42,'rgba(255,217,142,.5)');
   }
-  // えらぶ 4つの 形
   if(Q.type==='shape'){
     [...$('opts4').children].forEach((el,n)=>{
-      const cv=el.querySelector('canvas');
-      const {g,w,h}=fit(cv);
-      g.fillStyle='rgba(0,0,0,.25)';g.fillRect(0,0,w,h);
+      const c=fit(el.querySelector('canvas'));
+      c.g.fillStyle='rgba(0,0,0,.25)';c.g.fillRect(0,0,c.w,c.h);
       const t=KEY[Q.opts[n]].a;
-      drawMoon(g,w/2,h*0.44,Math.min(w,h)*0.33,t,t<180?0:Math.PI,{dark:'rgba(255,255,255,.06)',crater:false});
+      drawMoon(c.g,c.w/2,c.h*0.44,Math.min(c.w,c.h)*0.33,t,t<180?0:Math.PI,{dark:'rgba(255,255,255,.06)',crater:false});
     });
   }
 }
 $('b4check').onclick=()=>{
-  if(Q.done){qNew();return;}
-  if(Q.type==='shape'&&Q.sel<0){$('m4').innerHTML='まだ えらんで いないよ。ア〜エから 1つ えらぼう。';return;}
-  if(Q.type==='place'&&Q.sel<0){$('m4').innerHTML='まだ えらんで いないよ。図の ①〜⑧を おして えらぼう。';return;}
+  if(Q.done)return;
+  if(Q.sel<0){
+    $('m4').innerHTML=(Q.type==='shape')?'まだ えらんで いないよ。ア〜エから 1つ えらぼう。'
+                                        :'まだ えらんで いないよ。図の ①〜⑧を おして えらぼう。';
+    return;
+  }
   Q.done=true;
   const right=(Q.type==='shape')?(Q.opts[Q.sel]===Q.ansIdx):(Q.sel===Q.ansIdx);
   const K=KEY[Q.ansIdx];
-  $('m4').innerHTML=(right?'<span class="ok">せいかい！</span>　':'<span class="ng">おしいね。こたえは '+(Q.type==='place'?('<b>'+'①②③④⑤⑥⑦⑧'[Q.ansIdx]+'</b>'):('<b>'+K.name+'</b>'))+'。</span>　')
+  $('m4').innerHTML=(right?'<span class="ok">せいかい！</span>　'
+      :'<span class="ng">おしいね。こたえは '+(Q.type==='place'?('<b>'+'①②③④⑤⑥⑦⑧'[Q.ansIdx]+'</b>'):('<b>'+K.name+'</b>'))+'。</span>　')
     +'<b>'+K.name+'</b>　'+K.note;
-  $('cap4').textContent='地球から 見た 月（'+K.name+'）';
+  $('cap4').textContent='じぶんから 見た 月（'+K.name+'）';
   refreshOpts();$('b4check').disabled=true;dirty=true;
 };
 $('b4next').onclick=()=>qNew();
@@ -790,19 +800,22 @@ $('b4next').onclick=()=>qNew();
       const d=Math.hypot(q.x-x,q.y-y);
       if(d<bd){bd=d;best=i;}
     }
-    if(bd<=G.mR*2.4){Q.sel=best;$('m4').innerHTML='<b>'+'①②③④⑤⑥⑦⑧'[best]+'</b>を えらんだよ。「こたえ」で たしかめよう。';dirty=true;}
+    if(bd<=G.mR*2.4){
+      Q.sel=best;
+      $('m4').innerHTML='<b>'+'①②③④⑤⑥⑦⑧'[best]+'</b>を えらんだよ。「こたえ」で たしかめよう。';
+      dirty=true;
+    }
   });
 })();
 
-/* =========================================================
-   ステージの きりかえ／えがき直し
-   ========================================================= */
+/* ========================= きりかえ ========================= */
 let step=1, dirty=true, last=0;
 function show(n){
-  step=n;S2.auto=false;S3.auto=false;
+  step=n;SKY.auto=false;MOD.auto=false;
   [...document.querySelectorAll('.stage')].forEach((el,i)=>el.classList.toggle('on',i===n-1));
   [...document.querySelectorAll('.tab')].forEach(b=>b.classList.toggle('on',Number(b.dataset.s)===n));
-  if(n===1)up1();if(n===2)up2();if(n===3)up3();if(n===4){if(!Q.opts.length&&Q.type==='shape')qNew();else dirty=true;}
+  if(n===1)upSky();
+  if(n===2)upModel();
   dirty=true;
 }
 $('tabs').addEventListener('click',e=>{
@@ -811,16 +824,15 @@ $('tabs').addEventListener('click',e=>{
 function frame(ts){
   const dt=Math.min(0.05,(ts-last)/1000||0);last=ts;
   let anim=false;
-  if(step===1){ S1.t+=dt; if(S1.i>=1)anim=true; }
-  if(step===2&&S2.auto){ S2.theta=norm360(S2.theta+dt*22); up2(); anim=true; }
-  if(step===3&&S3.auto){ S3.t=(S3.t+dt*1.2)%24; up3(); anim=true; }
+  if(step===1&&SKY.auto){ SKY.t=(SKY.t+dt*1.2)%24; upSky(); anim=true; }
+  if(step===2&&MOD.auto){ MOD.theta=norm360(MOD.theta+dt*22); upModel(); anim=true; }
   if(dirty||anim){
     dirty=false;
     try{
-      if(step===1)draw1();
-      if(step===2)draw2();
-      if(step===3)draw3();
-      if(step===4)draw4();
+      if(step===1)drawSky();
+      if(step===2)drawModel();
+      if(step===3)drawPred();
+      if(step===4)drawQuiz();
     }catch(err){console.error(err);}
   }
   requestAnimationFrame(frame);
@@ -828,7 +840,7 @@ function frame(ts){
 addEventListener('resize',()=>{dirty=true;});
 addEventListener('orientationchange',()=>{setTimeout(()=>{dirty=true;},250);});
 
-up1();up2();up3();qNew();show(1);
+upSky();upModel();predNew();qNew();show(1);
 requestAnimationFrame(frame);
 </script>
 </body>
