@@ -113,6 +113,19 @@ input[type=range]::-webkit-slider-thumb{
 }
 input[type=range]::-moz-range-thumb{width:24px;height:24px;border-radius:50%;background:var(--gold);border:3px solid #fff;}
 .clock{font-size:clamp(15px,2.2vw,22px);color:var(--gold);min-width:5.2em;text-align:center;font-variant-numeric:tabular-nums;}
+/* ---- ①の 月の 形えらび ---- */
+.shapes{flex:0 0 auto;display:grid;grid-template-columns:repeat(8,1fr);gap:6px;}
+@media (max-width:620px){.shapes{grid-template-columns:repeat(4,1fr);}}
+.shape{
+  position:relative;font:inherit;font-size:clamp(9px,1.05vw,12px);color:var(--dim);
+  background:rgba(255,255,255,.06);border:2px solid rgba(255,255,255,.18);
+  border-radius:12px;cursor:pointer;padding:0 2px 4px;min-height:58px;overflow:hidden;
+  display:flex;flex-direction:column;align-items:center;justify-content:flex-end;
+}
+.shape canvas{position:absolute;inset:auto;left:0;right:0;top:3px;width:100%;height:58%;}
+.shape span{position:relative;white-space:nowrap;}
+.shape.on{border-color:var(--gold);background:rgba(255,217,142,.16);color:var(--gold);}
+@media (max-height:560px){.shape{min-height:48px;}}
 /* ---- えらぶ ボタン ---- */
 .opts{flex:0 0 auto;display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
 .opts.two{grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(2,1fr);flex:1;min-height:0;}
@@ -149,13 +162,10 @@ input[type=range]::-moz-range-thumb{width:24px;height:24px;border-radius:50%;bac
     <!-- ① 空で 見つける -->
     <section class="stage on" id="s1">
       <div class="card" id="w1"><canvas id="c1"></canvas></div>
+      <div class="shapes" id="sh1"></div>
       <div class="msg" id="m1"></div>
       <div class="bar">
-        <span class="field">月の 形</span>
-        <button class="btn sub" id="b1prev">◀ もどす</button>
-        <button class="btn play" id="b1next">べつの 日の 月 ▶</button>
-        <span class="field" style="color:var(--gold)" id="n1">三日月</span>
-        <span class="clock" id="t1">15時</span>
+        <span class="clock" id="t1">18時</span>
         <input type="range" id="r1" min="0" max="47" step="1" value="30" aria-label="時こく">
         <button class="btn ghost" id="b1auto">▶ 時間を すすめる</button>
         <span class="field" id="st1">スタート 15時</span>
@@ -234,14 +244,14 @@ const norm180=d=>{d=norm360(d);return d>180?d-360:d;};
    ことばは ぜんぶ「太陽と 月の 位置の 関係」で 書く。
    ========================================================= */
 const KEY=[
-  {a:0,  name:'新月',       note:'月が 太陽と 同じ 方向に ある。かがやいて いる 面が こちらを むかないので 見えない。'},
-  {a:45, name:'三日月',     note:'太陽の すぐ 近く。かがやいて いる 細い ところの 側に 太陽が ある。'},
-  {a:90, name:'上弦の月',   note:'太陽と 90度 はなれて いる。右半分が かがやいて 見える。'},
-  {a:135,name:'ふくらんだ月',note:'太陽から もっと はなれた。かがやいて 見える ところが ふえる。'},
-  {a:180,name:'満月',       note:'太陽と 反対の 方向に ある。まるく かがやいて 見える。'},
-  {a:225,name:'かけていく月',note:'また 太陽に 近づいて いく。右がわから かけて いく。'},
-  {a:270,name:'下弦の月',   note:'また 90度 はなれて いる。こんどは 左半分が かがやいて 見える。'},
-  {a:315,name:'明け方の月', note:'太陽の 近くに もどって きた。かがやいて いる 側に 太陽が ある。'}
+  {a:0,  name:'新月',s:'新月',       note:'月が 太陽と 同じ 方向に ある。かがやいて いる 面が こちらを むかないので 見えない。'},
+  {a:45, name:'三日月',s:'三日月',     note:'太陽の すぐ 近く。かがやいて いる 細い ところの 側に 太陽が ある。'},
+  {a:90, name:'上弦の月',s:'上弦',   note:'太陽と 90度 はなれて いる。右半分が かがやいて 見える。'},
+  {a:135,name:'ふくらんだ月',s:'ふくらんだ',note:'太陽から もっと はなれた。かがやいて 見える ところが ふえる。'},
+  {a:180,name:'満月',s:'満月',       note:'太陽と 反対の 方向に ある。まるく かがやいて 見える。'},
+  {a:225,name:'かけていく月',s:'かけていく',note:'また 太陽に 近づいて いく。右がわから かけて いく。'},
+  {a:270,name:'下弦の月',s:'下弦',   note:'また 90度 はなれて いる。こんどは 左半分が かがやいて 見える。'},
+  {a:315,name:'明け方の月',s:'明け方', note:'太陽の 近くに もどって きた。かがやいて いる 側に 太陽が ある。'}
 ];
 const keyIndex=t=>{let b=0,bd=999;for(let i=0;i<8;i++){const d=Math.abs(norm180(t-KEY[i].a));if(d<bd){bd=d;b=i;}}return{i:b,d:bd};};
 const litRatio=t=>(1-Math.cos(t*D2R))/2;
@@ -487,6 +497,14 @@ function drawSky(){
   txt(g,'西',w*0.5+rx,hy+fs,fs,'rgba(255,255,255,.75)');
   txt(g,'南の 空を 見上げた ところ',w*0.012,h*0.05,Math.max(11,S*0.03),'rgba(255,255,255,.62)','left');
   txt(g,'※ 太陽を 直せつ 見ない',w*0.012,h-Math.max(11,S*0.03),Math.max(10,S*0.026),'rgba(255,200,160,.8)','left');
+  /* 形えらびの 小さい 絵 */
+  [...$('sh1').children].forEach((el,i)=>{
+    const c=fit(el.querySelector('canvas'));
+    const t=KEY[i].a;
+    /* 小さいので、光って いない ところを こい 色に する（うすいと ぜんぶ 満月に 見える） */
+    drawMoon(c.g,c.w/2,c.h*0.5,Math.min(c.w,c.h)*0.44,t,t<180?0:Math.PI,
+             {dark:'rgba(6,9,23,.72)',crater:false,ringColor:'rgba(255,255,255,.30)',ringDash:[2,3]});
+  });
 }
 function fmtHour(t){t=((t%24)+24)%24;const h=Math.floor(t),m=Math.round((t-h)*60);return h+'時'+(m?String(m).padStart(2,'0')+'分':'');}
 function upSky(){
@@ -494,8 +512,8 @@ function upSky(){
   const Hs=norm180((SKY.t-12)*15), Hm=norm180(Hs-SKY.theta);
   const hh=Math.floor(SKY.t)%24, mm=(SKY.t%1)?'30分':'';
   $('t1').textContent=hh+'時'+mm;
-  $('n1').textContent=KEY[k.i].name;
   $('r1').value=String(Math.round(SKY.t*2));
+  [...$('sh1').children].forEach((b,i)=>b.classList.toggle('on',i===k.i&&k.d<=6));
   $('b1auto').classList.toggle('on',SKY.auto);
   $('b1auto').textContent=SKY.auto?'■ とめる':'▶ 時間を すすめる';
   const st=startTime(SKY.theta);
@@ -505,7 +523,7 @@ function upSky(){
   let s;
   if(k.i===0&&Math.abs(Hs)<=91){
     s='<b>新月</b>は 太陽と 同じ 方向に ある。光る 面が こちらを むかず、空も 明るいので 見えない。'
-      +'「べつの 日の 月 ▶」で 三日月に すすもう。';
+      +'下の ボタンで ほかの 形も 見て みよう。';
   }else if(Math.abs(Hm)>91){
     s='<b>'+KEY[k.i].name+'</b>は いま 地平線の 下。「スタートに もどす」か 時こくを 動かすと 出て くるよ。';
   }else if(Math.abs(Hs)<=91){
@@ -519,13 +537,19 @@ function upSky(){
   $('m1').innerHTML=s;
   dirty=true;
 }
-function skyShape(d){
-  SKY.theta=norm360(Math.round(SKY.theta/45)*45+d);
-  SKY.t=startTime(SKY.theta);   // 形を かえたら、その 月が 見える ころに 合わせる
-  SKY.auto=false;upSky();
+/* 月の 形は 8つから じかに えらぶ（2026-09-19 要望＝「たまたま 出た 形では なく
+   見たい 形を えらびたい」）。ならびは 新月→三日月→…の 日の 順。
+   えらぶと、その 月の スタートの 時こくに 合わせる */
+function buildShapes(){
+  const box=$('sh1');box.innerHTML='';
+  KEY.forEach((k,i)=>{
+    const b=document.createElement('button');
+    b.className='shape';b.dataset.i=String(i);
+    b.innerHTML='<canvas></canvas><span>'+k.s+'</span>';
+    b.onclick=()=>{SKY.theta=k.a;SKY.t=startTime(k.a);SKY.auto=false;upSky();};
+    box.appendChild(b);
+  });
 }
-$('b1next').onclick=()=>skyShape(45);
-$('b1prev').onclick=()=>skyShape(-45);
 $('b1reset').onclick=()=>{SKY.t=startTime(SKY.theta);SKY.auto=false;upSky();};
 $('r1').oninput=e=>{SKY.auto=false;SKY.t=Number(e.target.value)/2;upSky();};
 $('b1auto').onclick=()=>{SKY.auto=!SKY.auto;upSky();};
@@ -922,7 +946,7 @@ function frame(ts){
 addEventListener('resize',()=>{dirty=true;});
 addEventListener('orientationchange',()=>{setTimeout(()=>{dirty=true;},250);});
 
-upSky();upModel();predNew();qNew();show(1);
+buildShapes();upSky();upModel();predNew();qNew();show(1);
 requestAnimationFrame(frame);
 </script>
 </body>
