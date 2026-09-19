@@ -85,7 +85,7 @@ nav{display:flex;gap:5px;flex-wrap:wrap;justify-content:center;}
 .cols{flex:1;min-height:0;display:grid;grid-template-rows:1.4fr 1fr;grid-template-columns:1fr;gap:6px;}
 @media (orientation:landscape) and (min-width:700px){
   .cols.two{grid-template-columns:1.32fr .78fr;grid-template-rows:1fr;}
-  .cols.map{grid-template-columns:1fr 1fr;grid-template-rows:1fr;}
+  .cols.map{grid-template-columns:1.24fr .76fr;grid-template-rows:1fr;}
 }
 .card{
   position:relative;background:var(--card);border:1px solid var(--line);
@@ -134,6 +134,8 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;}
   position:absolute;right:6px;bottom:5px;font-size:clamp(9px,1.05vw,11px);
   color:#fff;background:rgba(0,0,0,.42);padding:2px 7px;border-radius:8px;pointer-events:none;
 }
+/* 写真と 図は 見た目が ちがうので、どちらかを 必ず 書いて おく */
+.credit.fig{color:var(--dim);background:rgba(255,253,247,.92);border:1px solid var(--line);}
 #spotName{
   flex:0 0 auto;text-align:center;font-size:clamp(14px,2vw,20px);
 }
@@ -150,6 +152,8 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;}
 }
 .fil i{width:11px;height:11px;border-radius:50%;display:block;}
 .fil.on{background:#fff;color:var(--ink);}
+/* 青＝同じ 画面の 中で 進む（ピンが 小さくても ボタンで 送れる） */
+.fil.nav{background:var(--blue);color:#fff;border-color:var(--blue);}
 .note{
   flex:0 0 auto;text-align:center;font-size:clamp(10px,1.2vw,12.5px);color:var(--dim);
 }
@@ -608,58 +612,84 @@ const S2={step:0,a:0};
 const S2MAX=6;
 const HAI_DEPTH=PTS.map(p=>p.e-42);   /* 火山灰の 上までの ふかさ＝20,10,2 */
 
+/* ボーリングの やぐら（ここを ほって いる、が ひと目で わかる しるし） */
+function rig(g,cx,gv,sz){
+  g.save();g.strokeStyle='#6b5a3c';g.lineWidth=2.2;g.lineCap='round';
+  g.beginPath();
+  g.moveTo(cx-sz*0.46,gv);g.lineTo(cx,gv-sz);
+  g.moveTo(cx+sz*0.46,gv);g.lineTo(cx,gv-sz);
+  g.moveTo(cx-sz*0.30,gv-sz*0.44);g.lineTo(cx+sz*0.30,gv-sz*0.44);
+  g.moveTo(cx,gv-sz*0.92);g.lineTo(cx,gv+sz*0.55);
+  g.stroke();g.restore();
+}
 function drawS2(){
   const {g,w,h}=fit($('c2'));
-  const yTop=h*0.17,yBot=h*0.92;
-  const mppA=(yBot-yTop)/(EMAX-EMIN);          /* 標高で そろえた ときの ばい率 */
-  const mppC=h*0.62/DEPTH;                     /* ならべた だけの ときは 大きく 見せる */
+  /* --- 2つの ゾーン ---
+     上＝どこを ほって いるかの 絵（地形。標高が ちがう ことが 見える）
+     下＝ほって 出て きた もの＝柱状図（地面で そろえて ならべる）
+     「標高で そろえる」と、下の 柱が 上の 地形の 中へ 動いて いく  */
+  const yBot=h*0.94, yTop=h*0.16;
+  const mppA=(yBot-yTop)/(EMAX-EMIN);       /* 標高で そろえた ときの ばい率 */
+  const topY0=h*0.13, mppTop=h*0.15/(EMAX-44);
+  const coreTop0=h*0.45, mppC=h*0.45/DEPTH; /* ならべた ときは 大きく 見せる */
   const a=S2.a, mpp=lerp(mppC,mppA,a);
-  const yE=e=>yBot-(e-EMIN)*mppA;
-  const coreTop=h*0.24;
+  const yG=e=>lerp(topY0+(EMAX-e)*mppTop, yBot-(e-EMIN)*mppA, a);
+  const groundBot=lerp(h*0.345,h+2,a);
   const cw=clamp(w*0.125,34,80);
-  const tops=PTS.map(p=>lerp(coreTop,yE(p.e),a));
-  /* 空（標高で そろえた ときだけ。ならべた だけの ときは 紙の 色） */
+  const tops=PTS.map(p=>lerp(coreTop0,yG(p.e),a));
+  const sz=clamp(h*0.055,13,28);
+  const inv=clamp(1-a*1.8,0,1);             /* しらべて いる あいだ だけ 出す もの */
+
   g.fillStyle='#fffdf7';g.fillRect(0,0,w,h);
-  if(a>0.02){
-    const sky=g.createLinearGradient(0,0,0,h);
-    sky.addColorStop(0,'#dbe8f2');sky.addColorStop(1,'#f3f1e4');
-    g.save();g.globalAlpha=a;g.fillStyle=sky;g.fillRect(0,0,w,h);g.restore();
-    /* 地面（柱の 上を つないで かく。とちゅうでも はなれない） */
-    g.save();g.globalAlpha=a;
-    g.beginPath();g.moveTo(-2,tops[0]+6);
-    for(let i=0;i<PTS.length;i++)g.lineTo(w*PTS[i].x,tops[i]);
-    g.lineTo(w+2,tops[2]+6);g.lineTo(w+2,h+2);g.lineTo(-2,h+2);g.closePath();
-    g.fillStyle='#e6dcc2';g.fill();
-    g.beginPath();g.moveTo(-2,tops[0]+6);
-    for(let i=0;i<PTS.length;i++)g.lineTo(w*PTS[i].x,tops[i]);
-    g.lineTo(w+2,tops[2]+6);
-    g.strokeStyle='#7c9a55';g.lineWidth=3;g.stroke();
-    g.restore();
-  }
+  /* 空 */
+  const sky=g.createLinearGradient(0,0,0,groundBot);
+  sky.addColorStop(0,'#dbe8f2');sky.addColorStop(1,'#eef2ea');
+  g.fillStyle=sky;g.fillRect(0,0,w,groundBot);
+  /* 地形（柱の 上を つないで かく。とちゅうでも はなれない） */
+  g.beginPath();g.moveTo(-2,yG(PTS[0].e)+h*0.012);
+  for(let i=0;i<PTS.length;i++)g.lineTo(w*PTS[i].x,yG(PTS[i].e));
+  g.lineTo(w+2,yG(PTS[2].e)+h*0.012);g.lineTo(w+2,groundBot);g.lineTo(-2,groundBot);g.closePath();
+  g.fillStyle='#e6dcc2';g.fill();
+  g.beginPath();g.moveTo(-2,yG(PTS[0].e)+h*0.012);
+  for(let i=0;i<PTS.length;i++)g.lineTo(w*PTS[i].x,yG(PTS[i].e));
+  g.lineTo(w+2,yG(PTS[2].e)+h*0.012);
+  g.strokeStyle='#7c9a55';g.lineWidth=3;g.stroke();
   /* 標高の ものさし（そろい終わる ころに 出す） */
   const av=clamp((a-0.55)/0.45,0,1);
   if(av>0.01){
     const sx=w*0.045;
     g.save();g.globalAlpha=av;g.strokeStyle='rgba(43,33,24,.55)';g.lineWidth=1.4;
-    g.beginPath();g.moveTo(sx,yE(EMAX));g.lineTo(sx,yE(EMIN));g.stroke();
+    g.beginPath();g.moveTo(sx,yBot-(EMAX-EMIN)*mppA);g.lineTo(sx,yBot);g.stroke();
     for(let e=EMIN+3;e<=EMAX;e+=10){
-      g.beginPath();g.moveTo(sx-6,yE(e));g.lineTo(sx+6,yE(e));g.stroke();
-      txt(g,e+'m',sx-9,yE(e),10,'rgba(43,33,24,.65)','right');
+      const y=yBot-(e-EMIN)*mppA;
+      g.beginPath();g.moveTo(sx-6,y);g.lineTo(sx+6,y);g.stroke();
+      txt(g,e+'m',sx-9,y,10,'rgba(43,33,24,.65)','right');
     }
-    txt(g,'標高',sx,yE(EMAX)-12,11,'rgba(43,33,24,.65)');
+    txt(g,'標高',sx,yBot-(EMAX-EMIN)*mppA-12,11,'rgba(43,33,24,.65)');
     g.restore();
+  }
+  /* やぐらと ほった あな、下の 柱へ つなぐ 点線 */
+  if(inv>0.01){
+    for(let i=0;i<PTS.length;i++){
+      const p=PTS[i],cx=w*p.x,gv=yG(p.e);
+      g.save();g.globalAlpha=inv;
+      rig(g,cx,gv,sz);
+      if(S2.step>i){
+        g.fillStyle='#4a3f30';g.fillRect(cx-2,gv,4,sz*1.5);
+        g.save();g.setLineDash([3,5]);g.strokeStyle='rgba(43,33,24,.45)';g.lineWidth=1.5;
+        g.beginPath();g.moveTo(cx,gv+sz*1.5);g.lineTo(cx,tops[i]-4);g.stroke();g.restore();
+      }
+      txt(g,p.n,cx-sz*0.95,gv-sz*0.45,clamp(h*.042,13,21),'#2b2118','right');
+      txt(g,'標高 '+p.e+'m',cx+sz*0.8,gv-sz*0.35,clamp(h*.028,10,14),'#7a6a52','left');
+      g.restore();
+    }
+    /* 下の 柱が 何なのかを 一言で。A と B の あいだの あいた ところに 置く */
+    if(S2.step>=1)txt(g,'ほって 出て きた もの',w*0.37,(groundBot+coreTop0)/2,clamp(w*.021,10,14),'#7a6a52');
   }
   /* 3本の 柱 */
   for(let i=0;i<PTS.length;i++){
     const p=PTS[i],cx=w*p.x,x=cx-cw/2,top=tops[i];
     const drawn=(S2.step>i);
-    /* 地面の しるし（ならべて いる あいだ） */
-    if(a<0.6){
-      g.save();g.globalAlpha=1-a/0.6;
-      g.strokeStyle='#7c9a55';g.lineWidth=3;g.lineCap='round';
-      g.beginPath();g.moveTo(cx-cw*.85,top-2);g.lineTo(cx+cw*.85,top-2);g.stroke();
-      g.restore();
-    }
     if(!drawn){
       g.fillStyle='rgba(43,33,24,.09)';
       rr(g,x,top,cw,DEPTH*mpp,8);g.fill();
@@ -676,23 +706,26 @@ function drawS2(){
       g.strokeStyle='rgba(60,48,30,.55)';g.lineWidth=1.6;
       g.strokeRect(x,top,cw,DEPTH*mpp);
     }
-    /* 名前と 標高 */
-    txt(g,p.n,cx,top-clamp(w*.026,13,20),clamp(w*.032,14,22),'#2b2118','center','bottom');
-    txt(g,'標高 '+p.e+'m',cx,top-5,clamp(w*.019,10,13),'#7a6a52','center','bottom');
-    /* ふかさの ものさし（Aの 左） */
-    if(i===0&&drawn&&a<0.5){
-      g.save();g.globalAlpha=1-a*2;
+    /* 柱の 名前（上の やぐらと 同じ 字） */
+    if(inv>0.01){
+      g.save();g.globalAlpha=inv;
+      txt(g,p.n,cx,top-4,clamp(w*.030,13,20),'#2b2118','center','bottom');
+      g.restore();
+    }
+    /* ふかさの ものさし（Aの 左。0m＝地面） */
+    if(i===0&&drawn&&inv>0.01){
+      g.save();g.globalAlpha=inv;
       for(let d=0;d<=DEPTH;d+=5){
         const y=top+d*mpp;
         g.strokeStyle='rgba(43,33,24,.5)';g.lineWidth=1;
         g.beginPath();g.moveTo(x-5,y);g.lineTo(x,y);g.stroke();
         txt(g,d+'m',x-8,y,10,'rgba(43,33,24,.6)','right');
       }
-      txt(g,'ふかさ',x+cw*.1,top+DEPTH*mpp+13,10,'rgba(43,33,24,.6)','right','top');
+      txt(g,'ふかさ',x-8,top-13,10,'rgba(43,33,24,.6)','right');
       g.restore();
     }
     /* ④ 火山灰までの ふかさ */
-    if(S2.step===4){
+    if(S2.step===4&&a<0.5){
       const y1=top,y2=top+HAI_DEPTH[i]*mpp;
       g.save();g.setLineDash([4,4]);g.strokeStyle='#c9a227';g.lineWidth=2;
       g.beginPath();g.moveTo(x+cw+7,y1);g.lineTo(x+cw+7,y2);g.stroke();g.restore();
@@ -712,34 +745,35 @@ function drawS2(){
       g.strokeStyle=on?'#d2622a':'rgba(60,48,30,.40)';
       g.lineWidth=on?3:1.4;
       for(const e of [L.t,L.b]){
-        const y=yE(e);
+        const y=yBot-(e-EMIN)*mppA;
         if(y<yTop-10||y>yBot+10)continue;
         g.beginPath();g.moveTo(xa-14,y);g.lineTo(xb+14,y);g.stroke();
       }
     }
     g.restore();
+    const yl=yBot-(40-EMIN)*mppA;
     g.fillStyle='rgba(255,253,247,.92)';
-    rr(g,w*0.5-72,yE(40)-13,144,26,8);g.fill();
-    txt(g,'火山灰の 層',w*0.5,yE(40),14,'#d2622a');
+    rr(g,w*0.5-72,yl-13,144,26,8);g.fill();
+    txt(g,'火山灰の 層',w*0.5,yl,14,'#d2622a');
   }
   /* しるしの 説明 */
   const lg=['reki','suna','doro','hai'];
   const bw=clamp(w*0.085,44,80),gap=6,tot=lg.length*(bw+gap)-gap;
   let lx=w/2-tot/2;
   for(const k of lg){
-    band(g,lx,h*0.028,bw,15,k,5);
-    g.strokeStyle='rgba(60,48,30,.4)';g.lineWidth=1;g.strokeRect(lx,h*0.028,bw,15);
-    txt(g,ROCK[k].n,lx+bw/2,h*0.028+19,clamp(w*.020,10,13),'#7a6a52','center','top');
+    band(g,lx,h*0.022,bw,14,k,5);
+    g.strokeStyle='rgba(60,48,30,.4)';g.lineWidth=1;g.strokeRect(lx,h*0.022,bw,14);
+    txt(g,ROCK[k].n,lx+bw/2,h*0.022+17,clamp(w*.020,10,13),'#7a6a52','center','top');
     lx+=bw+gap;
   }
 }
 const M2=[
- 'A・B・C の 3か所。地面の 高さ（<b>標高</b>）は ちがう。地面の 下は どう なって いるだろう。',
- '<b>A</b>で ボーリング。25m ほって、出て きた 物を 上から 順に ならべた。',
- '<b>B</b>も 同じように ほった。れきの 層が うすい。',
+ 'A・B・C の 3か所で、地面を まっすぐ 下に ほる（<b>ボーリング</b>）。地面の 高さ（<b>標高</b>）は 3か所とも ちがう。',
+ '<b>A</b>を 25m ほった。出て きた 物を <b>上から 順に</b> ならべたのが 下の 柱。いちばん 上が 地面。',
+ '<b>B</b>も 同じように 25m ほって ならべた。れきの 層が うすい。',
  '<b>C</b>も ほった。3本 そろった。同じ 層が ありそうかな。',
- '白い <b>火山灰の 層</b>までの ふかさは Aが 20m、Bが 10m、Cが 2m。ばらばらに 見える。',
- '3本を <b>標高で そろえて</b> みると…',
+ '白い <b>火山灰の 層</b>までの ふかさは Aが 20m、Bが 10m、Cが 2m。<b>地面から</b> くらべると ばらばら。',
+ '3本を <b>標高で そろえて</b>、ほった 場所に もどして みると…',
  '火山灰の 層が 横に <b class="ok">ひとつづき</b>に なった。ほかの 層も つながる ＝ <b>層は 横に 広がって いる</b>。'
 ];
 function showS2(){
@@ -1083,14 +1117,30 @@ function drawKaz4(g,w,h,t,st){
       txt(g,'よう岩が かたまった 土地',vx+hw*0.85,gy+gh*0.14,clamp(w*.021,10,14),'#2b2118');
     }else txt(g,'よう岩',vx+hw*0.80,gy-h*0.16,clamp(w*.024,11,16),'#d2401c');
   }
-  /* 新しく もり上がった 山（左がわ。よう岩と はなして おく） */
+  /* もり上がった 土地（左がわ。よう岩と はなして おく）
+     ＝火山灰が つもったのでは なく、地下の マグマが 地面を 下から おし上げた。
+     だから 中身は もとの 地層の まま。ここを 別の 色で ぬらない こと */
   if(st>=5){
-    const cx=w*0.14,cw2=w*0.10;
-    g.beginPath();g.moveTo(cx-cw2,gy);
-    g.quadraticCurveTo(cx,gy-h*0.24,cx+cw2,gy);g.closePath();
-    g.fillStyle='#9d7a62';g.fill();g.strokeStyle='rgba(60,48,30,.5)';g.lineWidth=1.4;g.stroke();
-    arrow(g,cx,gy-h*0.30,cx,gy-h*0.20,'#d2622a',3,9);
-    txt(g,'もり上がった',cx,gy-h*0.32,clamp(w*.021,10,14),'#d2622a','center','bottom');
+    const cx=w*0.145,cw2=w*0.115,bh=h*0.20;
+    const dome=()=>{g.beginPath();g.moveTo(cx-cw2,gy+1);
+      g.quadraticCurveTo(cx,gy-bh*1.5,cx+cw2,gy+1);g.closePath();};
+    g.save();dome();g.clip();
+    band(g,cx-cw2-2,gy-bh,cw2*2+4,gh*0.34,'suna',51);
+    band(g,cx-cw2-2,gy-bh+gh*0.34,cw2*2+4,gh*0.30,'doro',52);
+    band(g,cx-cw2-2,gy-bh+gh*0.64,cw2*2+4,gh*0.40,'reki',53);
+    g.strokeStyle='rgba(60,48,30,.3)';g.lineWidth=1;
+    for(const f of [0.34,0.64]){g.beginPath();g.moveTo(cx-cw2,gy-bh+gh*f);g.lineTo(cx+cw2,gy-bh+gh*f);g.stroke();}
+    g.restore();
+    g.save();dome();g.strokeStyle='rgba(60,48,30,.55)';g.lineWidth=1.8;g.stroke();g.restore();
+    /* 下に ある マグマと、おし上げる 力 */
+    g.save();g.fillStyle='rgba(226,98,28,.85)';
+    g.beginPath();g.ellipse(cx,gy+gh*0.72,cw2*0.52,gh*0.20,0,0,TAU);g.fill();g.restore();
+    txt(g,'マグマ',cx,gy+gh*0.72,clamp(w*.019,9,13),'#fffdf7');
+    g.save();g.globalAlpha=.9;
+    arrow(g,cx,gy+gh*0.46,cx,gy-bh*0.62,'#d2622a',5,13);
+    g.restore();
+    txt(g,'下から おし上げられた',cx,gy-bh*0.80-8,clamp(w*.021,10,14),'#d2622a','center','bottom');
+    tree(g,cx+cw2*0.42,gy-bh*0.60,clamp(h*.075,18,38));
   }else{
     tree(g,w*0.13,gy-4,clamp(h*.10,22,48));
   }
@@ -1228,7 +1278,7 @@ const M4={
   '<b>よう岩</b>が 流れ出す。通った ところの ようすが 変わる。',
   '流れた よう岩が かたまり、<b>新しい 土地</b>に なった。（群馬県 鬼押出し）',
   '<b>火山灰</b>が つもって、あたりの 土地の ようすが 変わる。',
-  '山の 形が 変わる。<b>新しい 山</b>が できる ことも ある。（北海道 昭和新山・鹿児島県 桜島）',
+  '地下の <b>マグマ</b>が 上がって きて、地面を <b>下から おし上げる</b> ことも ある。畑が もり上がって 山に なった。（北海道 昭和新山）',
   '火山の 噴火は <b>土地を 変える</b>。同時に 自然災害にも なる。そなえて おく ことが 大切。'
  ],
  jishin:[
@@ -1392,6 +1442,15 @@ function poly(g,arr,P,fill,stroke,lw){
   if(fill){g.fillStyle=fill;g.fill();}
   if(stroke){g.strokeStyle=stroke;g.lineWidth=lw||1.4;g.stroke();}
 }
+/* ずらした ピンと 本当の 場所を つなぐ 線 */
+function leader(g,q,col){
+  const d=Math.hypot(q.x-q.ox,q.y-q.oy);
+  if(d<2.5)return;
+  g.save();g.strokeStyle=col;g.globalAlpha*=0.55;g.lineWidth=1.4;
+  g.beginPath();g.moveTo(q.ox,q.oy);g.lineTo(q.x,q.y);g.stroke();
+  g.beginPath();g.arc(q.ox,q.oy,2.2,0,TAU);g.fillStyle=col;g.fill();
+  g.restore();
+}
 function pin(g,x,y,col,r,on){
   g.save();
   g.beginPath();
@@ -1415,24 +1474,48 @@ function drawS5(){
   const P2=mapper(['okinawa'],ix,iy,iw,ih-14,10);
   poly(g,JP.okinawa,P2,'#efe4c6','#b09a6c',1.5);
   txt(g,'沖縄県',ix+iw/2,iy+ih-8,clamp(iw*.13,9,13),'#7a6a52');
-  /* ピン */
-  S5.hit=[];
-  const r=clamp(w*0.018,7,12);
-  for(let i=0;i<SPOTS.length;i++){
-    const sp=SPOTS[i],p=P(sp.lon,sp.lat);
-    const on=(i===S5.sel), show=(S5.fil==='all'||S5.fil===sp.cat);
-    S5.hit.push({x:p[0],y:p[1],i,show});
-    if(i===S5.sel)continue;
-    g.globalAlpha=show?1:0.20;
-    pin(g,p[0],p[1],CAT[sp.cat].c,r,false);
+  /* ピン。関東のように かたまる ところは かさなって タップできないので、
+     すこし ずらして 引き出し線で 本当の 場所と つなぐ */
+  const r=clamp(w*0.020,8,13);
+  const pts=SPOTS.map((sp,i)=>{
+    const p=P(sp.lon,sp.lat);
+    return {i,ox:p[0],oy:p[1],x:p[0],y:p[1],show:(S5.fil==='all'||S5.fil===sp.cat)};
+  });
+  const vis=pts.filter(q=>q.show), minD=r*2.2, lim=r*2.8;
+  for(let pass=0;pass<50;pass++){
+    let moved=false;
+    for(let a2=0;a2<vis.length;a2++)for(let b2=a2+1;b2<vis.length;b2++){
+      const A=vis[a2],B=vis[b2];
+      let dx=B.x-A.x,dy=B.y-A.y,d=Math.hypot(dx,dy);
+      if(d<0.01){dx=1;dy=0.3;d=1;}
+      if(d<minD){
+        const push=(minD-d)*0.25;dx/=d;dy/=d;
+        A.x-=dx*push;A.y-=dy*push;B.x+=dx*push;B.y+=dy*push;moved=true;
+      }
+    }
+    for(const q of vis){
+      const dx=q.x-q.ox,dy=q.y-q.oy,d=Math.hypot(dx,dy);
+      if(d>lim){q.x=q.ox+dx/d*lim;q.y=q.oy+dy/d*lim;}
+      q.x=clamp(q.x,r+2,w-r-2);q.y=clamp(q.y,r*2+2,h-4);
+    }
+    if(!moved)break;
+  }
+  S5.hit=pts.map(q=>({x:q.x,y:q.y,i:q.i,show:q.show}));
+  for(const q of pts){
+    if(q.i===S5.sel)continue;
+    const spo=SPOTS[q.i];
+    g.globalAlpha=q.show?1:0.20;
+    leader(g,q,CAT[spo.cat].c);
+    pin(g,q.x,q.y,CAT[spo.cat].c,r,false);
     g.globalAlpha=1;
   }
   /* えらんで いる ピンは 最後に（上に 出す） */
-  const sp=SPOTS[S5.sel],p=P(sp.lon,sp.lat);
-  pin(g,p[0],p[1],CAT[sp.cat].c,r*1.3,true);
+  const sp=SPOTS[S5.sel],q=pts[S5.sel],p=[q.x,q.y];
+  leader(g,q,CAT[sp.cat].c);
+  pin(g,q.x,q.y,CAT[sp.cat].c,r*1.3,true);
   const fs=clamp(w*0.029,11,16);
   g.save();g.font='700 '+fs+'px sans-serif';
-  const label=sp.pref+' '+sp.n;
+  const label=sp.pref+' '+sp.n+(sp.photo?'　（写真）':'');
   const tw=g.measureText(label).width+16;g.restore();
   /* ふきだしは ピンの あいて いる がわに 出す（左はしの 沖縄の わくと かさねない） */
   let lx=(p[0]<w*0.5)?p[0]+r*1.1:p[0]-tw-r*1.1;
@@ -1563,8 +1646,13 @@ function showS5(){
     '<small>'+sp.pref+'</small>';
   $('m5').innerHTML=sp.say;
   const img=$('p5'),cr=$('cr5');
-  if(sp.photo){img.src=PHOTO[sp.photo];img.classList.add('on');cr.style.display='block';}
-  else{img.classList.remove('on');img.removeAttribute('src');cr.style.display='none';}
+  if(sp.photo){
+    img.src=PHOTO[sp.photo];img.classList.add('on');
+    cr.className='credit';cr.textContent='写真　撮影：この 教材の 作者';
+  }else{
+    img.classList.remove('on');img.removeAttribute('src');
+    cr.className='credit fig';cr.textContent='図　ようすを えがいた もの';
+  }
   paint();
 }
 $('c5').addEventListener('click',e=>{
@@ -1578,8 +1666,22 @@ $('c5').addEventListener('click',e=>{
   }
   if(best>=0&&bd<Math.max(26,r.width*0.04)){S5.sel=best;showS5();}
 });
+function spotList(){
+  return SPOTS.map((s,i)=>i).filter(i=>S5.fil==='all'||SPOTS[i].cat===S5.fil);
+}
+/* ピンが 小さくて おしにくい ときは この ボタンで 送れる */
+function stepSpot(d){
+  const list=spotList();
+  if(!list.length)return;
+  let k=list.indexOf(S5.sel);
+  k=(k<0)?0:(k+d+list.length)%list.length;
+  S5.sel=list[k];showS5();
+}
 (function buildFilters(){
   const box=$('fil5');
+  const prev=document.createElement('button');
+  prev.className='fil nav';prev.textContent='◀ まえ';prev.onclick=()=>stepSpot(-1);
+  box.appendChild(prev);
   const list=[['all','ぜんぶ','#7a6a52']].concat(Object.keys(CAT).map(k=>[k,CAT[k].s,CAT[k].c]));
   for(const [k,label,col] of list){
     const b=document.createElement('button');
@@ -1597,6 +1699,9 @@ $('c5').addEventListener('click',e=>{
     b.style.borderColor=col;
     box.appendChild(b);
   }
+  const next=document.createElement('button');
+  next.className='fil nav';next.textContent='つぎ ▶';next.onclick=()=>stepSpot(1);
+  box.appendChild(next);
 })();
 </script>
 <script>
