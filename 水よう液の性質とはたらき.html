@@ -211,6 +211,10 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;}
   flex:0 0 auto;display:flex;align-items:center;gap:7px;justify-content:center;flex-wrap:wrap;
   background:#f3ecd8;border:1px dashed var(--gold);border-radius:12px;padding:5px 8px;
 }
+/* 予想を まだ えらんで いない とき＝ここを おすのだと 分かる ように 強く 出す。
+   これが ないと「ボタンが グレーアウトして 動かない＝こわれた」と 見える
+   （2026-09-19 の 指摘） */
+.guess.need{border:2px solid var(--gold);background:#fff3cf;box-shadow:0 0 0 3px rgba(201,162,39,.18);}
 .guess .gl{font-size:clamp(10.5px,1.25vw,14px);color:#8a6a10;white-space:nowrap;}
 .guess .opts{flex:1;min-width:180px;}
 
@@ -1174,7 +1178,10 @@ $('b1undo').addEventListener('click',()=>{
 $('b1ref').addEventListener('click',()=>{S1.ref=!S1.ref;up1();});
 $('b1next').addEventListener('click',()=>{
   new1();
-  $('m1').innerHTML='ラベルが はがれた 水よう液が <b>3本</b>。下の 3つの 調べ方を つかって、どれが どれか あてよう。';
+  /* 何が かわったのかを ことばで 言う。言わないと
+     「もんだいが かわって いないのでは？」と 見える（2026-09-19 の 指摘） */
+  $('m1').innerHTML='<b>水よう液が かわった</b>よ。下の <b>3まいの カード</b>を 見てね。'+
+    '（'+S1.cards.map(k=>liqOf(k).n).join('・')+'）　どれが どれか、もう 一度 あてよう。';
   up1();dirty=true;
 });
 function step1(dt){
@@ -1303,7 +1310,11 @@ function up2(){
   $('t2ttl').textContent='① 水よう液を おして えらぶ → ② 下で 予想 → ③「'+
     (S2.tool==='litmus'?'つけて':'入れて')+' たしかめる」';
   $('g2lb').innerHTML='予想　<b>'+liqOf(S2.k).full+'</b>は…';
-  $('b2go').textContent=S2.tool==='litmus'?'リトマス紙を つけて たしかめる':'BTB液を 入れて たしかめる';
+  const need2=!S2.gs[S2.k]&&!S2.shown;
+  $('g2').classList.toggle('need',need2);
+  $('b2go').textContent=S2.shown?'調べた'
+    :need2?'↑ まず 予想を えらぼう'
+    :(S2.tool==='litmus'?'リトマス紙を つけて たしかめる':'BTB液を 入れて たしかめる');
   const q=liqOf(S2.k), g=S2.gs[S2.k];
   [...$('o2').children].forEach(b=>{
     b.className='opt'+(b.dataset.v===g?' sel':'');
@@ -1386,15 +1397,22 @@ function step2(dt){
    → この 4つを 1つずつ 送って 見せる。あわの 正体は 予想して から 調べる
    =================================================================== */
 const S3={f:0,t:0,an:0,gs:null};
+/* 予想の こまの 番号。
+   **あわが 見えた すぐ あとに 予想させる**（2026-09-19 の 指摘＝
+   「ふって 温めた あとに あわの 正体を 答えるのは それで いいのか」）。
+   ふる・温めるは「あわを たくさん 集める ための やり方」であって、
+   あわが 何かを 知る 手がかりでは ない。だから 問いは 先、集めるのは あと。
+   **順番を もどさない こと** */
+const GUESS3=1;
 const F3=[
  {ttl:'炭酸水を そのまま 見る',
   msg:'炭酸水からは <b>あわ</b>が 出て いる。この あわは 何だろう？　上の えを おしても すすむよ。'},
- {ttl:'ふり動かす',
-  msg:'ふり動かすと、あわが <b>たくさん</b> 出て きた。'},
- {ttl:'温める',
-  msg:'温めても、あわが <b>たくさん</b> 出て きた。水よう液には、ふったり 温めたり すると <b>気体を 出す</b>ものが ある。'},
  {ttl:'あわの 正体を 予想する',
-  msg:'この あわは 何だと 思う？　予想を えらぼう。'},
+  msg:'この あわは 何だと 思う？　下で 予想を えらぼう。'},
+ {ttl:'ふり動かして 集める',
+  msg:'あわを <b>集めて</b> 調べたい。ふり動かすと、あわが <b>たくさん</b> 出て きた。'},
+ {ttl:'温めて 集める',
+  msg:'温めても、あわが <b>たくさん</b> 出て きた。水よう液には、ふったり 温めたり すると <b>気体を 出す</b>ものが ある。'},
  {ttl:'石灰水で 調べる',
   msg:'あわを 集めて <b>石灰水</b>に 通すと、石灰水が <b>白く にごった</b>。石灰水を 白く にごらせる 気体は <b>二酸化炭素</b>。炭酸水には <b>二酸化炭素</b>が とけて いたんだね。'},
  {ttl:'気体は 水に とけるか',
@@ -1407,7 +1425,7 @@ function t3build(){
   t.style.gridTemplateColumns='1fr';
   t.style.gridTemplateRows='repeat(4,1fr)';
   const its=[
-    [2,'ふる・温める と あわが 出る'],
+    [3,'ふる・温める と あわが 出る'],
     [4,'あわは 二酸化炭素'],
     [5,'気体は また 水に とける'],
     [6,'蒸発させても 何も 残らない'],
@@ -1449,8 +1467,8 @@ function draw3(){
   txt(g,'③ '+F3[f].ttl+'　（'+(f+1)+' / '+F3.length+'）',500,62,22,'#40525e');
 
   if(f<=3){
-    const shake=f===1?Math.sin(t*16)*9:0;
-    const warm=f===2;
+    const shake=f===2?Math.sin(t*16)*9:0;
+    const warm=f===3;
     const cx=440+shake, by=470;
     grp(g,440,392,1.2,()=>{
     if(warm){
@@ -1460,9 +1478,9 @@ function draw3(){
       steam(g,cx+118,by-124,t,1,'#dcc4b4');
       txt(g,'お湯',cx-190,by-58,19,'#a5775c');
     }
-    beaker(g,cx,by,196,266,.6,WATER,f===0?18:52,t*(f===0?1:2.4));
+    beaker(g,cx,by,196,266,.6,WATER,f<=1?18:52,t*(f<=1?1:2.4));
     txt(g,'炭酸水',cx,by+38,22,'#40525e');
-    if(f===1){
+    if(f===2){
       g.save();g.strokeStyle='#5b8fb0';g.lineWidth=6;g.lineCap='round';
       for(const s of [-1,1]){
         g.beginPath();
@@ -1473,7 +1491,7 @@ function draw3(){
       g.restore();
     }
     });
-    if(f===3){
+    if(f===GUESS3){
       box(g,596,150,368,206,18,'#ffffff','#c9a227',3);
       txt(g,'この あわは 何？',780,200,26,'#8a6a10');
       txt(g,'下で 予想を えらぼう',780,254,20,'#8a96a0');
@@ -1566,15 +1584,22 @@ function draw3(){
 }
 function up3(){
   t3build();
-  $('g3').style.display=(S3.f===3&&!S3.gs)?'flex':'none';
+  const need3=(S3.f===GUESS3&&!S3.gs);
+  $('g3').style.display=need3?'flex':'none';
+  $('g3').classList.toggle('need',need3);
   [...$('o3').children].forEach(b=>{b.className='opt'+(b.dataset.v===S3.gs?' sel':'');});
-  $('b3go').disabled=(S3.f===3&&!S3.gs)||S3.f>=F3.length-1;
+  $('b3go').disabled=need3||S3.f>=F3.length-1;
+  $('b3go').textContent=need3?'↑ まず 予想を えらぼう':'1つ すすむ ▶';
   $('b3back').disabled=S3.f===0;
-  $('m3').innerHTML=F3[S3.f].msg;
+  /* 石灰水の こまでは 予想の 答え合わせを 頭に つける。
+     ここで やると「もどる」で 戻って きた ときも 同じ 文に なる */
+  let m=F3[S3.f].msg;
+  if(S3.f===4&&S3.gs)m=(S3.gs==='co2'?'<span class="ok">予想の とおり！</span>　':'<span class="ng">予想とは ちがった。</span>　')+m;
+  $('m3').innerHTML=m;
 }
 function go3(n){
   const nf=clamp(n,0,F3.length-1);
-  if(nf===3&&!S3.gs&&S3.f<3){S3.f=3;S3.an=0;up3();return;}
+  if(nf>GUESS3&&!S3.gs){S3.f=GUESS3;S3.an=0;up3();return;}
   S3.f=nf;S3.an=(nf>=4)?0:1;
   up3();
 }
@@ -1584,10 +1609,11 @@ $('b3reset').addEventListener('click',()=>{S3.f=0;S3.an=0;S3.gs=null;up3();dirty
 $('c3').addEventListener('click',()=>{if(!$('b3go').disabled){go3(S3.f+1);dirty=true;}});
 $('o3').addEventListener('click',e=>{
   const b=e.target.closest('.opt');if(!b)return;
+  /* 予想したら すぐ 答えを 見せず、「集める → 石灰水で 調べる」の 手順へ 進む */
   S3.gs=b.dataset.v;
-  const ok=S3.gs==='co2';
-  S3.f=4;S3.an=0;up3();
-  $('m3').innerHTML=(ok?'<span class="ok">予想の とおり！</span>　':'<span class="ng">予想とは ちがった。</span>　')+F3[4].msg;
+  go3(GUESS3+1);
+  $('m3').innerHTML='予想したね。では <b>あわを 集めて</b>、その 気体が 何か 調べて みよう。'+
+    'ふったり 温めたり すると あわが たくさん 出るよ。';
   dirty=true;
 });
 function step3(dt){
@@ -1645,12 +1671,14 @@ function t4build(){
   const t=$('t4'),M=MET[S4.met],r=react4();
   t.style.gridTemplateColumns='1fr';
   t.style.gridTemplateRows='repeat(5,1fr)';
+  /* みじかく しすぎると 何の ことか 分からない。
+     「同じ？ と 予想する」では 何と 何が 同じなのか 言って いなかった（2026-09-19 の 指摘） */
   const steps=[
-    (r?'塩酸':'食塩水')+'を 入れる',
+    (r?'うすい塩酸':'食塩水')+'を 入れる',
     M.n+'を 入れる',
-    r?'とけた 液を 蒸発させる':'（とけない）',
-    '同じ？ と 予想する',
-    '元の 金属と くらべる',
+    r?'とけた 液を 蒸発させる':'（とけないので ここまで）',
+    '出てきた 物は 元の '+M.n+'と 同じ？',
+    '3つの 見方で くらべる',
   ];
   t.innerHTML=steps.map((x,i)=>
     '<div class="stp'+(i<S4.f?' done':i===S4.f?' now':'')+'"><i>'+(i+1)+'</i>'+x+'</div>'
@@ -1781,10 +1809,13 @@ function draw4(){
 }
 function up4(){
   l4build();t4build();
-  $('g4').style.display=(S4.f===3&&!S4.gs)?'flex':'none';
+  const need4=(S4.f===3&&!S4.gs);
+  $('g4').style.display=need4?'flex':'none';
+  $('g4').classList.toggle('need',need4);
   [...$('o4').children].forEach(b=>{b.className='opt'+(b.dataset.v===S4.gs?' sel':'');});
   const last=S4.f>=4, stop=(S4.f===1&&!react4());
-  $('b4go').disabled=last||stop||(S4.f===3&&!S4.gs);
+  $('b4go').disabled=last||stop||need4;
+  $('b4go').textContent=need4?'↑ まず 予想を えらぼう':'1つ すすむ ▶';
   $('b4back').disabled=S4.f===0;
   const M=MET[S4.met];
   if(S4.f===0)$('m4').innerHTML='試験管に <b>'+(react4()?'うすい 塩酸':'食塩水')+'</b>を 入れた。ここに <b>'+M.n+'</b>を 入れると どう なると 思う？　右の じゅんばんで 進むよ。';
