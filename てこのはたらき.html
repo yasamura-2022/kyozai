@@ -1,0 +1,1602 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
+<title>てこのはたらき</title>
+<style>
+/* =========================================================
+   てこの はたらき（6年 理科 A(3) てこの規則性）
+   学習指導要領解説 理科編 p.80-81 より
+   ・「力を加える位置や力の大きさを変えると，てこを傾ける働きが変わり，
+   　　てこがつり合うときにはそれらの間に規則性があること」
+   ・「身の回りには，てこの規則性を利用した道具があること」
+   ・「ここで扱う対象としては，(ｱ) については，てこ実験器，
+   　　(ｲ) については，ペンチ，釘抜き，空き缶つぶし，トングなどが考えられる」
+   ・「支点からの距離とおもりの重さとの関係を表などに整理する」
+   ・「（力点にかかるおもりの重さ）×（支点から力点までの距離）」が
+   　　左右で 等しい ときに つり合う
+   ・「算数科の反比例の学習と関連を図る」
+   ・「『支点』『力点』『作用点』等の言葉を用いて説明したり，
+   　　どのような便利さが得られるかについて話し合ったり」
+
+   だから この アプリは 「3つの点 → 手ごたえ → つり合い → きまり → 道具」で 組む。
+   力の 単位 N（ニュートン）・力の 合成分解・モーメント・仕事の原理は
+   中学校 第1分野「(1)ア(ｲ)力の働き」の 内容なので 入れない。
+   数で 出すのは 「おもりの 数」「支点からの きょり（目もり）」「手ごたえ(g)」だけ。
+   てこを 第1種・第2種・第3種 と 分類する ことばも 使わない
+   （「支点が 真ん中」「作用点が 真ん中」「力点が 真ん中」と 位置で 言う）。
+
+   【この 教材の 立ち位置】実験の 代わりでは ない。実験が 主役で、
+   アプリは 3つの ところだけ 受けもつ:
+   　① 子どもが いちばん 苦手な「支点・力点・作用点の 区別」
+   　　（動かした あとの 通り道を のこして「支点だけ 動かない」を 目で 見せる。
+   　　 ほんものの てこでは 通り道は のこらない）
+   　② 条件を 1つずつ 変えて くらべる ところ（手ごたえ）
+   　③ 結果を 表に 整理して きまりを 見つける ところ（解説の かなめ）
+   外部読み込みは なし。1ファイルで 動く。
+   ========================================================= */
+:root{
+  --paper:#fdf6e3;
+  --card:#fffdf7;
+  --ink:#2b2118;
+  --dim:#7a6a52;
+  --line:#e7d9b8;
+  --gold:#c9a227;      /* こたえ合わせ */
+  --blue:#2f6fa8;      /* 同じ 画面の 中で すすむ */
+  --ok:#5a8a4c;        /* べつの もんだいへ */
+  --sub:#a99a7c;       /* もどる・やりなおす */
+  --ng:#d34b4b;
+  /* 3つの 点の 色。この 3色は 全ステップで そろえる。
+     色だけで 見分けさせない ために、形（▲／手／もの）と 名前を かならず つける */
+  --fu:#2f6fa8;        /* 支点　ささえる。動かない */
+  --ri:#c0392b;        /* 力点　力を 加える */
+  --sa:#1f7a5a;        /* 作用点　ものに 力が はたらく */
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;margin:0;overflow:hidden;}
+body{
+  /* 外から フォントを 読まない。端末に 入って いる まるい 書体を 上から さがす */
+  font-family:'Zen Maru Gothic','Hiragino Maru Gothic ProN','ヒラギノ丸ゴ ProN W4','Klee One','BIZ UDPGothic','Hiragino Sans','Yu Gothic UI',Meiryo,sans-serif;
+  background:var(--paper);color:var(--ink);font-weight:700;-webkit-text-size-adjust:100%;
+  user-select:none;-webkit-user-select:none;
+}
+#app{height:100%;display:flex;flex-direction:column;padding:8px 10px 8px;gap:6px;max-width:1240px;margin:0 auto;}
+
+/* ---- 見出しと タブ ---- */
+header{flex:0 0 auto;display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:center;}
+h1{margin:0;font-size:clamp(15px,2.1vw,21px);letter-spacing:.04em;}
+h1 .sub{color:#9a7c1e;font-size:.7em;margin-left:8px;}
+nav{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;}
+.tab{
+  font:inherit;font-size:clamp(11px,1.42vw,15px);color:var(--dim);
+  background:#f6eed9;border:1px solid var(--line);
+  border-radius:999px;padding:7px 13px;min-height:40px;cursor:pointer;
+}
+.tab.on{color:#3a2c05;background:#f5d97a;border-color:var(--gold);}
+.tab:focus-visible,button:focus-visible{outline:3px solid var(--gold);outline-offset:2px;}
+
+/* ---- ステージ ---- */
+#main{flex:1;min-height:0;position:relative;}
+.stage{position:absolute;inset:0;display:none;flex-direction:column;gap:6px;}
+.stage.on{display:flex;}
+/* たて長の 画面では 表に 場所を まわす（1.35fr の ままだと ③の 記録の 表が
+   1行 16px に つぶれて 字が 切れた。768×1024 で 実測） */
+.cols{flex:1;min-height:0;display:grid;grid-template-rows:1.18fr 1fr;grid-template-columns:1fr;gap:6px;}
+@media (orientation:landscape) and (min-width:700px){
+  .cols.two{grid-template-columns:1.44fr .56fr;grid-template-rows:1fr;}
+  /* 表が 主役の ④は 表を 広く とる */
+  .cols.tall{grid-template-columns:1fr 1fr;grid-template-rows:1fr;}
+  .segs{flex-direction:column;}
+}
+.card{
+  position:relative;background:var(--card);border:1px solid var(--line);
+  border-radius:16px;overflow:hidden;min-height:0;
+}
+canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:manipulation;}
+.side{display:flex;flex-direction:column;gap:6px;min-height:0;}
+.msg{
+  /* display:flex に すると <b> や <span> が flex の 子に なり、語の とちゅうで
+     折り返して しまう。block の まま 中央ぞろえに する */
+  flex:0 0 auto;background:#f7f0dd;border:1px solid var(--line);border-radius:14px;
+  padding:9px 12px;font-size:clamp(12px,1.55vw,16px);line-height:1.5;text-align:center;
+  min-height:44px;display:block;
+}
+.msg b{color:#9a7c1e;}
+.msg .ok{color:#3f7a33;}
+.msg .ng{color:#b33c3c;}
+.msg .fu{color:var(--fu);}
+.msg .ri{color:var(--ri);}
+.msg .sa{color:var(--sa);}
+
+/* ---- ボタン ---- */
+.bar{flex:0 0 auto;display:flex;gap:7px;flex-wrap:wrap;justify-content:center;align-items:center;}
+.btn{
+  font:inherit;font-size:clamp(12px,1.42vw,15px);color:#fff;border:none;border-radius:14px;
+  padding:10px 15px;min-height:44px;cursor:pointer;background:#6a7f9b;
+}
+.btn:active{transform:scale(.97);}
+.btn.play{background:var(--blue);}               /* 同じ 画面の 中で すすむ */
+.btn.show{background:var(--gold);color:#3a2c05;} /* こたえ合わせ */
+.btn.next{background:var(--ok);}                 /* べつの もんだいへ */
+.btn.sub{background:var(--sub);}                 /* もどる・やりなおす */
+.btn.ghost{background:#f6eed9;color:var(--dim);border:1px solid var(--line);}
+.btn.ghost.on{background:#f5d97a;color:#3a2c05;border-color:var(--gold);}
+.btn[disabled]{opacity:.42;}
+
+/* ---- 右の パネル ---- */
+.panel{
+  background:var(--card);border:1px solid var(--line);border-radius:14px;
+  padding:7px 8px;min-height:0;display:flex;flex-direction:column;gap:5px;overflow:hidden;
+}
+.segs{flex:0 0 auto;display:flex;flex-direction:row;gap:6px;}
+.segs .panel{flex:1;min-width:0;}
+.panel .ttl{font-size:clamp(11px,1.22vw,13px);color:var(--dim);text-align:center;}
+.seg{display:flex;gap:4px;}
+.seg button{
+  flex:1;font:inherit;font-size:clamp(11px,1.22vw,14px);color:var(--dim);
+  background:#f6eed9;border:1px solid var(--line);border-radius:11px;
+  padding:7px 2px;min-height:40px;cursor:pointer;
+}
+.seg button.on{background:#f5d97a;color:#3a2c05;border-color:var(--gold);}
+.seg button[disabled]{opacity:.42;}
+
+/* ---- 表 ----
+   【大事】読ませる 表は かならず HTML で 組む。canvas に かくと
+   画面が 小さい とき 字が 10px 以下まで 縮んで 読めなく なる。
+   字の 大きさは vw だけで 決めない（たて長の iPad で ずっと 小さい ままに なる）。
+   たて幅も 足す */
+.tbl{flex:1;min-height:0;display:grid;gap:3px;font-size:clamp(11px,calc(0.74vw + 0.7vh),16px);}
+.tbl div{
+  display:flex;align-items:center;justify-content:center;text-align:center;
+  border-radius:9px;padding:1px 3px;line-height:1.15;overflow:hidden;
+}
+.tbl .h{background:#f1e6c8;color:#6a5a3a;font-size:.88em;flex-direction:column;gap:0;}
+.tbl .h small{font-size:.78em;opacity:.85;font-weight:700;}
+.tbl .h.fu{background:#e4edf7;color:var(--fu);}
+.tbl .h.ri{background:#fbe9e4;color:var(--ri);}
+.tbl .h.sa{background:#e2efe9;color:var(--sa);}
+.tbl .r{background:#f6eed9;color:#6a5a3a;font-size:.9em;}
+.tbl .c{background:#fbf6e8;border:1px solid var(--line);color:var(--dim);}
+.tbl .c.on{background:#fff3cf;border-color:var(--gold);color:#5a4718;}
+.tbl .c.now{box-shadow:0 0 0 2px var(--blue) inset;}
+.tbl .c.pick{cursor:pointer;}
+.tbl .c.mul{background:#fff8e6;border-color:var(--gold);color:#8a6a10;}
+.tbl .c.same{background:#f5d97a;border-color:var(--gold);color:#3a2c05;}
+.tbl .row-on{box-shadow:0 0 0 2px var(--blue) inset;}
+#s4 .tbl{font-size:clamp(11px,calc(0.84vw + 0.78vh),18px);}
+
+/* えらぶ ボタン（予想・3択） */
+.opts{flex:0 0 auto;display:grid;grid-template-columns:repeat(3,1fr);gap:6px;width:100%;}
+.opts.two{grid-template-columns:repeat(2,1fr);}
+.opt{
+  font:inherit;font-size:clamp(11px,1.3vw,15px);color:var(--dim);background:#f6eed9;
+  border:2px solid var(--line);border-radius:12px;padding:8px 4px;min-height:44px;
+  cursor:pointer;line-height:1.25;
+}
+.opt.sel{border-color:var(--gold);background:#fff3cf;color:#5a4718;}
+.opt.right{border-color:var(--ok);background:#e6f0e0;color:#3f7a33;}
+.opt.wrong{border-color:var(--ng);background:#fbecec;}
+.opt[disabled]{opacity:.45;}
+/* 3つの 点を えらぶ ボタンは その 点の 色の わくに する（色だけに たよらず 字も 出す） */
+.opt.p-fu{color:var(--fu);border-color:#b9cde2;}
+.opt.p-ri{color:var(--ri);border-color:#e6c4bd;}
+.opt.p-sa{color:var(--sa);border-color:#bcd8cd;}
+.opt.p-fu.sel{background:#e4edf7;border-color:var(--fu);}
+.opt.p-ri.sel{background:#fbe9e4;border-color:var(--ri);}
+.opt.p-sa.sel{background:#e2efe9;border-color:var(--sa);}
+
+/* 予想の わく。まだ えらんで いない ときは 金の 実線で 強く 出す。
+   これが ないと「ボタンが グレーで 動かない＝こわれた」に 見える */
+.guess{
+  flex:0 0 auto;display:flex;align-items:center;gap:7px;justify-content:center;flex-wrap:wrap;
+  background:#f3ecd8;border:1px dashed var(--gold);border-radius:12px;padding:5px 8px;
+}
+.guess.need{border:2px solid var(--gold);background:#fff3cf;box-shadow:0 0 0 3px rgba(201,162,39,.18);}
+.guess .gl{font-size:clamp(10.5px,1.22vw,14px);color:#8a6a10;white-space:nowrap;}
+.guess .opts{flex:1;min-width:170px;}
+
+/* 数を 入れる ところ（③） */
+.num{
+  flex:0 0 auto;display:flex;align-items:center;justify-content:center;gap:8px;
+  background:#fbf6e8;border:1px solid var(--line);border-radius:12px;padding:6px;
+}
+.num .lb{font-size:clamp(11px,1.25vw,14px);color:var(--dim);}
+.num .v{
+  min-width:2.4em;text-align:center;font-size:clamp(20px,2.7vw,30px);color:#3a2c05;
+  background:#fff8e6;border:2px solid var(--gold);border-radius:10px;padding:1px 6px;
+}
+.num button{
+  font:inherit;font-size:clamp(15px,1.9vw,21px);color:#fff;background:var(--blue);
+  border:none;border-radius:11px;width:clamp(42px,5vw,52px);min-height:44px;cursor:pointer;
+}
+.num button[disabled]{opacity:.42;}
+
+/* ⑤ 道具の 進み具合 */
+/* 4つを よこ1列に すると「空きかんつぶし」が 2行に 折り返して つぶれる。2×2に する */
+.tools{flex:0 0 auto;display:grid;grid-template-columns:repeat(2,1fr);gap:5px;}
+.tool{
+  font:inherit;font-size:clamp(10.5px,1.2vw,13.5px);color:var(--dim);background:#f6eed9;
+  border:2px solid var(--line);border-radius:12px;padding:6px 2px;min-height:46px;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;line-height:1.15;
+}
+.tool.on{background:#f5d97a;color:#3a2c05;border-color:var(--gold);}
+.tool .st{font-size:.85em;opacity:.8;}
+.tool.done .st{color:var(--ok);opacity:1;}
+
+/* ⑤の まとめカード */
+.sum{flex:1;min-height:0;display:flex;flex-direction:column;gap:5px;overflow:hidden;}
+.sumbox{
+  background:#fbf6e8;border:1px solid var(--line);border-radius:12px;padding:6px 8px;
+  font-size:clamp(10.5px,calc(0.7vw + 0.66vh),15px);line-height:1.4;color:#5a4a30;
+}
+.sumbox .t{color:#8a6a10;font-size:.9em;}
+.sumbox b.fu{color:var(--fu);} .sumbox b.ri{color:var(--ri);} .sumbox b.sa{color:var(--sa);}
+.sumbox.hide{display:none;}
+.order{display:flex;align-items:center;justify-content:center;gap:4px;flex-wrap:wrap;margin-top:3px;}
+.order span{
+  border-radius:8px;padding:2px 7px;font-size:.95em;border:2px solid;
+}
+.order .o-fu{color:var(--fu);border-color:var(--fu);background:#e4edf7;}
+.order .o-ri{color:var(--ri);border-color:var(--ri);background:#fbe9e4;}
+.order .o-sa{color:var(--sa);border-color:var(--sa);background:#e2efe9;}
+.order i{font-style:normal;color:var(--dim);opacity:.7;}
+
+/* きまりの ふだ（②④の まとめ） */
+.rule{
+  flex:0 0 auto;background:#fff8e6;border:2px solid var(--gold);border-radius:12px;
+  padding:6px 9px;font-size:clamp(11px,calc(0.72vw + 0.68vh),16px);line-height:1.45;
+  color:#5a4718;text-align:center;
+}
+.rule.hide{display:none;}
+.rule b{color:#9a6a10;}
+
+/* いちばん下の 注意 */
+#safety{
+  flex:0 0 auto;text-align:center;color:#8a6a10;background:#f7eccd;
+  border:1px solid var(--line);border-radius:10px;padding:3px 7px;
+  font-size:clamp(9px,1.05vw,12.5px);line-height:1.3;
+}
+#safety b{color:#b3541e;}
+
+@media (max-height:640px){
+  #app{padding:5px 8px 5px;gap:4px;}
+  .msg{padding:6px 9px;min-height:36px;font-size:clamp(11px,1.45vw,15px);}
+  .btn{min-height:40px;padding:8px 11px;}
+  .tab{min-height:36px;padding:5px 11px;}
+  .opt{min-height:40px;}
+  .num button{min-height:40px;}
+  .seg button{min-height:36px;}
+  .tool{min-height:42px;}
+}
+@media (max-height:560px){
+  .panel .ttl{display:none;}
+  h1 .sub{display:none;}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>てこの はたらき<span class="sub">支点・力点・作用点</span></h1>
+    <nav id="tabs">
+      <button class="tab on" data-s="1">① 3つの 点を 見つける</button>
+      <button class="tab" data-s="2">② 手ごたえを くらべる</button>
+      <button class="tab" data-s="3">③ つり合いを 調べる</button>
+      <button class="tab" data-s="4">④ きまりを 見つける</button>
+      <button class="tab" data-s="5">⑤ 道具を 調べる</button>
+    </nav>
+  </header>
+
+  <div id="main">
+
+    <!-- ① 3つの 点を 見つける -->
+    <section class="stage on" id="s1">
+      <div class="cols two">
+        <div class="card"><canvas id="c1"></canvas></div>
+        <div class="side">
+          <div class="panel" style="flex:1">
+            <div class="ttl">3つの 点</div>
+            <div class="tbl" id="t1" style="grid-template-rows:repeat(3,1fr);grid-template-columns:1fr;"></div>
+          </div>
+          <div class="guess" id="g1" style="display:none">
+            <span class="gl">光って いる 点の 名前は？</span>
+            <div class="opts" id="o1">
+              <button class="opt p-fu" data-v="fu">支点</button>
+              <button class="opt p-ri" data-v="ri">力点</button>
+              <button class="opt p-sa" data-v="sa">作用点</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="msg" id="m1"></div>
+      <div class="bar" id="b1"></div>
+    </section>
+
+    <!-- ② 手ごたえを くらべる -->
+    <section class="stage on" id="s2" style="display:none">
+      <div class="cols two">
+        <div class="card"><canvas id="c2"></canvas></div>
+        <div class="side">
+          <div class="guess" id="g2">
+            <span class="gl" id="g2l"></span>
+            <div class="opts" id="o2">
+              <button class="opt" data-v="up">大きく なる</button>
+              <button class="opt" data-v="down">小さく なる</button>
+              <button class="opt" data-v="same">変わらない</button>
+            </div>
+          </div>
+          <div class="segs">
+            <div class="panel">
+              <div class="ttl"><span style="color:var(--fu)">支点</span>から <span style="color:var(--ri)">力点</span>まで</div>
+              <div class="seg" id="q2ri"></div>
+            </div>
+            <div class="panel">
+              <div class="ttl"><span style="color:var(--fu)">支点</span>から <span style="color:var(--sa)">作用点</span>まで</div>
+              <div class="seg" id="q2sa"></div>
+            </div>
+          </div>
+          <div class="panel" style="flex:1">
+            <div class="ttl">調べた こと</div>
+            <div class="tbl" id="t2"></div>
+          </div>
+          <div class="rule hide" id="r2"></div>
+        </div>
+      </div>
+      <div class="msg" id="m2"></div>
+      <div class="bar" id="b2"></div>
+    </section>
+
+    <!-- ③ つり合いを 調べる -->
+    <section class="stage on" id="s3" style="display:none">
+      <div class="cols two">
+        <div class="card"><canvas id="c3"></canvas></div>
+        <div class="side">
+          <div class="panel">
+            <div class="ttl">やり方</div>
+            <div class="seg" id="q3mode">
+              <button data-v="quiz" class="on">もんだい</button>
+              <button data-v="free">自由に 動かす</button>
+            </div>
+          </div>
+          <div id="p3quiz" style="display:flex;flex-direction:column;gap:6px;flex:1;min-height:0;">
+            <div class="num" id="n3">
+              <span class="lb">右に おもり</span>
+              <button id="n3m">−</button><span class="v" id="n3v">1</span><button id="n3p">＋</button>
+              <span class="lb">こ</span>
+            </div>
+            <div class="panel" style="flex:1">
+              <div class="ttl">つり合った ときの 記録</div>
+              <div class="tbl" id="t3"></div>
+            </div>
+          </div>
+          <div id="p3free" style="display:none;flex-direction:column;gap:6px;flex:1;min-height:0;">
+            <div class="segs">
+              <div class="panel">
+                <div class="ttl">左の おもり</div>
+                <div class="seg" id="q3ln"></div>
+              </div>
+              <div class="panel">
+                <div class="ttl">左の きょり</div>
+                <div class="seg" id="q3ld"></div>
+              </div>
+            </div>
+            <div class="segs">
+              <div class="panel">
+                <div class="ttl">右の おもり</div>
+                <div class="seg" id="q3rn"></div>
+              </div>
+              <div class="panel">
+                <div class="ttl">右の きょり</div>
+                <div class="seg" id="q3rd"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="msg" id="m3"></div>
+      <div class="bar" id="b3"></div>
+    </section>
+
+    <!-- ④ きまりを 見つける -->
+    <section class="stage on" id="s4" style="display:none">
+      <div class="cols tall">
+        <div class="card"><canvas id="c4"></canvas></div>
+        <div class="side">
+          <div class="panel" style="flex:1">
+            <div class="ttl" id="t4ttl">つり合った ときの 表（行を おすと 左の 絵に なる）</div>
+            <div class="tbl" id="t4"></div>
+          </div>
+          <div class="rule hide" id="r4"></div>
+        </div>
+      </div>
+      <div class="msg" id="m4"></div>
+      <div class="bar" id="b4"></div>
+    </section>
+
+    <!-- ⑤ 道具を 調べる -->
+    <section class="stage on" id="s5" style="display:none">
+      <div class="cols two">
+        <div class="card"><canvas id="c5"></canvas></div>
+        <div class="side">
+          <div class="tools" id="q5"></div>
+          <div class="sum" id="p5">
+            <div class="sumbox" id="s5ord"></div>
+            <div class="sumbox" id="s5ben"></div>
+            <div class="panel" style="flex:1" id="p5tbl">
+              <div class="ttl">3つの 点</div>
+              <div class="tbl" id="t5" style="grid-template-rows:repeat(3,1fr);grid-template-columns:1fr;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="msg" id="m5"></div>
+      <div class="bar" id="b5"></div>
+    </section>
+
+  </div>
+  <div id="safety">
+    <b>気を つける こと</b>　実験器の おもりは 落とさない。ペンチや くぎぬきは <b>指を はさまない</b>。
+    てこの うでの 下に 手を 入れない。
+  </div>
+</div>
+<script>
+"use strict";
+const $=id=>document.getElementById(id);
+const TAU=Math.PI*2;
+const clamp=(v,a,b)=>v<a?a:(v>b?b:v);
+const lerp=(a,b,t)=>a+(b-a)*t;
+const BW=1000,BH=560;                 /* 絵の 基準の 大きさ */
+const C={fu:'#2f6fa8',ri:'#c0392b',sa:'#1f7a5a'};
+const NAME={fu:'支点',ri:'力点',sa:'作用点'};
+const MEAN={
+  fu:'ささえる ところ。ここだけ 動かない',
+  ri:'力を 加える ところ。手で おす',
+  sa:'ものに 力が はたらく ところ',
+};
+let step=1,dirty=true,last=0;
+
+/* ========================= 下じき ========================= */
+function fit(cv){
+  const r=cv.getBoundingClientRect();
+  const d=Math.min(2,window.devicePixelRatio||1);
+  const w=Math.max(1,Math.round(r.width)),h=Math.max(1,Math.round(r.height));
+  if(cv.width!==w*d||cv.height!==h*d){cv.width=w*d;cv.height=h*d;}
+  const g=cv.getContext('2d');
+  g.setTransform(d,0,0,d,0,0);
+  g.clearRect(0,0,w,h);
+  return {g,w,h};
+}
+/* 基準の 大きさで かいて、画面に 合わせて 縮める。どの iPad でも はみ出さない */
+function base(g,w,h){
+  const s=Math.min(w/BW,h/BH);
+  g.save();g.translate((w-BW*s)/2,(h-BH*s)/2);g.scale(s,s);
+  return s;
+}
+/* canvas を おした ところを 基準の 座標に なおす（絵の 中の 点を タップする ため） */
+function toBase(cv,ev){
+  const r=cv.getBoundingClientRect();
+  const s=Math.min(r.width/BW,r.height/BH);
+  return {x:(ev.clientX-r.left-(r.width-BW*s)/2)/s,
+          y:(ev.clientY-r.top -(r.height-BH*s)/2)/s};
+}
+const FONT='"Zen Maru Gothic","Hiragino Maru Gothic ProN","BIZ UDPGothic","Hiragino Sans",sans-serif';
+function txt(g,s,x,y,size,color,align,baseline,weight){
+  g.save();
+  g.font=(weight||700)+' '+size+'px '+FONT;
+  g.textAlign=align||'center';g.textBaseline=baseline||'middle';
+  g.fillStyle=color||'#2b2118';g.fillText(s,x,y);
+  g.restore();
+}
+function tw(g,s,size,weight){
+  g.save();g.font=(weight||700)+' '+size+'px '+FONT;
+  const w=g.measureText(s).width;g.restore();return w;
+}
+function rrp(g,x,y,w,h,r){
+  r=Math.min(r,Math.abs(w)/2,Math.abs(h)/2);
+  g.beginPath();
+  g.moveTo(x+r,y);g.lineTo(x+w-r,y);g.quadraticCurveTo(x+w,y,x+w,y+r);
+  g.lineTo(x+w,y+h-r);g.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  g.lineTo(x+r,y+h);g.quadraticCurveTo(x,y+h,x,y+h-r);
+  g.lineTo(x,y+r);g.quadraticCurveTo(x,y,x+r,y);g.closePath();
+}
+function box(g,x,y,w,h,r,fill,stroke,lw){
+  rrp(g,x,y,w,h,r);
+  if(fill){g.fillStyle=fill;g.fill();}
+  if(stroke){g.strokeStyle=stroke;g.lineWidth=lw||2;g.stroke();}
+}
+function circ(g,x,y,r,fill,stroke,lw){
+  g.beginPath();g.arc(x,y,r,0,TAU);
+  if(fill){g.fillStyle=fill;g.fill();}
+  if(stroke){g.strokeStyle=stroke;g.lineWidth=lw||2;g.stroke();}
+}
+function line(g,x0,y0,x1,y1,col,lw,dash){
+  g.save();g.strokeStyle=col;g.lineWidth=lw||2;g.lineCap='round';
+  if(dash)g.setLineDash(dash);
+  g.beginPath();g.moveTo(x0,y0);g.lineTo(x1,y1);g.stroke();g.restore();
+}
+/* 教室の 明るい 地。3つの 点の 色が よく 見える ように、地は しずかな 色に する */
+/* 地は letterbox の 帯まで ぬる。ぬらないと カードの 上下に 白い 帯が 出て
+   絵が 宙に ういて 見える（水よう液の bench() と 同じ） */
+const OVER=900;
+function room(g){
+  const gr=g.createLinearGradient(0,-OVER,0,BH+OVER);
+  gr.addColorStop(0,'#f4ecd8');gr.addColorStop(1,'#e8dcc0');
+  g.fillStyle=gr;g.fillRect(-OVER,-OVER,BW+OVER*2,BH+OVER*2);
+}
+function floor(g,y,col){
+  g.fillStyle=col||'#cdb894';g.fillRect(-OVER,y,BW+OVER*2,BH+OVER-y);
+  line(g,-OVER,y,BW+OVER,y,'#a89170',3);
+}
+/* 絵の 上に 出す 字は うすい 板を しいてから（もようの 上だと 読めない） */
+function tag(g,s,x,y,size,col,bg){
+  size=size||16;
+  const w=tw(g,s,size)+16;
+  box(g,x-w/2,y-size*.82,w,size*1.64,8,bg||'rgba(255,255,255,.88)','rgba(0,0,0,.10)',1.5);
+  txt(g,s,x,y,size,col||'#4a3c22');
+}
+/* 矢じるし */
+function arrow(g,x0,y0,x1,y1,col,lw,head){
+  const a=Math.atan2(y1-y0,x1-x0);head=head||12;
+  line(g,x0,y0,x1-Math.cos(a)*head*.6,y1-Math.sin(a)*head*.6,col,lw||5);
+  g.save();g.translate(x1,y1);g.rotate(a);g.fillStyle=col;
+  g.beginPath();g.moveTo(head,0);g.lineTo(-head*.75,head*.72);g.lineTo(-head*.75,-head*.72);g.closePath();g.fill();
+  g.restore();
+}
+
+/* ========================= 3つの 点の しるし =========================
+   色だけで 見分けさせない。かならず 名前を そえ、力の 向きの 矢も つける。
+   ・支点  … 動かない ことを しめす ため 二重の 輪
+   ・力点  … 下へ 力を 加える 矢
+   ・作用点 … ものが 上がる 矢
+   ========================================================= */
+function markPoint(g,x,y,k,o){
+  o=o||{};
+  const r=o.r||17, col=C[k];
+  if(o.pulse){
+    g.save();g.globalAlpha=.30+.28*Math.sin(o.pulse*5);
+    circ(g,x,y,r+12+4*Math.sin(o.pulse*5),col,null);g.restore();
+  }
+  if(o.dim){g.save();g.globalAlpha=.42;}
+  circ(g,x,y,r,'#fffdf7',col,5);
+  circ(g,x,y,r*0.42,col,null);
+  if(k==='fu'){circ(g,x,y,r+6,null,col,2);}
+  if(o.dim)g.restore();
+  if(o.label!==false){
+    const s=o.label||NAME[k];
+    const dx=o.lx||0, dy=o.ly||(k==='ri'?-40:38);
+    tag(g,s,x+dx,y+dy,o.ls||17,col,'rgba(255,255,255,.93)');
+  }
+}
+/* 力の 向き（力点は 下へ おす、作用点は ものが 上がる） */
+function forceArrow(g,x,y,k,len){
+  len=len||46;
+  if(k==='ri')arrow(g,x,y-len-22,x,y-24,C.ri,6,13);
+  if(k==='sa')arrow(g,x,y-24,x,y-len-22,C.sa,6,13);
+}
+/* 通った あと（弧）。①の かなめ＝支点だけ 弧が えがけない */
+function trail(g,cx,cy,rad,a0,a1,col,lw){
+  if(Math.abs(a1-a0)<0.004||rad<6)return;
+  g.save();g.strokeStyle=col;g.lineWidth=lw||7;g.lineCap='round';g.globalAlpha=.55;
+  g.beginPath();g.arc(cx,cy,rad,Math.min(a0,a1),Math.max(a0,a1));g.stroke();
+  g.restore();
+}
+/* 三角の ささえ（支点の 実物） */
+function fulcrum(g,x,y,w,h,col){
+  g.beginPath();g.moveTo(x,y);g.lineTo(x-w,y+h);g.lineTo(x+w,y+h);g.closePath();
+  g.fillStyle=col||'#8c7a5c';g.fill();g.strokeStyle='#6b5c42';g.lineWidth=3;g.stroke();
+}
+/* にぎる 手（まるい 4本指＋おやゆび）。力点の 目じるし */
+function hand(g,x,y,k,flip){
+  g.save();g.translate(x,y);if(flip)g.scale(-1,1);g.scale(k||1,k||1);
+  g.fillStyle='#f0c9a6';g.strokeStyle='#c79b74';g.lineWidth=2.4;
+  box(g,-20,-6,40,30,13,'#f0c9a6','#c79b74',2.4);
+  for(let i=0;i<3;i++){box(g,-16+i*12,-16,11,16,5,'#f0c9a6','#c79b74',2);}
+  box(g,14,-2,16,12,6,'#f0c9a6','#c79b74',2);
+  g.restore();
+}
+
+/* =========================================================
+   ① 3つの 点を 見つける
+   子どもが いちばん つまずく ところ。
+   ことばで「支点は ささえる ところ」と 言っても おぼえられないので、
+   **動かした あとの 通り道を のこして** 見せる。
+   　力点  … 大きな 弧
+   　作用点 … 小さな 弧
+   　支点  … 弧が ない（動かない）
+   ほんものの てこでは 通り道は のこらない。ここが アプリの 役わり。
+   ========================================================= */
+/* 石は 地面に あって、棒の 先が その 下に 入って いる。
+   手を 下げる（TH0→TH1）と 石が 持ち上がる。
+   うでの 長さを 330 と 120 に して、力点が 大きく・作用点が 少し 動く ように した
+   （ここが ①の かなめ。動いた 長さの ちがいが 目で 分かる） */
+const FX1=440,FY1=370,ARM_SA=120,ARM_RI=330,GY1=433;
+const TH0=-0.53,TH1=-0.115;
+const S1={ph:0,th:TH0,anim:false,quiz:false,qi:0,sel:null,mark:null,t:0};
+const Q1=['ri','sa','fu'];            /* 出す 順は きめて おく（ランダムに しない） */
+
+/* 名前の ふだを 出す 向き。力の 矢や 通った あとと かさならない ように ずらす */
+const LP1={fu:{lx:0,ly:-48},ri:{lx:60,ly:6},sa:{lx:-30,ly:48}};
+function p1(arm,th){return {x:FX1+Math.cos(th)*arm,y:FY1+Math.sin(th)*arm};}
+function pts1(){
+  return {fu:{x:FX1,y:FY1},sa:p1(-ARM_SA,S1.th),ri:p1(ARM_RI,S1.th)};
+}
+function rock1(g,x,y,lift){
+  /* 持ち上げられる 重い 石 */
+  g.save();g.translate(x,y);
+  g.beginPath();
+  g.moveTo(-52,0);g.lineTo(-60,-34);g.lineTo(-26,-60);g.lineTo(28,-56);
+  g.lineTo(58,-26);g.lineTo(46,0);g.closePath();
+  g.fillStyle='#9aa0a6';g.fill();g.strokeStyle='#6f757b';g.lineWidth=3;g.stroke();
+  g.globalAlpha=.35;g.fillStyle='#cfd4d8';
+  g.beginPath();g.moveTo(-40,-8);g.lineTo(-44,-30);g.lineTo(-20,-48);g.lineTo(-6,-22);g.closePath();g.fill();
+  g.globalAlpha=1;
+  txt(g,'20kg',0,-28,17,'#4c5257');
+  g.restore();
+}
+function draw1(){
+  const {g,w,h}=fit($('c1'));base(g,w,h);
+  room(g);floor(g,GY1);
+  const P=pts1(), sh=S1.ph;
+
+  /* てこの 棒 */
+  g.save();g.translate(FX1,FY1);g.rotate(S1.th);
+  box(g,-ARM_SA-30,-11,ARM_SA+ARM_RI+62,22,7,'#c08f4e','#8d6431',3);
+  g.globalAlpha=.30;g.fillStyle='#e0b176';g.fillRect(-ARM_SA-24,-8,ARM_SA+ARM_RI+50,6);g.globalAlpha=1;
+  g.restore();
+  /* ささえ */
+  fulcrum(g,FX1,FY1+9,40,GY1-FY1-9);
+  /* 石（棒の 先が 下に 入って いる） */
+  rock1(g,P.sa.x-52,P.sa.y+4);
+  /* 手 */
+  hand(g,P.ri.x+2,P.ri.y-28,1,false);
+  /* 通った あと（絵の 上に のせる。棒の 下だと 見えない） */
+  if(sh>=1){
+    trail(g,FX1,FY1,ARM_RI,TH0,S1.th,C.ri,sh>=2?10:8);
+    trail(g,FX1,FY1,ARM_SA,Math.PI+TH0,Math.PI+S1.th,C.sa,sh>=2?10:8);
+  }
+
+  /* ここが 動いた／動かない */
+  if(sh===2){
+    tag(g,'大きく 動いた',P.ri.x+66,(P.ri.y+FY1+Math.sin(TH0)*ARM_RI)/2,17,C.ri);
+    tag(g,'少し 動いた',P.sa.x-14,P.sa.y+58,17,C.sa);
+    tag(g,'ぜんぜん 動かない',FX1+22,FY1-58,17,C.fu);
+  }
+  /* 名前を つけて いく */
+  const on={fu:sh>=3,ri:sh>=4,sa:sh>=5};
+  if(S1.quiz){
+    const k=Q1[S1.qi];
+    ['fu','ri','sa'].forEach(j=>{
+      const q=P[j];
+      if(j===k)markPoint(g,q.x,q.y,j,{pulse:S1.t,label:S1.mark?NAME[j]:'ここ？',
+        lx:LP1[j].lx,ly:LP1[j].ly,r:19});
+      else markPoint(g,q.x,q.y,j,{dim:true,
+        label:(S1.doneK&&S1.doneK[j])?NAME[j]:false,lx:LP1[j].lx,ly:LP1[j].ly});
+    });
+  }else{
+    if(on.ri){forceArrow(g,P.ri.x,P.ri.y,'ri');}
+    if(on.sa){forceArrow(g,P.sa.x+34,P.sa.y,'sa');}
+    ['fu','ri','sa'].forEach(j=>{
+      if(!on[j])return;
+      const q=P[j];
+      markPoint(g,q.x,q.y,j,{lx:LP1[j].lx,ly:LP1[j].ly,
+        pulse:(sh===3&&j==='fu')||(sh===4&&j==='ri')||(sh===5&&j==='sa')?S1.t:0});
+    });
+  }
+  if(sh>=1&&sh<=2&&!S1.anim){
+    tag(g,'▲ 絵を おしても すすむよ',BW/2,530,15,'#8a6a10','rgba(255,255,255,.9)');
+  }
+  g.restore();
+}
+function tbl1(){
+  const el=$('t1');
+  const show={fu:S1.ph>=3||S1.quiz,ri:S1.ph>=4||S1.quiz,sa:S1.ph>=5||S1.quiz};
+  el.innerHTML=['fu','ri','sa'].map(k=>{
+    if(!show[k])return '<div class="c">？</div>';
+    return '<div class="c on" style="flex-direction:column;gap:1px;border-color:'+C[k]+
+      ';background:#fff">'+
+      '<b style="color:'+C[k]+';font-size:1.15em">'+NAME[k]+'</b>'+
+      '<span style="font-size:.84em;color:#6a5a3a;line-height:1.2">'+MEAN[k]+'</span></div>';
+  }).join('');
+}
+function bar1(){
+  const b=$('b1');
+  if(S1.quiz){
+    b.innerHTML=(S1.qi>=Q1.length?'<button class="btn next" id="b1again">もう一度 あてる →</button>':'')+
+      '<button class="btn sub" id="b1reset">はじめから</button>';
+  }else if(S1.ph===0){
+    b.innerHTML='<button class="btn play" id="b1go">動かして みる ▶</button>';
+  }else if(S1.ph>=6){
+    b.innerHTML='<button class="btn next" id="b1quiz">名前を あてて みる →</button>'+
+      '<button class="btn sub" id="b1reset">はじめから</button>';
+  }else{
+    b.innerHTML='<button class="btn play" id="b1go">1つ すすむ ▶</button>'+
+      '<button class="btn sub" id="b1back">◀ もどる</button>';
+  }
+  const go=$('b1go');if(go)go.onclick=()=>next1();
+  const bk=$('b1back');if(bk)bk.onclick=()=>back1();
+  const rs=$('b1reset');if(rs)rs.onclick=()=>{reset1();};
+  const qz=$('b1quiz');if(qz)qz.onclick=()=>startQuiz1();
+  const ag=$('b1again');if(ag)ag.onclick=()=>startQuiz1();
+}
+const MSG1=[
+  '重い 石を、棒で 持ち上げる よ。<b>手を 下げる</b>と、どこが どう 動くかな？',
+  '石が 上がった！ 3つの ところが 通った <b>道</b>が のこって いる よ。',
+  '<span class="ri">手の ところ</span>は 大きく、<span class="sa">石の ところ</span>は 少し 動いた。'+
+    'でも <b>まん中は ぜんぜん 動かない</b>ね。',
+  '動かない ところ＝<span class="fu">支点</span>。棒を <b>ささえて</b> いて、ここを 中心に 回って いる。',
+  '手が おして いる ところ＝<span class="ri">力点</span>。人が <b>力を 加える</b> ところ。',
+  '石に ふれて いる ところ＝<span class="sa">作用点</span>。<b>ものに 力が はたらく</b> ところ。',
+  '<span class="fu">支点</span>・<span class="ri">力点</span>・<span class="sa">作用点</span>の 3つ。'+
+    'どれが どれか、あてて みよう。',
+];
+function up1(){
+  tbl1();bar1();
+  $('g1').style.display=S1.quiz?'flex':'none';
+  if(S1.quiz){
+    if(S1.qi>=Q1.length){
+      $('m1').innerHTML='<span class="ok">3つとも あてられた！</span> '+
+        '<span class="fu">支点</span>は 動かない、<span class="ri">力点</span>は 力を 加える、'+
+        '<span class="sa">作用点</span>は ものに 力が はたらく ところ。';
+      [...$('o1').children].forEach(b=>{b.disabled=true;b.className='opt p-'+b.dataset.v;});
+    }else{
+      const k=Q1[S1.qi];
+      $('m1').innerHTML=S1.mark
+        ? (S1.mark==='o'
+            ? '<span class="ok">せいかい！</span> '+MEAN[k]+'。'
+            : '<span class="ng">ちがう よ。</span> 光って いるのは <b>'+NAME[k]+'</b>。'+MEAN[k]+'。')
+        : '光って いる ところは、<b>支点・力点・作用点</b>の どれかな？';
+      [...$('o1').children].forEach(b=>{
+        b.disabled=!!S1.mark;
+        b.className='opt p-'+b.dataset.v+
+          (S1.mark&&b.dataset.v===k?' right':'')+
+          (S1.mark==='x'&&b.dataset.v===S1.sel?' wrong':'');
+      });
+    }
+  }else{
+    $('m1').innerHTML=MSG1[Math.min(S1.ph,6)];
+  }
+  dirty=true;
+}
+function next1(){
+  if(S1.anim)return;
+  if(S1.ph===0){S1.anim=true;S1.ph=1;up1();return;}
+  if(S1.ph<6){S1.ph++;up1();}
+}
+function back1(){
+  if(S1.anim)return;
+  if(S1.ph>0){S1.ph--;if(S1.ph===0)S1.th=TH0;up1();}
+}
+function reset1(){
+  S1.ph=0;S1.th=TH0;S1.anim=false;S1.quiz=false;S1.qi=0;S1.sel=null;S1.mark=null;S1.doneK=null;up1();
+}
+function startQuiz1(){
+  S1.quiz=true;S1.qi=0;S1.sel=null;S1.mark=null;S1.doneK={};S1.th=TH1;up1();
+}
+$('o1').addEventListener('click',e=>{
+  const b=e.target.closest('.opt');if(!b||b.disabled)return;
+  const k=Q1[S1.qi];
+  S1.sel=b.dataset.v;S1.mark=(S1.sel===k)?'o':'x';
+  S1.doneK[k]=true;
+  up1();
+  setTimeout(()=>{S1.qi++;S1.sel=null;S1.mark=null;up1();},S1.mark==='o'?1500:2600);
+});
+$('c1').addEventListener('click',()=>{ if(!S1.quiz&&!S1.anim&&S1.ph>=1&&S1.ph<6)next1(); });
+function step1(dt){
+  S1.t+=dt;
+  if(S1.quiz)return true;
+  if(S1.anim){
+    S1.th=Math.min(TH1,S1.th+dt*0.52);
+    if(S1.th>=TH1-1e-4){S1.th=TH1;S1.anim=false;up1();}
+    return true;
+  }
+  if(S1.ph>=3&&S1.ph<=5)return true;      /* 光って いる 点の 点めつ */
+  return false;
+}
+
+/* =========================================================
+   ② 手ごたえを くらべる
+   解説「力を加える位置や力の大きさを変えると，てこを傾ける働きが変わり」。
+   変えられる ものは <力点の きょり> と <作用点の きょり> の 2つだけに する
+   （変える ものを ふやすと、どれが きいて いるのか 分からなく なる）。
+   おもりの 重さは 600g で 固定。
+   予想を えらぶまで 動かせない。結果だけ 見せると 実験の 記録映像に なる。
+   ========================================================= */
+const FX2=430,FY2=250,U2=62,GY2=520,WT2=600;
+const S2={ri:3,sa:2,g:{ri:null,sa:null},tried:{ri:{},sa:{}},done:{ri:false,sa:false},rows:[]};
+function force2(){return Math.round(WT2*S2.sa/S2.ri);}
+function word2(f){
+  return f<=150?'とても 軽い':f<=350?'軽い':f<=700?'ふつう':f<=1200?'重い':'とても 重い';
+}
+/* ばねばかりは うでの 下に つるして 下へ 引く（ほんものと 同じ 使い方）。
+   のびで 力の 大きさを 見せ、数と ことばでも 出す */
+function scale2(g,x,yt,f){
+  const H=120,t=clamp(f/1800,0,1);
+  line(g,x,yt,x,yt+14,'#7b6a52',4);
+  box(g,x-26,yt+14,52,H,10,'#eef2f5','#98a6b0',3);
+  for(let i=0;i<=6;i++){
+    const yy=yt+26+i*(H-24)/6;
+    line(g,x-18,yy,x+(i%2?10:18),yy,'#b6c2ca',2);
+  }
+  const py=yt+26+t*(H-24);
+  line(g,x-22,py,x+22,py,C.ri,5);
+  circ(g,x+22,py,6,C.ri,null);
+  tag(g,f+'g',x+68,yt+50,20,C.ri);
+  tag(g,word2(f),x+68,yt+84,16,'#6a5a3a');
+  hand(g,x,yt+H+42,1,false);
+}
+function weight2(g,x,y){
+  line(g,x,y,x,y+34,'#7b6a52',4);
+  box(g,x-34,y+34,68,50,9,'#b08a5a','#7b6a52',3);
+  txt(g,'600g',x,y+59,18,'#40301c');
+}
+function draw2(){
+  const {g,w,h}=fit($('c2'));base(g,w,h);
+  room(g);floor(g,GY2);
+  const xs=FX2-S2.sa*U2, xr=FX2+S2.ri*U2;
+  /* 支柱 */
+  box(g,FX2-16,FY2,32,GY2-FY2,6,'#a99a7c','#8a7a5c',3);
+  box(g,FX2-70,GY2-14,140,18,7,'#8c7a5c','#6b5c42',3);
+  /* うで（棒） */
+  box(g,FX2-3*U2-42,FY2-11,(3+5)*U2+84,22,7,'#c08f4e','#8d6431',3);
+  /* 目もり */
+  for(let s=-1;s<=1;s+=2)for(let i=1;i<=(s<0?3:5);i++){
+    const x=FX2+s*i*U2;
+    line(g,x,FY2-11,x,FY2-22,'#8d6431',3);
+    txt(g,String(i),x,FY2-36,15,'#8a7250');
+  }
+  /* おもりと ばねばかり */
+  weight2(g,xs,FY2+11);
+  scale2(g,xr,FY2+11,force2());
+  /* きょりの 矢（どちらも うでの ずっと 下。おもり・ばねばかりと かさならない） */
+  const ay=FY2+200;
+  arrow(g,FX2,ay,xs,ay,'rgba(31,122,90,.55)',3,9);
+  arrow(g,xs,ay,FX2,ay,'rgba(31,122,90,.55)',3,9);
+  tag(g,'支点→作用点　'+S2.sa,(FX2+xs)/2,ay,16,C.sa);
+  arrow(g,FX2,ay,xr,ay,'rgba(192,57,43,.55)',3,9);
+  arrow(g,xr,ay,FX2,ay,'rgba(192,57,43,.55)',3,9);
+  tag(g,'支点→力点　'+S2.ri,(FX2+xr)/2,ay,16,C.ri);
+  /* 3つの 点 */
+  markPoint(g,FX2,FY2,'fu',{ly:-74,r:15});
+  markPoint(g,xr,FY2,'ri',{ly:-74,r:15});
+  markPoint(g,xs,FY2,'sa',{ly:-74,r:15});
+  g.restore();
+}
+function seg2(id,n,key){
+  const el=$(id);
+  el.innerHTML=Array.from({length:n},(_,i)=>
+    '<button data-v="'+(i+1)+'"'+(S2[key]===i+1?' class="on"':'')+'>'+(i+1)+'</button>').join('');
+  const lock=!S2.g[key];
+  [...el.children].forEach(b=>{b.disabled=lock;});
+}
+function tbl2(){
+  const el=$('t2');
+  el.style.gridTemplateColumns='1fr 1fr 1.25fr';
+  el.style.gridTemplateRows='auto repeat(5,1fr)';
+  let s='<div class="h ri">支点→力点</div><div class="h sa">支点→作用点</div><div class="h">手ごたえ</div>';
+  for(let i=0;i<5;i++){
+    const r=S2.rows[i];
+    if(!r){s+='<div class="c"></div><div class="c"></div><div class="c"></div>';continue;}
+    s+='<div class="c on">'+r.ri+'</div><div class="c on">'+r.sa+'</div>'+
+       '<div class="c on">'+r.f+'g</div>';
+  }
+  el.innerHTML=s;
+}
+function rec2(){
+  const f=force2();
+  const key=S2.ri+'-'+S2.sa;
+  if(S2.rows.some(r=>r.k===key))return;
+  S2.rows.unshift({k:key,ri:S2.ri,sa:S2.sa,f:f});
+  if(S2.rows.length>5)S2.rows.pop();
+}
+function up2(){
+  seg2('q2ri',5,'ri');seg2('q2sa',3,'sa');tbl2();
+  const gb=$('g2'),gl=$('g2l'),ob=$('o2');
+  const WORD2={up:'大きく なる',down:'小さく なる',same:'変わらない'};
+  /* 予想は 1つずつ。えらぶまで その 数の ボタンは おせない */
+  let ask=null,shown=null;
+  if(!S2.g.ri)ask='ri';
+  else if(!S2.done.ri)shown='ri';
+  else if(!S2.g.sa)ask='sa';
+  else if(!S2.done.sa)shown='sa';
+  ob.dataset.q=ask||'';
+  if(ask){
+    gb.style.display='flex';gb.classList.add('need');
+    gl.innerHTML=ask==='ri'
+      ? '<b>力点</b>を 支点から <b>遠ざける</b>と 手ごたえは？'
+      : '<b>作用点</b>を 支点に <b>近づける</b>と 手ごたえは？';
+    [...ob.children].forEach(b=>{b.disabled=false;b.className='opt';});
+  }else if(shown){
+    gb.style.display='flex';gb.classList.remove('need');
+    gl.innerHTML='予想：<b>'+WORD2[S2.g[shown]]+'</b>';
+    [...ob.children].forEach(b=>{
+      b.disabled=true;b.className='opt'+(b.dataset.v===S2.g[shown]?' sel':'');
+    });
+  }else{
+    gb.style.display='none';gb.classList.remove('need');
+  }
+  /* きまりの ふだ */
+  const r=$('r2');
+  if(S2.done.ri||S2.done.sa){
+    r.classList.remove('hide');
+    let s='';
+    if(S2.done.ri)s+='支点から <b>力点</b>までを <b>長く</b> すると、手ごたえは <b>小さく</b> なる。';
+    if(S2.done.sa)s+=(s?'<br>':'')+'支点から <b>作用点</b>までを <b>短く</b> すると、手ごたえは <b>小さく</b> なる。';
+    r.innerHTML=s;
+  }else r.classList.add('hide');
+
+  if(!S2.g.ri){
+    $('m2').innerHTML='600g の おもりを、棒で 持ち上げる よ。まず <b>予想</b>を えらぼう。'+
+      'えらぶまで 下の 数の ボタンは おせない。';
+  }else if(!S2.done.ri){
+    $('m2').innerHTML='<b style="color:'+C.ri+'">支点→力点</b>の 数を いろいろ 変えて、手ごたえを くらべよう。'+
+      '（あと '+Math.max(0,2-Object.keys(S2.tried.ri).length)+' とおり）';
+  }else if(!S2.g.sa){
+    $('m2').innerHTML=judge2('ri')+' つぎは <b>作用点</b>の ばんだよ。予想を えらぼう。';
+  }else if(!S2.done.sa){
+    $('m2').innerHTML='<b style="color:'+C.sa+'">支点→作用点</b>の 数を 変えて くらべよう。'+
+      '（あと '+Math.max(0,2-Object.keys(S2.tried.sa).length)+' とおり）';
+  }else{
+    $('m2').innerHTML=judge2('sa')+' 小さい 力で 動かすには、'+
+      '<span class="ri">力点</span>を 遠く、<span class="sa">作用点</span>を 近くに すれば よい。';
+  }
+  $('b2').innerHTML='<button class="btn sub" id="b2reset">はじめから</button>';
+  $('b2reset').onclick=()=>{
+    S2.ri=3;S2.sa=2;S2.g={ri:null,sa:null};S2.tried={ri:{},sa:{}};
+    S2.done={ri:false,sa:false};S2.rows=[];up2();
+  };
+  dirty=true;
+}
+function judge2(k){
+  return S2.g[k]==='down'
+    ? '<span class="ok">予想は あたり！</span>'
+    : '<span class="ng">予想と ちがったね。</span>';
+}
+$('o2').addEventListener('click',e=>{
+  const b=e.target.closest('.opt');if(!b||b.disabled)return;
+  const q=$('o2').dataset.q;if(!q)return;
+  S2.g[q]=b.dataset.v;
+  S2.tried[q][S2[q]]=true;      /* いまの 場所も 1つと 数える */
+  up2();
+});
+function pick2(key,v){
+  if(!S2.g[key])return;
+  S2[key]=v;S2.tried[key][v]=true;rec2();
+  if(Object.keys(S2.tried[key]).length>=2)S2.done[key]=true;
+  up2();
+}
+$('q2ri').addEventListener('click',e=>{const b=e.target.closest('button');if(b&&!b.disabled)pick2('ri',Number(b.dataset.v));});
+$('q2sa').addEventListener('click',e=>{const b=e.target.closest('button');if(b&&!b.disabled)pick2('sa',Number(b.dataset.v));});
+
+/* =========================================================
+   ③ つり合いを 調べる（てこ実験器）
+   解説の 内容の取扱い「(ｱ) については，てこ実験器」。
+   ここでは まだ <重さ×きょり> の きまりは 言わない。
+   数を 表に ためる ところまで。きまりを 見つけるのは ④の しごと。
+   ========================================================= */
+const CX3=500,CY3=212,U3=60,GY3=456,MAXTH=0.22;
+const Q3=[
+  {ln:2,ld:6,rd:4,ans:3},{ln:3,ld:2,rd:3,ans:2},{ln:5,ld:2,rd:5,ans:2},
+  {ln:4,ld:6,rd:4,ans:6},{ln:6,ld:2,rd:3,ans:4},{ln:2,ld:5,rd:2,ans:5},
+];
+const S3={mode:'quiz',qi:0,rn:1,rel:false,mark:null,th:0,tgt:0,
+          f:{ln:3,ld:4,rn:4,rd:3}};
+/* いま 画面に 出て いる 4つの 数 */
+function cur3(){
+  if(S3.mode==='free')return {...S3.f};
+  const q=Q3[S3.qi];
+  return {ln:q.ln,ld:q.ld,rn:S3.rn,rd:q.rd};
+}
+function tilt3(){
+  const c=cur3();
+  if(S3.mode==='quiz'&&!S3.rel)return 0;         /* 手で ささえて いる */
+  return clamp((c.rn*c.rd-c.ln*c.ld)*0.020,-MAXTH,MAXTH);
+}
+function arm3(d,side,th){   /* d=きょり side=-1左 +1右 */
+  const x=side*d*U3;
+  return {x:CX3+Math.cos(th)*x,y:CY3+Math.sin(th)*x};
+}
+function weights3(g,x,y,n,col){
+  line(g,x,y,x,y+16,'#6b5c42',3);
+  for(let i=0;i<n;i++){
+    box(g,x-22,y+16+i*15,44,14,4,col||'#7f8b96','#5a6570',2);
+  }
+  tag(g,n+'こ',x,y+16+n*15+18,15,'#4a3c22');
+}
+function draw3(){
+  const {g,w,h}=fit($('c3'));base(g,w,h);
+  room(g);floor(g,GY3);
+  const c=cur3(),th=S3.th;
+  /* 支柱 */
+  box(g,CX3-90,GY3-16,180,20,8,'#8c7a5c','#6b5c42',3);
+  box(g,CX3-13,CY3,26,GY3-CY3-8,6,'#a99a7c','#8a7a5c',3);
+  /* うで */
+  g.save();g.translate(CX3,CY3);g.rotate(th);
+  box(g,-6.6*U3,-10,13.2*U3,20,6,'#d9b26a','#9c7838',3);
+  for(let s=-1;s<=1;s+=2){
+    for(let i=1;i<=6;i++){
+      circ(g,s*i*U3,0,4.6,'#fffdf7','#9c7838',2);
+      txt(g,String(i),s*i*U3,-21,13,'#8a7250');
+    }
+  }
+  circ(g,0,0,7,'#9c7838',null);
+  g.restore();
+  /* おもり */
+  const L=arm3(c.ld,-1,th),R=arm3(c.rd,1,th);
+  weights3(g,L.x,L.y,c.ln,'#6f8aa6');
+  weights3(g,R.x,R.y,c.rn,'#a6826f');
+  /* まん中＝支点 */
+  markPoint(g,CX3,CY3,'fu',{ly:-38,r:14});
+  /* 手で ささえて いる あいだ */
+  if(S3.mode==='quiz'&&!S3.rel){
+    hand(g,CX3+2*U3,CY3+52,.9,false);
+    hand(g,CX3-2*U3,CY3+52,.9,true);
+    tag(g,'手で ささえて いる',CX3,CY3+104,16,'#6a5a3a');
+  }
+  /* 左右の 数を 大きく 出す（表と 見くらべる ため） */
+  tag(g,'左　おもり '+c.ln+'こ　'+c.ld+'の ところ',250,506,17,'#40525e');
+  tag(g,'右　おもり '+c.rn+'こ　'+c.rd+'の ところ',750,506,17,'#6b4a3a');
+  if(S3.mode==='quiz'&&S3.rel&&S3.mark==='o'){
+    tag(g,'水平に つり合った！',CX3,64,21,'#3f7a33','rgba(255,255,255,.95)');
+  }
+  g.restore();
+}
+function tbl3(){
+  const el=$('t3');
+  el.style.gridTemplateColumns='1fr 1fr 1fr 1fr';
+  el.style.gridTemplateRows='auto auto repeat(6,1fr)';
+  let s='<div class="h" style="grid-column:1/3;background:#e6edf3;color:#40525e">左</div>'+
+        '<div class="h" style="grid-column:3/5;background:#f3e9e3;color:#6b4a3a">右</div>'+
+        '<div class="h">おもり</div><div class="h">きょり</div>'+
+        '<div class="h">おもり</div><div class="h">きょり</div>';
+  for(let i=0;i<6;i++){
+    const r=REC[i+BASE4.length];
+    if(!r){s+='<div class="c"></div>'.repeat(4);continue;}
+    s+='<div class="c on">'+r.ln+'</div><div class="c on">'+r.ld+'</div>'+
+       '<div class="c on">'+r.rn+'</div><div class="c on">'+r.rd+'</div>';
+  }
+  el.innerHTML=s;
+}
+function seg3(id,key){
+  const el=$(id);
+  el.innerHTML=Array.from({length:6},(_,i)=>
+    '<button data-v="'+(i+1)+'"'+(S3.f[key]===i+1?' class="on"':'')+'>'+(i+1)+'</button>').join('');
+}
+function up3(){
+  const free=S3.mode==='free';
+  $('p3quiz').style.display=free?'none':'flex';
+  $('p3free').style.display=free?'flex':'none';
+  [...$('q3mode').children].forEach(b=>b.classList.toggle('on',b.dataset.v===S3.mode));
+  if(free){
+    seg3('q3ln','ln');seg3('q3ld','ld');seg3('q3rn','rn');seg3('q3rd','rd');
+    const c=cur3(),d=c.rn*c.rd-c.ln*c.ld;
+    $('m3').innerHTML=d===0
+      ? '<span class="ok">水平に つり合った！</span> 左と 右を いろいろ 変えて、つり合う 組み合わせを さがそう。'
+      : (d>0?'<b>右</b>が 下がった。':'<b>左</b>が 下がった。')+' 4つの 数を 変えて、つり合う ところを さがそう。';
+    $('b3').innerHTML='<button class="btn sub" id="b3reset">はじめに もどす</button>';
+    $('b3reset').onclick=()=>{S3.f={ln:3,ld:4,rn:4,rd:3};up3();};
+  }else{
+    tbl3();
+    const q=Q3[S3.qi];
+    $('n3v').textContent=S3.rn;
+    $('n3m').disabled=S3.rel||S3.rn<=1;
+    $('n3p').disabled=S3.rel||S3.rn>=6;
+    if(!S3.rel){
+      $('m3').innerHTML='もんだい '+(S3.qi+1)+' / '+Q3.length+'　左に おもり <b>'+q.ln+'こ</b>を '+
+        '<b>'+q.ld+'</b>の ところに つるした。右の <b>'+q.rd+'</b>の ところに '+
+        '<b>何こ</b> つるすと つり合う？';
+      $('b3').innerHTML='<button class="btn show" id="b3go">手を はなす</button>'+
+        '<button class="btn sub" id="b3reset">記録を けす</button>';
+      $('b3go').onclick=()=>{S3.rel=true;S3.mark=(S3.rn===q.ans)?'o':'x';
+        if(S3.mark==='o')rec3();up3();};
+      $('b3reset').onclick=()=>{REC.length=BASE4.length;tbl3();up4();};
+    }else if(S3.mark==='o'){
+      $('m3').innerHTML='<span class="ok">つり合った！</span> 右の '+q.rd+'の ところに '+q.ans+'こ。'+
+        '記録に 入れた よ。';
+      $('b3').innerHTML=(S3.qi<Q3.length-1
+        ? '<button class="btn next" id="b3next">つぎの もんだい →</button>'
+        : '<button class="btn next" id="b3to4">④で きまりを さがす →</button>')+
+        '<button class="btn sub" id="b3again">もう一度</button>';
+      const n=$('b3next');if(n)n.onclick=()=>{S3.qi++;S3.rn=1;S3.rel=false;S3.mark=null;up3();};
+      const t=$('b3to4');if(t)t.onclick=()=>show(4);
+      $('b3again').onclick=()=>{S3.rel=false;S3.mark=null;up3();};
+    }else{
+      const d=S3.rn*q.rd-q.ln*q.ld;
+      $('m3').innerHTML=(d>0
+        ? '<span class="ng">右が 下がったね。</span> 右が <b>重すぎる</b> みたい。'
+        : '<span class="ng">左が 下がったね。</span> 右が <b>軽すぎる</b> みたい。')+
+        ' おもりの 数を 変えて、もう一度。';
+      $('b3').innerHTML='<button class="btn sub" id="b3again">もう一度</button>';
+      $('b3again').onclick=()=>{S3.rel=false;S3.mark=null;up3();};
+    }
+  }
+  dirty=true;
+}
+$('n3m').onclick=()=>{if(S3.rn>1){S3.rn--;up3();}};
+$('n3p').onclick=()=>{if(S3.rn<6){S3.rn++;up3();}};
+$('q3mode').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;
+  S3.mode=b.dataset.v;S3.rel=false;S3.mark=null;up3();
+});
+['q3ln','q3ld','q3rn','q3rd'].forEach(id=>{
+  $(id).addEventListener('click',e=>{
+    const b=e.target.closest('button');if(!b)return;
+    S3.f[id.slice(2)]=Number(b.dataset.v);up3();
+  });
+});
+function rec3(){
+  const q=Q3[S3.qi];
+  const r={ln:q.ln,ld:q.ld,rn:q.ans,rd:q.rd};
+  if(REC.some(x=>x.ln===r.ln&&x.ld===r.ld&&x.rn===r.rn&&x.rd===r.rd))return;
+  REC.push(r);up4();
+}
+function step3(dt){
+  const t=tilt3();
+  if(Math.abs(S3.th-t)<0.0008){S3.th=t;return false;}
+  S3.th+=(t-S3.th)*Math.min(1,dt*6);
+  return true;
+}
+
+/* =========================================================
+   ④ きまりを 見つける
+   解説の かなめ＝「支点からの距離とおもりの重さとの関係を表などに整理する」
+   「（力点にかかるおもりの重さ）×（支点から力点までの距離）」が 左右で 等しい。
+   そして「算数科の反比例の学習と関連を図る」。
+   【大事】いっぺんに 答えを 出さない。1つずつ 出す（S4.rev が 0〜4）。
+   ③を やって いなくても 成り立つ ように、はじめから 4行 入れて おく
+   （先生が ④だけ 出す ことが ある）。③で つり合った ものは 下に 足される。
+   ========================================================= */
+const BASE4=[{ln:2,ld:3,rn:3,rd:2},{ln:3,ld:4,rn:6,rd:2},{ln:4,ld:3,rn:2,rd:6},{ln:1,ld:6,rn:2,rd:3}];
+const REC=BASE4.map(r=>({...r}));
+const S4={rev:0,sel:0};
+const CX4=500,CY4=180,U4=46;
+function lever4(g,r,rev){
+  box(g,CX4-80,398,160,16,7,'#8c7a5c','#6b5c42',3);
+  box(g,CX4-12,CY4,24,398-CY4,6,'#a99a7c','#8a7a5c',3);
+  box(g,CX4-6.6*U4,CY4-9,13.2*U4,18,6,'#d9b26a','#9c7838',3);
+  for(let s=-1;s<=1;s+=2)for(let i=1;i<=6;i++){
+    circ(g,CX4+s*i*U4,CY4,4.2,'#fffdf7','#9c7838',2);
+    txt(g,String(i),CX4+s*i*U4,CY4-19,12,'#8a7250');
+  }
+  weights3(g,CX4-r.ld*U4,CY4+9,r.ln,'#6f8aa6');
+  weights3(g,CX4+r.rd*U4,CY4+9,r.rn,'#a6826f');
+  markPoint(g,CX4,CY4,'fu',{ly:-34,r:13,ls:15});
+  /* 左右の 数と かけ算 */
+  const y=470;
+  tag(g,'おもり '+r.ln+'こ　きょり '+r.ld,250,y,16,'#40525e');
+  tag(g,'おもり '+r.rn+'こ　きょり '+r.rd,750,y,16,'#6b4a3a');
+  if(rev>=1){
+    const same=rev>=2;
+    tag(g,r.ln+' × '+r.ld+' ＝ '+(r.ln*r.ld),250,y+42,23,same?'#3a2c05':'#8a6a10',
+        same?'#f5d97a':'rgba(255,255,255,.93)');
+    tag(g,r.rn+' × '+r.rd+' ＝ '+(r.rn*r.rd),750,y+42,23,same?'#3a2c05':'#8a6a10',
+        same?'#f5d97a':'rgba(255,255,255,.93)');
+    if(same)tag(g,'同じ！',500,y+42,20,'#3f7a33','#e6f0e0');
+  }
+}
+/* 反比例（算数6年との 関連）。きょりが 2倍に なると おもりは 半分 */
+const HIRE=[{d:2,n:6},{d:3,n:4},{d:4,n:3},{d:6,n:2}];
+function hanpi4(g){
+  txt(g,'おもり × きょり ＝ 12 に なる 組み合わせ',BW/2,54,21,'#6a5a3a');
+  const x0=180,dx=214;
+  HIRE.forEach((p,i)=>{
+    const x=x0+i*dx;
+    box(g,x-84,92,168,300,14,'#fffdf7','#e0d0a8',2);
+    txt(g,'きょり',x,124,16,'#8a7250');
+    txt(g,String(p.d),x,160,34,'#9c7838');
+    txt(g,'おもり',x,206,16,'#8a7250');
+    for(let k=0;k<p.n;k++)box(g,x-26,234+k*20,52,18,5,'#6f8aa6','#5a6570',2);
+    txt(g,p.n+'こ',x,368,18,'#40525e');
+  });
+  /* 2倍 と 半分 */
+  arrow(g,x0+22,80,x0+2*dx-22,80,'#9c7838',4,11);
+  tag(g,'きょり 2ばい',x0+dx,80,17,'#8a6a10');
+  arrow(g,x0+22,424,x0+2*dx-22,424,'#2f6fa8',4,11);
+  tag(g,'おもり 半分',x0+dx,424,17,C.fu);
+  txt(g,'いっぽうが 2ばいに なると、もういっぽうは 半分。算数で ならった <反比例> と 同じ。',
+      BW/2,494,18,'#6a5a3a');
+}
+function draw4(){
+  const {g,w,h}=fit($('c4'));base(g,w,h);
+  room(g);
+  if(S4.rev===3){hanpi4(g);g.restore();return;}
+  const r=REC[clamp(S4.sel,0,REC.length-1)];
+  lever4(g,r,S4.rev);
+  if(S4.rev>=4){
+    box(g,90,24,820,72,14,'#fff8e6','#c9a227',3);
+    txt(g,'（おもりの 重さ）×（支点からの きょり）が',BW/2,50,20,'#8a6a10');
+    txt(g,'左と 右で 同じ とき、てこは つり合う',BW/2,78,22,'#3a2c05');
+  }
+  g.restore();
+}
+function tbl4(){
+  const el=$('t4');
+  const rev=S4.rev;
+  el.style.gridTemplateColumns=rev>=1?'1fr 1fr 1.5fr 1fr 1fr 1.5fr':'1fr 1fr 1fr 1fr';
+  el.style.gridTemplateRows='auto auto repeat('+REC.length+',1fr)';
+  const c=rev>=1?3:2;
+  let s='<div class="h" style="grid-column:span '+c+';background:#e6edf3;color:#40525e">左</div>'+
+        '<div class="h" style="grid-column:span '+c+';background:#f3e9e3;color:#6b4a3a">右</div>'+
+        '<div class="h">おもり</div><div class="h">きょり</div>'+(rev>=1?'<div class="h">かけ算</div>':'')+
+        '<div class="h">おもり</div><div class="h">きょり</div>'+(rev>=1?'<div class="h">かけ算</div>':'');
+  for(let i=0;i<REC.length;i++){
+    const r=REC[i];
+    const on=(i===S4.sel)?' row-on':'';
+    const mul=rev>=2?' same':' mul';
+    s+='<div class="c pick on'+on+'" data-i="'+i+'">'+r.ln+'</div>'+
+       '<div class="c pick on'+on+'" data-i="'+i+'">'+r.ld+'</div>'+
+       (rev>=1?'<div class="c pick'+mul+on+'" data-i="'+i+'">'+r.ln+'×'+r.ld+'＝'+(r.ln*r.ld)+'</div>':'')+
+       '<div class="c pick on'+on+'" data-i="'+i+'">'+r.rn+'</div>'+
+       '<div class="c pick on'+on+'" data-i="'+i+'">'+r.rd+'</div>'+
+       (rev>=1?'<div class="c pick'+mul+on+'" data-i="'+i+'">'+r.rn+'×'+r.rd+'＝'+(r.rn*r.rd)+'</div>':'');
+  }
+  el.innerHTML=s;
+}
+const MSG4=[
+  'つり合った ときの 数を ならべた 表だよ。左と 右の 数に、何か <b>きまり</b>は ないかな？',
+  '<b>おもりの 数 × 支点からの きょり</b>を 計算して みた よ。',
+  '<span class="ok">左と 右が いつも 同じ 数に なって いる！</span>',
+  'きょりが <b>2ばい</b>に なると、おもりは <b>半分</b>。算数で ならった <b>反比例</b>だね。',
+  'これが <b>てこの きまり</b>。②で 分かった「力点を 遠く、作用点を 近く」も、この 式で せつめいできる。',
+];
+const BTN4=['かけ算を 出す ▶','左と 右を くらべる ▶','きょりと おもりで 見る ▶','まとめ ▶'];
+function up4(){
+  tbl4();
+  $('m4').innerHTML=MSG4[S4.rev];
+  $('t4ttl').textContent=S4.rev===3?'つり合った ときの 表':'つり合った ときの 表（行を おすと 左の 絵に なる）';
+  const r=$('r4');
+  if(S4.rev>=2){
+    r.classList.remove('hide');
+    r.innerHTML='（おもりの 重さ）×（支点からの きょり）が<br>左と 右で <b>同じ</b> とき、てこは つり合う';
+  }else r.classList.add('hide');
+  $('b4').innerHTML=
+    (S4.rev<4?'<button class="btn play" id="b4go">'+BTN4[S4.rev]+'</button>':'')+
+    (S4.rev>0?'<button class="btn sub" id="b4back">◀ もどる</button>':'');
+  const go=$('b4go');if(go)go.onclick=()=>{S4.rev++;up4();};
+  const bk=$('b4back');if(bk)bk.onclick=()=>{S4.rev--;up4();};
+  dirty=true;
+}
+$('t4').addEventListener('click',e=>{
+  const c=e.target.closest('.pick');if(!c)return;
+  S4.sel=Number(c.dataset.i);
+  if(S4.rev===3)S4.rev=2;
+  up4();
+});
+
+/* =========================================================
+   ⑤ 道具を 調べる
+   解説の 内容の取扱い「(ｲ) については，ペンチ，釘抜き，空き缶つぶし，トング」。
+   【出す 道具は この 4つだけ】岩石の 名前・発電の 道具と 同じ きまり。
+   はさみ・せんぬき・ホチキスなどを 足さない。
+   解説「『支点』『力点』『作用点』等の言葉を用いて説明したり，
+   どのような便利さが得られるかについて話し合ったり」から、
+   3つの 点を あてた あとに かならず <ならび> と <便利さ> を 出す。
+   てこを 第1種・第2種・第3種 と 呼ぶ 分類は 使わない。
+   【大事】クイズの あいだは 手を かかない。手が あると 力点が すぐ 分かって しまう。
+   手は「使って みる」の ときと、3つ あてた あとだけ 出す。
+   ========================================================= */
+function wood5(g,x,y,w,h){
+  box(g,x,y,w,h,5,'#c99c62','#9a7440',3);
+  g.save();g.globalAlpha=.25;g.strokeStyle='#8a6431';g.lineWidth=2;
+  for(let i=1;i<4;i++){g.beginPath();g.moveTo(x+6,y+h*i/4);g.lineTo(x+w-6,y+h*i/4);g.stroke();}
+  g.restore();
+}
+function metal5(g,pts,wd,col){
+  g.save();g.strokeStyle=col||'#9aa7b2';g.lineWidth=wd;g.lineCap='round';g.lineJoin='round';
+  g.beginPath();g.moveTo(pts[0].x,pts[0].y);
+  for(let i=1;i<pts.length;i++)g.lineTo(pts[i].x,pts[i].y);
+  g.stroke();
+  g.strokeStyle='rgba(255,255,255,.45)';g.lineWidth=wd*.3;
+  g.beginPath();g.moveTo(pts[0].x,pts[0].y-wd*.25);
+  for(let i=1;i<pts.length;i++)g.lineTo(pts[i].x,pts[i].y-wd*.25);
+  g.stroke();g.restore();
+}
+const rot5=(cx,cy,dx,dy,a)=>({x:cx+dx*Math.cos(a)-dy*Math.sin(a),y:cy+dx*Math.sin(a)+dy*Math.cos(a)});
+
+/* ---- ペンチ ---- */
+const PE={cx:470,cy:276,jaw:250,han:330};
+function peAng(a){return 0.145-0.090*a;}
+function pePts(a){
+  const t=peAng(a);
+  return {fu:{x:PE.cx,y:PE.cy},
+          sa:rot5(PE.cx,PE.cy,-PE.jaw,0,t),
+          ri:rot5(PE.cx,PE.cy,PE.han,0,t)};
+}
+function drawPe(g,a,hand_){
+  const t=peAng(a);
+  for(const s of [1,-1]){
+    const j =rot5(PE.cx,PE.cy,-PE.jaw,0,s*t), m=rot5(PE.cx,PE.cy,-64,0,s*t),
+          k =rot5(PE.cx,PE.cy,124,0,s*t),     e=rot5(PE.cx,PE.cy,PE.han,0,s*t);
+    metal5(g,[j,m],30,'#9aa7b2');            /* あご */
+    metal5(g,[m,{x:PE.cx,y:PE.cy},k],26,'#9aa7b2');
+    metal5(g,[k,e],38,'#414852');            /* にぎり */
+  }
+  circ(g,PE.cx,PE.cy,16,'#6e7a85','#4c565f',3);
+  /* はさんで いる はりがね（たてに 通して、はさんで いる ことを 見せる） */
+  const j=rot5(PE.cx,PE.cy,-PE.jaw+22,0,0);
+  line(g,j.x,PE.cy-86,j.x,PE.cy+86,'#b5762f',9);
+  if(hand_){const e=rot5(PE.cx,PE.cy,PE.han-72,0,t);hand(g,e.x,e.y-36,1.15,false);}
+}
+/* ---- くぎぬき ---- */
+const NA={fx:452,fy:416,hx:330,hy:-260,cx:-134,cy:12};
+function naPts(a){
+  const p=0.46*a;
+  return {fu:{x:NA.fx,y:NA.fy},
+          sa:rot5(NA.fx,NA.fy,NA.cx,NA.cy,p),
+          ri:rot5(NA.fx,NA.fy,NA.hx,NA.hy,p)};
+}
+function drawNa(g,a,hand_){
+  const p=0.46*a,P=naPts(a);
+  wood5(g,150,418,700,62);
+  /* バール */
+  const a1=rot5(NA.fx,NA.fy,-44,-10,p), a2=rot5(NA.fx,NA.fy,30,-22,p),
+        a3=rot5(NA.fx,NA.fy,140,-112,p), a4=rot5(NA.fx,NA.fy,NA.hx,NA.hy,p);
+  metal5(g,[P.sa,a1,a2,a3,a4],20,'#9aa7b2');
+  metal5(g,[a3,a4],20,'#6e7a85');
+  /* くぎ（作用点と いっしょに 上がる）。金具の あとに かかないと かくれる */
+  /* くぎ（作用点と いっしょに 上がる）。金具の あとに かかないと かくれる */
+  const nailUp=NA.fy+NA.cy-P.sa.y, nx=NA.fx+NA.cx+12;
+  line(g,nx,474-nailUp,nx,416-nailUp,'#7f8b96',10);
+  box(g,nx-22,404-nailUp,44,14,4,'#7f8b96','#5f6a74',2.5);
+  /* つめ（くぎを はさむ V字） */
+  g.save();g.translate(P.sa.x,P.sa.y);g.rotate(p);
+  metal5(g,[{x:-26,y:-14},{x:6,y:2}],11,'#8f9ca7');
+  metal5(g,[{x:-26,y:14},{x:6,y:2}],11,'#8f9ca7');
+  g.restore();
+  if(hand_)hand(g,a4.x+4,a4.y-4,1,false);
+}
+/* ---- 空きかんつぶし ---- */
+const CA={hx:230,hy:400,arm:620,can:250};
+function caH(a){return 112-72*a;}
+function caAng(a){return -Math.atan2(caH(a),CA.can);}
+function caPts(a){
+  const t=caAng(a);
+  return {fu:{x:CA.hx,y:CA.hy},
+          sa:rot5(CA.hx,CA.hy,CA.can,0,t),
+          ri:rot5(CA.hx,CA.hy,CA.arm,0,t)};
+}
+function drawCa(g,a,hand_){
+  const t=caAng(a),h=caH(a),P=caPts(a);
+  wood5(g,190,400,690,28);
+  /* かん */
+  const cw=64+26*a;
+  box(g,CA.can+CA.hx-cw/2,400-h,cw,h,8,'#cfd6dc','#97a3ac',3);
+  if(a>0.15){g.save();g.strokeStyle='#97a3ac';g.lineWidth=2.4;
+    for(let i=1;i<4;i++){g.beginPath();
+      g.moveTo(CA.can+CA.hx-cw/2+4,400-h*i/4);g.lineTo(CA.can+CA.hx+cw/2-4,400-h*i/4);g.stroke();}
+    g.restore();}
+  /* 上の 板 */
+  g.save();g.translate(CA.hx,CA.hy);g.rotate(t);
+  box(g,-18,-20,CA.arm+40,20,7,'#c99c62','#9a7440',3);
+  box(g,CA.arm-70,-24,96,28,9,'#414852',null);
+  g.restore();
+  circ(g,CA.hx,CA.hy,13,'#6e7a85','#4c565f',3);
+  if(hand_)hand(g,P.ri.x-16,P.ri.y-30,1,false);
+}
+/* ---- トング ---- */
+const TO={jx:216,jy:286,grip:330,tip:606};
+function toAng(a){return 0.132-0.086*a;}
+function toPts(a){
+  const t=toAng(a);
+  return {fu:{x:TO.jx,y:TO.jy},
+          ri:rot5(TO.jx,TO.jy,TO.grip,0,-t),
+          sa:rot5(TO.jx,TO.jy,TO.tip,0,-t)};
+}
+function drawTo(g,a,hand_){
+  const t=toAng(a);
+  for(const s of [-1,1]){
+    const m=rot5(TO.jx,TO.jy,TO.grip,0,s*t), e=rot5(TO.jx,TO.jy,TO.tip,0,s*t);
+    metal5(g,[{x:TO.jx,y:TO.jy},m,e],15,'#b3bec7');
+    /* 先の 平たい ところ */
+    g.save();g.translate(e.x,e.y);g.rotate(s*t);
+    box(g,-6,-11,42,22,7,'#c6d0d8','#93a0aa',2);
+    g.restore();
+  }
+  /* つなぎ目 */
+  const u=rot5(TO.jx,TO.jy,26,0,-t),d=rot5(TO.jx,TO.jy,26,0,t);
+  metal5(g,[u,{x:TO.jx-16,y:TO.jy},d],15,'#b3bec7');
+  /* つまんで いる もの（パン） */
+  const e=rot5(TO.jx,TO.jy,TO.tip+18,0,0);
+  box(g,e.x-6,e.y-48,64,96,13,'#e8c07a','#c39a52',3);
+  if(hand_){const m=rot5(TO.jx,TO.jy,TO.grip,0,-t);hand(g,m.x,m.y-26,1,false);}
+}
+
+const TOOLS=[
+  {k:'pe',n:'ペンチ',sub:'はりがねを 切る',pts:pePts,draw:drawPe,
+   ord:['sa','fu','ri'],mid:'fu',lp:{fu:{lx:0,ly:46},ri:{lx:0,ly:-48},sa:{lx:0,ly:-52}},
+   use:'にぎると、先が つよく とじて はりがねを はさむ。',
+   ben:'支点から <b class="ri">力点</b>までが <b>長く</b>、支点から <b class="sa">作用点</b>までが <b>短い</b>。'+
+       'だから <b>小さい 力で 強く はさめる</b>。'},
+  {k:'na',n:'くぎぬき',sub:'くぎを ぬく',pts:naPts,draw:drawNa,
+   ord:['sa','fu','ri'],mid:'fu',lp:{fu:{lx:20,ly:44},ri:{lx:0,ly:-44},sa:{lx:-18,ly:-46}},
+   use:'えを 下げると、板を 支点に して つめが くぎを 引き上げる。',
+   ben:'支点から <b class="ri">力点</b>までが とても <b>長い</b>。'+
+       'だから <b>小さい 力で かたい くぎが ぬける</b>。'},
+  {k:'ca',n:'空きかんつぶし',sub:'かんを つぶす',pts:caPts,draw:drawCa,
+   ord:['fu','sa','ri'],mid:'sa',lp:{fu:{lx:-8,ly:46},ri:{lx:0,ly:-46},sa:{lx:-62,ly:-6}},
+   use:'はしの つなぎ目を 支点に して、上の 板で かんを おしつぶす。',
+   ben:'<b class="sa">作用点</b>が まん中。支点から <b class="ri">力点</b>までが <b>長い</b>ので、'+
+       '<b>小さい 力で かんが つぶせる</b>。'},
+  {k:'to',n:'トング',sub:'食べ物を つまむ',pts:toPts,draw:drawTo,
+   ord:['fu','ri','sa'],mid:'ri',lp:{fu:{lx:0,ly:46},ri:{lx:0,ly:-46},sa:{lx:-6,ly:-48}},
+   use:'はしの つなぎ目を 支点に して、まん中を にぎると 先が とじる。',
+   ben:'<b class="ri">力点</b>が まん中。支点から 力点までが <b>短い</b>ので、'+
+       '力は よけいに いる。そのかわり <b>先が 大きく 動いて、やさしく つまめる</b>。'},
+];
+const Q5=['fu','ri','sa'];
+const S5={ti:0,ph:'see',a:0,playing:false,seen:{},qi:0,got:{},bad:null,t:0};
+function tool5(){return TOOLS[S5.ti];}
+function done5(k){return !!(S5.doneAll&&S5.doneAll[k]);}
+function draw5(){
+  const {g,w,h}=fit($('c5'));base(g,w,h);
+  room(g);
+  const T=tool5(),P=T.pts(S5.a);
+  const showHand=(S5.ph!=='quiz');
+  txt(g,T.n,BW/2,42,24,'#6a5a3a');
+  T.draw(g,S5.a,showHand);
+  const LP=T.lp;
+  if(S5.ph==='quiz'){
+    Q5.forEach(k=>{
+      const p=P[k],ok=S5.got[k];
+      if(ok){markPoint(g,p.x,p.y,k,{r:17,lx:LP[k].lx,ly:LP[k].ly});}
+      else{
+        const now=(k===Q5[S5.qi]);
+        g.save();g.globalAlpha=now?1:.75;
+        circ(g,p.x,p.y,17,'#fffdf7','#9c8f76',5);
+        txt(g,'？',p.x,p.y+1,19,'#8a7c63');
+        g.restore();
+      }
+    });
+    if(S5.bad){
+      const p=P[S5.bad];
+      g.save();g.strokeStyle=C.ri;g.lineWidth=6;g.lineCap='round';
+      g.beginPath();g.moveTo(p.x-15,p.y-15);g.lineTo(p.x+15,p.y+15);
+      g.moveTo(p.x+15,p.y-15);g.lineTo(p.x-15,p.y+15);g.stroke();g.restore();
+    }
+    tag(g,'▲ 絵の ○を おして こたえよう',BW/2,528,16,'#8a6a10');
+  }else if(S5.ph==='done'){
+    Q5.forEach(k=>markPoint(g,P[k].x,P[k].y,k,{r:17,lx:LP[k].lx,ly:LP[k].ly}));
+    /* きょりを 見せる＝便利さの わけ。
+       絵の 高さは 道具ごとに ちがうので、矢は かならず いちばん下に まとめて おく
+       （道具に かさねると 板や 点の 名前と ぶつかる） */
+    const y=506,y2=542;
+    arrow(g,P.fu.x,y,P.sa.x,y,'rgba(31,122,90,.55)',3,9);
+    arrow(g,P.sa.x,y,P.fu.x,y,'rgba(31,122,90,.55)',3,9);
+    tag(g,'支点→作用点',(P.fu.x+P.sa.x)/2,y,15,C.sa);
+    arrow(g,P.fu.x,y2,P.ri.x,y2,'rgba(192,57,43,.55)',3,9);
+    arrow(g,P.ri.x,y2,P.fu.x,y2,'rgba(192,57,43,.55)',3,9);
+    tag(g,'支点→力点',(P.fu.x+P.ri.x)/2,y2,15,C.ri);
+  }
+  g.restore();
+}
+function tools5(){
+  $('q5').innerHTML=TOOLS.map((t,i)=>
+    '<button class="tool'+(i===S5.ti?' on':'')+(done5(t.k)?' done':'')+'" data-i="'+i+'">'+
+    t.n+'<span class="st">'+(done5(t.k)?'○ できた':t.sub)+'</span></button>').join('');
+}
+function tbl5(){
+  const el=$('t5');
+  el.innerHTML=Q5.map(k=>{
+    const ok=S5.got[k]||S5.ph==='done';
+    if(!ok)return '<div class="c">'+NAME[k]+'　？</div>';
+    return '<div class="c on" style="flex-direction:column;gap:1px;border-color:'+C[k]+';background:#fff">'+
+      '<b style="color:'+C[k]+'">'+NAME[k]+'</b>'+
+      '<span style="font-size:.82em;color:#6a5a3a;line-height:1.2">'+MEAN[k]+'</span></div>';
+  }).join('');
+}
+function up5(){
+  const T=tool5();
+  tools5();tbl5();
+  const ord=$('s5ord'),ben=$('s5ben');
+  /* こたえが 出たら 3つの 点の 表は 用ずみ。ならびと 便利さに 場所を まわす
+     （せまい 画面では 3つ ぜんぶは 入らない） */
+  $('p5tbl').style.display=(S5.ph==='done')?'none':'flex';
+  if(S5.ph==='done'){
+    ord.classList.remove('hide');ben.classList.remove('hide');
+    ord.innerHTML='<div class="t">3つの 点の ならび</div><div class="order">'+
+      T.ord.map(k=>'<span class="o-'+k+'">'+NAME[k]+'</span>').join('<i>―</i>')+
+      '</div><div style="text-align:center;margin-top:3px;font-size:.92em">'+
+      '<b class="'+T.mid+'">'+NAME[T.mid]+'</b>が まん中に ある なかま</div>';
+    ben.innerHTML='<div class="t">どんな 便利さ？</div>'+T.ben;
+  }else{
+    ord.classList.add('hide');ben.classList.add('hide');
+  }
+  if(S5.ph==='see'){
+    $('m5').innerHTML=T.use+' まず <b>使って みる</b>と、どこが 動いて どこが 動かないか 分かる よ。';
+    $('b5').innerHTML='<button class="btn play" id="b5go">使って みる ▶</button>'+
+      (S5.seen[T.k]?'<button class="btn next" id="b5q">3つの 点を あてる →</button>':'');
+    $('b5go').onclick=()=>{S5.playing=true;up5();};
+    const q=$('b5q');if(q)q.onclick=()=>{S5.ph='quiz';S5.qi=0;S5.got={};S5.bad=null;S5.a=0;up5();};
+  }else if(S5.ph==='quiz'){
+    const k=Q5[S5.qi];
+    $('m5').innerHTML=S5.bad
+      ? '<span class="ng">そこは ちがう よ。</span> <b>'+NAME[k]+'</b>は 「'+MEAN[k]+'」。'
+      : '<b style="color:'+C[k]+'">'+NAME[k]+'</b>は どこ？　絵の <b>○</b>を おそう。'+
+        '<span style="font-size:.86em;color:#8a7c63">（'+MEAN[k]+'）</span>';
+    $('b5').innerHTML='<button class="btn sub" id="b5back">◀ 使って みるに もどる</button>';
+    $('b5back').onclick=()=>{S5.ph='see';S5.bad=null;up5();};
+  }else{
+    $('m5').innerHTML='<span class="ok">3つとも あてられた！</span> '+T.n+'は '+
+      '<b>'+NAME[T.mid]+'</b>が まん中に ある なかま。';
+    $('b5').innerHTML='<button class="btn next" id="b5next">つぎの 道具 →</button>'+
+      '<button class="btn sub" id="b5again">もう一度 あてる</button>';
+    $('b5next').onclick=()=>{S5.ti=(S5.ti+1)%TOOLS.length;S5.ph='see';S5.a=0;S5.got={};S5.qi=0;S5.bad=null;up5();};
+    $('b5again').onclick=()=>{S5.ph='quiz';S5.qi=0;S5.got={};S5.bad=null;up5();};
+  }
+  dirty=true;
+}
+$('q5').addEventListener('click',e=>{
+  const b=e.target.closest('.tool');if(!b)return;
+  S5.ti=Number(b.dataset.i);S5.ph='see';S5.a=0;S5.got={};S5.qi=0;S5.bad=null;up5();
+});
+$('c5').addEventListener('click',e=>{
+  if(S5.ph!=='quiz')return;
+  const P=tool5().pts(S5.a),p=toBase($('c5'),e);
+  let hit=null,best=46;
+  Q5.forEach(k=>{
+    const d=Math.hypot(P[k].x-p.x,P[k].y-p.y);
+    if(d<best){best=d;hit=k;}
+  });
+  if(!hit)return;
+  const k=Q5[S5.qi];
+  if(hit===k){
+    S5.got[k]=true;S5.bad=null;S5.qi++;
+    if(S5.qi>=Q5.length){
+      S5.ph='done';S5.doneAll=S5.doneAll||{};S5.doneAll[tool5().k]=true;
+    }
+  }else{S5.bad=hit;setTimeout(()=>{S5.bad=null;up5();},2200);}
+  up5();
+});
+function step5(dt){
+  S5.t+=dt;
+  if(S5.playing){
+    S5.a+=dt*0.55;
+    if(S5.a>=1){S5.a=1;S5.playing=false;S5.seen[tool5().k]=true;up5();}
+    return true;
+  }
+  return false;
+}
+
+/* ========================= 入れかえと 時計 ========================= */
+function show(n){
+  step=n;
+  [...document.querySelectorAll('.stage')].forEach((el,i)=>{
+    const on=(i===n-1);
+    el.classList.toggle('on',on);
+    el.style.display=on?'flex':'none';
+  });
+  [...document.querySelectorAll('.tab')].forEach(b=>b.classList.toggle('on',Number(b.dataset.s)===n));
+  dirty=true;
+}
+$('tabs').addEventListener('click',e=>{
+  const b=e.target.closest('.tab');if(!b)return;show(Number(b.dataset.s));
+});
+function frame(ts){
+  const dt=Math.min(0.05,(ts-last)/1000||0);last=ts;
+  let anim=false;
+  try{
+    if(step===1)anim=step1(dt);
+    if(step===3)anim=step3(dt);
+    if(step===5)anim=step5(dt);
+  }catch(err){console.error(err);}
+  if(dirty||anim){
+    dirty=false;
+    try{
+      if(step===1)draw1();
+      if(step===2)draw2();
+      if(step===3)draw3();
+      if(step===4)draw4();
+      if(step===5)draw5();
+    }catch(err){console.error(err);}
+  }
+  requestAnimationFrame(frame);
+}
+addEventListener('resize',()=>{dirty=true;});
+addEventListener('orientationchange',()=>{setTimeout(()=>{dirty=true;},250);});
+
+up1();up2();up3();up4();up5();
+show(1);
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
