@@ -227,8 +227,8 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-acti
 .num button[disabled]{opacity:.42;}
 
 /* ⑤ 道具の 進み具合 */
-/* 4つを よこ1列に すると「空きかんつぶし」が 2行に 折り返して つぶれる。2×2に する */
-.tools{flex:0 0 auto;display:grid;grid-template-columns:repeat(2,1fr);gap:5px;}
+/* 6つ を よこ3列 × たて2段。1列に ならべると「空きかんつぶし」が 折り返して つぶれる */
+.tools{flex:0 0 auto;display:grid;grid-template-columns:repeat(3,1fr);gap:5px;}
 .tool{
   font:inherit;font-size:clamp(10.5px,1.2vw,13.5px);color:var(--dim);background:#f6eed9;
   border:2px solid var(--line);border-radius:12px;padding:6px 2px;min-height:46px;cursor:pointer;
@@ -351,7 +351,7 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-acti
             </div>
           </div>
           <div class="panel" style="flex:1">
-            <div class="ttl">調べた こと</div>
+            <div class="ttl">調べた きろく</div>
             <div class="tbl" id="t2"></div>
           </div>
           <div class="rule hide" id="r2"></div>
@@ -449,7 +449,7 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-acti
             <div class="sumbox" id="s5ben"></div>
             <div class="panel" style="flex:1" id="p5tbl">
               <div class="ttl">3つの 点</div>
-              <div class="tbl" id="t5" style="grid-template-rows:repeat(3,1fr);grid-template-columns:1fr;"></div>
+              <div class="tbl" id="t5" style="grid-template-rows:1fr;grid-template-columns:repeat(3,1fr);"></div>
             </div>
           </div>
         </div>
@@ -745,12 +745,12 @@ function tbl1(){
 function bar1(){
   const b=$('b1');
   if(S1.quiz){
-    b.innerHTML=(S1.qi>=Q1.length?'<button class="btn next" id="b1again">もう一度 あてる →</button>':'')+
+    b.innerHTML=(S1.qi>=Q1.length?'<button class="btn next" id="b1again">もう一度 答える →</button>':'')+
       '<button class="btn sub" id="b1reset">はじめから</button>';
   }else if(S1.ph===0){
     b.innerHTML='<button class="btn play" id="b1go">動かして みる ▶</button>';
   }else if(S1.ph>=6){
-    b.innerHTML='<button class="btn next" id="b1quiz">名前を あてて みる →</button>'+
+    b.innerHTML='<button class="btn next" id="b1quiz">名前を 答えて みる →</button>'+
       '<button class="btn sub" id="b1reset">はじめから</button>';
   }else{
     b.innerHTML='<button class="btn play" id="b1go">1つ すすむ ▶</button>'+
@@ -771,14 +771,14 @@ const MSG1=[
   '手が おして いる ところ＝<span class="ri">力点</span>。人が <b>力を 加える</b> ところ。',
   '石に ふれて いる ところ＝<span class="sa">作用点</span>。<b>ものに 力が はたらく</b> ところ。',
   '<span class="fu">支点</span>・<span class="ri">力点</span>・<span class="sa">作用点</span>の 3つ。'+
-    'どれが どれか、あてて みよう。',
+    'どれが どれか、答えて みよう。',
 ];
 function up1(){
   tbl1();bar1();
   $('g1').style.display=S1.quiz?'flex':'none';
   if(S1.quiz){
     if(S1.qi>=Q1.length){
-      $('m1').innerHTML='<span class="ok">3つとも あてられた！</span> '+
+      $('m1').innerHTML='<span class="ok">3つとも 答えられた！</span> '+
         '<span class="fu">支点</span>は 動かない、<span class="ri">力点</span>は 力を 加える、'+
         '<span class="sa">作用点</span>は ものに 力が はたらく ところ。';
       [...$('o1').children].forEach(b=>{b.disabled=true;b.className='opt p-'+b.dataset.v;});
@@ -845,60 +845,72 @@ function step1(dt){
    おもりの 重さは 600g で 固定。
    予想を えらぶまで 動かせない。結果だけ 見せると 実験の 記録映像に なる。
    ========================================================= */
-const FX2=430,FY2=250,U2=62,GY2=520,WT2=600;
+const FX2=430,FY2=250,U2=62,GY2=545,WT2=600;
 const S2={ri:3,sa:2,g:{ri:null,sa:null},tried:{ri:{},sa:{}},done:{ri:false,sa:false},rows:[]};
 function force2(){return Math.round(WT2*S2.sa/S2.ri);}
 function word2(f){
   return f<=150?'とても 軽い':f<=350?'軽い':f<=700?'ふつう':f<=1200?'重い':'とても 重い';
 }
-/* ばねばかりは うでの 下に つるして 下へ 引く（ほんものと 同じ 使い方）。
-   のびで 力の 大きさを 見せ、数と ことばでも 出す */
+/* ばねばかり。**ほんものと 同じ「うでの 下に つるして 下へ 引く」使い方**。
+   2026-09-20 の 指摘＝「手の イラストは 力点だから？ 下から 引っぱって いる？
+   おもりが 400g？」＝ばねばかりに 見えず、2つめの おもりに 見えて いた。
+   だから ①なまえ（ばねばかり）②読みの ことば（手ごたえ）③下へ 引く 矢
+   の 3つを かならず 出す。**消さないこと** */
 function scale2(g,x,yt,f){
-  const H=120,t=clamp(f/1800,0,1);
-  line(g,x,yt,x,yt+14,'#7b6a52',4);
-  box(g,x-26,yt+14,52,H,10,'#eef2f5','#98a6b0',3);
+  const H=116,t=clamp(f/1800,0,1);
+  line(g,x,yt,x,yt+52,'#7b6a52',4);
+  circ(g,x,yt+58,7,'#eef2f5','#98a6b0',3);
+  box(g,x-27,yt+62,54,H,10,'#eef2f5','#98a6b0',3);
   for(let i=0;i<=6;i++){
-    const yy=yt+26+i*(H-24)/6;
-    line(g,x-18,yy,x+(i%2?10:18),yy,'#b6c2ca',2);
+    const yy=yt+74+i*(H-24)/6;
+    line(g,x-19,yy,x+(i%2?10:19),yy,'#b6c2ca',2);
   }
-  const py=yt+26+t*(H-24);
-  line(g,x-22,py,x+22,py,C.ri,5);
-  circ(g,x+22,py,6,C.ri,null);
-  tag(g,f+'g',x+68,yt+50,20,C.ri);
-  tag(g,word2(f),x+68,yt+84,16,'#6a5a3a');
-  hand(g,x,yt+H+42,1,false);
+  const py=yt+74+t*(H-24);
+  line(g,x-23,py,x+23,py,C.ri,5);
+  circ(g,x+23,py,6,C.ri,null);
+  tag(g,'ばねばかり',x-78,yt+92,15,'#6a5a3a');
+  tag(g,'手ごたえ',x+76,yt+90,15,'#6a5a3a');
+  tag(g,f+'g',x+76,yt+124,24,C.ri);
+  /* 手は 下へ 引いて いる。矢と ことばで はっきり させる */
+  const hy=yt+H+100;
+  hand(g,x,hy,1.05,false);
+  arrow(g,x+50,hy-18,x+50,hy+38,C.ri,6,13);
+  tag(g,'手で 下へ 引く',x+126,hy+10,16,C.ri);
 }
 function weight2(g,x,y){
-  line(g,x,y,x,y+34,'#7b6a52',4);
-  box(g,x-34,y+34,68,50,9,'#b08a5a','#7b6a52',3);
-  txt(g,'600g',x,y+59,18,'#40301c');
+  line(g,x,y,x,y+40,'#7b6a52',4);
+  box(g,x-36,y+40,72,52,9,'#b08a5a','#7b6a52',3);
+  txt(g,'600g',x,y+66,19,'#40301c');
+  tag(g,'持ち上げる おもり',x,y+116,16,'#6a5a3a');
 }
 function draw2(){
   const {g,w,h}=fit($('c2'));base(g,w,h);
   room(g);floor(g,GY2);
   const xs=FX2-S2.sa*U2, xr=FX2+S2.ri*U2;
+  /* めあて＝この 画面で 何を するか。絵の いちばん 上に 出す */
+  box(g,150,16,700,44,12,'#fff8e6','#c9a227',3);
+  txt(g,'600g の おもりを、小さい 力で 持ち上げるには？',BW/2,38,21,'#8a6a10');
   /* 支柱 */
   box(g,FX2-16,FY2,32,GY2-FY2,6,'#a99a7c','#8a7a5c',3);
   box(g,FX2-70,GY2-14,140,18,7,'#8c7a5c','#6b5c42',3);
   /* うで（棒） */
   box(g,FX2-3*U2-42,FY2-11,(3+5)*U2+84,22,7,'#c08f4e','#8d6431',3);
-  /* 目もり */
   for(let s=-1;s<=1;s+=2)for(let i=1;i<=(s<0?3:5);i++){
     const x=FX2+s*i*U2;
     line(g,x,FY2-11,x,FY2-22,'#8d6431',3);
     txt(g,String(i),x,FY2-36,15,'#8a7250');
   }
-  /* おもりと ばねばかり */
-  weight2(g,xs,FY2+11);
-  scale2(g,xr,FY2+11,force2());
-  /* きょりの 矢（どちらも うでの ずっと 下。おもり・ばねばかりと かさならない） */
-  const ay=FY2+200;
+  /* きょりの 矢は うでの すぐ 下（ほそい ひもを またぐ だけ） */
+  const ay=FY2+42;
   arrow(g,FX2,ay,xs,ay,'rgba(31,122,90,.55)',3,9);
   arrow(g,xs,ay,FX2,ay,'rgba(31,122,90,.55)',3,9);
   tag(g,'支点→作用点　'+S2.sa,(FX2+xs)/2,ay,16,C.sa);
   arrow(g,FX2,ay,xr,ay,'rgba(192,57,43,.55)',3,9);
   arrow(g,xr,ay,FX2,ay,'rgba(192,57,43,.55)',3,9);
   tag(g,'支点→力点　'+S2.ri,(FX2+xr)/2,ay,16,C.ri);
+  /* おもりと ばねばかり */
+  weight2(g,xs,FY2+11);
+  scale2(g,xr,FY2+11,force2());
   /* 3つの 点 */
   markPoint(g,FX2,FY2,'fu',{ly:-74,r:15});
   markPoint(g,xr,FY2,'ri',{ly:-74,r:15});
@@ -973,15 +985,16 @@ function up2(){
   }else r.classList.add('hide');
 
   if(!S2.g.ri){
-    $('m2').innerHTML='600g の おもりを、棒で 持ち上げる よ。まず <b>予想</b>を えらぼう。'+
-      'えらぶまで 下の 数の ボタンは おせない。';
+    $('m2').innerHTML='600g の おもりを、てこで 持ち上げる よ。ばねばかりの 数が <b>手ごたえ</b>。'+
+      'まず <b>予想</b>を えらぼう（えらぶまで 数の ボタンは おせない）。';
   }else if(!S2.done.ri){
-    $('m2').innerHTML='<b style="color:'+C.ri+'">支点→力点</b>の 数を いろいろ 変えて、手ごたえを くらべよう。'+
+    $('m2').innerHTML='<b style="color:'+C.ri+'">支点から 力点まで</b>の <b>数の ボタン</b>を おして、'+
+      '手ごたえが どう 変わるか 見よう。調べた ものは <b>表</b>に たまる。'+
       '（あと '+Math.max(0,2-Object.keys(S2.tried.ri).length)+' とおり）';
   }else if(!S2.g.sa){
     $('m2').innerHTML=judge2('ri')+' つぎは <b>作用点</b>の ばんだよ。予想を えらぼう。';
   }else if(!S2.done.sa){
-    $('m2').innerHTML='<b style="color:'+C.sa+'">支点→作用点</b>の 数を 変えて くらべよう。'+
+    $('m2').innerHTML='<b style="color:'+C.sa+'">支点から 作用点まで</b>の <b>数の ボタン</b>を おして、くらべよう。'+
       '（あと '+Math.max(0,2-Object.keys(S2.tried.sa).length)+' とおり）';
   }else{
     $('m2').innerHTML=judge2('sa')+' 小さい 力で 動かすには、'+
@@ -1218,7 +1231,7 @@ const P4=[
 ];
 const LB4={rn:['右の おもり','こ'],rd:['右の きょり','の ところ'],
            ln:['左の おもり','こ'],ld:['左の きょり','の ところ']};
-const S4={qi:0,val:1,mark:null,hint:false,phase:'quiz',th:0,solved:[]};
+const S4={qi:0,val:1,mark:null,hint:false,phase:'quiz',th:0};
 const CX4=500,CY4=176,U4=46;
 function q4(){return P4[Math.min(S4.qi,P4.length-1)];}
 /* いま 画面に 出て いる 4つの 数＝かくした ところに 入れた 数を あてはめた もの */
@@ -1306,10 +1319,11 @@ function draw4(){
   }
   g.restore();
 }
+/* お手本 4行 ＋ いまの もんだい だけ。
+   2026-09-20 の 指摘＝「問題を 解くたびに 表が せまく なる。挑戦した 問題は 残さなくても いい」。
+   **といた もんだいを 表に ためないこと**（行が ふえると 字が 小さく なる） */
 function rows4(){
-  /* お手本 → といた もんだい → いまの もんだい */
   const rs=BASE4.map(r=>({...r,kind:'base'}));
-  S4.solved.forEach(i=>{const q=P4[i];rs.push({ln:q.ln,ld:q.ld,rn:q.rn,rd:q.rd,kind:'done'});});
   if(S4.phase==='quiz'){
     const q=q4(),r=cur4();
     rs.push({...r,kind:'now',h:q.h});
@@ -1345,8 +1359,7 @@ function up4(){
   $('n4v').textContent=S4.val;
   $('n4m').disabled=(S4.mark==='o')||S4.val<=1;
   $('n4p').disabled=(S4.mark==='o')||S4.val>=6;
-  $('t4ttl').textContent=(S4.phase==='quiz')
-    ? 'つり合った ときの 表（上の 4つは お手本）' : 'つり合った ときの 表';
+  $('t4ttl').textContent='つり合った ときの 表';
   const r=$('r4');
   if(S4.phase!=='quiz'){
     r.classList.remove('hide');
@@ -1368,8 +1381,8 @@ function up4(){
     $('b4').innerHTML=(S4.qi<P4.length-1
       ? '<button class="btn next" id="b4next">つぎの もんだい →</button>'
       : '<button class="btn next" id="b4rule">きまりを まとめる →</button>');
-    const n=$('b4next');if(n)n.onclick=()=>{S4.solved.push(S4.qi);S4.qi++;S4.val=1;S4.mark=null;up4();};
-    const u=$('b4rule');if(u)u.onclick=()=>{S4.solved.push(S4.qi);S4.phase='rule';S4.mark=null;up4();};
+    const n=$('b4next');if(n)n.onclick=()=>{S4.qi++;S4.val=1;S4.mark=null;up4();};
+    const u=$('b4rule');if(u)u.onclick=()=>{S4.phase='rule';S4.mark=null;up4();};
   }else{
     const c=cur4(),d=c.rn*c.rd-c.ln*c.ld;
     $('m4').innerHTML=(S4.mark==='x'
@@ -1385,7 +1398,7 @@ function up4(){
   dirty=true;
 }
 function reset4(){
-  S4.qi=0;S4.val=1;S4.mark=null;S4.phase='quiz';S4.solved=[];S4.th=0;up4();
+  S4.qi=0;S4.val=1;S4.mark=null;S4.phase='quiz';S4.th=0;up4();
 }
 $('n4m').onclick=()=>{if(S4.val>1){S4.val--;S4.mark=null;up4();}};
 $('n4p').onclick=()=>{if(S4.val<6){S4.val++;S4.mark=null;up4();}};
@@ -1534,6 +1547,69 @@ function drawTo(g,a,hand_){
   if(hand_){const m=rot5(TO.jx,TO.jy,TO.grip,0,-t);hand(g,m.x,m.y-26,1,false);}
 }
 
+/* ---- プルタブ（かんの ふた）---- */
+const PT={rx:500,ry:332,ring:-240,nose:120};
+function ptAng(a){return 0.40*a;}
+function ptPts(a){
+  const t=ptAng(a);
+  return {fu:{x:PT.rx,y:PT.ry},
+          ri:rot5(PT.rx,PT.ry,PT.ring,0,t),
+          sa:rot5(PT.rx,PT.ry,PT.nose,0,t)};
+}
+function drawPt(g,a,hand_){
+  const t=ptAng(a),P=ptPts(a);
+  /* かん */
+  box(g,170,374,660,126,12,'#d7dee3','#a7b2ba',3);
+  box(g,170,338,660,36,10,'#c8d0d6','#96a3ab',3);
+  /* あけくち＝作用点に おされて 中へ 下がる */
+  box(g,566,344,196,22,4,'#3c4750',null);
+  g.save();g.translate(762,344);g.rotate(-clamp(a,0,1)*0.42);
+  box(g,-198,-9,198,18,4,'#aeb9c1','#8b98a1',2.5);
+  g.restore();
+  /* タブ */
+  g.save();g.translate(PT.rx,PT.ry);g.rotate(t);
+  box(g,-278,-14,432,28,12,'#b9c3cb','#8b98a1',3);
+  box(g,-256,-7,124,14,7,'#e6ebee','#a7b2ba',2);
+  g.restore();
+  circ(g,PT.rx,PT.ry,12,'#8b98a1','#6d7a83',3);
+  if(hand_){
+    hand(g,P.ri.x+16,P.ri.y-42,1,false);
+    arrow(g,P.ri.x+78,P.ri.y+4,P.ri.x+78,P.ri.y-58,C.ri,5,11);
+  }
+}
+/* ---- つめ切り（上の レバーを てこと して 見る）---- */
+const NC={jx:210,jy:376,len:600,postX:640,postH:96,braH:112,gripX:830,fuX:280};
+function ncPhi(a){return -0.062+0.058*a;}
+function ncArmY(a,x){return NC.jy+(x-NC.jx)*Math.sin(ncPhi(a));}
+function ncPts(a){
+  const py=ncArmY(a,NC.fuX)-NC.braH, sy=ncArmY(a,NC.postX)-NC.postH;
+  const t=(sy-py)/(NC.postX-NC.fuX);
+  return {fu:{x:NC.fuX,y:py},sa:{x:NC.postX,y:sy},
+          ri:{x:NC.gripX,y:py+(NC.gripX-NC.fuX)*t}};
+}
+function drawNc(g,a,hand_){
+  const P=ncPts(a),phi=ncPhi(a);
+  const tip={x:NC.jx+NC.len*Math.cos(phi),y:NC.jy+NC.len*Math.sin(phi)};
+  /* つめ（刃の あいだ） */
+  const gt=tip.y+16,nh=Math.max(8,378-gt);
+  box(g,826,gt,86,nh,6,'#f3e3d2','#d6bfa8',2.5);
+  /* 下の うでと 刃 */
+  metal5(g,[{x:NC.jx,y:NC.jy+11},{x:840,y:392}],17,'#9aa7b2');
+  box(g,772,378,66,15,3,'#8b98a1','#6d7a83',2);
+  /* 上の うでと 刃 */
+  metal5(g,[{x:NC.jx,y:NC.jy},{x:tip.x,y:tip.y}],17,'#b3bec7');
+  box(g,tip.x-66,tip.y,66,15,3,'#8b98a1','#6d7a83',2);
+  /* 後ろの ばね（2まいが つながって いる ところ） */
+  metal5(g,[{x:NC.jx+6,y:NC.jy-2},{x:NC.jx-16,y:NC.jy+6},{x:NC.jx+6,y:NC.jy+13}],13,'#9aa7b2');
+  /* ぼう（作用点から 下の うでへ）と 後ろの ささえ */
+  metal5(g,[{x:NC.postX,y:P.sa.y},{x:NC.postX,y:ncArmY(a,NC.postX)}],12,'#8b98a1');
+  metal5(g,[{x:NC.fuX,y:P.fu.y},{x:NC.fuX,y:ncArmY(a,NC.fuX)}],12,'#8b98a1');
+  /* レバー */
+  metal5(g,[{x:P.fu.x-22,y:P.fu.y},{x:P.ri.x+18,y:P.ri.y}],21,'#c6d0d8');
+  circ(g,P.fu.x,P.fu.y,10,'#8b98a1','#6d7a83',2.5);
+  if(hand_)hand(g,P.ri.x-30,P.ri.y-36,1,false);
+}
+
 const TOOLS=[
   {k:'pe',n:'ペンチ',sub:'はりがねを 切る',pts:pePts,draw:drawPe,
    ord:['sa','fu','ri'],mid:'fu',lp:{fu:{lx:0,ly:46},ri:{lx:0,ly:-48},sa:{lx:0,ly:-52}},
@@ -1555,6 +1631,17 @@ const TOOLS=[
    use:'はしの つなぎ目を 支点に して、まん中を にぎると 先が とじる。',
    ben:'<b class="ri">力点</b>が まん中。支点から 力点までが <b>短い</b>ので、'+
        '力は よけいに いる。そのかわり <b>先が 大きく 動いて、やさしく つまめる</b>。'},
+  {k:'pt',n:'プルタブ',sub:'かんを あける',pts:ptPts,draw:drawPt,
+   ord:['ri','fu','sa'],mid:'fu',lp:{fu:{lx:0,ly:46},ri:{lx:0,ly:-48},sa:{lx:36,ly:46}},
+   use:'リングを 上へ 引くと、はんたいがわの 先が ふたを 下へ おして あく。',
+   ben:'支点から <b class="ri">力点</b>までが <b>長く</b>、支点から <b class="sa">作用点</b>までが <b>短い</b>。'+
+       'だから <b>小さい 力で かたい ふたが あく</b>。'},
+  {k:'nc',n:'つめ切り',sub:'つめを 切る',pts:ncPts,draw:drawNc,
+   ord:['fu','sa','ri'],mid:'sa',lp:{fu:{lx:-10,ly:-48},sa:{lx:0,ly:-48},ri:{lx:0,ly:-48}},
+   use:'レバーを おすと、ぼうが 下の 刃を おしつける。つめ切りは てこを <b>2つ</b> 組み合わせた 道具で、'+
+       'ここでは <b>上の レバー</b>を 見て いる。',
+   ben:'<b class="sa">作用点</b>が まん中。支点から <b class="ri">力点</b>までが <b>長い</b>ので、'+
+       '<b>小さい 力で かたい つめが 切れる</b>。'},
 ];
 const Q5=['fu','ri','sa'];
 /* 絵の ○に つける 名前。左から あ・い・う（T.ord が 左から の ならび） */
@@ -1622,7 +1709,7 @@ function tbl5(){
     return '<div class="c on" style="border-color:'+C[k]+';background:#fff;gap:.4em">'+
       '<b style="color:'+C[k]+'">'+NAME[k]+'</b><span style="color:#3f7a33">○ '+LET5(k)+'</span></div>';
   }).join('');
-  fitTbl(el,0,7,22);
+  fitTbl(el,0,6,24);
 }
 function up5(){
   const T=tool5();
@@ -1657,7 +1744,7 @@ function up5(){
   if(S5.ph==='see'){
     $('m5').innerHTML=T.use+' まず <b>使って みる</b>と、どこが 動いて どこが 動かないか 分かる よ。';
     $('b5').innerHTML='<button class="btn play" id="b5go">使って みる ▶</button>'+
-      (S5.seen[T.k]?'<button class="btn next" id="b5q">3つの 点を あてる →</button>':'');
+      (S5.seen[T.k]?'<button class="btn next" id="b5q">3つの 点を 答える →</button>':'');
     $('b5go').onclick=()=>{S5.playing=true;up5();};
     const q=$('b5q');if(q)q.onclick=()=>{S5.ph='quiz';S5.qi=0;S5.got={};S5.bad=null;S5.a=0;up5();};
   }else if(S5.ph==='quiz'){
@@ -1669,10 +1756,10 @@ function up5(){
     $('b5').innerHTML='<button class="btn sub" id="b5back">◀ 使って みるに もどる</button>';
     $('b5back').onclick=()=>{S5.ph='see';S5.bad=null;up5();};
   }else{
-    $('m5').innerHTML='<span class="ok">3つとも あてられた！</span> '+T.n+'は '+
+    $('m5').innerHTML='<span class="ok">3つとも 答えられた！</span> '+T.n+'は '+
       '<b>'+NAME[T.mid]+'</b>が まん中に ある なかま。';
     $('b5').innerHTML='<button class="btn next" id="b5next">つぎの 道具 →</button>'+
-      '<button class="btn sub" id="b5again">もう一度 あてる</button>';
+      '<button class="btn sub" id="b5again">もう一度 答える</button>';
     $('b5next').onclick=()=>{S5.ti=(S5.ti+1)%TOOLS.length;S5.ph='see';S5.a=0;S5.got={};S5.qi=0;S5.bad=null;up5();};
     $('b5again').onclick=()=>{S5.ph='quiz';S5.qi=0;S5.got={};S5.bad=null;up5();};
   }
