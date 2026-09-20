@@ -181,6 +181,18 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;}
 }
 .tbl .h.test .tap{font-size:.76em;opacity:.9;}
 .tbl .h.test.done{background:#f1e6c8;color:#6a5a3a;border-color:#e2d3ab;cursor:default;}
+/* 2行の 見出し。下の 小さい 行に「おして 調べる」「予想を 入れる」
+   「①で 調べた」など、その らんの 役わりを 書く */
+.tbl .h.two{flex-direction:column;gap:0;line-height:1.15;}
+.tbl .h.two .tap{font-size:.76em;opacity:.85;}
+/* カードを 落とす らんの 見出し（②の「性質」）。
+   カードと 同じ 金色に して、どこに 入れるのかを 見た目で つなぐ */
+.tbl .h.drop{background:#f5d97a;color:#3a2c05;border:2px dashed var(--gold);}
+/* カードの 列に つける 見出し */
+.cards .lead{
+  font-size:clamp(10.5px,1.25vw,14px);color:#8a6a10;align-self:center;
+  white-space:nowrap;padding:0 4px;
+}
 /* 水よう液を おして えらぶ（②） */
 .tbl .r.pick{cursor:pointer;background:#f6eed9;border:2px solid var(--line);}
 .tbl .r.pick.on{background:#f5d97a;border-color:var(--gold);color:#3a2c05;}
@@ -262,6 +274,9 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;}
 .tbl .c.dz{cursor:pointer;}
 .tbl .c.dz.hit{background:#fff3cf;border-color:var(--gold);}
 .tbl .c.dz.blank{background:#fff8e6;border:2px dashed var(--gold);color:#b9a165;}
+/* ②の「予想を ここへ」は ことばが 長いので 少し 小さく。
+   たての みじかい 画面（1024×560）で 2行に なって はみ出して いた */
+#s2 .tbl .c.dz.blank{font-size:.85em;line-height:1.12;}
 .tbl .c.mark-o{box-shadow:0 0 0 2px var(--ok) inset;}
 .tbl .c.mark-x{box-shadow:0 0 0 2px var(--ng) inset;}
 
@@ -329,13 +344,13 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;}
       <div class="cols two">
         <div class="card"><canvas id="c2"></canvas></div>
         <div class="side">
+          <div class="cards" id="p2cards"></div>
           <div class="panel" style="flex:1">
             <div class="ttl" id="t2ttl">「性質」の ますに 予想の カードを 入れる → たしかめる</div>
             <div class="tbl" id="t2"></div>
           </div>
         </div>
       </div>
-      <div class="cards" id="p2cards"></div>
       <div class="msg" id="m2"></div>
       <div class="bar">
         <button class="btn ghost on" id="b2litmus">リトマス紙</button>
@@ -1227,9 +1242,12 @@ function t2build(){
   const t=$('t2'),lit=S2.tool==='litmus';
   t.style.gridTemplateColumns=lit?'1.2fr 1.05fr 1.05fr 1fr':'1.3fr 1fr 1.15fr';
   t.style.gridTemplateRows='repeat(7,1fr)';
-  let h='<div class="h">水よう液</div>';
+  let h='<div class="h two">水よう液<span class="tap">おして えらぶ</span></div>';
   h+=lit?'<div class="h">青い 紙</div><div class="h">赤い 紙</div>':'<div class="h">BTB液</div>';
-  h+='<div class="h">性質</div>';
+  /* 見出しを カードと 同じ 金色に して「ここに 入れる」と 書く。
+     ちいさな 説明文だけでは 気づかれなかった（2026-09-20 の 指摘＝
+     「予想を『性質』の ますに 入れる ことが 説明を 読むまで 分からなかった」） */
+  h+='<div class="h two drop">性質<span class="tap">予想を 入れる</span></div>';
   LIQ.forEach(q=>{
     const d=(S2.done[q.k]||{})[S2.tool];
     const cur=q.k===S2.k?' now':'';
@@ -1253,13 +1271,17 @@ function t2build(){
     }else if(gv){
       h+='<div class="c dz on s-'+gv+cur+'" data-k="'+q.k+'" data-c="sei">予想 '+SEI[gv].n+'</div>';
     }else{
-      h+='<div class="c dz blank'+cur+'" data-k="'+q.k+'" data-c="sei">？</div>';
+      /* ます そのものに「予想を ここへ」と 書く＝いちばん 気づきやすい */
+      h+='<div class="c dz blank'+cur+'" data-k="'+q.k+'" data-c="sei">予想を ここへ</div>';
     }
   });
   t.innerHTML=h;
 }
 function p2build(){
   const c=$('p2cards');c.innerHTML='';
+  const lead=document.createElement('span');
+  lead.className='lead';lead.textContent='予想の カード → 「性質」の ますへ';
+  c.appendChild(lead);
   ['acid','neut','alka'].forEach(v=>{
     const b=document.createElement('div');
     b.className='ncard v-'+v+(S2.sel===v?' sel':'');
@@ -1999,7 +2021,14 @@ function t5build(){
   const t=$('t5');
   t.style.gridTemplateColumns='1.25fr 1.15fr 1fr 1.05fr';
   t.style.gridTemplateRows='repeat(7,1fr)';
-  let h='<div class="h">水よう液</div><div class="h">蒸発させると</div><div class="h">とけて いる 物</div><div class="h">性質</div>';
+  /* どの らんが どこで 分かった ことなのかを 見出しに 書く。
+     「蒸発させると」の となりが「とけて いる 物」なのは つながるが、
+     その となりの「性質」は べつの 実験（②）の 結果なので、
+     書いて おかないと なぜ そこに あるのか 分からない（2026-09-20 の 指摘） */
+  let h='<div class="h">水よう液</div>'+
+        '<div class="h two">蒸発させると<span class="tap">①で 調べた</span></div>'+
+        '<div class="h two">とけて いる 物<span class="tap">①から 考える</span></div>'+
+        '<div class="h two">性質<span class="tap">②で 調べた</span></div>';
   order5().forEach(q=>{
     const a=S5.ans[q.k]||{};
     const gr=S5.ord==='tok'?(' s-'+q.st):(S5.ord==='sei'?(' s-'+q.sei):'');
@@ -2126,7 +2155,8 @@ $('m2').innerHTML='上の <b>予想の カード</b>（酸性・中性・アル�
 up2();
 up3();
 up4();
-$('m5').innerHTML='①〜④で 調べた ことを 1つの 表に まとめよう。上の カードを ますに 入れてね。';
+$('m5').innerHTML='①で 調べた <b>「蒸発させると」</b>から <b>「とけて いる 物」</b>を 考え、'+
+  '②で 調べた <b>「性質」</b>を 思い出して、上の カードを ますに 入れよう。';
 up5();
 show(1);
 requestAnimationFrame(frame);
