@@ -161,10 +161,24 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-acti
 .tbl .c.on{background:#fff3cf;border-color:var(--gold);color:#5a4718;}
 .tbl .c.now{box-shadow:0 0 0 2px var(--blue) inset;}
 .tbl .c.pick{cursor:pointer;}
-.tbl .c.mul{background:#fff8e6;border-color:var(--gold);color:#8a6a10;}
-.tbl .c.same{background:#f5d97a;border-color:var(--gold);color:#3a2c05;}
+/* ④の □＝子どもが 入れる ます。表の 中で 目立たせる */
+.tbl .c.blank{background:#fff8e6;border:3px solid var(--gold);color:#3a2c05;font-weight:700;}
+.tbl .c.blank.mark-o{border-color:var(--ok);background:#e6f0e0;color:#3f7a33;}
+.tbl .c.blank.mark-x{border-color:var(--ng);background:#fbecec;color:#b33c3c;}
 .tbl .row-on{box-shadow:0 0 0 2px var(--blue) inset;}
-#s4 .tbl{font-size:clamp(11px,calc(0.84vw + 0.78vh),18px);}
+/* 【大事】読ませる 表の 字は CSS の clamp では きめない。
+   2026-09-20 の 指摘＝「②③は 表が 小さくて 見えません」。
+   clamp（vw+vh）は 行数と パネルの 高さの ちがいに ついて いけず、
+   ある 画面では 小さすぎ、別の 画面では 大きすぎて 切れる。
+   `fitTbl()` が **行の 高さを 実測して 字の 大きさを きめる**。
+   ここの clamp は その 前の 見た目（1こまだけ）を きめる だけ */
+.tbl .h small{display:block;}
+/* たて長の 画面では 表が 主役。絵より 表に 場所を まわす
+   （④は 表を 読んで 考える ところなので いちばん 広く） */
+@media (orientation:portrait){
+  #s2 .cols,#s3 .cols{grid-template-rows:.82fr 1fr;}
+  #s4 .cols{grid-template-rows:.72fr 1fr;}
+}
 
 /* えらぶ ボタン（予想・3択） */
 .opts{flex:0 0 auto;display:grid;grid-template-columns:repeat(3,1fr);gap:6px;width:100%;}
@@ -352,13 +366,6 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-acti
       <div class="cols two">
         <div class="card"><canvas id="c3"></canvas></div>
         <div class="side">
-          <div class="panel">
-            <div class="ttl">やり方</div>
-            <div class="seg" id="q3mode">
-              <button data-v="quiz" class="on">もんだい</button>
-              <button data-v="free">自由に 動かす</button>
-            </div>
-          </div>
           <div id="p3quiz" style="display:flex;flex-direction:column;gap:6px;flex:1;min-height:0;">
             <div class="num" id="n3">
               <span class="lb">右に おもり</span>
@@ -404,8 +411,13 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-acti
         <div class="card"><canvas id="c4"></canvas></div>
         <div class="side">
           <div class="panel" style="flex:1">
-            <div class="ttl" id="t4ttl">つり合った ときの 表（行を おすと 左の 絵に なる）</div>
+            <div class="ttl" id="t4ttl">つり合った ときの 表</div>
             <div class="tbl" id="t4"></div>
+          </div>
+          <div class="num" id="n4">
+            <span class="lb" id="n4lb">右の おもり</span>
+            <button id="n4m">−</button><span class="v" id="n4v">1</span><button id="n4p">＋</button>
+            <span class="lb" id="n4u">こ</span>
           </div>
           <div class="rule hide" id="r4"></div>
         </div>
@@ -420,6 +432,18 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-acti
         <div class="card"><canvas id="c5"></canvas></div>
         <div class="side">
           <div class="tools" id="q5"></div>
+          <!-- 2026-09-20 の 指摘＝「3つの 点を どう 答えたら いいのか 分からない」。
+               絵の ○に <b>あ・い・う</b> の 名前を つけ、下に 同じ 3つの ボタンを 出す。
+               ○を おしても ボタンを おしても 入る（ほかの アプリと 同じ 二とおり）。
+               **この ボタンを 消さないこと** -->
+          <div class="guess" id="g5" style="display:none">
+            <span class="gl" id="g5l">どれ？</span>
+            <div class="opts" id="o5">
+              <button class="opt" data-v="0">あ</button>
+              <button class="opt" data-v="1">い</button>
+              <button class="opt" data-v="2">う</button>
+            </div>
+          </div>
           <div class="sum" id="p5">
             <div class="sumbox" id="s5ord"></div>
             <div class="sumbox" id="s5ben"></div>
@@ -487,6 +511,24 @@ function txt(g,s,x,y,size,color,align,baseline,weight){
   g.textAlign=align||'center';g.textBaseline=baseline||'middle';
   g.fillStyle=color||'#2b2118';g.fillText(s,x,y);
   g.restore();
+}
+/* 表の 字を 行の 高さから きめる。行数も パネルの 高さも 画面ごとに ちがうので、
+   実測しないと「小さすぎて 読めない」か「大きすぎて 切れる」の どちらかに なる。
+   cols＝見出しの ます の 数、chars＝ますに 入る 字数の めやす */
+function fitTbl(el,cols,chars,maxPx,lines){
+  const run=()=>{
+    const kids=el.children;
+    if(kids.length<=cols)return;
+    let h=1e9,w=1e9;
+    for(let i=cols;i<kids.length;i++){
+      const r=kids[i].getBoundingClientRect();
+      if(r.height>1){h=Math.min(h,r.height);w=Math.min(w,r.width);}
+    }
+    if(h>1e8)return;
+    const fs=clamp(Math.min(h*0.66/(lines||1),w/(chars*0.62)),9.5,maxPx||24);
+    el.style.fontSize=fs.toFixed(1)+'px';
+  };
+  requestAnimationFrame(()=>{run();requestAnimationFrame(run);});
 }
 function tw(g,s,size,weight){
   g.save();g.font=(weight||700)+' '+size+'px '+FONT;
@@ -698,6 +740,7 @@ function tbl1(){
       '<b style="color:'+C[k]+';font-size:1.15em">'+NAME[k]+'</b>'+
       '<span style="font-size:.84em;color:#6a5a3a;line-height:1.2">'+MEAN[k]+'</span></div>';
   }).join('');
+  fitTbl(el,0,9,22,2.5);   /* 名前と 説明で 2行つかう */
 }
 function bar1(){
   const b=$('b1');
@@ -871,23 +914,27 @@ function seg2(id,n,key){
 }
 function tbl2(){
   const el=$('t2');
-  el.style.gridTemplateColumns='1fr 1fr 1.25fr';
-  el.style.gridTemplateRows='auto repeat(5,1fr)';
-  let s='<div class="h ri">支点→力点</div><div class="h sa">支点→作用点</div><div class="h">手ごたえ</div>';
-  for(let i=0;i<5;i++){
+  el.style.gridTemplateColumns='1fr 1fr 1.3fr';
+  el.style.gridTemplateRows='auto repeat(4,1fr)';
+  /* 見出しは 2行に して よこ幅を かせぐ（1行だと 字を 小さくしないと 入らない） */
+  let s='<div class="h ri">力点<small>きょり</small></div>'+
+        '<div class="h sa">作用点<small>きょり</small></div>'+
+        '<div class="h">手ごたえ</div>';
+  for(let i=0;i<4;i++){
     const r=S2.rows[i];
     if(!r){s+='<div class="c"></div><div class="c"></div><div class="c"></div>';continue;}
     s+='<div class="c on">'+r.ri+'</div><div class="c on">'+r.sa+'</div>'+
        '<div class="c on">'+r.f+'g</div>';
   }
   el.innerHTML=s;
+  fitTbl(el,3,5,26);
 }
 function rec2(){
   const f=force2();
   const key=S2.ri+'-'+S2.sa;
   if(S2.rows.some(r=>r.k===key))return;
   S2.rows.unshift({k:key,ri:S2.ri,sa:S2.sa,f:f});
-  if(S2.rows.length>5)S2.rows.pop();
+  if(S2.rows.length>4)S2.rows.pop();
 }
 function up2(){
   seg2('q2ri',5,'ri');seg2('q2sa',3,'sa');tbl2();
@@ -1041,21 +1088,24 @@ function draw3(){
   }
   g.restore();
 }
+const REC3=[];
 function tbl3(){
   const el=$('t3');
   el.style.gridTemplateColumns='1fr 1fr 1fr 1fr';
-  el.style.gridTemplateRows='auto auto repeat(6,1fr)';
-  let s='<div class="h" style="grid-column:1/3;background:#e6edf3;color:#40525e">左</div>'+
-        '<div class="h" style="grid-column:3/5;background:#f3e9e3;color:#6b4a3a">右</div>'+
-        '<div class="h">おもり</div><div class="h">きょり</div>'+
-        '<div class="h">おもり</div><div class="h">きょり</div>';
+  /* 見出しは 1行だけ（2行 つかうと その ぶん 行が つぶれて 数が 読めない） */
+  el.style.gridTemplateRows='auto repeat(6,1fr)';
+  let s='<div class="h" style="background:#e6edf3;color:#40525e">左<small>おもり</small></div>'+
+        '<div class="h" style="background:#e6edf3;color:#40525e">左<small>きょり</small></div>'+
+        '<div class="h" style="background:#f3e9e3;color:#6b4a3a">右<small>おもり</small></div>'+
+        '<div class="h" style="background:#f3e9e3;color:#6b4a3a">右<small>きょり</small></div>';
   for(let i=0;i<6;i++){
-    const r=REC[i+BASE4.length];
+    const r=REC3[i];
     if(!r){s+='<div class="c"></div>'.repeat(4);continue;}
     s+='<div class="c on">'+r.ln+'</div><div class="c on">'+r.ld+'</div>'+
        '<div class="c on">'+r.rn+'</div><div class="c on">'+r.rd+'</div>';
   }
   el.innerHTML=s;
+  fitTbl(el,4,1.6,30);
 }
 function seg3(id,key){
   const el=$(id);
@@ -1066,14 +1116,13 @@ function up3(){
   const free=S3.mode==='free';
   $('p3quiz').style.display=free?'none':'flex';
   $('p3free').style.display=free?'flex':'none';
-  [...$('q3mode').children].forEach(b=>b.classList.toggle('on',b.dataset.v===S3.mode));
   if(free){
     seg3('q3ln','ln');seg3('q3ld','ld');seg3('q3rn','rn');seg3('q3rd','rd');
     const c=cur3(),d=c.rn*c.rd-c.ln*c.ld;
     $('m3').innerHTML=d===0
       ? '<span class="ok">水平に つり合った！</span> 左と 右を いろいろ 変えて、つり合う 組み合わせを さがそう。'
       : (d>0?'<b>右</b>が 下がった。':'<b>左</b>が 下がった。')+' 4つの 数を 変えて、つり合う ところを さがそう。';
-    $('b3').innerHTML='<button class="btn sub" id="b3reset">はじめに もどす</button>';
+    $('b3').innerHTML=mode3()+'<button class="btn sub" id="b3reset">はじめに もどす</button>';
     $('b3reset').onclick=()=>{S3.f={ln:3,ld:4,rn:4,rd:3};up3();};
   }else{
     tbl3();
@@ -1085,15 +1134,15 @@ function up3(){
       $('m3').innerHTML='もんだい '+(S3.qi+1)+' / '+Q3.length+'　左に おもり <b>'+q.ln+'こ</b>を '+
         '<b>'+q.ld+'</b>の ところに つるした。右の <b>'+q.rd+'</b>の ところに '+
         '<b>何こ</b> つるすと つり合う？';
-      $('b3').innerHTML='<button class="btn show" id="b3go">手を はなす</button>'+
+      $('b3').innerHTML=mode3()+'<button class="btn show" id="b3go">手を はなす</button>'+
         '<button class="btn sub" id="b3reset">記録を けす</button>';
       $('b3go').onclick=()=>{S3.rel=true;S3.mark=(S3.rn===q.ans)?'o':'x';
         if(S3.mark==='o')rec3();up3();};
-      $('b3reset').onclick=()=>{REC.length=BASE4.length;tbl3();up4();};
+      $('b3reset').onclick=()=>{REC3.length=0;tbl3();};
     }else if(S3.mark==='o'){
       $('m3').innerHTML='<span class="ok">つり合った！</span> 右の '+q.rd+'の ところに '+q.ans+'こ。'+
         '記録に 入れた よ。';
-      $('b3').innerHTML=(S3.qi<Q3.length-1
+      $('b3').innerHTML=mode3()+(S3.qi<Q3.length-1
         ? '<button class="btn next" id="b3next">つぎの もんだい →</button>'
         : '<button class="btn next" id="b3to4">④で きまりを さがす →</button>')+
         '<button class="btn sub" id="b3again">もう一度</button>';
@@ -1106,7 +1155,7 @@ function up3(){
         ? '<span class="ng">右が 下がったね。</span> 右が <b>重すぎる</b> みたい。'
         : '<span class="ng">左が 下がったね。</span> 右が <b>軽すぎる</b> みたい。')+
         ' おもりの 数を 変えて、もう一度。';
-      $('b3').innerHTML='<button class="btn sub" id="b3again">もう一度</button>';
+      $('b3').innerHTML=mode3()+'<button class="btn sub" id="b3again">もう一度</button>';
       $('b3again').onclick=()=>{S3.rel=false;S3.mark=null;up3();};
     }
   }
@@ -1114,9 +1163,16 @@ function up3(){
 }
 $('n3m').onclick=()=>{if(S3.rn>1){S3.rn--;up3();}};
 $('n3p').onclick=()=>{if(S3.rn<6){S3.rn++;up3();}};
-$('q3mode').addEventListener('click',e=>{
-  const b=e.target.closest('button');if(!b)return;
-  S3.mode=b.dataset.v;S3.rel=false;S3.mark=null;up3();
+/* やり方の えらび は 下の ボタンの 列に 置く（右の パネルに 置くと
+   その ぶん 記録の 表が つぶれて 数が 読めなく なる。2026-09-20） */
+function mode3(){
+  return '<button class="btn ghost'+(S3.mode==='quiz'?' on':'')+'" data-m="quiz">もんだい</button>'+
+         '<button class="btn ghost'+(S3.mode==='free'?' on':'')+'" data-m="free">自由に 動かす</button>'+
+         '<span style="width:10px"></span>';
+}
+$('b3').addEventListener('click',e=>{
+  const b=e.target.closest('[data-m]');if(!b)return;
+  S3.mode=b.dataset.m;S3.rel=false;S3.mark=null;up3();
 });
 ['q3ln','q3ld','q3rn','q3rd'].forEach(id=>{
   $(id).addEventListener('click',e=>{
@@ -1127,8 +1183,8 @@ $('q3mode').addEventListener('click',e=>{
 function rec3(){
   const q=Q3[S3.qi];
   const r={ln:q.ln,ld:q.ld,rn:q.ans,rd:q.rd};
-  if(REC.some(x=>x.ln===r.ln&&x.ld===r.ld&&x.rn===r.rn&&x.rd===r.rd))return;
-  REC.push(r);up4();
+  if(REC3.some(x=>x.ln===r.ln&&x.ld===r.ld&&x.rn===r.rn&&x.rd===r.rd))return;
+  REC3.push(r);
 }
 function step3(dt){
   const t=tilt3();
@@ -1146,33 +1202,65 @@ function step3(dt){
    ③を やって いなくても 成り立つ ように、はじめから 4行 入れて おく
    （先生が ④だけ 出す ことが ある）。③で つり合った ものは 下に 足される。
    ========================================================= */
+/* お手本の 4行。③を やって いなくても ④だけ 出せる ように、はじめから 入れて おく */
 const BASE4=[{ln:2,ld:3,rn:3,rd:2},{ln:3,ld:4,rn:6,rd:2},{ln:4,ld:3,rn:2,rd:6},{ln:1,ld:6,rn:2,rd:3}];
-const REC=BASE4.map(r=>({...r}));
-const S4={rev:0,sel:0};
-const CX4=500,CY4=180,U4=46;
-function lever4(g,r,rev){
+/* もんだい 5問（固定。ランダムに しない）。h＝かくす ところ。
+   おもりを かくす ものと きょりを かくす ものを まぜる＝
+   「おもり×きょりが 左右で 同じ」と 分かれば どちらも 出せる */
+/* お手本の 4行と 同じ 組み合わせを 出さない（表から 写せて しまう）。
+   こたえは 4・2・6・4・5 と ばらけさせる */
+const P4=[
+  {ln:2,ld:6,rn:4,rd:3,h:'rn'},
+  {ln:2,ld:5,rn:5,rd:2,h:'rd'},
+  {ln:3,ld:2,rn:6,rd:1,h:'rn'},
+  {ln:4,ld:3,rn:6,rd:2,h:'ln'},
+  {ln:5,ld:2,rn:2,rd:5,h:'rd'},
+];
+const LB4={rn:['右の おもり','こ'],rd:['右の きょり','の ところ'],
+           ln:['左の おもり','こ'],ld:['左の きょり','の ところ']};
+const S4={qi:0,val:1,mark:null,hint:false,phase:'quiz',th:0,solved:[]};
+const CX4=500,CY4=176,U4=46;
+function q4(){return P4[Math.min(S4.qi,P4.length-1)];}
+/* いま 画面に 出て いる 4つの 数＝かくした ところに 入れた 数を あてはめた もの */
+function cur4(){
+  const q=q4(),r={ln:q.ln,ld:q.ld,rn:q.rn,rd:q.rd};
+  r[q.h]=S4.val;return r;
+}
+function ok4(){return S4.val===q4()[q4().h];}
+function tilt4(){
+  if(S4.mark!=='x')return 0;
+  const c=cur4();
+  return clamp((c.rn*c.rd-c.ln*c.ld)*0.020,-0.22,0.22);
+}
+function lever4(g,r,th){
   box(g,CX4-80,398,160,16,7,'#8c7a5c','#6b5c42',3);
   box(g,CX4-12,CY4,24,398-CY4,6,'#a99a7c','#8a7a5c',3);
-  box(g,CX4-6.6*U4,CY4-9,13.2*U4,18,6,'#d9b26a','#9c7838',3);
+  g.save();g.translate(CX4,CY4);g.rotate(th);
+  box(g,-6.6*U4,-9,13.2*U4,18,6,'#d9b26a','#9c7838',3);
   for(let s=-1;s<=1;s+=2)for(let i=1;i<=6;i++){
-    circ(g,CX4+s*i*U4,CY4,4.2,'#fffdf7','#9c7838',2);
-    txt(g,String(i),CX4+s*i*U4,CY4-19,12,'#8a7250');
+    circ(g,s*i*U4,0,4.2,'#fffdf7','#9c7838',2);
+    txt(g,String(i),s*i*U4,-19,13,'#8a7250');
   }
-  weights3(g,CX4-r.ld*U4,CY4+9,r.ln,'#6f8aa6');
-  weights3(g,CX4+r.rd*U4,CY4+9,r.rn,'#a6826f');
+  g.restore();
+  const L={x:CX4+Math.cos(th)*(-r.ld*U4),y:CY4+Math.sin(th)*(-r.ld*U4)},
+        R={x:CX4+Math.cos(th)*( r.rd*U4),y:CY4+Math.sin(th)*( r.rd*U4)};
+  weights3(g,L.x,L.y+9,r.ln,'#6f8aa6');
+  weights3(g,R.x,R.y+9,r.rn,'#a6826f');
   markPoint(g,CX4,CY4,'fu',{ly:-34,r:13,ls:15});
-  /* 左右の 数と かけ算 */
-  const y=470;
-  tag(g,'おもり '+r.ln+'こ　きょり '+r.ld,250,y,16,'#40525e');
-  tag(g,'おもり '+r.rn+'こ　きょり '+r.rd,750,y,16,'#6b4a3a');
-  if(rev>=1){
-    const same=rev>=2;
-    tag(g,r.ln+' × '+r.ld+' ＝ '+(r.ln*r.ld),250,y+42,23,same?'#3a2c05':'#8a6a10',
-        same?'#f5d97a':'rgba(255,255,255,.93)');
-    tag(g,r.rn+' × '+r.rd+' ＝ '+(r.rn*r.rd),750,y+42,23,same?'#3a2c05':'#8a6a10',
-        same?'#f5d97a':'rgba(255,255,255,.93)');
-    if(same)tag(g,'同じ！',500,y+42,20,'#3f7a33','#e6f0e0');
-  }
+}
+/* ヒントは ことばで 説明しない＝式を 2つ ならべるだけ。
+   分かって いる ほうの 式（金）と、□の ある ほうの 式（青）。
+   あまりのあるわり算 と 同じ きまり。もんだいが かわっても 消さない */
+function hint4(g,r,q){
+  const P=(q.h==='rn'||q.h==='rd')?(r.ln*r.ld):(r.rn*r.rd);
+  const known=(q.h==='rn'||q.h==='rd')
+    ? {x:250,s:q.ln+' × '+q.ld+' ＝ '+P} : {x:750,s:q.rn+' × '+q.rd+' ＝ '+P};
+  const ask=(q.h==='rn') ? {x:750,s:'？ × '+q.rd+' ＝ '+P}
+          :(q.h==='rd') ? {x:750,s:q.rn+' × ？ ＝ '+P}
+          :(q.h==='ln') ? {x:250,s:'？ × '+q.ld+' ＝ '+P}
+                        : {x:250,s:q.ln+' × ？ ＝ '+P};
+  tag(g,known.s,known.x,478,26,'#3a2c05','#f5d97a');
+  tag(g,ask.s,ask.x,478,26,'#24557f','#e2ecf5');
 }
 /* 反比例（算数6年との 関連）。きょりが 2倍に なると おもりは 半分 */
 const HIRE=[{d:2,n:6},{d:3,n:4},{d:4,n:3},{d:6,n:2}];
@@ -1188,7 +1276,6 @@ function hanpi4(g){
     for(let k=0;k<p.n;k++)box(g,x-26,234+k*20,52,18,5,'#6f8aa6','#5a6570',2);
     txt(g,p.n+'こ',x,368,18,'#40525e');
   });
-  /* 2倍 と 半分 */
   arrow(g,x0+22,80,x0+2*dx-22,80,'#9c7838',4,11);
   tag(g,'きょり 2ばい',x0+dx,80,17,'#8a6a10');
   arrow(g,x0+22,424,x0+2*dx-22,424,'#2f6fa8',4,11);
@@ -1199,69 +1286,115 @@ function hanpi4(g){
 function draw4(){
   const {g,w,h}=fit($('c4'));base(g,w,h);
   room(g);
-  if(S4.rev===3){hanpi4(g);g.restore();return;}
-  const r=REC[clamp(S4.sel,0,REC.length-1)];
-  lever4(g,r,S4.rev);
-  if(S4.rev>=4){
-    box(g,90,24,820,72,14,'#fff8e6','#c9a227',3);
-    txt(g,'（おもりの 重さ）×（支点からの きょり）が',BW/2,50,20,'#8a6a10');
-    txt(g,'左と 右で 同じ とき、てこは つり合う',BW/2,78,22,'#3a2c05');
+  if(S4.phase==='hanpi'){hanpi4(g);g.restore();return;}
+  const r=cur4(),q=q4();
+  lever4(g,r,S4.th);
+  tag(g,'おもり '+r.ln+'こ　きょり '+r.ld,250,432,17,'#40525e');
+  tag(g,'おもり '+r.rn+'こ　きょり '+r.rd,750,432,17,'#6b4a3a');
+  if(S4.mark==='o'||S4.phase==='rule'){
+    const P=r.ln*r.ld;
+    tag(g,r.ln+' × '+r.ld+' ＝ '+P,250,478,26,'#3a2c05','#f5d97a');
+    tag(g,r.rn+' × '+r.rd+' ＝ '+P,750,478,26,'#3a2c05','#f5d97a');
+    tag(g,'同じ！',500,478,20,'#3f7a33','#e6f0e0');
+  }else if(S4.hint){
+    hint4(g,r,q);
+  }
+  if(S4.phase==='rule'){
+    box(g,90,16,820,72,14,'#fff8e6','#c9a227',3);
+    txt(g,'（おもりの 重さ）×（支点からの きょり）が',BW/2,42,20,'#8a6a10');
+    txt(g,'左と 右で 同じ とき、てこは つり合う',BW/2,70,22,'#3a2c05');
   }
   g.restore();
 }
-function tbl4(){
-  const el=$('t4');
-  const rev=S4.rev;
-  el.style.gridTemplateColumns=rev>=1?'1fr 1fr 1.5fr 1fr 1fr 1.5fr':'1fr 1fr 1fr 1fr';
-  el.style.gridTemplateRows='auto auto repeat('+REC.length+',1fr)';
-  const c=rev>=1?3:2;
-  let s='<div class="h" style="grid-column:span '+c+';background:#e6edf3;color:#40525e">左</div>'+
-        '<div class="h" style="grid-column:span '+c+';background:#f3e9e3;color:#6b4a3a">右</div>'+
-        '<div class="h">おもり</div><div class="h">きょり</div>'+(rev>=1?'<div class="h">かけ算</div>':'')+
-        '<div class="h">おもり</div><div class="h">きょり</div>'+(rev>=1?'<div class="h">かけ算</div>':'');
-  for(let i=0;i<REC.length;i++){
-    const r=REC[i];
-    const on=(i===S4.sel)?' row-on':'';
-    const mul=rev>=2?' same':' mul';
-    s+='<div class="c pick on'+on+'" data-i="'+i+'">'+r.ln+'</div>'+
-       '<div class="c pick on'+on+'" data-i="'+i+'">'+r.ld+'</div>'+
-       (rev>=1?'<div class="c pick'+mul+on+'" data-i="'+i+'">'+r.ln+'×'+r.ld+'＝'+(r.ln*r.ld)+'</div>':'')+
-       '<div class="c pick on'+on+'" data-i="'+i+'">'+r.rn+'</div>'+
-       '<div class="c pick on'+on+'" data-i="'+i+'">'+r.rd+'</div>'+
-       (rev>=1?'<div class="c pick'+mul+on+'" data-i="'+i+'">'+r.rn+'×'+r.rd+'＝'+(r.rn*r.rd)+'</div>':'');
+function rows4(){
+  /* お手本 → といた もんだい → いまの もんだい */
+  const rs=BASE4.map(r=>({...r,kind:'base'}));
+  S4.solved.forEach(i=>{const q=P4[i];rs.push({ln:q.ln,ld:q.ld,rn:q.rn,rd:q.rd,kind:'done'});});
+  if(S4.phase==='quiz'){
+    const q=q4(),r=cur4();
+    rs.push({...r,kind:'now',h:q.h});
   }
-  el.innerHTML=s;
+  return rs;
 }
-const MSG4=[
-  'つり合った ときの 数を ならべた 表だよ。左と 右の 数に、何か <b>きまり</b>は ないかな？',
-  '<b>おもりの 数 × 支点からの きょり</b>を 計算して みた よ。',
-  '<span class="ok">左と 右が いつも 同じ 数に なって いる！</span>',
-  'きょりが <b>2ばい</b>に なると、おもりは <b>半分</b>。算数で ならった <b>反比例</b>だね。',
-  'これが <b>てこの きまり</b>。②で 分かった「力点を 遠く、作用点を 近く」も、この 式で せつめいできる。',
-];
-const BTN4=['かけ算を 出す ▶','左と 右を くらべる ▶','きょりと おもりで 見る ▶','まとめ ▶'];
+function tbl4(){
+  const el=$('t4'),rs=rows4();
+  el.style.gridTemplateColumns='1fr 1fr 1fr 1fr';
+  el.style.gridTemplateRows='auto repeat('+rs.length+',1fr)';
+  let s='<div class="h" style="background:#e6edf3;color:#40525e">左<small>おもり</small></div>'+
+        '<div class="h" style="background:#e6edf3;color:#40525e">左<small>きょり</small></div>'+
+        '<div class="h" style="background:#f3e9e3;color:#6b4a3a">右<small>おもり</small></div>'+
+        '<div class="h" style="background:#f3e9e3;color:#6b4a3a">右<small>きょり</small></div>';
+  rs.forEach(r=>{
+    ['ln','ld','rn','rd'].forEach(k=>{
+      if(r.kind==='now'&&k===r.h){
+        s+='<div class="c blank'+(S4.mark==='o'?' mark-o':S4.mark==='x'?' mark-x':'')+'">'+r[k]+'</div>';
+      }else{
+        s+='<div class="c'+(r.kind==='base'?'':' on')+'">'+r[k]+'</div>';
+      }
+    });
+  });
+  el.innerHTML=s;
+  fitTbl(el,4,1.6,32);
+}
 function up4(){
   tbl4();
-  $('m4').innerHTML=MSG4[S4.rev];
-  $('t4ttl').textContent=S4.rev===3?'つり合った ときの 表':'つり合った ときの 表（行を おすと 左の 絵に なる）';
+  const q=q4(),lb=LB4[q.h];
+  const n4=$('n4');
+  n4.style.display=(S4.phase==='quiz')?'flex':'none';
+  $('n4lb').textContent=lb[0];$('n4u').textContent=lb[1];
+  $('n4v').textContent=S4.val;
+  $('n4m').disabled=(S4.mark==='o')||S4.val<=1;
+  $('n4p').disabled=(S4.mark==='o')||S4.val>=6;
+  $('t4ttl').textContent=(S4.phase==='quiz')
+    ? 'つり合った ときの 表（上の 4つは お手本）' : 'つり合った ときの 表';
   const r=$('r4');
-  if(S4.rev>=2){
+  if(S4.phase!=='quiz'){
     r.classList.remove('hide');
     r.innerHTML='（おもりの 重さ）×（支点からの きょり）が<br>左と 右で <b>同じ</b> とき、てこは つり合う';
   }else r.classList.add('hide');
-  $('b4').innerHTML=
-    (S4.rev<4?'<button class="btn play" id="b4go">'+BTN4[S4.rev]+'</button>':'')+
-    (S4.rev>0?'<button class="btn sub" id="b4back">◀ もどる</button>':'');
-  const go=$('b4go');if(go)go.onclick=()=>{S4.rev++;up4();};
-  const bk=$('b4back');if(bk)bk.onclick=()=>{S4.rev--;up4();};
+
+  if(S4.phase==='hanpi'){
+    $('m4').innerHTML='きょりが <b>2ばい</b>に なると、おもりは <b>半分</b>。算数で ならった <b>反比例</b>だね。';
+    $('b4').innerHTML='<button class="btn sub" id="b4back">◀ もどる</button>';
+    $('b4back').onclick=()=>{S4.phase='rule';up4();};
+  }else if(S4.phase==='rule'){
+    $('m4').innerHTML='これが <b>てこの きまり</b>。②で 分かった「力点を 遠く、作用点を 近く」も、この 式で せつめいできる。';
+    $('b4').innerHTML='<button class="btn play" id="b4hp">きょりと おもりで 見る ▶</button>'+
+      '<button class="btn sub" id="b4again">はじめから</button>';
+    $('b4hp').onclick=()=>{S4.phase='hanpi';up4();};
+    $('b4again').onclick=()=>reset4();
+  }else if(S4.mark==='o'){
+    $('m4').innerHTML='<span class="ok">せいかい！</span> 左も 右も <b>'+(cur4().ln*cur4().ld)+'</b>。同じ 数に なったね。';
+    $('b4').innerHTML=(S4.qi<P4.length-1
+      ? '<button class="btn next" id="b4next">つぎの もんだい →</button>'
+      : '<button class="btn next" id="b4rule">きまりを まとめる →</button>');
+    const n=$('b4next');if(n)n.onclick=()=>{S4.solved.push(S4.qi);S4.qi++;S4.val=1;S4.mark=null;up4();};
+    const u=$('b4rule');if(u)u.onclick=()=>{S4.solved.push(S4.qi);S4.phase='rule';S4.mark=null;up4();};
+  }else{
+    const c=cur4(),d=c.rn*c.rd-c.ln*c.ld;
+    $('m4').innerHTML=(S4.mark==='x'
+      ? (d>0?'<span class="ng">右が 下がったね。</span> 右が <b>重すぎる</b>。':
+             '<span class="ng">左が 下がったね。</span> 右が <b>軽すぎる</b>。')+' もう一度 考えよう。'
+      : 'もんだい '+(S4.qi+1)+' / '+P4.length+'　表の <b>金の わく</b>の ます に 入る 数は いくつ？ '+
+        '上の お手本を 見て、<b>きまり</b>を さがそう。');
+    $('b4').innerHTML='<button class="btn show" id="b4go">こたえ</button>'+
+      '<button class="btn ghost'+(S4.hint?' on':'')+'" id="b4hint">ヒント</button>';
+    $('b4go').onclick=()=>{S4.mark=ok4()?'o':'x';up4();};
+    $('b4hint').onclick=()=>{S4.hint=!S4.hint;up4();};
+  }
   dirty=true;
 }
-$('t4').addEventListener('click',e=>{
-  const c=e.target.closest('.pick');if(!c)return;
-  S4.sel=Number(c.dataset.i);
-  if(S4.rev===3)S4.rev=2;
-  up4();
-});
+function reset4(){
+  S4.qi=0;S4.val=1;S4.mark=null;S4.phase='quiz';S4.solved=[];S4.th=0;up4();
+}
+$('n4m').onclick=()=>{if(S4.val>1){S4.val--;S4.mark=null;up4();}};
+$('n4p').onclick=()=>{if(S4.val<6){S4.val++;S4.mark=null;up4();}};
+function step4(dt){
+  const t=tilt4();
+  if(Math.abs(S4.th-t)<0.0008){S4.th=t;return false;}
+  S4.th+=(t-S4.th)*Math.min(1,dt*6);
+  return true;
+}
 
 /* =========================================================
    ⑤ 道具を 調べる
@@ -1424,6 +1557,9 @@ const TOOLS=[
        '力は よけいに いる。そのかわり <b>先が 大きく 動いて、やさしく つまめる</b>。'},
 ];
 const Q5=['fu','ri','sa'];
+/* 絵の ○に つける 名前。左から あ・い・う（T.ord が 左から の ならび） */
+const LET='あいう';
+function LET5(k){return LET[tool5().ord.indexOf(k)]||'？';}
 const S5={ti:0,ph:'see',a:0,playing:false,seen:{},qi:0,got:{},bad:null,t:0};
 function tool5(){return TOOLS[S5.ti];}
 function done5(k){return !!(S5.doneAll&&S5.doneAll[k]);}
@@ -1438,13 +1574,14 @@ function draw5(){
   if(S5.ph==='quiz'){
     Q5.forEach(k=>{
       const p=P[k],ok=S5.got[k];
-      if(ok){markPoint(g,p.x,p.y,k,{r:17,lx:LP[k].lx,ly:LP[k].ly});}
+      if(ok){markPoint(g,p.x,p.y,k,{r:20,lx:LP[k].lx,ly:LP[k].ly});}
       else{
-        const now=(k===Q5[S5.qi]);
-        g.save();g.globalAlpha=now?1:.75;
-        circ(g,p.x,p.y,17,'#fffdf7','#9c8f76',5);
-        txt(g,'？',p.x,p.y+1,19,'#8a7c63');
-        g.restore();
+        /* おせる ことが 分かる ように 大きく・ゆっくり 光らせる。
+           中に あ・い・う を 書いて、下の ボタンと 見くらべられる ように する */
+        g.save();g.globalAlpha=.24+.20*Math.sin(S5.t*3);
+        circ(g,p.x,p.y,34+5*Math.sin(S5.t*3),'#c9a227',null);g.restore();
+        circ(g,p.x,p.y,26,'#fffdf7','#9c8f76',5);
+        txt(g,LET5(k),p.x,p.y+1,26,'#6a5a3a');
       }
     });
     if(S5.bad){
@@ -1453,9 +1590,9 @@ function draw5(){
       g.beginPath();g.moveTo(p.x-15,p.y-15);g.lineTo(p.x+15,p.y+15);
       g.moveTo(p.x+15,p.y-15);g.lineTo(p.x-15,p.y+15);g.stroke();g.restore();
     }
-    tag(g,'▲ 絵の ○を おして こたえよう',BW/2,528,16,'#8a6a10');
+    tag(g,'▲ ○を おす か、下の <あ・い・う> の ボタンで こたえよう',BW/2,528,17,'#8a6a10');
   }else if(S5.ph==='done'){
-    Q5.forEach(k=>markPoint(g,P[k].x,P[k].y,k,{r:17,lx:LP[k].lx,ly:LP[k].ly}));
+    Q5.forEach(k=>markPoint(g,P[k].x,P[k].y,k,{r:20,lx:LP[k].lx,ly:LP[k].ly}));
     /* きょりを 見せる＝便利さの わけ。
        絵の 高さは 道具ごとに ちがうので、矢は かならず いちばん下に まとめて おく
        （道具に かさねると 板や 点の 名前と ぶつかる） */
@@ -1476,13 +1613,16 @@ function tools5(){
 }
 function tbl5(){
   const el=$('t5');
+  /* 1行ずつ。説明は メッセージに 出て いるので ここは 名前と しるしだけ
+     （2行に すると 3つ ぶんが 入らず 字が 切れる） */
   el.innerHTML=Q5.map(k=>{
     const ok=S5.got[k]||S5.ph==='done';
+    /* まだ こたえて いない 点に 文字を 出さない（答えが 分かって しまう） */
     if(!ok)return '<div class="c">'+NAME[k]+'　？</div>';
-    return '<div class="c on" style="flex-direction:column;gap:1px;border-color:'+C[k]+';background:#fff">'+
-      '<b style="color:'+C[k]+'">'+NAME[k]+'</b>'+
-      '<span style="font-size:.82em;color:#6a5a3a;line-height:1.2">'+MEAN[k]+'</span></div>';
+    return '<div class="c on" style="border-color:'+C[k]+';background:#fff;gap:.4em">'+
+      '<b style="color:'+C[k]+'">'+NAME[k]+'</b><span style="color:#3f7a33">○ '+LET5(k)+'</span></div>';
   }).join('');
+  fitTbl(el,0,7,22);
 }
 function up5(){
   const T=tool5();
@@ -1491,6 +1631,19 @@ function up5(){
   /* こたえが 出たら 3つの 点の 表は 用ずみ。ならびと 便利さに 場所を まわす
      （せまい 画面では 3つ ぜんぶは 入らない） */
   $('p5tbl').style.display=(S5.ph==='done')?'none':'flex';
+  const g5=$('g5');
+  if(S5.ph==='quiz'){
+    const k=Q5[S5.qi];
+    g5.style.display='flex';
+    g5.classList.toggle('need',!S5.bad);
+    $('g5l').innerHTML='<b style="color:'+C[k]+'">'+NAME[k]+'</b>は どれ？';
+    [...$('o5').children].forEach((b,i)=>{
+      const kk=T.ord[i];
+      b.textContent=LET[i];
+      b.disabled=!!S5.got[kk];
+      b.className='opt'+(S5.got[kk]?' right':'')+(S5.bad===kk?' wrong':'');
+    });
+  }else{g5.style.display='none';g5.classList.remove('need');}
   if(S5.ph==='done'){
     ord.classList.remove('hide');ben.classList.remove('hide');
     ord.innerHTML='<div class="t">3つの 点の ならび</div><div class="order">'+
@@ -1510,9 +1663,9 @@ function up5(){
   }else if(S5.ph==='quiz'){
     const k=Q5[S5.qi];
     $('m5').innerHTML=S5.bad
-      ? '<span class="ng">そこは ちがう よ。</span> <b>'+NAME[k]+'</b>は 「'+MEAN[k]+'」。'
-      : '<b style="color:'+C[k]+'">'+NAME[k]+'</b>は どこ？　絵の <b>○</b>を おそう。'+
-        '<span style="font-size:.86em;color:#8a7c63">（'+MEAN[k]+'）</span>';
+      ? '<span class="ng">「'+LET5(S5.bad)+'」は ちがう よ。</span> <b>'+NAME[k]+'</b>は 「'+MEAN[k]+'」。'
+      : '<b style="color:'+C[k]+'">'+NAME[k]+'</b>は 「'+MEAN[k]+'」。'+
+        '<b>あ・い・う</b>の どれかな？';
     $('b5').innerHTML='<button class="btn sub" id="b5back">◀ 使って みるに もどる</button>';
     $('b5back').onclick=()=>{S5.ph='see';S5.bad=null;up5();};
   }else{
@@ -1529,15 +1682,21 @@ $('q5').addEventListener('click',e=>{
   const b=e.target.closest('.tool');if(!b)return;
   S5.ti=Number(b.dataset.i);S5.ph='see';S5.a=0;S5.got={};S5.qi=0;S5.bad=null;up5();
 });
+$('o5').addEventListener('click',e=>{
+  const b=e.target.closest('.opt');if(!b||b.disabled||S5.ph!=='quiz')return;
+  ans5(tool5().ord[Number(b.dataset.v)]);
+});
 $('c5').addEventListener('click',e=>{
   if(S5.ph!=='quiz')return;
   const P=tool5().pts(S5.a),p=toBase($('c5'),e);
-  let hit=null,best=46;
+  let hit=null,best=54;
   Q5.forEach(k=>{
     const d=Math.hypot(P[k].x-p.x,P[k].y-p.y);
     if(d<best){best=d;hit=k;}
   });
-  if(!hit)return;
+  if(hit)ans5(hit);
+});
+function ans5(hit){
   const k=Q5[S5.qi];
   if(hit===k){
     S5.got[k]=true;S5.bad=null;S5.qi++;
@@ -1546,7 +1705,7 @@ $('c5').addEventListener('click',e=>{
     }
   }else{S5.bad=hit;setTimeout(()=>{S5.bad=null;up5();},2200);}
   up5();
-});
+}
 function step5(dt){
   S5.t+=dt;
   if(S5.playing){
@@ -1566,6 +1725,9 @@ function show(n){
     el.style.display=on?'flex':'none';
   });
   [...document.querySelectorAll('.tab')].forEach(b=>b.classList.toggle('on',Number(b.dataset.s)===n));
+  /* 出て きた ステップの 表を はかり直す。
+     かくれて いる あいだは 高さが 0 なので `fitTbl()` が はかれない */
+  if(n===1)up1();else if(n===2)up2();else if(n===3)up3();else if(n===4)up4();else up5();
   dirty=true;
 }
 $('tabs').addEventListener('click',e=>{
@@ -1577,6 +1739,7 @@ function frame(ts){
   try{
     if(step===1)anim=step1(dt);
     if(step===3)anim=step3(dt);
+    if(step===4)anim=step4(dt);
     if(step===5)anim=step5(dt);
   }catch(err){console.error(err);}
   if(dirty||anim){
@@ -1591,7 +1754,12 @@ function frame(ts){
   }
   requestAnimationFrame(frame);
 }
-addEventListener('resize',()=>{dirty=true;});
+let rzT=null;
+addEventListener('resize',()=>{
+  dirty=true;
+  clearTimeout(rzT);
+  rzT=setTimeout(()=>{up1();up2();up3();up4();up5();},140);
+});
 addEventListener('orientationchange',()=>{setTimeout(()=>{dirty=true;},250);});
 
 up1();up2();up3();up4();up5();
