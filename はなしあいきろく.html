@@ -254,10 +254,10 @@ var $=function(id){return document.getElementById(id)};
    Gemini に わたす 文（まとめ方を かえたいときは ここ）
    ========================================================= */
 var SLIDE_PLAN =
-  "## どんな ことを 話したか\n- （1文）\n- （1文）\n" +
-  "## にて いる 考え\n- （1文）\n- （1文）\n" +
-  "## ちがう 考え・ぎもん\n- （1文）\n- （1文）\n" +
-  "## つぎに 考えたい こと\n- （1文）\n";
+  "■ どんな ことを 話したか\n・（1文）\n・（1文）\n" +
+  "■ にて いる 考え\n・（1文）\n・（1文）\n" +
+  "■ ちがう 考え・ぎもん\n・（1文）\n・（1文）\n" +
+  "■ つぎに 考えたい こと\n・（1文）\n";
 
 function buildPrompt(topic){
   return [
@@ -274,9 +274,11 @@ function buildPrompt(topic){
     "・「えーっと」「あのね」のような言いよどみは書かない",
     "・1つの文は25字くらいまで。1まいに3〜4つまで",
     "・下の「出す形」のとおりに書く。あいさつや説明は書かない",
+    "・記号の ◆ ■ ・ は、そのままの文字で書く",
+    "・マークダウン（# や ## や * や -）は使わない",
     "",
     "【出す形】",
-    "# （話し合いの題）",
+    "◆ （話し合いの題）",
     SLIDE_PLAN,
     "【話し合いの題】",
     (topic || "（題は話し合いから考えてください）")
@@ -344,6 +346,10 @@ function parseSlides(src){
   for(var i=0;i<lines.length;i++){
     var s=lines[i].replace(/\*\*/g,"").replace(/^\s+|\s+$/g,"");
     if(!s) continue;
+    /* ◆＝表紙 ■＝1まい ・＝1こう目。Gemini の 画面で 描画されて 消える
+       おそれが ない ふつうの 文字。# ## - も これまでどおり 読む */
+    if(/^[◆◇❖]\s*/.test(s)){ title=s.replace(/^[◆◇❖]\s*/,""); continue; }
+    if(/^[■□▪◼]\s*/.test(s)){ cur={h:s.replace(/^[■□▪◼]\s*/,""), items:[]}; slides.push(cur); continue; }
     if(/^#{2,}/.test(s)){ cur={h:s.replace(/^#+\s*/,""), items:[]}; slides.push(cur); continue; }
     if(/^#\s*/.test(s)){ title=s.replace(/^#\s*/,""); continue; }
     if(/^【.*】$/.test(s)){ cur={h:s.replace(/^【|】$/g,""), items:[]}; slides.push(cur); continue; }
