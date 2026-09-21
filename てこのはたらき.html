@@ -176,7 +176,8 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-acti
 /* たて長の 画面では 表が 主役。絵より 表に 場所を まわす
    （④は 表を 読んで 考える ところなので いちばん 広く） */
 @media (orientation:portrait){
-  #s2 .cols,#s3 .cols{grid-template-rows:.82fr 1fr;}
+  #s2 .cols{grid-template-rows:.74fr 1fr;}
+  #s3 .cols{grid-template-rows:.82fr 1fr;}
   #s4 .cols{grid-template-rows:.72fr 1fr;}
 }
 
@@ -213,7 +214,9 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-acti
    あ・い・う に 支点などの カードを 動かすのかと 思った」。
    問いが 小さいと「見出し」に 見えて、ボタンが えらぶ ところだと 伝わらない。
    **小さく もどさないこと** */
-#g5{flex-direction:column;align-items:stretch;gap:6px;padding:7px 9px;}
+#g1,#g5{flex-direction:column;align-items:stretch;gap:6px;padding:7px 9px;}
+#g1 .gl{white-space:normal;text-align:center;font-size:clamp(14px,calc(0.95vw + 0.92vh),22px);color:#6a5a3a;}
+#g1 .opt{font-size:clamp(14px,calc(1.05vw + 1.0vh),24px);min-height:clamp(44px,6.2vh,58px);}
 /* 自由に 動かす の 4つの えらびは たてに ひろげる（下に 大きな あきが できない ように） */
 #p3free{justify-content:space-evenly;}
 #g5 .gl{white-space:normal;text-align:center;line-height:1.3;
@@ -326,7 +329,7 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-acti
             <div class="tbl" id="t1" style="grid-template-rows:repeat(3,1fr);grid-template-columns:1fr;"></div>
           </div>
           <div class="guess" id="g1" style="display:none">
-            <span class="gl">光って いる 点の 名前は？</span>
+            <span class="gl" id="g1l">光って いる 点の 名前は？</span>
             <div class="opts" id="o1">
               <button class="opt p-fu" data-v="fu">支点</button>
               <button class="opt p-ri" data-v="ri">力点</button>
@@ -352,14 +355,17 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-acti
               <button class="opt" data-v="same">変わらない</button>
             </div>
           </div>
+          <!-- 【大事】絵と 同じ ならびに する＝<作用点が 左・力点が 右>。
+               2026-09-20 の 指摘＝「図は 作用点が 左なのに、数字を 入力する ところは
+               力点が 左に なって いるので 間違いやすい」。**入れかえないこと** -->
           <div class="segs">
-            <div class="panel">
-              <div class="ttl"><span style="color:var(--fu)">支点</span>から <span style="color:var(--ri)">力点</span>まで</div>
-              <div class="seg" id="q2ri"></div>
-            </div>
             <div class="panel">
               <div class="ttl"><span style="color:var(--fu)">支点</span>から <span style="color:var(--sa)">作用点</span>まで</div>
               <div class="seg" id="q2sa"></div>
+            </div>
+            <div class="panel">
+              <div class="ttl"><span style="color:var(--fu)">支点</span>から <span style="color:var(--ri)">力点</span>まで</div>
+              <div class="seg" id="q2ri"></div>
             </div>
           </div>
           <div class="panel" style="flex:1">
@@ -527,18 +533,29 @@ function txt(g,s,x,y,size,color,align,baseline,weight){
 /* 表の 字を 行の 高さから きめる。行数も パネルの 高さも 画面ごとに ちがうので、
    実測しないと「小さすぎて 読めない」か「大きすぎて 切れる」の どちらかに なる。
    cols＝見出しの ます の 数、chars＝ますに 入る 字数の めやす */
-function fitTbl(el,cols,chars,maxPx,lines){
+/* 【大事】ますごとに「その ますに 入って いる 字の 数」で 計算する。
+   表ぜんたいで 1つの 字数を 決めうちすると、1けたしか 入らない ほそい 列が
+   よこ幅の 上限を 決めて しまい、字が むだに 小さく なる
+   （②が 18px まで 下がって いた。2026-09-20 に 実測して 直した）。
+   全角は 1.0、半角は 0.56 として 数える */
+function txtw(str){
+  let w=0;
+  for(const c of String(str))w+=(/\s/.test(c))?0.4:((c.charCodeAt(0)<128)?0.56:1.0);
+  return Math.max(1,w);
+}
+function fitTbl(el,cols,maxPx,lines){
+  const L=lines||1;
   const run=()=>{
     const kids=el.children;
     if(kids.length<=cols)return;
-    let h=1e9,w=1e9;
+    let fs=1e9;
     for(let i=cols;i<kids.length;i++){
-      const r=kids[i].getBoundingClientRect();
-      if(r.height>1){h=Math.min(h,r.height);w=Math.min(w,r.width);}
+      const e=kids[i],r=e.getBoundingClientRect();
+      if(r.height<=1)continue;
+      fs=Math.min(fs, r.height*0.66/L, (r.width-12)*0.97/(txtw(e.textContent)/L));
     }
-    if(h>1e8)return;
-    const fs=clamp(Math.min(h*0.66/(lines||1),w/(chars*0.62)),9.5,maxPx||24);
-    el.style.fontSize=fs.toFixed(1)+'px';
+    if(fs>1e8)return;
+    el.style.fontSize=clamp(fs,9.5,maxPx||24).toFixed(1)+'px';
   };
   requestAnimationFrame(()=>{run();requestAnimationFrame(run);});
 }
@@ -666,8 +683,16 @@ function hand(g,x,y,k,flip){
    （ここが ①の かなめ。動いた 長さの ちがいが 目で 分かる） */
 const FX1=440,FY1=370,ARM_SA=120,ARM_RI=330,GY1=433;
 const TH0=-0.53,TH1=-0.115;
-const S1={ph:0,th:TH0,anim:false,quiz:false,qi:0,sel:null,mark:null,t:0};
-const Q1=['ri','sa','fu'];            /* 出す 順は きめて おく（ランダムに しない） */
+/* 【①は「見る → 答える」】
+   2026-09-20 の 指摘＝「**1つ 進んでは 答えを 出すのでは なく、子どもが
+   チカチカして いる 点が 何点か 答える 方が いい**」。
+   まえは ph3〜5 で 支点→力点→作用点 を アプリが 順に 名のって いた。
+   いまは **見る のは 3こま（動かす／通った 道／どこが 動かない）だけ**で、
+   そのあと **3つの 点を 1つずつ 光らせて 子どもが 名前を 答える**。
+   名前と 意味は 右の 表に ぜんぶ 出して おく＝**かくすのは「どこか」だけ**。
+   **アプリが 順に 答えを 出す 形に もどさないこと** */
+const S1={ph:0,th:TH0,anim:false,quiz:false,qi:0,bad:[],mark:null,doneK:{},t:0};
+const Q1=['fu','ri','sa'];   /* 支点から（②の「まん中は 動かない」の つづき）。ランダムに しない */
 
 /* 名前の ふだを 出す 向き。力の 矢や 通った あとと かさならない ように ずらす */
 const LP1={fu:{lx:0,ly:-48},ri:{lx:60,ly:6},sa:{lx:-30,ly:48}};
@@ -675,8 +700,7 @@ function p1(arm,th){return {x:FX1+Math.cos(th)*arm,y:FY1+Math.sin(th)*arm};}
 function pts1(){
   return {fu:{x:FX1,y:FY1},sa:p1(-ARM_SA,S1.th),ri:p1(ARM_RI,S1.th)};
 }
-function rock1(g,x,y,lift){
-  /* 持ち上げられる 重い 石 */
+function rock1(g,x,y){
   g.save();g.translate(x,y);
   g.beginPath();
   g.moveTo(-52,0);g.lineTo(-60,-34);g.lineTo(-26,-60);g.lineTo(28,-56);
@@ -688,89 +712,89 @@ function rock1(g,x,y,lift){
   txt(g,'20kg',0,-28,17,'#4c5257');
   g.restore();
 }
+function done1(){return S1.quiz&&S1.qi>=Q1.length;}
 function draw1(){
   const {g,w,h}=fit($('c1'));base(g,w,h);
   room(g);floor(g,GY1);
   const P=pts1(), sh=S1.ph;
-
   /* てこの 棒 */
   g.save();g.translate(FX1,FY1);g.rotate(S1.th);
   box(g,-ARM_SA-30,-11,ARM_SA+ARM_RI+62,22,7,'#c08f4e','#8d6431',3);
   g.globalAlpha=.30;g.fillStyle='#e0b176';g.fillRect(-ARM_SA-24,-8,ARM_SA+ARM_RI+50,6);g.globalAlpha=1;
   g.restore();
-  /* ささえ */
   fulcrum(g,FX1,FY1+9,40,GY1-FY1-9);
-  /* 石（棒の 先が 下に 入って いる） */
   rock1(g,P.sa.x-52,P.sa.y+4);
-  /* 手 */
   hand(g,P.ri.x+2,P.ri.y-28,1,false);
   /* 通った あと（絵の 上に のせる。棒の 下だと 見えない） */
   if(sh>=1){
     trail(g,FX1,FY1,ARM_RI,TH0,S1.th,C.ri,sh>=2?10:8);
     trail(g,FX1,FY1,ARM_SA,Math.PI+TH0,Math.PI+S1.th,C.sa,sh>=2?10:8);
   }
-
-  /* ここが 動いた／動かない */
-  if(sh===2){
+  if(sh===2&&!S1.quiz){
     tag(g,'大きく 動いた',P.ri.x+66,(P.ri.y+FY1+Math.sin(TH0)*ARM_RI)/2,17,C.ri);
     tag(g,'少し 動いた',P.sa.x-14,P.sa.y+58,17,C.sa);
     tag(g,'ぜんぜん 動かない',FX1+22,FY1-58,17,C.fu);
   }
-  /* 名前を つけて いく */
-  const on={fu:sh>=3,ri:sh>=4,sa:sh>=5};
   if(S1.quiz){
-    const k=Q1[S1.qi];
+    const k=Q1[Math.min(S1.qi,Q1.length-1)];
     ['fu','ri','sa'].forEach(j=>{
       const q=P[j];
-      if(j===k)markPoint(g,q.x,q.y,j,{pulse:S1.t,label:S1.mark?NAME[j]:'ここ？',
-        lx:LP1[j].lx,ly:LP1[j].ly,r:19});
-      else markPoint(g,q.x,q.y,j,{dim:true,
-        label:(S1.doneK&&S1.doneK[j])?NAME[j]:false,lx:LP1[j].lx,ly:LP1[j].ly});
+      if(S1.doneK[j]){
+        forceArrow(g,j==='sa'?q.x+34:q.x,q.y,j);
+        markPoint(g,q.x,q.y,j,{lx:LP1[j].lx,ly:LP1[j].ly,r:19});
+      }else if(j===k&&!done1()){
+        /* いま 答える 点。大きく ゆっくり 光らせる */
+        g.save();g.globalAlpha=.26+.22*Math.sin(S1.t*3.2);
+        circ(g,q.x,q.y,36+6*Math.sin(S1.t*3.2),'#c9a227',null);g.restore();
+        circ(g,q.x,q.y,26,'#fffdf7','#9c8f76',5);
+        txt(g,'？',q.x,q.y+1,26,'#6a5a3a');
+      }else{
+        circ(g,q.x,q.y,17,'#fffdf7','#b6a98f',4);
+        txt(g,'？',q.x,q.y+1,17,'#9c8f76');
+      }
     });
-  }else{
-    if(on.ri){forceArrow(g,P.ri.x,P.ri.y,'ri');}
-    if(on.sa){forceArrow(g,P.sa.x+34,P.sa.y,'sa');}
+  }else if(sh>=1){
+    /* 名前を つける 前。3つ ある ことだけ 見せる */
     ['fu','ri','sa'].forEach(j=>{
-      if(!on[j])return;
-      const q=P[j];
-      markPoint(g,q.x,q.y,j,{lx:LP1[j].lx,ly:LP1[j].ly,
-        pulse:(sh===3&&j==='fu')||(sh===4&&j==='ri')||(sh===5&&j==='sa')?S1.t:0});
+      circ(g,P[j].x,P[j].y,15,'#fffdf7','#b6a98f',4);
     });
   }
-  if(sh>=1&&sh<=2&&!S1.anim){
+  if(sh>=1&&sh<=2&&!S1.anim&&!S1.quiz){
     tag(g,'▲ 絵を おしても すすむよ',BW/2,530,15,'#8a6a10','rgba(255,255,255,.9)');
   }
   g.restore();
 }
+/* 名前と 意味は ぜんぶ 出して おく＝かくすのは「どこか」だけ */
 function tbl1(){
   const el=$('t1');
-  const show={fu:S1.ph>=3||S1.quiz,ri:S1.ph>=4||S1.quiz,sa:S1.ph>=5||S1.quiz};
+  const open=(S1.ph>=2||S1.quiz);
   el.innerHTML=['fu','ri','sa'].map(k=>{
-    if(!show[k])return '<div class="c">？</div>';
-    return '<div class="c on" style="flex-direction:column;gap:1px;border-color:'+C[k]+
-      ';background:#fff">'+
-      '<b style="color:'+C[k]+';font-size:1.15em">'+NAME[k]+'</b>'+
-      '<span style="font-size:.84em;color:#6a5a3a;line-height:1.2">'+MEAN[k]+'</span></div>';
+    if(!open)return '<div class="c">？</div>';
+    const got=!!S1.doneK[k];
+    return '<div class="c'+(got?' on':'')+'" style="flex-direction:column;gap:1px;border-color:'+
+      (got?C[k]:'var(--line)')+';background:'+(got?'#fff':'#fbf6e8')+'">'+
+      '<b style="color:'+C[k]+';font-size:1.12em">'+NAME[k]+(got?'　○':'')+'</b>'+
+      '<span style="font-size:.82em;color:#6a5a3a;line-height:1.2">'+MEAN[k]+'</span></div>';
   }).join('');
-  fitTbl(el,0,9,22,2.5);   /* 名前と 説明で 2行つかう */
+  fitTbl(el,0,22,2.5);
 }
 function bar1(){
   const b=$('b1');
   if(S1.quiz){
-    b.innerHTML=(S1.qi>=Q1.length?'<button class="btn next" id="b1again">もう一度 答える →</button>':'')+
+    b.innerHTML=(done1()?'<button class="btn next" id="b1again">もう一度 答える →</button>':'')+
       '<button class="btn sub" id="b1reset">はじめから</button>';
   }else if(S1.ph===0){
     b.innerHTML='<button class="btn play" id="b1go">動かして みる ▶</button>';
-  }else if(S1.ph>=6){
+  }else if(S1.ph>=2){
     b.innerHTML='<button class="btn next" id="b1quiz">名前を 答えて みる →</button>'+
-      '<button class="btn sub" id="b1reset">はじめから</button>';
+      '<button class="btn sub" id="b1back">◀ もどる</button>';
   }else{
     b.innerHTML='<button class="btn play" id="b1go">1つ すすむ ▶</button>'+
       '<button class="btn sub" id="b1back">◀ もどる</button>';
   }
   const go=$('b1go');if(go)go.onclick=()=>next1();
   const bk=$('b1back');if(bk)bk.onclick=()=>back1();
-  const rs=$('b1reset');if(rs)rs.onclick=()=>{reset1();};
+  const rs=$('b1reset');if(rs)rs.onclick=()=>reset1();
   const qz=$('b1quiz');if(qz)qz.onclick=()=>startQuiz1();
   const ag=$('b1again');if(ag)ag.onclick=()=>startQuiz1();
 }
@@ -778,74 +802,69 @@ const MSG1=[
   '重い 石を、棒で 持ち上げる よ。<b>手を 下げる</b>と、どこが どう 動くかな？',
   '石が 上がった！ 3つの ところが 通った <b>道</b>が のこって いる よ。',
   '<span class="ri">手の ところ</span>は 大きく、<span class="sa">石の ところ</span>は 少し 動いた。'+
-    'でも <b>まん中は ぜんぜん 動かない</b>ね。',
-  '動かない ところ＝<span class="fu">支点</span>。棒を <b>ささえて</b> いて、ここを 中心に 回って いる。',
-  '手が おして いる ところ＝<span class="ri">力点</span>。人が <b>力を 加える</b> ところ。',
-  '石に ふれて いる ところ＝<span class="sa">作用点</span>。<b>ものに 力が はたらく</b> ところ。',
-  '<span class="fu">支点</span>・<span class="ri">力点</span>・<span class="sa">作用点</span>の 3つ。'+
-    'どれが どれか、答えて みよう。',
+    'でも <b>まん中は 動かない</b>ね。てこには 大事な 点が 3つ ある（右を 見てね）。',
 ];
 function up1(){
   tbl1();bar1();
-  $('g1').style.display=S1.quiz?'flex':'none';
-  if(S1.quiz){
-    if(S1.qi>=Q1.length){
-      $('m1').innerHTML='<span class="ok">3つとも 答えられた！</span> '+
-        '<span class="fu">支点</span>は 動かない、<span class="ri">力点</span>は 力を 加える、'+
-        '<span class="sa">作用点</span>は ものに 力が はたらく ところ。';
-      [...$('o1').children].forEach(b=>{b.disabled=true;b.className='opt p-'+b.dataset.v;});
-    }else{
-      const k=Q1[S1.qi];
-      $('m1').innerHTML=S1.mark
-        ? (S1.mark==='o'
-            ? '<span class="ok">せいかい！</span> '+MEAN[k]+'。'
-            : '<span class="ng">ちがう よ。</span> 光って いるのは <b>'+NAME[k]+'</b>。'+MEAN[k]+'。')
-        : '光って いる ところは、<b>支点・力点・作用点</b>の どれかな？';
-      [...$('o1').children].forEach(b=>{
-        b.disabled=!!S1.mark;
-        b.className='opt p-'+b.dataset.v+
-          (S1.mark&&b.dataset.v===k?' right':'')+
-          (S1.mark==='x'&&b.dataset.v===S1.sel?' wrong':'');
-      });
-    }
+  const gb=$('g1'),ob=$('o1');
+  gb.style.display=(S1.quiz&&!done1())?'flex':'none';
+  if(S1.quiz&&!done1()){
+    const k=Q1[S1.qi];
+    gb.classList.toggle('need',!S1.mark);
+    $('g1l').innerHTML='<b>光って いる 点</b>の 名前は？';
+    [...ob.children].forEach(b=>{
+      const v=b.dataset.v;
+      b.disabled=S1.bad.indexOf(v)>=0;
+      b.className='opt p-'+v+(S1.bad.indexOf(v)>=0?' wrong':'');
+    });
+    $('m1').innerHTML=S1.mark==='x'
+      ? '<span class="ng">ちがうよ。</span> '+
+        '<b style="color:'+C[S1.bad[S1.bad.length-1]]+'">'+NAME[S1.bad[S1.bad.length-1]]+'</b>は 「'+
+        MEAN[S1.bad[S1.bad.length-1]]+'」。もう一度 えらぼう。'
+      : '光って いる 点は どれかな。右の <b>3つの 意味</b>を 読んで えらぼう。';
+  }else if(done1()){
+    $('m1').innerHTML='<span class="ok">3つとも 答えられた！</span> '+
+      '<span class="fu">支点</span>は 動かない、<span class="ri">力点</span>は 力を 加える、'+
+      '<span class="sa">作用点</span>は ものに 力が はたらく ところ。';
   }else{
-    $('m1').innerHTML=MSG1[Math.min(S1.ph,6)];
+    $('m1').innerHTML=MSG1[Math.min(S1.ph,2)];
   }
   dirty=true;
 }
 function next1(){
   if(S1.anim)return;
   if(S1.ph===0){S1.anim=true;S1.ph=1;up1();return;}
-  if(S1.ph<6){S1.ph++;up1();}
+  if(S1.ph<2){S1.ph++;up1();}
 }
 function back1(){
   if(S1.anim)return;
   if(S1.ph>0){S1.ph--;if(S1.ph===0)S1.th=TH0;up1();}
 }
 function reset1(){
-  S1.ph=0;S1.th=TH0;S1.anim=false;S1.quiz=false;S1.qi=0;S1.sel=null;S1.mark=null;S1.doneK=null;up1();
+  S1.ph=0;S1.th=TH0;S1.anim=false;S1.quiz=false;S1.qi=0;S1.bad=[];S1.mark=null;S1.doneK={};up1();
 }
 function startQuiz1(){
-  S1.quiz=true;S1.qi=0;S1.sel=null;S1.mark=null;S1.doneK={};S1.th=TH1;up1();
+  S1.quiz=true;S1.qi=0;S1.bad=[];S1.mark=null;S1.doneK={};S1.th=TH1;S1.ph=2;up1();
 }
 $('o1').addEventListener('click',e=>{
-  const b=e.target.closest('.opt');if(!b||b.disabled)return;
-  const k=Q1[S1.qi];
-  S1.sel=b.dataset.v;S1.mark=(S1.sel===k)?'o':'x';
-  S1.doneK[k]=true;
-  up1();
-  setTimeout(()=>{S1.qi++;S1.sel=null;S1.mark=null;up1();},S1.mark==='o'?1500:2600);
+  const b=e.target.closest('.opt');if(!b||b.disabled||!S1.quiz||done1())return;
+  const k=Q1[S1.qi],v=b.dataset.v;
+  if(v===k){
+    S1.doneK[k]=true;S1.qi++;S1.bad=[];S1.mark=null;
+    up1();
+  }else{
+    S1.bad.push(v);S1.mark='x';up1();
+  }
 });
-$('c1').addEventListener('click',()=>{ if(!S1.quiz&&!S1.anim&&S1.ph>=1&&S1.ph<6)next1(); });
+$('c1').addEventListener('click',()=>{ if(!S1.quiz&&!S1.anim&&S1.ph>=1&&S1.ph<2)next1(); });
 function step1(dt){
   S1.t+=dt;
-  if(S1.quiz)return true;
+  if(S1.quiz)return !done1();
   if(S1.anim){
     S1.th=Math.min(TH1,S1.th+dt*0.52);
     if(S1.th>=TH1-1e-4){S1.th=TH1;S1.anim=false;up1();}
     return true;
   }
-  if(S1.ph>=3&&S1.ph<=5)return true;      /* 光って いる 点の 点めつ */
   return false;
 }
 
@@ -939,27 +958,28 @@ function seg2(id,n,key){
 }
 function tbl2(){
   const el=$('t2');
-  el.style.gridTemplateColumns='1fr 1fr 1.9fr';
-  el.style.gridTemplateRows='auto repeat(4,1fr)';
-  /* 見出しは 2行に して よこ幅を かせぐ（1行だと 字を 小さくしないと 入らない） */
-  let s='<div class="h ri">力点<small>きょり</small></div>'+
-        '<div class="h sa">作用点<small>きょり</small></div>'+
+  /* 列の ならびも 絵と 同じ＝作用点が 左。行は 3つ
+     （4つに すると 1行が ひくく なって 字が 小さく なる。2026-09-20 の 指摘） */
+  el.style.gridTemplateColumns='.9fr .9fr 2.5fr';
+  el.style.gridTemplateRows='auto repeat(3,1fr)';
+  let s='<div class="h sa">作用点<small>きょり</small></div>'+
+        '<div class="h ri">力点<small>きょり</small></div>'+
         '<div class="h">手ごたえ</div>';
-  for(let i=0;i<4;i++){
+  for(let i=0;i<3;i++){
     const r=S2.rows[i];
     if(!r){s+='<div class="c"></div><div class="c"></div><div class="c"></div>';continue;}
-    s+='<div class="c on">'+r.ri+'</div><div class="c on">'+r.sa+'</div>'+
+    s+='<div class="c on">'+r.sa+'</div><div class="c on">'+r.ri+'</div>'+
        '<div class="c on">'+r.f+'</div>';
   }
   el.innerHTML=s;
-  fitTbl(el,3,5.2,26);
+  fitTbl(el,3,28);
 }
 function rec2(){
   const f=word2(force2());
   const key=S2.ri+'-'+S2.sa;
   if(S2.rows.some(r=>r.k===key))return;
   S2.rows.unshift({k:key,ri:S2.ri,sa:S2.sa,f:f});
-  if(S2.rows.length>4)S2.rows.pop();
+  if(S2.rows.length>3)S2.rows.pop();
 }
 function up2(){
   seg2('q2ri',5,'ri');seg2('q2sa',3,'sa');tbl2();
@@ -1135,7 +1155,7 @@ function tbl3(){
        '<div class="c on">'+r.rn+'</div><div class="c on">'+r.rd+'</div>';
   }
   el.innerHTML=s;
-  fitTbl(el,4,1.6,30);
+  fitTbl(el,4,30);
 }
 function seg3(id,key){
   const el=$(id);
@@ -1368,7 +1388,7 @@ function tbl4(){
     });
   });
   el.innerHTML=s;
-  fitTbl(el,4,1.6,32);
+  fitTbl(el,4,32);
 }
 function up4(){
   tbl4();
@@ -1729,7 +1749,7 @@ function tbl5(){
     return '<div class="c on" style="border-color:'+C[k]+';background:#fff;gap:.4em">'+
       '<b style="color:'+C[k]+'">'+NAME[k]+'</b><span style="color:#3f7a33">○ '+LET5(k)+'</span></div>';
   }).join('');
-  fitTbl(el,0,6,24);
+  fitTbl(el,0,24);
 }
 function up5(){
   const T=tool5();
