@@ -1372,6 +1372,19 @@ function metal5(g,pts,wd,col){
   g.stroke();g.restore();
 }
 const rot5=(cx,cy,dx,dy,a)=>({x:cx+dx*Math.cos(a)-dy*Math.sin(a),y:cy+dx*Math.sin(a)+dy*Math.cos(a)});
+/* 先が ほそく なる ぼう。線（metal5）だけだと ひょろっと して 道具に 見えないので、
+   かたまりの ある ところは これで かく */
+function taper(g,x0,y0,x1,y1,w0,w1,fill,stroke){
+  const a=Math.atan2(y1-y0,x1-x0),nx=-Math.sin(a),ny=Math.cos(a);
+  g.beginPath();
+  g.moveTo(x0+nx*w0/2,y0+ny*w0/2);
+  g.lineTo(x1+nx*w1/2,y1+ny*w1/2);
+  g.lineTo(x1-nx*w1/2,y1-ny*w1/2);
+  g.lineTo(x0-nx*w0/2,y0-ny*w0/2);
+  g.closePath();
+  if(fill){g.fillStyle=fill;g.fill();}
+  if(stroke){g.strokeStyle=stroke;g.lineWidth=2.5;g.stroke();}
+}
 
 /* ---- ペンチ ---- */
 const PE={cx:470,cy:276,jaw:250,han:330};
@@ -1392,10 +1405,6 @@ function drawPe(g,a,hand_){
     metal5(g,[k,e],38,'#414852');            /* にぎり */
   }
   circ(g,PE.cx,PE.cy,16,'#6e7a85','#4c565f',3);
-  /* はさんで いる はりがね（たてに 通して、はさんで いる ことを 見せる） */
-  const j=rot5(PE.cx,PE.cy,-PE.jaw+22,0,0);
-  line(g,j.x,PE.cy-86,j.x,PE.cy+86,'#b5762f',9);
-  if(hand_){const e=rot5(PE.cx,PE.cy,PE.han-72,0,t);hand(g,e.x,e.y-36,1.15,false);}
 }
 /* ---- くぎぬき ---- */
 const NA={fx:452,fy:416,hx:330,hy:-260,cx:-134,cy:12};
@@ -1423,7 +1432,6 @@ function drawNa(g,a,hand_){
   metal5(g,[{x:-26,y:-14},{x:6,y:2}],11,'#8f9ca7');
   metal5(g,[{x:-26,y:14},{x:6,y:2}],11,'#8f9ca7');
   g.restore();
-  if(hand_)hand(g,a4.x+4,a4.y-4,1,false);
 }
 /* ---- 空きかんつぶし ---- */
 const CA={hx:230,hy:400,arm:620,can:250};
@@ -1451,7 +1459,6 @@ function drawCa(g,a,hand_){
   box(g,CA.arm-70,-24,96,28,9,'#414852',null);
   g.restore();
   circ(g,CA.hx,CA.hy,13,'#6e7a85','#4c565f',3);
-  if(hand_)hand(g,P.ri.x-16,P.ri.y-30,1,false);
 }
 /* ---- トング ---- */
 const TO={jx:216,jy:286,grip:330,tip:606};
@@ -1478,12 +1485,16 @@ function drawTo(g,a,hand_){
   /* つまんで いる もの（パン） */
   const e=rot5(TO.jx,TO.jy,TO.tip+18,0,0);
   box(g,e.x-6,e.y-48,64,96,13,'#e8c07a','#c39a52',3);
-  if(hand_){const m=rot5(TO.jx,TO.jy,TO.grip,0,-t);hand(g,m.x,m.y-26,1,false);}
 }
 
-/* ---- プルタブ（かんの ふた）---- */
-const PT={rx:500,ry:332,ring:-240,nose:120};
-function ptAng(a){return 0.40*a;}
+/* ---- プルタブ（かんの ふた）----
+   よこから 見た 図。かんの 上の 面に タブが のって いて、まん中の リベットが 支点。
+   2026-09-21 の 指摘＝「プルタブと つめ切りの イラストが 変」。
+   前は かんが はこに 見え、リングの あなも 分からなかった。
+   いまは ①かんの 口を だ円で 見せる ②リングを ドーナツ形の わくで かく
+   ③ふたが 中へ おし下げられる ようすを 出す */
+const PT={rx:500,ry:330,ring:-236,nose:118};
+function ptAng(a){return 0.42*a;}
 function ptPts(a){
   const t=ptAng(a);
   return {fu:{x:PT.rx,y:PT.ry},
@@ -1491,28 +1502,44 @@ function ptPts(a){
           sa:rot5(PT.rx,PT.ry,PT.nose,0,t)};
 }
 function drawPt(g,a,hand_){
-  const t=ptAng(a),P=ptPts(a);
-  /* かん */
-  box(g,170,374,660,126,12,'#d7dee3','#a7b2ba',3);
-  box(g,170,338,660,36,10,'#c8d0d6','#96a3ab',3);
+  const t=ptAng(a),P=ptPts(a),L=200,R=810,TY=348;
+  /* かんの 本体（上が すこし 細く なる） */
+  g.beginPath();
+  g.moveTo(L+14,TY);g.lineTo(R-14,TY);g.lineTo(R,TY+34);
+  g.lineTo(R,TY+100);g.quadraticCurveTo(R,TY+118,R-20,TY+118);
+  g.lineTo(L+20,TY+118);g.quadraticCurveTo(L,TY+118,L,TY+100);
+  g.lineTo(L,TY+34);g.closePath();
+  g.fillStyle='#d9e0e5';g.fill();g.strokeStyle='#9aa7b0';g.lineWidth=3;g.stroke();
+  g.save();g.globalAlpha=.45;g.fillStyle='#fff';
+  g.fillRect(L+26,TY+44,34,62);g.restore();
+  /* 上の 面（だ円）＝ふた */
+  g.save();
+  g.beginPath();g.ellipse((L+R)/2,TY,(R-L)/2,20,0,0,TAU);
+  g.fillStyle='#c6ced4';g.fill();g.strokeStyle='#93a0a9';g.lineWidth=3;g.stroke();
+  g.restore();
   /* あけくち＝作用点に おされて 中へ 下がる */
-  box(g,566,344,196,22,4,'#3c4750',null);
-  g.save();g.translate(762,344);g.rotate(-clamp(a,0,1)*0.42);
-  box(g,-198,-9,198,18,4,'#aeb9c1','#8b98a1',2.5);
+  const d=clamp((P.sa.y-PT.ry)/54,0,1);
+  g.save();
+  g.beginPath();g.ellipse(660,TY+2,96,15,0,0,TAU);
+  g.fillStyle='#39434b';g.fill();g.restore();
+  g.save();g.translate(748,TY);g.rotate(-d*0.5);
+  g.beginPath();g.ellipse(-86,2,88,13,0,0,TAU);
+  g.fillStyle='#b6c0c7';g.fill();g.strokeStyle='#8b98a1';g.lineWidth=2.5;g.stroke();
   g.restore();
-  /* タブ */
+  /* タブ本体 */
   g.save();g.translate(PT.rx,PT.ry);g.rotate(t);
-  box(g,-278,-14,432,28,12,'#b9c3cb','#8b98a1',3);
-  box(g,-256,-7,124,14,7,'#e6ebee','#a7b2ba',2);
+  box(g,-268,-15,412,30,14,'#c4ced5','#8b98a1',3);
+  /* リングの あな（ドーナツに 見えるよう 中を ぬく） */
+  box(g,-246,-8,110,16,8,'#eef2f4','#93a0a9',2.5);
   g.restore();
-  circ(g,PT.rx,PT.ry,12,'#8b98a1','#6d7a83',3);
-  if(hand_){
-    hand(g,P.ri.x+16,P.ri.y-42,1,false);
-    arrow(g,P.ri.x+78,P.ri.y+4,P.ri.x+78,P.ri.y-58,C.ri,5,11);
-  }
+  circ(g,PT.rx,PT.ry,13,'#96a3ab','#6d7a83',3);
+  circ(g,PT.rx,PT.ry,5,'#6d7a83',null);
 }
-/* ---- つめ切り（上の レバーを てこと して 見る）---- */
-const NC={jx:210,jy:376,len:600,postX:640,postH:96,braH:112,gripX:830,fuX:280};
+/* ---- つめ切り（上の レバーを てこと して 見る）----
+   2026-09-21 の 指摘＝「イラストが 変」。前は 線だけで ひょろっと して いた。
+   いまは `taper()` で **かたまりの ある かたち** に して、
+   刃・ぼう・レバーの 上下の 関係が 分かる ように した */
+const NC={jx:200,jy:404,len:620,postX:640,postH:126,braH:150,gripX:838,fuX:282};
 function ncPhi(a){return -0.062+0.058*a;}
 function ncArmY(a,x){return NC.jy+(x-NC.jx)*Math.sin(ncPhi(a));}
 function ncPts(a){
@@ -1524,24 +1551,34 @@ function ncPts(a){
 function drawNc(g,a,hand_){
   const P=ncPts(a),phi=ncPhi(a);
   const tip={x:NC.jx+NC.len*Math.cos(phi),y:NC.jy+NC.len*Math.sin(phi)};
-  /* つめ（刃の あいだ） */
-  const gt=tip.y+16,nh=Math.max(8,378-gt);
-  box(g,826,gt,86,nh,6,'#f3e3d2','#d6bfa8',2.5);
-  /* 下の うでと 刃 */
-  metal5(g,[{x:NC.jx,y:NC.jy+11},{x:840,y:392}],17,'#9aa7b2');
-  box(g,772,378,66,15,3,'#8b98a1','#6d7a83',2);
-  /* 上の うでと 刃 */
-  metal5(g,[{x:NC.jx,y:NC.jy},{x:tip.x,y:tip.y}],17,'#b3bec7');
-  box(g,tip.x-66,tip.y,66,15,3,'#8b98a1','#6d7a83',2);
-  /* 後ろの ばね（2まいが つながって いる ところ） */
-  metal5(g,[{x:NC.jx+6,y:NC.jy-2},{x:NC.jx-16,y:NC.jy+6},{x:NC.jx+6,y:NC.jy+13}],13,'#9aa7b2');
-  /* ぼう（作用点から 下の うでへ）と 後ろの ささえ */
-  metal5(g,[{x:NC.postX,y:P.sa.y},{x:NC.postX,y:ncArmY(a,NC.postX)}],12,'#8b98a1');
-  metal5(g,[{x:NC.fuX,y:P.fu.y},{x:NC.fuX,y:ncArmY(a,NC.fuX)}],12,'#8b98a1');
-  /* レバー */
-  metal5(g,[{x:P.fu.x-22,y:P.fu.y},{x:P.ri.x+18,y:P.ri.y}],21,'#c6d0d8');
-  circ(g,P.fu.x,P.fu.y,10,'#8b98a1','#6d7a83',2.5);
-  if(hand_)hand(g,P.ri.x-30,P.ri.y-36,1,false);
+  /* つめ（刃の あいだに はさまって いる） */
+  const gt=tip.y+18,nh=Math.max(10,410-gt);
+  g.beginPath();
+  g.moveTo(820,gt);g.lineTo(886,gt-4);
+  g.quadraticCurveTo(914,gt+nh/2,886,gt+nh+4);g.lineTo(820,gt+nh);
+  g.closePath();
+  g.fillStyle='#f6e7d6';g.fill();g.strokeStyle='#d6bfa8';g.lineWidth=2.5;g.stroke();
+  /* 下の うで（かたまりで） */
+  taper(g,NC.jx,NC.jy+16,852,428,36,24,'#a3aeb8','#7d8a94');
+  box(g,776,410,78,20,4,'#79868f','#5c6870',2.5);
+  /* 上の うで */
+  taper(g,NC.jx,NC.jy-2,tip.x,tip.y,36,24,'#c6d0d8','#8b98a1');
+  box(g,tip.x-78,tip.y-2,78,20,4,'#79868f','#5c6870',2.5);
+  /* 後ろの つなぎ（2まいが ここで つながる） */
+  g.beginPath();
+  g.moveTo(NC.jx+10,NC.jy-19);
+  g.quadraticCurveTo(NC.jx-36,NC.jy+8,NC.jx+10,NC.jy+34);
+  g.lineTo(NC.jx+10,NC.jy+17);
+  g.quadraticCurveTo(NC.jx-14,NC.jy+8,NC.jx+10,NC.jy-2);
+  g.closePath();
+  g.fillStyle='#b3bec7';g.fill();g.strokeStyle='#8b98a1';g.lineWidth=2.5;g.stroke();
+  /* ぼう（作用点から 下へ）と 後ろの ささえ */
+  taper(g,NC.postX,P.sa.y-4,NC.postX,ncArmY(a,NC.postX)+4,20,20,'#9aa7b2','#77848d');
+  taper(g,NC.fuX,P.fu.y-4,NC.fuX,ncArmY(a,NC.fuX)+4,18,18,'#9aa7b2','#77848d');
+  /* レバー（おす ところが 少し 広い） */
+  taper(g,P.fu.x-30,P.fu.y,P.ri.x+34,P.ri.y,32,42,'#ccd6dd','#8b98a1');
+  circ(g,P.fu.x,P.fu.y,12,'#8b98a1','#6d7a83',2.5);
+  circ(g,NC.postX,P.sa.y,10,'#8b98a1','#6d7a83',2.5);
 }
 
 const TOOLS=[
