@@ -138,6 +138,32 @@ footer{
 .spacer{flex:1}
 .note{font-size:clamp(11px,1.3vw,15px); color:var(--ink2); font-weight:700}
 
+/* ---------- PDF（印刷）----------
+   外部の ライブラリは 使えないので、ブラウザの 印刷（→「PDFとして保存」）に わたす。
+   1まい＝1ページに なるように 改ページを 入れる。
+   **Googleサイトの iframe の 中からは 親ページごと 印刷される ことが ある**。
+   先生が ファイルを じかに ひらいて 印刷するのが 確実 */
+#printArea{display:none}
+@media print{
+  html,body{height:auto!important; overflow:visible!important; background:#fff!important}
+  header, footer, .dots, #paste, .modal, .stage{display:none!important}
+  main, .step{display:block!important; padding:0!important; overflow:visible!important}
+  #printArea{display:block!important}
+  .psheet{
+    page-break-after:always; break-after:page;
+    padding:6mm 4mm; box-sizing:border-box;
+    -webkit-print-color-adjust:exact; print-color-adjust:exact;
+  }
+  .psheet:last-child{page-break-after:auto; break-after:auto}
+  .psheet .sTitle{font-size:30pt; margin-top:30mm}
+  .psheet .sHead{font-size:22pt; color:#2f6fa8; border-bottom:3pt solid #e6d8b8;
+                 padding-bottom:4mm; margin-bottom:7mm}
+  .psheet .sItem{margin:5mm 0}
+  .psheet .sBody{font-size:16pt}
+  .psheet .sDot{background:#c9a227}
+  @page{size:A4 landscape; margin:12mm}
+}
+
 /* ---------- わたす画面 ---------- */
 .modal{
   position:fixed; inset:0; background:rgba(58,50,38,.62); z-index:50;
@@ -150,11 +176,17 @@ footer{
 }
 .sheet h2{margin:0; font-size:clamp(16px,2.1vw,23px); font-weight:800}
 .sheet .hint{font-size:clamp(12px,1.5vw,16px); color:var(--ink2); font-weight:700; line-height:1.6}
+/* textarea では なく div。ゆびで 長おしすると iOS の「コピー」が 出る。
+   textarea だと focus した ときに キーボードが 出て じゃまに なる */
 #out{
-  flex:1; min-height:120px; resize:none; padding:10px; border:2px solid var(--line);
-  border-radius:12px; background:var(--card); font-size:15px; line-height:1.45;
-  user-select:text; -webkit-user-select:text;
+  flex:1; min-height:120px; overflow-y:auto; -webkit-overflow-scrolling:touch;
+  padding:10px; border:2px solid var(--line); border-radius:12px;
+  background:var(--card); font-size:15px; line-height:1.5;
+  white-space:pre-wrap; word-break:break-word;
+  user-select:text; -webkit-user-select:text; cursor:text;
 }
+.sheet .hint.warn{background:#fdeee6; border:2px solid #e2a68a;
+  border-radius:10px; padding:8px 10px; color:#8a3b1a}
 .sheet .row2{display:flex; gap:8px; align-items:center}
 #copied{font-size:clamp(13px,1.6vw,18px); font-weight:800; color:var(--ok)}
 
@@ -219,6 +251,7 @@ footer{
     <div class="stage" id="stage" style="display:none"><div class="sInner" id="sInner"></div></div>
     <div class="dots" id="dots" style="display:none"></div>
   </section>
+  <div id="printArea"></div>
 </main>
 
 <footer id="foot"></footer>
@@ -228,20 +261,20 @@ footer{
   <div class="sheet">
     <h2>Gemini に はりつけよう</h2>
     <div class="hint">
-      ① 「コピー する」を おす<br>
-      ② Gemini を ひらく<br>
-      ③ <b>おんせいメモを つける</b><br>
-      ④ はりつけて おくる
+      ① 下の 文は <b>ぜんぶ えらんで あります</b>。「コピー する」を おす<br>
+      　 （できない ときは、文を ゆびで ながおし →「コピー」）<br>
+      ② Gemini を ひらく　③ <b>おんせいメモを つける</b>　④ はりつけて おくる
     </div>
-    <textarea id="out" readonly></textarea>
+    <div id="out"></div>
     <div class="row2">
       <button class="btn gold" id="doCopy">コピー する</button>
       <span id="copied"></span>
       <div class="spacer"></div>
       <button class="btn sub" id="closeM">とじる</button>
     </div>
-    <div class="hint" id="copyFall" style="display:none">
-      コピー できなかったよ。上の 文を ゆびで ながおし して、「すべてを せんたく」→「コピー」して ね。
+    <div class="hint warn" id="copyFall" style="display:none">
+      この ボタンでは コピー できなかったよ。<br>
+      上の 文は <b>ぜんぶ えらんで ある</b>ので、そのまま <b>ゆびで ながおし</b>して「コピー」を おしてね。
     </div>
   </div>
 </div>
@@ -437,6 +470,20 @@ $("stage").addEventListener("click",function(){ if(!SL.doc) go(1); });
   });
 });
 
+/* ========================= PDF =========================
+   1まい＝1ページ。印刷の あとに 中身を 消して、ふだんの 画面に のこさない */
+function toPdf(){
+  var h="";
+  for(var i=0;i<SL.pages.length;i++){
+    h+='<div class="psheet">'+pageHTML(SL.pages[i], !!SL.pages[i].cover)+'</div>';
+  }
+  $("printArea").innerHTML=h;
+  setTimeout(function(){
+    try{ window.print(); }catch(e){}
+    setTimeout(function(){ $("printArea").innerHTML=""; },800);
+  },60);
+}
+
 /* ========================= フッター ========================= */
 var STEP=1;
 function paintFoot(){
@@ -459,6 +506,7 @@ function paintFoot(){
         h  = '<button class="btn ghost" id="fDoc">スライドで 見る</button>';
         h += '<div class="spacer"></div>';
       }
+      h += '<button class="btn ghost" id="fPdf">PDFに する</button>';
       h += '<button class="btn sub" id="fBack">はりなおす</button>';
     }
   }
@@ -466,6 +514,7 @@ function paintFoot(){
   bind("fPass", openPass);
   bind("fMake", makeSlide); bind("fBack", backToPaste);
   bind("fPrev", function(){go(-1)}); bind("fNext", function(){go(1)});
+  bind("fPdf", toPdf);
   bind("fDoc", function(){ SL.doc=!SL.doc; $("dots").style.display=SL.doc?"none":"flex"; render(); paintFoot(); });
 }
 function bind(id,fn){ var e=$(id); if(e) e.addEventListener("click",fn); }
@@ -474,34 +523,40 @@ function bind(id,fn){ var e=$(id); if(e) e.addEventListener("click",fn); }
 function openPass(){
   D.topic = $("topic").value;          /* 🎤 が input を 出さなくても ひろえるように */
   save();
-  $("out").value = buildPrompt(D.topic);
+  $("out").textContent = buildPrompt(D.topic);
   $("copied").textContent=""; $("copyFall").style.display="none";
   $("modal").classList.add("on");
+  /* ひらいた 時点で ぜんぶ えらんで おく＝ボタンが きかなくても
+     ゆびで 長おし →「コピー」だけで すむ */
+  requestAnimationFrame(selectOut);
+}
+function selectOut(){
+  try{
+    var r=document.createRange(); r.selectNodeContents($("out"));
+    var sel=window.getSelection(); sel.removeAllRanges(); sel.addRange(r);
+  }catch(e){}
 }
 $("closeM").addEventListener("click",function(){ $("modal").classList.remove("on"); });
-$("doCopy").addEventListener("click",function(){ copyText($("out").value); });
+$("doCopy").addEventListener("click",function(){ copyText($("out").textContent); });
 
 /* iframe の 中では Clipboard API が とおらない ことが あるので
    execCommand を 先に ためし、だめなら 手で コピーして もらう */
 function copyText(s){
+  /* 画面に 出て いる 文を そのまま えらんで コピーする。
+     かくし textarea だと iframe の sandbox で 落ちる ことが あった */
   var ok=false;
-  try{
-    var ta=document.createElement("textarea");
-    ta.value=s; ta.readOnly=false; ta.contentEditable="true";
-    ta.style.cssText="position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;font-size:16px";
-    document.body.appendChild(ta);
-    var r=document.createRange(); r.selectNodeContents(ta);
-    var sel=window.getSelection(); sel.removeAllRanges(); sel.addRange(r);
-    ta.setSelectionRange(0, s.length);
-    ok=document.execCommand("copy");
-    sel.removeAllRanges(); document.body.removeChild(ta);
-  }catch(e){ ok=false; }
+  selectOut();
+  try{ ok=document.execCommand("copy"); }catch(e){ ok=false; }
   if(ok){ done(); return; }
   if(navigator.clipboard && navigator.clipboard.writeText){
     navigator.clipboard.writeText(s).then(done, fail);
   }else fail();
   function done(){ $("copied").textContent="コピー できた！"; $("copyFall").style.display="none"; }
-  function fail(){ $("copied").textContent=""; $("copyFall").style.display="block"; $("out").focus(); }
+  function fail(){
+    $("copied").textContent="";
+    $("copyFall").style.display="block";
+    selectOut();                       /* えらんだ ままに して おく */
+  }
 }
 
 /* ========================= タブ ========================= */
