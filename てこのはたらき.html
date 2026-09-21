@@ -83,8 +83,11 @@ nav{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;}
 /* たて長の 画面では 表に 場所を まわす（1.35fr の ままだと ③の 記録の 表が
    1行 16px に つぶれて 字が 切れた。768×1024 で 実測） */
 .cols{flex:1;min-height:0;display:grid;grid-template-rows:1.18fr 1fr;grid-template-columns:1fr;gap:6px;}
+/* 右の らんを つかわない ステップ（④と ③の もんだい）は 絵を 画面いっぱいに */
+.cols.one{grid-template-rows:1fr;grid-template-columns:1fr;}
 @media (orientation:landscape) and (min-width:700px){
   .cols.two{grid-template-columns:1.44fr .56fr;grid-template-rows:1fr;}
+  .cols.one{grid-template-columns:1fr;grid-template-rows:1fr;}
   /* 表が 主役の ④は 表を 広く とる */
   .cols.tall{grid-template-columns:1fr 1fr;grid-template-rows:1fr;}
   .segs{flex-direction:column;}
@@ -184,9 +187,10 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-acti
 /* たて長の 画面では 表が 主役。絵より 表に 場所を まわす
    （④は 表を 読んで 考える ところなので いちばん 広く） */
 @media (orientation:portrait){
-  #s2 .cols{grid-template-rows:.74fr 1fr;}
-  #s3 .cols{grid-template-rows:.82fr 1fr;}
-  #s4 .cols{grid-template-rows:.72fr 1fr;}
+  /* `.cols.one`（右の らんが ない ステップ）には かけない。
+     id つきの この きまりの ほうが 強いので、かけると 絵が 上半分に なって しまう */
+  #s2 .cols.two{grid-template-rows:1.12fr 1fr;}
+  #s3 .cols.two{grid-template-rows:.82fr 1fr;}
 }
 
 /* えらぶ ボタン（予想・3択） */
@@ -391,7 +395,7 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-acti
             </div>
           </div>
           <div class="panel" style="flex:1" id="p2rec">
-            <div class="ttl">調べた きろく</div>
+            <div class="ttl">いま 調べて いる もの</div>
             <div class="tbl" id="t2"></div>
           </div>
           <div class="rule hide" id="r2"></div>
@@ -403,20 +407,11 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-acti
 
     <!-- ③ つり合いを 調べる -->
     <section class="stage on" id="s3" style="display:none">
-      <div class="cols two">
+      <!-- 記録の 表は 置かない（2026-09-21 の 指摘＝「③④の つり合った ときの 記録の 表は いりません」）。
+           そのぶん **もんだいの ときは 絵を 画面いっぱい**に する -->
+      <div class="cols two" id="c3cols">
         <div class="card"><canvas id="c3"></canvas></div>
-        <div class="side">
-          <div id="p3quiz" style="display:flex;flex-direction:column;gap:6px;flex:1;min-height:0;">
-            <div class="num" id="n3">
-              <span class="lb">右に おもり</span>
-              <button id="n3m">−</button><span class="v" id="n3v">1</span><button id="n3p">＋</button>
-              <span class="lb">こ</span>
-            </div>
-            <div class="panel" style="flex:1">
-              <div class="ttl">つり合った ときの 記録</div>
-              <div class="tbl" id="t3"></div>
-            </div>
-          </div>
+        <div class="side" id="p3side">
           <div id="p3free" style="display:none;flex-direction:column;gap:6px;flex:1;min-height:0;">
             <div class="segs">
               <div class="panel">
@@ -441,27 +436,28 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-acti
           </div>
         </div>
       </div>
+      <div class="num" id="n3">
+        <span class="lb">右に おもり</span>
+        <button id="n3m">−</button><span class="v" id="n3v">1</span><button id="n3p">＋</button>
+        <span class="lb">こ</span>
+      </div>
       <div class="msg" id="m3"></div>
       <div class="bar" id="b3"></div>
     </section>
 
     <!-- ④ きまりを 見つける -->
     <section class="stage on" id="s4" style="display:none">
-      <div class="cols tall">
+      <!-- 表は 置かない（2026-09-21 の 指摘）。③で 調べた ことを 思い出して 答える。
+           分からない ときは ヒント（式を 2つ）。絵を 画面いっぱいに つかう -->
+      <div class="cols one">
         <div class="card"><canvas id="c4"></canvas></div>
-        <div class="side">
-          <div class="panel" style="flex:1">
-            <div class="ttl" id="t4ttl">つり合った ときの 表</div>
-            <div class="tbl" id="t4"></div>
-          </div>
-          <div class="num" id="n4">
-            <span class="lb" id="n4lb">右の おもり</span>
-            <button id="n4m">−</button><span class="v" id="n4v">1</span><button id="n4p">＋</button>
-            <span class="lb" id="n4u">こ</span>
-          </div>
-          <div class="rule hide" id="r4"></div>
-        </div>
       </div>
+      <div class="num" id="n4">
+        <span class="lb" id="n4lb">右の おもり</span>
+        <button id="n4m">−</button><span class="v" id="n4v">1</span><button id="n4p">＋</button>
+        <span class="lb" id="n4u">こ</span>
+      </div>
+      <div class="rule hide" id="r4"></div>
       <div class="msg" id="m4"></div>
       <div class="bar" id="b4"></div>
     </section>
@@ -940,23 +936,19 @@ function word2(f){
 }
 function best2(){return !quiz2()&&S2.ri===5&&S2.sa===1;}
 /* 自由に 調べる ときの バー。**数は ここだけ**。
-   600g の 目もりは 2つの 意味が かさなる ところ＝
-   「てこを つかわない とき」でも あり、「支点からの きょりが 左右で 同じ とき」でも ある。
-   2026-09-21 の 問い＝「おもりが 600g と 決まって いるなら、きょりは 必ず 同じに なる？」は
-   ここを「力は いつも 600g」と 読んだ ため。**きょりが 同じ とき と 書いて おく** */
+   【600g の 点線の 目もりは 置かない】2026-09-21 の 指摘＝
+   「（きょりが 同じ とき 600g／てこを つかわないのと 同じ）の 部分の 意味も 分かりにくい」。
+   1本の 目もりに 2つの 意味を のせて いて 読みにくかった。
+   バーの 長さと 数だけで「小さい／大きい」は 分かる。**もどさないこと** */
 function meter2(g){
-  const x0=272,x1=846,y=452,h=36,f=force2();
+  const x0=272,x1=846,y=460,h=38,f=force2();
   txt(g,'手で おす 力',216,y+h/2,19,'#6a5a3a','right');
   box(g,x0,y,x1-x0,h,10,'#f0e6cf','#d9c9a4',2);
   const t=clamp(f/1800,0,1);
   const gr=g.createLinearGradient(x0,0,x1,0);
   gr.addColorStop(0,'#e8b15a');gr.addColorStop(1,'#c0392b');
   box(g,x0,y,Math.max(16,(x1-x0)*t),h,10,gr,null);
-  const xm=x0+(x1-x0)/3;
-  line(g,xm,y-12,xm,y+h+12,'#6a5a3a',3,[6,5]);
-  txt(g,'きょりが 同じ とき 600g',xm,y+h+26,16,'#6a5a3a');
-  txt(g,'（てこを つかわないのと 同じ）',xm,y+h+48,14,'#8a7c63');
-  tag(g,f+'g　'+word2(f),clamp(x0+(x1-x0)*t+8,x0+92,x1-92),y+h/2,21,'#3a2c05','#fffdf7');
+  tag(g,f+'g　'+word2(f),clamp(x0+(x1-x0)*t+8,x0+96,x1-96),y+h/2,22,'#3a2c05','#fffdf7');
 }
 /* もんだいの 1つぶん。**図と 力の バーを 1まいの カードに 入れる**＝
    ア と イ を よこに ならべても 図が 小さく ならない。
@@ -984,7 +976,7 @@ function mini2(g,px,py,pw,ph,label,d,sel,show){
   tag(g,'作用点 '+d.sa,cx-94,GY+42,18,C.sa);
   tag(g,'力点 '+d.ri,cx+94,GY+42,18,C.ri);
   /* 力の バー（カードの 中） */
-  const bx0=px+44,bx1=px+pw-44,byy=py+ph-66,bh=32,f=f2(d.sa,d.ri);
+  const bx0=px+44,bx1=px+pw-44,byy=py+ph-58,bh=34,f=f2(d.sa,d.ri);
   txt(g,'手で おす 力',cx,byy-18,16,'#8a7c63');
   box(g,bx0,byy,bx1-bx0,bh,9,'#f0e6cf','#d9c9a4',2);
   if(show){
@@ -992,11 +984,8 @@ function mini2(g,px,py,pw,ph,label,d,sel,show){
     const gr=g.createLinearGradient(bx0,0,bx1,0);
     gr.addColorStop(0,'#e8b15a');gr.addColorStop(1,'#c0392b');
     box(g,bx0,byy,Math.max(16,(bx1-bx0)*t),bh,9,gr,null);
-  }else txt(g,'？',(bx0+bx1)/2,byy+bh/2,24,'#b9a165');
-  const xm=bx0+(bx1-bx0)/3;
-  line(g,xm,byy-7,xm,byy+bh+7,'#6a5a3a',2.5,[5,4]);
-  txt(g,'600g',xm,byy+bh+19,13,'#8a7c63');
-  if(show)tag(g,f+'g',clamp(bx0+(bx1-bx0)*clamp(f/1800,0,1)+8,bx0+50,bx1-50),byy+bh/2,20,'#3a2c05','#fffdf7');
+    tag(g,f+'g',clamp(bx0+(bx1-bx0)*t+8,bx0+52,bx1-52),byy+bh/2,21,'#3a2c05','#fffdf7');
+  }else txt(g,'？',(bx0+bx1)/2,byy+bh/2,25,'#b9a165');
 }
 function load2(g,x,y){
   box(g,x-46,y-62,92,62,8,'#b08a5a','#7b6a52',3);
@@ -1071,27 +1060,17 @@ function seg2(id,n,key){
 }
 function tbl2(){
   const el=$('t2');
-  /* 列の ならびも 絵と 同じ＝作用点が 左。行は 3つ
-     （4つに すると 1行が ひくく なって 字が 小さく なる。2026-09-20 の 指摘）。
-     【大事】**いちばん 左に「いつ 調べた ものか」を 書く**（いま／さっき／その前）。
-     2026-09-21 の 指摘＝「下の 2段の 意味が 分かりません」＝
-     何の 行なのか 書いて いなかった ため。**この 列を 消さないこと** */
-  const WHEN2=['いま','さっき','その前'];
-  el.style.gridTemplateColumns='.9fr 1fr 1fr 1.6fr';
-  el.style.gridTemplateRows='auto repeat(3,1fr)';
-  let s='<div class="h"></div>'+
-        '<div class="h sa">作用点<small>きょり</small></div>'+
-        '<div class="h ri">力点<small>きょり</small></div>'+
-        '<div class="h">手で おす 力</div>';
-  for(let i=0;i<3;i++){
-    const r=S2.rows[i];
-    if(!r){s+='<div class="c"></div>'.repeat(4);continue;}
-    s+='<div class="r">'+WHEN2[i]+'</div>'+
-       '<div class="c on">'+r.sa+'</div><div class="c on">'+r.ri+'</div>'+
-       '<div class="c on">'+r.f+'</div>';
-  }
-  el.innerHTML=s;
-  fitTbl(el,4,28);
+  /* 【1行だけ】2026-09-21 の 指摘＝「さっき、その前は いりません。1回分だけ 表示されたら いい」。
+     前に 調べた ものを ならべても、何の 行か 伝わらず じゃまに なるだけ だった。
+     **行を ふやさないこと**。列の ならびは 絵と 同じ＝作用点が 左 */
+  el.style.gridTemplateColumns='1fr 1fr 1.6fr';
+  el.style.gridTemplateRows='auto 1fr';
+  el.innerHTML='<div class="h sa">作用点<small>きょり</small></div>'+
+    '<div class="h ri">力点<small>きょり</small></div>'+
+    '<div class="h">手で おす 力</div>'+
+    '<div class="c on">'+S2.sa+'</div><div class="c on">'+S2.ri+'</div>'+
+    '<div class="c on">'+force2()+'g</div>';
+  fitTbl(el,3,26);
 }
 /* 同じ 組み合わせを もう一度 えらんだ ときは **いちばん 上に 動かす**
    （そのままだと「いま」の 行が 下に のこって 何の 行か 分からなく なる） */
@@ -1329,25 +1308,6 @@ function draw3(){
   }
   g.restore();
 }
-const REC3=[];
-function tbl3(){
-  const el=$('t3');
-  el.style.gridTemplateColumns='1fr 1fr 1fr 1fr';
-  /* 見出しは 1行だけ（2行 つかうと その ぶん 行が つぶれて 数が 読めない） */
-  el.style.gridTemplateRows='auto repeat(6,1fr)';
-  let s='<div class="h" style="background:#e6edf3;color:#40525e">左<small>おもり</small></div>'+
-        '<div class="h" style="background:#e6edf3;color:#40525e">左<small>きょり</small></div>'+
-        '<div class="h" style="background:#f3e9e3;color:#6b4a3a">右<small>おもり</small></div>'+
-        '<div class="h" style="background:#f3e9e3;color:#6b4a3a">右<small>きょり</small></div>';
-  for(let i=0;i<6;i++){
-    const r=REC3[i];
-    if(!r){s+='<div class="c"></div>'.repeat(4);continue;}
-    s+='<div class="c on">'+r.ln+'</div><div class="c on">'+r.ld+'</div>'+
-       '<div class="c on">'+r.rn+'</div><div class="c on">'+r.rd+'</div>';
-  }
-  el.innerHTML=s;
-  fitTbl(el,4,30);
-}
 function seg3(id,key){
   const el=$(id);
   el.innerHTML=Array.from({length:6},(_,i)=>
@@ -1355,8 +1315,11 @@ function seg3(id,key){
 }
 function up3(){
   const free=S3.mode==='free';
-  $('p3quiz').style.display=free?'none':'flex';
+  /* もんだいでは 右の らんを つかわないので 絵を 画面いっぱいに する */
+  $('p3side').style.display=free?'flex':'none';
+  $('c3cols').className='cols '+(free?'two':'one');
   $('p3free').style.display=free?'flex':'none';
+  $('n3').style.display=free?'none':'flex';
   if(free){
     seg3('q3ln','ln');seg3('q3ld','ld');seg3('q3rn','rn');seg3('q3rd','rd');
     const c=cur3(),d=c.rn*c.rd-c.ln*c.ld;
@@ -1367,7 +1330,6 @@ function up3(){
     $('b3').innerHTML=mode3()+'<button class="btn sub" id="b3reset">はじめに もどす</button>';
     $('b3reset').onclick=()=>{S3.f={ln:3,ld:4,rn:4,rd:3};up3();};
   }else{
-    tbl3();
     const q=Q3[S3.qi];
     $('n3v').textContent=S3.rn;
     $('n3m').disabled=S3.rel||S3.rn<=1;
@@ -1376,14 +1338,10 @@ function up3(){
       $('m3').innerHTML='もんだい '+(S3.qi+1)+' / '+Q3.length+'　左に おもり <b>'+q.ln+'こ</b>を '+
         '<b>'+q.ld+'</b>の ところに つるした。右の <b>'+q.rd+'</b>の ところに '+
         '<b>何こ</b> つるすと つり合う？';
-      $('b3').innerHTML=mode3()+'<button class="btn show" id="b3go">手を はなす</button>'+
-        '<button class="btn sub" id="b3reset">記録を けす</button>';
-      $('b3go').onclick=()=>{S3.rel=true;S3.mark=(S3.rn===q.ans)?'o':'x';
-        if(S3.mark==='o')rec3();up3();};
-      $('b3reset').onclick=()=>{REC3.length=0;tbl3();};
+      $('b3').innerHTML=mode3()+'<button class="btn show" id="b3go">手を はなす</button>';
+      $('b3go').onclick=()=>{S3.rel=true;S3.mark=(S3.rn===q.ans)?'o':'x';up3();};
     }else if(S3.mark==='o'){
-      $('m3').innerHTML='<span class="ok">つり合った！</span> 右の '+q.rd+'の ところに '+q.ans+'こ。'+
-        '記録に 入れた よ。';
+      $('m3').innerHTML='<span class="ok">つり合った！</span> 右の '+q.rd+'の ところに '+q.ans+'こ。';
       $('b3').innerHTML=mode3()+(S3.qi<Q3.length-1
         ? '<button class="btn next" id="b3next">つぎの もんだい →</button>'
         : '<button class="btn next" id="b3to4">④で きまりを さがす →</button>')+
@@ -1424,12 +1382,6 @@ $('b3').addEventListener('click',e=>{
     S3.f[id.slice(2)]=Number(b.dataset.v);up3();
   });
 });
-function rec3(){
-  const q=Q3[S3.qi];
-  const r={ln:q.ln,ld:q.ld,rn:q.ans,rd:q.rd};
-  if(REC3.some(x=>x.ln===r.ln&&x.ld===r.ld&&x.rn===r.rn&&x.rd===r.rd))return;
-  REC3.push(r);
-}
 function step3(dt){
   const t=tilt3();
   if(Math.abs(S3.th-t)<0.0008){S3.th=t;return false;}
@@ -1446,12 +1398,12 @@ function step3(dt){
    ③を やって いなくても 成り立つ ように、はじめから 4行 入れて おく
    （先生が ④だけ 出す ことが ある）。③で つり合った ものは 下に 足される。
    ========================================================= */
-/* 【お手本の 行は 置かない】2026-09-21 の 指摘＝
-   「④は 例が 4つも ありますが、必要ですか？ ③で 決まりに 気づいて いるので いらないのでは？」。
-   そのとおりで、④に 用意して いた お手本 4行は **③の 記録と 同じ もの**だった。
-   いまは **③で つり合った 記録（REC3）を そのまま ④の 表に 出す**。
-   ③を やって いない ときは 行が なく、そのかわり ヒント（式を 2つ）で 答えられる。
-   **お手本を もどさないこと** */
+/* 【表は 置かない】2026-09-21 の 指摘＝
+   「④は 例が 4つも ありますが、必要ですか？ ③で 決まりに 気づいて いるので いらないのでは？」
+   「③④の つり合った ときの 記録の 表は いりません」。
+   お手本 4行は ③で 出る 記録と 同じ もので、表も 2か所に あった。
+   いまは ④は **絵＋＋−＋ヒント**だけ。③で 気づいた きまりを ここで つかう。
+   分からない 子は ヒント（式を 2つ）で 答えられる。**表を もどさないこと** */
 /* もんだい 5問（固定。ランダムに しない）。h＝かくす ところ。
    おもりを かくす ものと きょりを かくす ものを まぜる＝
    「おもり×きょりが 左右で 同じ」と 分かれば どちらも 出せる */
@@ -1537,8 +1489,13 @@ function draw4(){
   if(S4.phase==='hanpi'){hanpi4(g);g.restore();return;}
   const r=cur4(),q=q4();
   lever4(g,r,S4.th);
-  tag(g,'おもり '+r.ln+'こ　きょり '+r.ld,250,432,17,'#40525e');
-  tag(g,'おもり '+r.rn+'こ　きょり '+r.rd,750,432,17,'#6b4a3a');
+  /* いま 入れて いる ところを 金の ふだに する＝どこを 答えるのかが 絵で わかる */
+  const q0=q4();
+  const gold='#f5d97a', hit=(k)=>q0.h===k;
+  tag(g,'おもり '+r.ln+'こ',188,438,19,hit('ln')?'#3a2c05':'#40525e',hit('ln')?gold:null);
+  tag(g,'きょり '+r.ld,330,438,19,hit('ld')?'#3a2c05':'#40525e',hit('ld')?gold:null);
+  tag(g,'おもり '+r.rn+'こ',678,438,19,hit('rn')?'#3a2c05':'#6b4a3a',hit('rn')?gold:null);
+  tag(g,'きょり '+r.rd,820,438,19,hit('rd')?'#3a2c05':'#6b4a3a',hit('rd')?gold:null);
   if(S4.mark==='o'||S4.phase==='rule'){
     const P=r.ln*r.ld;
     tag(g,r.ln+' × '+r.ld+' ＝ '+P,250,478,26,'#3a2c05','#f5d97a');
@@ -1554,39 +1511,7 @@ function draw4(){
   }
   g.restore();
 }
-/* ③で つり合った 記録 ＋ いまの もんだい だけ。
-   2026-09-20 の 指摘＝「問題を 解くたびに 表が せまく なる。挑戦した 問題は 残さなくても いい」。
-   **といた もんだいを 表に ためないこと**（行が ふえると 字が 小さく なる） */
-function rows4(){
-  const rs=REC3.map(r=>({...r,kind:'base'}));
-  if(S4.phase==='quiz'){
-    const q=q4(),r=cur4();
-    rs.push({...r,kind:'now',h:q.h});
-  }
-  return rs;
-}
-function tbl4(){
-  const el=$('t4'),rs=rows4();
-  el.style.gridTemplateColumns='1fr 1fr 1fr 1fr';
-  el.style.gridTemplateRows='auto repeat('+rs.length+',1fr)';
-  let s='<div class="h" style="background:#e6edf3;color:#40525e">左<small>おもり</small></div>'+
-        '<div class="h" style="background:#e6edf3;color:#40525e">左<small>きょり</small></div>'+
-        '<div class="h" style="background:#f3e9e3;color:#6b4a3a">右<small>おもり</small></div>'+
-        '<div class="h" style="background:#f3e9e3;color:#6b4a3a">右<small>きょり</small></div>';
-  rs.forEach(r=>{
-    ['ln','ld','rn','rd'].forEach(k=>{
-      if(r.kind==='now'&&k===r.h){
-        s+='<div class="c blank'+(S4.mark==='o'?' mark-o':S4.mark==='x'?' mark-x':'')+'">'+r[k]+'</div>';
-      }else{
-        s+='<div class="c'+(r.kind==='base'?'':' on')+'">'+r[k]+'</div>';
-      }
-    });
-  });
-  el.innerHTML=s;
-  fitTbl(el,4,32);
-}
 function up4(){
-  tbl4();
   const q=q4(),lb=LB4[q.h];
   const n4=$('n4');
   n4.style.display=(S4.phase==='quiz')?'flex':'none';
@@ -1594,9 +1519,6 @@ function up4(){
   $('n4v').textContent=S4.val;
   $('n4m').disabled=(S4.mark==='o')||S4.val<=1;
   $('n4p').disabled=(S4.mark==='o')||S4.val>=6;
-  $('t4ttl').textContent=REC3.length
-    ? '③で つり合った ときの 記録'
-    : '③で 調べると ここに たまる（ヒントでも 答えられる）';
   const r=$('r4');
   if(S4.phase!=='quiz'){
     r.classList.remove('hide');
@@ -1625,10 +1547,8 @@ function up4(){
     $('m4').innerHTML=(S4.mark==='x'
       ? (d>0?'<span class="ng">右が 下がったね。</span> 右が <b>重すぎる</b>。':
              '<span class="ng">左が 下がったね。</span> 右が <b>軽すぎる</b>。')+' もう一度 考えよう。'
-      : 'もんだい '+(S4.qi+1)+' / '+P4.length+'　表の <b>金の わく</b>の ます に 入る 数は いくつ？ '+
-        (REC3.length
-          ? '<b>③の 記録</b>を 見て、<b>きまり</b>を さがそう。'
-          : '分からない ときは <b>ヒント</b>を おそう。'));
+      : 'もんだい '+(S4.qi+1)+' / '+P4.length+'　<b>'+lb[0]+'</b>は いくつ？ '+
+        '下の ＋− で 入れて 金の「こたえ」。分からない ときは <b>ヒント</b>を おそう。');
     $('b4').innerHTML='<button class="btn show" id="b4go">こたえ</button>'+
       '<button class="btn ghost'+(S4.hint?' on':'')+'" id="b4hint">ヒント</button>';
     $('b4go').onclick=()=>{S4.mark=ok4()?'o':'x';up4();};
