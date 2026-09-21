@@ -65,6 +65,25 @@ main{flex:1; min-height:0; display:flex; flex-direction:column}
   border-radius:12px; background:var(--card); font-weight:700;
 }
 
+/* 子どもが なにを するかを 画面に 書く。
+   ろくおんは べつの アプリ（おんせいメモ）なので、それも ここで つたえる */
+.howto{
+  flex:0 0 auto; display:flex; gap:6px; flex-wrap:wrap; align-items:center;
+}
+.hstep{
+  display:flex; align-items:center; gap:6px; background:#f3e8cf;
+  border:2px solid var(--line); border-radius:999px; padding:4px 11px 4px 5px;
+  font-size:clamp(12px,1.4vw,16px); font-weight:800; color:var(--ink2);
+}
+.hnum{
+  width:22px; height:22px; border-radius:50%; background:var(--gold-d); color:#fff;
+  display:flex; align-items:center; justify-content:center; font-size:14px; flex:0 0 auto;
+}
+.optlab{
+  flex:0 0 auto; font-size:clamp(11px,1.3vw,15px); font-weight:800; color:var(--ink2);
+}
+.optlab b{color:var(--ink)}
+
 .cards{
   flex:1; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch;
   background:var(--card); border:2px solid var(--line); border-radius:14px;
@@ -188,9 +207,16 @@ footer{
       <input id="topic" type="text" placeholder="れい：どうして 水は こおると かさが ふえるのか">
     </div>
 
+    <div class="howto">
+      <span class="hstep"><span class="hnum">1</span>はなす ことを かく</span>
+      <span class="hstep"><span class="hnum">2</span>おんせいメモ で ろくおんする</span>
+      <span class="hstep"><span class="hnum">3</span>おわったら「Gemini に わたす」</span>
+    </div>
+
     <div class="cards" id="cards"></div>
 
     <div class="entry">
+      <div class="optlab"><b>かきとめる</b>　（なくても いいよ。ろくおんが ぜんぶ ひろって いるから）</div>
       <div class="row">
         <textarea id="say" placeholder="出た 考えを かく。まとめて かいても いいよ。&#10;キーボードの マイク を おすと こえで かけるよ。"></textarea>
         <button id="add" class="btn blue">ふやす<br>＋</button>
@@ -327,7 +353,7 @@ function save(){ saveRaw(JSON.stringify({topic:D.topic, items:D.items, src:D.src
 function paintCards(){
   var box=$("cards");
   if(!D.items.length){
-    box.innerHTML='<div class="empty">ろくおんを わたす だけなら、<br>ここは からっぽの ままで いいよ。<br><br>かきとめて おきたい ことが あれば、<br>下に かこう。まとめて かいても いいよ。</div>';
+    box.innerHTML='<div class="empty">ここは からっぽの ままで いいよ。<br><br>「みんなの 考えが ○○と ××に わかれた」の ように、<br>かきとめて おきたい ことが あれば 下に かこう。</div>';
   }else{
     var h="";
     for(var i=0;i<D.items.length;i++){
