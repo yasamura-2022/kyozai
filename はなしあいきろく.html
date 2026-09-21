@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
+<title>はなしあい きろく</title>
+<style>
+/* =========================================================
+   はなしあい きろく（3年生）
+   外部読み込みゼロ（CDN・Webフォント・画像URL・API 一切なし）
+   Googleサイト埋め込み（iframe）で動くことを最優先にしてある。
+
+   ■ まとめ方を かえたいとき は PROMPT_HEAD / SLIDE_PLAN（下の JS）を直す
+   ========================================================= */
+:root{
+  --paper:#fdf6e3;        /* ページの地 */
+  --card:#fffdf7;         /* カード */
+  --ink:#3a3226;
+  --ink2:#6b5f4c;
+  --line:#ded0b4;
+  --blue:#2f6fa8;         /* 同じところの中で すすむ */
+  --gold:#c9a227;         /* わたす・きめる */
+  --gold-d:#a8871f;
+  --ok:#2f8f5b;
+  --sub:#a99a7c;          /* もどす・やりなおす */
+  --p1:#c0563a; --p2:#2f6fa8; --p3:#2f8f5b;
+  --p4:#b07d2a; --p5:#7a5ba8; --p6:#2f8f8f;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;margin:0;padding:0;overflow:hidden}
+body{
+  font-family:"Hiragino Maru Gothic ProN","ヒラギノ丸ゴ ProN W4","BIZ UDPGothic",
+              "Hiragino Kaku Gothic ProN","Yu Gothic",YuGothic,Meiryo,system-ui,sans-serif;
+  background:var(--paper); color:var(--ink);
+  display:flex; flex-direction:column;
+  -webkit-text-size-adjust:100%;
+  user-select:none; -webkit-user-select:none;
+}
+button{font-family:inherit;cursor:pointer;border:none;color:#fff;border-radius:12px}
+textarea,input{font-family:inherit;color:var(--ink)}
+/* iOS が かってに ズームしないよう 入力欄は 18px 以上（iframe では user-scalable=no が きかない） */
+textarea,input{font-size:19px}
+
+/* ---------- ヘッダー ---------- */
+header{
+  flex:0 0 auto; display:flex; align-items:center; gap:10px;
+  padding:8px 12px; background:#f6ecd6; border-bottom:2px solid var(--line);
+}
+.ttl{font-size:clamp(15px,2.0vw,21px); font-weight:800; letter-spacing:.02em; white-space:nowrap}
+.tabs{display:flex; gap:8px; margin-left:auto}
+.tab{
+  background:#efe3c8; color:var(--ink2); font-weight:800;
+  font-size:clamp(13px,1.6vw,18px); padding:9px 14px; border:2px solid var(--line);
+}
+.tab.on{background:var(--blue); color:#fff; border-color:var(--blue)}
+
+/* ---------- 本体 ---------- */
+main{flex:1; min-height:0; display:flex; flex-direction:column}
+.step{flex:1; min-height:0; display:none; flex-direction:column; padding:10px 12px; gap:8px}
+.step.on{display:flex}
+
+/* ---------- ① きろく ---------- */
+.topicbar{flex:0 0 auto; display:flex; align-items:center; gap:8px}
+.topicbar label{font-size:clamp(13px,1.5vw,17px); font-weight:800; color:var(--ink2); white-space:nowrap}
+#topic{
+  flex:1; min-width:0; padding:9px 12px; border:2px solid var(--line);
+  border-radius:12px; background:var(--card); font-weight:700;
+}
+
+.cards{
+  flex:1; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch;
+  background:var(--card); border:2px solid var(--line); border-radius:14px;
+  padding:8px; display:flex; flex-direction:column; gap:7px;
+}
+.empty{
+  margin:auto; text-align:center; color:var(--ink2); line-height:1.9;
+  font-size:clamp(14px,1.8vw,19px); font-weight:700; padding:16px;
+}
+.card{display:flex; align-items:flex-start; gap:9px; background:#fffef9;
+      border:2px solid #eadfc6; border-radius:12px; padding:7px 9px}
+.pin{
+  flex:0 0 auto; width:34px; height:34px; border-radius:50%; color:#fff;
+  display:flex; align-items:center; justify-content:center;
+  font-weight:800; font-size:17px;
+}
+.ctext{flex:1; min-width:0; font-size:clamp(15px,1.8vw,20px); line-height:1.5;
+       font-weight:700; word-break:break-word; white-space:pre-wrap; user-select:text; -webkit-user-select:text}
+.del{flex:0 0 auto; width:34px; height:34px; background:#efe3c8; color:var(--sub);
+     font-size:19px; font-weight:800; border-radius:50%}
+
+.entry{flex:0 0 auto; display:flex; flex-direction:column; gap:7px}
+.who{display:flex; gap:6px; flex-wrap:nowrap}
+.pbtn{
+  flex:1; min-width:0; height:42px; border-radius:12px; color:#fff;
+  font-weight:800; font-size:clamp(13px,1.6vw,18px); opacity:.42;
+  border:3px solid transparent;
+}
+.pbtn.on{opacity:1; border-color:var(--ink)}
+.row{display:flex; gap:8px; align-items:stretch}
+#say{
+  flex:1; min-width:0; height:74px; resize:none; padding:9px 11px;
+  border:2px solid var(--line); border-radius:12px; background:var(--card);
+  line-height:1.45; font-weight:700; user-select:text; -webkit-user-select:text;
+}
+#add{flex:0 0 auto; width:104px; background:var(--blue); font-size:clamp(15px,1.9vw,21px); font-weight:800}
+.mic{flex:0 0 auto; font-size:clamp(11px,1.3vw,14px); color:var(--ink2); font-weight:700; line-height:1.4}
+
+/* ---------- ② スライド ---------- */
+.pastewrap{flex:1; min-height:0; display:flex; flex-direction:column; gap:8px}
+.lead{flex:0 0 auto; font-size:clamp(13px,1.6vw,18px); font-weight:800; color:var(--ink2); line-height:1.6}
+#src{
+  flex:1; min-height:0; width:100%; resize:none; padding:10px 12px;
+  border:2px solid var(--line); border-radius:14px; background:var(--card);
+  line-height:1.5; user-select:text; -webkit-user-select:text;
+}
+.stage{
+  flex:1; min-height:0; background:var(--card); border:2px solid var(--line);
+  border-radius:16px; padding:18px 22px; overflow:hidden;
+  display:flex; flex-direction:column; justify-content:center;
+  font-size:clamp(15px,calc(1.05vw + 0.9vh),26px);
+}
+.stage.doc{justify-content:flex-start; overflow-y:auto; -webkit-overflow-scrolling:touch}
+.sInner{width:100%; user-select:text; -webkit-user-select:text}
+.sTitle{font-size:2.6em; font-weight:800; text-align:center; line-height:1.35; color:var(--ink)}
+.sHead{
+  font-size:1.9em; font-weight:800; color:var(--blue); line-height:1.35;
+  border-bottom:4px solid #e6d8b8; padding-bottom:8px; margin-bottom:14px;
+}
+.sItem{display:flex; gap:12px; align-items:flex-start; margin:10px 0}
+.sDot{flex:0 0 auto; width:.52em; height:.52em; border-radius:50%; background:var(--gold); margin-top:.56em}
+.sBody{flex:1; min-width:0; font-size:1.5em; font-weight:700; line-height:1.55; word-break:break-word}
+.docblk{margin:0 0 18px}
+.docblk .sHead{font-size:1.4em; margin-bottom:8px}
+.docblk .sBody{font-size:1.12em}
+.docblk .sDot{margin-top:.5em}
+
+.dots{flex:0 0 auto; display:flex; gap:7px; justify-content:center; padding:4px 0}
+.dot{width:11px; height:11px; border-radius:50%; background:#e0d3b6}
+.dot.on{background:var(--blue)}
+
+/* ---------- フッター ---------- */
+footer{
+  flex:0 0 auto; display:flex; gap:8px; align-items:center;
+  padding:8px 12px calc(8px + env(safe-area-inset-bottom));
+  background:#f6ecd6; border-top:2px solid var(--line);
+}
+.btn{height:46px; padding:0 16px; font-size:clamp(14px,1.8vw,20px); font-weight:800}
+.btn.blue{background:var(--blue)}
+.btn.gold{background:var(--gold-d)}
+.btn.ok{background:var(--ok)}
+.btn.sub{background:var(--sub)}
+.btn.ghost{background:#efe3c8; color:var(--ink2); border:2px solid var(--line)}
+.btn:disabled{opacity:.36}
+.spacer{flex:1}
+.note{font-size:clamp(11px,1.3vw,15px); color:var(--ink2); font-weight:700}
+
+/* ---------- わたす画面 ---------- */
+.modal{
+  position:fixed; inset:0; background:rgba(58,50,38,.62); z-index:50;
+  display:none; align-items:center; justify-content:center; padding:16px;
+}
+.modal.on{display:flex}
+.sheet{
+  width:100%; max-width:760px; max-height:100%; background:var(--paper);
+  border-radius:18px; padding:14px; display:flex; flex-direction:column; gap:9px;
+}
+.sheet h2{margin:0; font-size:clamp(16px,2.1vw,23px); font-weight:800}
+.sheet .hint{font-size:clamp(12px,1.5vw,16px); color:var(--ink2); font-weight:700; line-height:1.6}
+#out{
+  flex:1; min-height:120px; resize:none; padding:10px; border:2px solid var(--line);
+  border-radius:12px; background:var(--card); font-size:15px; line-height:1.45;
+  user-select:text; -webkit-user-select:text;
+}
+.sheet .row2{display:flex; gap:8px; align-items:center}
+#copied{font-size:clamp(13px,1.6vw,18px); font-weight:800; color:var(--ok)}
+
+@media (max-height:620px){
+  #say{height:60px}
+  .pbtn{height:38px}
+  .stage{padding:12px 16px}
+  .btn{height:42px}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="ttl">はなしあい きろく</div>
+  <div class="tabs">
+    <button class="tab on" id="t1">① きろく</button>
+    <button class="tab"    id="t2">② スライド</button>
+  </div>
+</header>
+
+<main>
+  <!-- ========== ① きろく ========== -->
+  <section class="step on" id="s1">
+    <div class="topicbar">
+      <label for="topic">はなす こと</label>
+      <input id="topic" type="text" placeholder="れい：どうして 水は こおると かさが ふえるのか">
+    </div>
+
+    <div class="cards" id="cards"></div>
+
+    <div class="entry">
+      <div class="who" id="who"></div>
+      <div class="row">
+        <textarea id="say" placeholder="ここに かく。キーボードの マイク を おすと こえで かけるよ"></textarea>
+        <button id="add" class="btn blue">ふやす<br>＋</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== ② スライド ========== -->
+  <section class="step" id="s2">
+    <div class="pastewrap" id="paste">
+      <div class="lead">Gemini が かえして きた 文を、ここに はりつけて「スライドに する ▶」を おそう。</div>
+      <textarea id="src" placeholder="ここに はりつける"></textarea>
+    </div>
+
+    <div class="stage" id="stage" style="display:none"><div class="sInner" id="sInner"></div></div>
+    <div class="dots" id="dots" style="display:none"></div>
+  </section>
+</main>
+
+<footer id="foot"></footer>
+
+<!-- ========== わたす画面 ========== -->
+<div class="modal" id="modal">
+  <div class="sheet">
+    <h2>Gemini に はりつけよう</h2>
+    <div class="hint">
+      ① 「コピー する」を おす<br>
+      ② Gemini を ひらく<br>
+      ③ <b>おんせいメモを つける</b><br>
+      ④ はりつけて おくる
+    </div>
+    <textarea id="out" readonly></textarea>
+    <div class="row2">
+      <button class="btn gold" id="doCopy">コピー する</button>
+      <span id="copied"></span>
+      <div class="spacer"></div>
+      <button class="btn sub" id="closeM">とじる</button>
+    </div>
+    <div class="hint" id="copyFall" style="display:none">
+      コピー できなかったよ。上の 文を ゆびで ながおし して、「すべてを せんたく」→「コピー」して ね。
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+var $=function(id){return document.getElementById(id)};
+
+/* =========================================================
+   Gemini に わたす 文（まとめ方を かえたいときは ここ）
+   ========================================================= */
+var SLIDE_PLAN =
+  "## どんな ことを 話したか\n- （1文）\n- （1文）\n" +
+  "## にて いる 考え\n- （1文）\n- （1文）\n" +
+  "## ちがう 考え・ぎもん\n- （1文）\n- （1文）\n" +
+  "## つぎに 考えたい こと\n- （1文）\n";
+
+function buildPrompt(topic, items){
+  var body = items.length
+    ? items.map(function(c){ return c.p + "ばんの人：" + c.t; }).join("\n")
+    : "（書きとめた記録はありません。いっしょに送る録音か文字おこしを読んでください）";
+  return [
+    "あなたは小学3年生の担任の先生です。",
+    "班の話し合いを、子どもに見せるスライドの原稿にまとめてください。",
+    "話し合いの中身は、いっしょに送る録音か、その文字おこしか、下の「書きとめた記録」にあります。",
+    "送られてきたものを読んでください。いくつかあるときは、合わせて読んでください。",
+    "",
+    "【守ること】",
+    "・小学3年生が読んで分かる言葉にする。むずかしい言葉は言いかえる",
+    "・話し合いになかったことを足さない。だれかの意見を勝手に変えない",
+    "・意見が分かれているところは、どちらかに決めずに両方書く",
+    "・1つの文は25字くらいまで。1まいに3〜4つまで",
+    "・下の「出す形」のとおりに書く。あいさつや説明は書かない",
+    "",
+    "【録音や文字おこしを読むときに、とくに守ること】",
+    "・聞きとれていないところは、無理に書かない。だれの声かは分からなくてよい",
+    "・教室ではとなりの班の声も入る。下の「話し合いの題」と関係のない話は使わない",
+    "・「えーっと」「あのね」のような言いよどみは書かない",
+    "",
+    "【出す形】",
+    "# （話し合いの題）",
+    SLIDE_PLAN,
+    "",
+    "【話し合いの題】",
+    (topic || "（題は話し合いから考えてください）"),
+    "",
+    "【書きとめた記録】",
+    body
+  ].join("\n");
+}
+
+/* =========================================================
+   ほぞん（localStorage / sessionStorage / window.name の 3か所）
+   iPad の Googleサイト埋め込みは iframe なので localStorage だけだと 消える
+   ========================================================= */
+var KEY="hanashiai_v1", NTAG="||HA||";
+function packName(s){
+  var base=(window.name||"").split(NTAG)[0];
+  try{ window.name = base + NTAG + encodeURIComponent(s); }catch(e){}
+}
+function readName(){
+  try{ var m=(window.name||"").split(NTAG); return m.length>1 ? decodeURIComponent(m[1]) : ""; }catch(e){ return ""; }
+}
+function saveRaw(s){
+  try{ localStorage.setItem(KEY,s); }catch(e){}
+  try{ sessionStorage.setItem(KEY,s); }catch(e){}
+  packName(s);
+}
+function loadRaw(){
+  var cand=[];
+  try{ var a=localStorage.getItem(KEY); if(a) cand.push(a); }catch(e){}
+  try{ var b=sessionStorage.getItem(KEY); if(b) cand.push(b); }catch(e){}
+  var c=readName(); if(c) cand.push(c);
+  var best=null, bestN=-1;
+  for(var i=0;i<cand.length;i++){
+    try{
+      var o=JSON.parse(cand[i]);
+      var n=(o.items?o.items.length:0) + (o.src?1:0) + (o.topic?1:0);
+      if(n>bestN){ bestN=n; best=o; }
+    }catch(e){}
+  }
+  return best;
+}
+
+var D={ topic:"", items:[], src:"", who:1 };
+function save(){ saveRaw(JSON.stringify({topic:D.topic, items:D.items, src:D.src})); }
+
+/* ========================= ① きろく ========================= */
+var PCOL=["","var(--p1)","var(--p2)","var(--p3)","var(--p4)","var(--p5)","var(--p6)"];
+
+(function buildWho(){
+  var h="";
+  for(var i=1;i<=6;i++){
+    h+='<button class="pbtn" data-p="'+i+'" style="background:'+PCOL[i]+'">'+i+'</button>';
+  }
+  $("who").innerHTML=h;
+  $("who").addEventListener("click",function(e){
+    var b=e.target.closest(".pbtn"); if(!b) return;
+    D.who=+b.dataset.p; paintWho();
+  });
+})();
+function paintWho(){
+  var bs=$("who").querySelectorAll(".pbtn");
+  for(var i=0;i<bs.length;i++) bs[i].classList.toggle("on", +bs[i].dataset.p===D.who);
+}
+
+function paintCards(){
+  var box=$("cards");
+  if(!D.items.length){
+    box.innerHTML='<div class="empty">ろくおんを わたす だけなら、<br>ここは からっぽの ままで いいよ。<br><br>かきとめて おきたい ことが あれば、<br>下で 人を えらんで かこう。<br>キーボードの マイク を おすと こえで かけるよ。</div>';
+  }else{
+    var h="";
+    for(var i=0;i<D.items.length;i++){
+      var c=D.items[i];
+      h+='<div class="card">'
+       +   '<div class="pin" style="background:'+PCOL[c.p]+'">'+c.p+'</div>'
+       +   '<div class="ctext">'+esc(c.t)+'</div>'
+       +   '<button class="del" data-i="'+i+'">×</button>'
+       + '</div>';
+    }
+    box.innerHTML=h;
+    box.scrollTop=box.scrollHeight;
+  }
+  paintFoot();
+}
+function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+$("cards").addEventListener("click",function(e){
+  var b=e.target.closest(".del"); if(!b) return;
+  D.items.splice(+b.dataset.i,1); save(); paintCards();
+});
+
+function addSay(){
+  var t=$("say").value.replace(/\s+$/,"").replace(/^\s+/,"");
+  if(!t) return;
+  D.items.push({p:D.who, t:t});
+  $("say").value=""; save(); paintCards();
+  $("say").focus();
+}
+$("add").addEventListener("click",addSay);
+$("topic").addEventListener("input",function(){ D.topic=$("topic").value; save(); });
+
+/* ========================= ② スライド ========================= */
+var SL={ pages:[], page:0, doc:false, shown:false };
+
+function parseSlides(src){
+  var lines=String(src).replace(/\r/g,"").split("\n");
+  var title="", slides=[], cur=null;
+  for(var i=0;i<lines.length;i++){
+    var s=lines[i].replace(/\*\*/g,"").replace(/^\s+|\s+$/g,"");
+    if(!s) continue;
+    if(/^#{2,}/.test(s)){ cur={h:s.replace(/^#+\s*/,""), items:[]}; slides.push(cur); continue; }
+    if(/^#\s*/.test(s)){ title=s.replace(/^#\s*/,""); continue; }
+    if(/^【.*】$/.test(s)){ cur={h:s.replace(/^【|】$/g,""), items:[]}; slides.push(cur); continue; }
+    s=s.replace(/^[-*・•‐–—]\s*/,"").replace(/^\d+[.)、]\s*/,"");
+    if(!s) continue;
+    if(!cur){ cur={h:"", items:[]}; slides.push(cur); }
+    cur.items.push(s);
+  }
+  var pages=[];
+  if(title) pages.push({cover:true, h:title, items:[]});
+  for(var j=0;j<slides.length;j++) if(slides[j].h || slides[j].items.length) pages.push(slides[j]);
+  if(!pages.length && String(src).trim()) pages.push({h:"", items:[String(src).trim()]});
+  return pages;
+}
+
+function makeSlide(){
+  SL.pages=parseSlides($("src").value);
+  D.src=$("src").value; save();
+  if(!SL.pages.length) return;
+  SL.page=0; SL.shown=true; SL.doc=false;
+  showSlide();
+}
+function showSlide(){
+  $("paste").style.display="none";
+  $("stage").style.display="flex";
+  $("dots").style.display= SL.doc ? "none" : "flex";
+  render();
+  paintFoot();
+}
+function backToPaste(){
+  SL.shown=false;
+  $("paste").style.display="flex";
+  $("stage").style.display="none";
+  $("dots").style.display="none";
+  paintFoot();
+}
+
+function pageHTML(p, cover){
+  if(cover) return '<div class="sTitle">'+esc(p.h)+'</div>';
+  var h = p.h ? '<div class="sHead">'+esc(p.h)+'</div>' : "";
+  for(var i=0;i<p.items.length;i++){
+    h+='<div class="sItem"><div class="sDot"></div><div class="sBody">'+esc(p.items[i])+'</div></div>';
+  }
+  return h;
+}
+function render(){
+  var st=$("stage"), inner=$("sInner");
+  st.classList.toggle("doc", SL.doc);
+  if(SL.doc){
+    var h="";
+    for(var i=0;i<SL.pages.length;i++){
+      var p=SL.pages[i];
+      if(p.cover){ h+='<div class="docblk"><div class="sTitle" style="font-size:1.8em;margin-bottom:10px">'+esc(p.h)+'</div></div>'; }
+      else h+='<div class="docblk">'+pageHTML(p,false)+'</div>';
+    }
+    inner.innerHTML=h;
+    inner.style.fontSize="";
+    st.scrollTop=0;
+  }else{
+    var p2=SL.pages[SL.page];
+    inner.innerHTML=pageHTML(p2, !!p2.cover);
+    fit(inner, st);
+    var d="";
+    for(var k=0;k<SL.pages.length;k++) d+='<div class="dot'+(k===SL.page?" on":"")+'"></div>';
+    $("dots").innerHTML=d;
+  }
+}
+/* 字が わくに 入るまで 小さくする（項目が 多い スライドでも 切れない） */
+function fit(el, box){
+  var k=1.0; el.style.fontSize="";
+  for(var i=0;i<26;i++){
+    if(el.scrollHeight <= box.clientHeight-6) break;
+    k-=0.045; el.style.fontSize=(k*100)+"%";
+  }
+}
+function go(d){
+  if(SL.doc) return;
+  SL.page=Math.max(0, Math.min(SL.pages.length-1, SL.page+d));
+  render(); paintFoot();
+}
+$("stage").addEventListener("click",function(){ if(!SL.doc) go(1); });
+$("src").addEventListener("input",function(){ D.src=$("src").value; save(); paintFoot(); });
+
+/* ========================= フッター ========================= */
+var STEP=1;
+function paintFoot(){
+  var f=$("foot"), h="";
+  if(STEP===1){
+    var n=D.items.length;
+    h  = '<button class="btn gold" id="fPass">Gemini に わたす</button>';
+    h += '<span class="note">'+(n ? "かきとめた いけん "+n+" こ" : "ろくおん だけでも わたせるよ")+'</span>';
+    h += '<div class="spacer"></div>';
+    h += '<button class="btn sub" id="fClear"'+(n?"":" disabled")+'>ぜんぶ けす</button>';
+  }else{
+    if(!SL.shown){
+      h  = '<button class="btn blue" id="fMake"'+($("src").value.trim()?"":" disabled")+'>スライドに する ▶</button>';
+      h += '<span class="note">Gemini の 文を はりつけてね</span>';
+    }else{
+      if(!SL.doc){
+        h  = '<button class="btn blue" id="fPrev"'+(SL.page<=0?" disabled":"")+'>◀ まえ</button>';
+        h += '<button class="btn blue" id="fNext"'+(SL.page>=SL.pages.length-1?" disabled":"")+'>つぎ ▶</button>';
+        h += '<span class="note">'+(SL.page+1)+' / '+SL.pages.length+'</span>';
+        h += '<div class="spacer"></div>';
+        h += '<button class="btn ghost" id="fDoc">1まいで 見る</button>';
+      }else{
+        h  = '<button class="btn ghost" id="fDoc">スライドで 見る</button>';
+        h += '<div class="spacer"></div>';
+      }
+      h += '<button class="btn sub" id="fBack">はりなおす</button>';
+    }
+  }
+  f.innerHTML=h;
+  bind("fPass", openPass); bind("fClear", clearAll);
+  bind("fMake", makeSlide); bind("fBack", backToPaste);
+  bind("fPrev", function(){go(-1)}); bind("fNext", function(){go(1)});
+  bind("fDoc", function(){ SL.doc=!SL.doc; $("dots").style.display=SL.doc?"none":"flex"; render(); paintFoot(); });
+}
+function bind(id,fn){ var e=$(id); if(e) e.addEventListener("click",fn); }
+
+function clearAll(){
+  if(!confirm("きろくを ぜんぶ けします。いいですか？")) return;
+  D.items=[]; save(); paintCards();
+}
+
+/* ========================= わたす ========================= */
+function openPass(){
+  $("out").value = buildPrompt(D.topic, D.items);
+  $("copied").textContent=""; $("copyFall").style.display="none";
+  $("modal").classList.add("on");
+}
+$("closeM").addEventListener("click",function(){ $("modal").classList.remove("on"); });
+$("doCopy").addEventListener("click",function(){ copyText($("out").value); });
+
+/* iframe の 中では Clipboard API が とおらない ことが あるので
+   execCommand を 先に ためし、だめなら 手で コピーして もらう */
+function copyText(s){
+  var ok=false;
+  try{
+    var ta=document.createElement("textarea");
+    ta.value=s; ta.readOnly=false; ta.contentEditable="true";
+    ta.style.cssText="position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;font-size:16px";
+    document.body.appendChild(ta);
+    var r=document.createRange(); r.selectNodeContents(ta);
+    var sel=window.getSelection(); sel.removeAllRanges(); sel.addRange(r);
+    ta.setSelectionRange(0, s.length);
+    ok=document.execCommand("copy");
+    sel.removeAllRanges(); document.body.removeChild(ta);
+  }catch(e){ ok=false; }
+  if(ok){ done(); return; }
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(s).then(done, fail);
+  }else fail();
+  function done(){ $("copied").textContent="コピー できた！"; $("copyFall").style.display="none"; }
+  function fail(){ $("copied").textContent=""; $("copyFall").style.display="block"; $("out").focus(); }
+}
+
+/* ========================= タブ ========================= */
+function step(n){
+  STEP=n;
+  $("s1").classList.toggle("on", n===1);
+  $("s2").classList.toggle("on", n===2);
+  $("t1").classList.toggle("on", n===1);
+  $("t2").classList.toggle("on", n===2);
+  paintFoot();
+  if(n===2 && SL.shown) requestAnimationFrame(render);
+}
+$("t1").addEventListener("click",function(){step(1)});
+$("t2").addEventListener("click",function(){step(2)});
+
+/* ========================= はじめ ========================= */
+(function init(){
+  var o=loadRaw();
+  if(o){ D.topic=o.topic||""; D.items=o.items||[]; D.src=o.src||""; }
+  $("topic").value=D.topic;
+  $("src").value=D.src;
+  paintWho(); paintCards(); paintFoot();
+})();
+
+var rz;
+window.addEventListener("resize",function(){
+  clearTimeout(rz); rz=setTimeout(function(){ if(STEP===2&&SL.shown) render(); },140);
+});
+</script>
+</body>
+</html>
