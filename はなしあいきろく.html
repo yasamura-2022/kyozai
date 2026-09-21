@@ -23,8 +23,6 @@
   --gold-d:#a8871f;
   --ok:#2f8f5b;
   --sub:#a99a7c;          /* もどす・やりなおす */
-  --p1:#c0563a; --p2:#2f6fa8; --p3:#2f8f5b;
-  --p4:#b07d2a; --p5:#7a5ba8; --p6:#2f8f8f;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;margin:0;padding:0;overflow:hidden}
@@ -78,27 +76,17 @@ main{flex:1; min-height:0; display:flex; flex-direction:column}
 }
 .card{display:flex; align-items:flex-start; gap:9px; background:#fffef9;
       border:2px solid #eadfc6; border-radius:12px; padding:7px 9px}
-.pin{
-  flex:0 0 auto; width:34px; height:34px; border-radius:50%; color:#fff;
-  display:flex; align-items:center; justify-content:center;
-  font-weight:800; font-size:17px;
-}
+.pin{flex:0 0 auto; width:11px; height:11px; border-radius:50%;
+     background:var(--gold); margin-top:.55em}
 .ctext{flex:1; min-width:0; font-size:clamp(15px,1.8vw,20px); line-height:1.5;
        font-weight:700; word-break:break-word; white-space:pre-wrap; user-select:text; -webkit-user-select:text}
 .del{flex:0 0 auto; width:34px; height:34px; background:#efe3c8; color:var(--sub);
      font-size:19px; font-weight:800; border-radius:50%}
 
 .entry{flex:0 0 auto; display:flex; flex-direction:column; gap:7px}
-.who{display:flex; gap:6px; flex-wrap:nowrap}
-.pbtn{
-  flex:1; min-width:0; height:42px; border-radius:12px; color:#fff;
-  font-weight:800; font-size:clamp(13px,1.6vw,18px); opacity:.42;
-  border:3px solid transparent;
-}
-.pbtn.on{opacity:1; border-color:var(--ink)}
 .row{display:flex; gap:8px; align-items:stretch}
 #say{
-  flex:1; min-width:0; height:74px; resize:none; padding:9px 11px;
+  flex:1; min-width:0; height:104px; resize:none; padding:9px 11px;
   border:2px solid var(--line); border-radius:12px; background:var(--card);
   line-height:1.45; font-weight:700; user-select:text; -webkit-user-select:text;
 }
@@ -176,8 +164,7 @@ footer{
 #copied{font-size:clamp(13px,1.6vw,18px); font-weight:800; color:var(--ok)}
 
 @media (max-height:620px){
-  #say{height:60px}
-  .pbtn{height:38px}
+  #say{height:74px}
   .stage{padding:12px 16px}
   .btn{height:42px}
 }
@@ -204,9 +191,8 @@ footer{
     <div class="cards" id="cards"></div>
 
     <div class="entry">
-      <div class="who" id="who"></div>
       <div class="row">
-        <textarea id="say" placeholder="ここに かく。キーボードの マイク を おすと こえで かけるよ"></textarea>
+        <textarea id="say" placeholder="出た 考えを かく。まとめて かいても いいよ。&#10;キーボードの マイク を おすと こえで かけるよ。"></textarea>
         <button id="add" class="btn blue">ふやす<br>＋</button>
       </div>
     </div>
@@ -264,7 +250,7 @@ var SLIDE_PLAN =
 
 function buildPrompt(topic, items){
   var body = items.length
-    ? items.map(function(c){ return c.p + "ばんの人：" + c.t; }).join("\n")
+    ? items.map(function(c){ return "・" + String(c.t).replace(/\n+/g," "); }).join("\n")
     : "（書きとめた記録はありません。いっしょに送る録音か文字おこしを読んでください）";
   return [
     "あなたは小学3年生の担任の先生です。",
@@ -329,38 +315,25 @@ function loadRaw(){
   return best;
 }
 
-var D={ topic:"", items:[], src:"", who:1 };
+var D={ topic:"", items:[], src:"" };
 function save(){ saveRaw(JSON.stringify({topic:D.topic, items:D.items, src:D.src})); }
 
-/* ========================= ① きろく ========================= */
-var PCOL=["","var(--p1)","var(--p2)","var(--p3)","var(--p4)","var(--p5)","var(--p6)"];
-
-(function buildWho(){
-  var h="";
-  for(var i=1;i<=6;i++){
-    h+='<button class="pbtn" data-p="'+i+'" style="background:'+PCOL[i]+'">'+i+'</button>';
-  }
-  $("who").innerHTML=h;
-  $("who").addEventListener("click",function(e){
-    var b=e.target.closest(".pbtn"); if(!b) return;
-    D.who=+b.dataset.p; paintWho();
-  });
-})();
-function paintWho(){
-  var bs=$("who").querySelectorAll(".pbtn");
-  for(var i=0;i<bs.length;i++) bs[i].classList.toggle("on", +bs[i].dataset.p===D.who);
-}
-
+/* ========================= ① きろく =========================
+   だれが 言ったか は 記録しない。話し合いは 入りまじって 進むので
+   3年生の 記録係には 追えない。Gemini へ わたす 文も「だれの声かは
+   分からなくてよい」と 書いてある（まとめる のに 話者は いらない）。
+   1まいの カード＝1つの 考え。まとめて 何行 書いても よい。
+   ============================================================ */
 function paintCards(){
   var box=$("cards");
   if(!D.items.length){
-    box.innerHTML='<div class="empty">ろくおんを わたす だけなら、<br>ここは からっぽの ままで いいよ。<br><br>かきとめて おきたい ことが あれば、<br>下で 人を えらんで かこう。<br>キーボードの マイク を おすと こえで かけるよ。</div>';
+    box.innerHTML='<div class="empty">ろくおんを わたす だけなら、<br>ここは からっぽの ままで いいよ。<br><br>かきとめて おきたい ことが あれば、<br>下に かこう。まとめて かいても いいよ。</div>';
   }else{
     var h="";
     for(var i=0;i<D.items.length;i++){
       var c=D.items[i];
       h+='<div class="card">'
-       +   '<div class="pin" style="background:'+PCOL[c.p]+'">'+c.p+'</div>'
+       +   '<div class="pin"></div>'
        +   '<div class="ctext">'+esc(c.t)+'</div>'
        +   '<button class="del" data-i="'+i+'">×</button>'
        + '</div>';
@@ -380,7 +353,7 @@ $("cards").addEventListener("click",function(e){
 function addSay(){
   var t=$("say").value.replace(/\s+$/,"").replace(/^\s+/,"");
   if(!t) return;
-  D.items.push({p:D.who, t:t});
+  D.items.push({t:t});
   $("say").value=""; save(); paintCards();
   $("say").focus();
 }
@@ -492,7 +465,7 @@ function paintFoot(){
   if(STEP===1){
     var n=D.items.length;
     h  = '<button class="btn gold" id="fPass">Gemini に わたす</button>';
-    h += '<span class="note">'+(n ? "かきとめた いけん "+n+" こ" : "ろくおん だけでも わたせるよ")+'</span>';
+    h += '<span class="note">'+(n ? "かきとめた こと "+n+" こ" : "ろくおん だけでも わたせるよ")+'</span>';
     h += '<div class="spacer"></div>';
     h += '<button class="btn '+(clearArm?"warn":"sub")+'" id="fClear"'+(n?"":" disabled")+'>'
        + (clearArm ? "ほんとうに けす？" : "ぜんぶ けす") + '</button>';
@@ -587,7 +560,7 @@ $("t2").addEventListener("click",function(){step(2)});
   if(o){ D.topic=o.topic||""; D.items=o.items||[]; D.src=o.src||""; }
   $("topic").value=D.topic;
   $("src").value=D.src;
-  paintWho(); paintCards(); paintFoot();
+  paintCards(); paintFoot();
 })();
 
 var rz;
