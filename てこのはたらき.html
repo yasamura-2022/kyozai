@@ -898,17 +898,6 @@ function step1(dt){
    予想を えらぶまで 動かせない。結果だけ 見せると 実験の 記録映像に なる。
    ========================================================= */
 /* 【②を ③と ちがう 画面に する】
-   2026-09-20 の 指摘＝「②は 何を どう するのか 分かりません。③と 似て いるので…」。
-   原因は 絵が ③の てこ実験器と そっくり だった こと（同じ 支柱・同じ 目もりの うで）。
-   だから ②は **①と 同じ 場面（石を 棒で 持ち上げる）**の つづきに した。
-   ・支柱の ある 実験器では なく、**地面・三角の ささえ・石・手** で かく
-   ・**数（g）を 出さない**＝手ごたえは **バーと ことば** だけ。
-   　（400g の ばねばかりが「2つめの おもり」に 見えた ため。数を あつかうのは ③④）
-   ・**「てこを つかわない とき」の 目もり**を バーに 立てる＝
-   　そこより 左なら「てこの おかげで 軽い」が 目で わかる
-   ・**ねらいは「いちばん 軽く なる ところを さがす」**＝やる ことが 一言で 言える
-   ③は 数で つり合いを 調べる ところ。②は 手ごたえを くらべる ところ。**混ぜないこと** */
-/* 【②を ③と ちがう 画面に する】
    2026-09-20 の 指摘①＝「②は 何を どう するのか 分かりません。③と 似て いるので…」。
    原因は 絵が ③の てこ実験器と そっくり だった こと（同じ 支柱・同じ 目もりの うで）。
    だから ②は **地面・三角の ささえ・おもり・手** で かく。支柱の ある 実験器では ない。
@@ -923,51 +912,87 @@ const FX2=400,FY2=268,U2=72,GY2=372,WT2=600;
 const S2={mode:'free',ri:3,sa:2,g:{ri:null,sa:null},tried:{ri:{},sa:{}},
           done:{ri:false,sa:false},rows:[],qi:0,pick:null,mark:null};
 /* もんだい 5問（固定。ランダムに しない）。
-   ちがう こたえには「おもりと 同じ 600g」と「きょりを 逆に した 数」を かならず 入れる
-   ＝どちらも 子どもが しやすい まちがい */
+   **「何g？」では なく「ア と イ、どちらが 小さい 力？」の 2択**。
+   2026-09-21 の 指摘＝「②は 手ごたえを くらべる と あるが、
+   （4択の 何g は）④と 同じような ものに なって しまった」。
+   **かけ算を つかわずに 位置だけで 答えられる** ことが 大事＝
+   ④（重さ×きょり で 数を 出す）とは 別の しごとに なる。
+   1〜3問目は **1つだけ ちがう**（力点だけ／作用点だけ）、4〜5問目は 両方 ちがう。
+   こたえが いつも イ に ならない ように まぜて ある。**4択に もどさないこと** */
 const Q2=[
-  {sa:2,ri:3,ans:400, ch:[200,400,600,900]},
-  {sa:1,ri:5,ans:120, ch:[120,200,600,1200]},
-  {sa:3,ri:2,ans:900, ch:[400,600,900,1800]},
-  {sa:2,ri:4,ans:300, ch:[150,300,600,1200]},
-  {sa:3,ri:1,ans:1800,ch:[200,600,900,1800]},
+  {a:{sa:2,ri:3},b:{sa:2,ri:5},ans:'b'},   /* 400 / 240　力点だけ ちがう */
+  {a:{sa:3,ri:3},b:{sa:1,ri:3},ans:'b'},   /* 600 / 200　作用点だけ ちがう */
+  {a:{sa:1,ri:4},b:{sa:3,ri:4},ans:'a'},   /* 150 / 450　作用点だけ ちがう */
+  {a:{sa:2,ri:5},b:{sa:3,ri:4},ans:'a'},   /* 240 / 450　両方 ちがう */
+  {a:{sa:1,ri:2},b:{sa:2,ri:5},ans:'b'},   /* 300 / 240　両方 ちがう（せつない差） */
 ];
 function q2(){return Q2[Math.min(S2.qi,Q2.length-1)];}
 function quiz2(){return S2.mode==='quiz';}
-function hide2(){return quiz2()&&!S2.mark;}   /* 答える 前は 力を かくす */
-/* 600 は 1〜5 の どれで わっても 整数に なる＝はんぱな 数が 出ない */
-function force2(){const c=cur2();return Math.round(WT2*c.sa/c.ri);}
-function cur2(){return quiz2()?{sa:q2().sa,ri:q2().ri}:{sa:S2.sa,ri:S2.ri};}
+function f2(sa,ri){return Math.round(WT2*sa/ri);}
+function force2(){return f2(S2.sa,S2.ri);}
 function word2(f){
   return f<=150?'とても 軽い':f<=350?'軽い':f<=700?'ふつう':f<=1200?'重い':'とても 重い';
 }
 function best2(){return !quiz2()&&S2.ri===5&&S2.sa===1;}
-/* 手で おす 力の バー。**数は ここだけ**。
-   「てこを つかわない とき（600g）」の 目もりを 立てて、そこより 左なら
-   てこの おかげで 小さい 力で すむ ことが 目で わかる */
+/* 自由に 調べる ときの バー。**数は ここだけ**。
+   600g の 目もりは 2つの 意味が かさなる ところ＝
+   「てこを つかわない とき」でも あり、「支点からの きょりが 左右で 同じ とき」でも ある。
+   2026-09-21 の 問い＝「おもりが 600g と 決まって いるなら、きょりは 必ず 同じに なる？」は
+   ここを「力は いつも 600g」と 読んだ ため。**きょりが 同じ とき と 書いて おく** */
 function meter2(g){
   const x0=272,x1=846,y=452,h=36,f=force2();
   txt(g,'手で おす 力',216,y+h/2,19,'#6a5a3a','right');
   box(g,x0,y,x1-x0,h,10,'#f0e6cf','#d9c9a4',2);
   const t=clamp(f/1800,0,1);
-  if(hide2()){
-    txt(g,'？',(x0+x1)/2,y+h/2,26,'#b9a165');
-  }else{
-    const gr=g.createLinearGradient(x0,0,x1,0);
-    gr.addColorStop(0,'#e8b15a');gr.addColorStop(1,'#c0392b');
-    box(g,x0,y,Math.max(16,(x1-x0)*t),h,10,gr,null);
-  }
-  /* 600g の 目もり。ここは 2つの 意味が かさなる ところ＝
-     「てこを つかわない とき」でも あるし、「支点からの きょりが 左右で 同じ とき」でも ある。
-     2026-09-21 の 問い＝「おもりが 600g と 決まって いるなら、きょりは 必ず 同じに なる？」は
-     ここを「力は いつも 600g」と 読んだ ため。**きょりが 同じ とき と 書いて おく** */
+  const gr=g.createLinearGradient(x0,0,x1,0);
+  gr.addColorStop(0,'#e8b15a');gr.addColorStop(1,'#c0392b');
+  box(g,x0,y,Math.max(16,(x1-x0)*t),h,10,gr,null);
   const xm=x0+(x1-x0)/3;
   line(g,xm,y-12,xm,y+h+12,'#6a5a3a',3,[6,5]);
   txt(g,'きょりが 同じ とき 600g',xm,y+h+26,16,'#6a5a3a');
   txt(g,'（てこを つかわないのと 同じ）',xm,y+h+48,14,'#8a7c63');
-  if(!hide2())tag(g,f+'g　'+word2(f),clamp(x0+(x1-x0)*t+8,x0+92,x1-92),y+h/2,21,'#3a2c05','#fffdf7');
+  tag(g,f+'g　'+word2(f),clamp(x0+(x1-x0)*t+8,x0+92,x1-92),y+h/2,21,'#3a2c05','#fffdf7');
 }
-/* 持ち上げる おもり（600g の はこ）。石だと 重さが 見た目と 合わない */
+/* もんだいの 1つぶん。**図と 力の バーを 1まいの カードに 入れる**＝
+   ア と イ を よこに ならべても 図が 小さく ならない。
+   2つの カードは 同じ 幅・同じ ものさしなので、バーの 長さを その まま くらべられる。
+   答える 前は バーの 中を「？」に する */
+function mini2(g,px,py,pw,ph,label,d,sel,show){
+  box(g,px,py,pw,ph,14,'#fffdf7',sel?'#c9a227':'#e0d0a8',sel?4:2);
+  const cx=px+pw/2, by=py+178, U=38, GY=by+58;
+  txt(g,label,px+36,py+36,30,sel?'#8a6a10':'#9c8f76');
+  g.fillStyle='#cdb894';g.fillRect(px+3,GY,pw-6,16);
+  const xs=cx-d.sa*U, xr=cx+d.ri*U;
+  box(g,xs-28,by-9,(xr-xs)+56,18,6,'#c08f4e','#8d6431',3);
+  for(let i=1;i<=5;i++){const x=cx+i*U;
+    if(x<=xr+16){line(g,x,by-9,x,by-17,'#8d6431',2);txt(g,String(i),x,by-28,13,'#8a7250');}}
+  for(let i=1;i<=3;i++){const x=cx-i*U;
+    if(x>=xs-16){line(g,x,by-9,x,by-17,'#8d6431',2);txt(g,String(i),x,by-28,13,'#8a7250');}}
+  g.beginPath();g.moveTo(cx,by+8);g.lineTo(cx-25,GY);g.lineTo(cx+25,GY);g.closePath();
+  g.fillStyle='#8c7a5c';g.fill();g.strokeStyle='#6b5c42';g.lineWidth=2.5;g.stroke();
+  box(g,xs-33,by-54,66,45,7,'#b08a5a','#7b6a52',3);
+  txt(g,'600g',xs,by-31,18,'#40301c');
+  hand(g,xr,by-38,.86,false);
+  arrow(g,xr+34,by-74,xr+34,by-20,C.ri,5,11);
+  circ(g,xs,by,10,'#fffdf7',C.sa,4.5);
+  circ(g,xr,by,10,'#fffdf7',C.ri,4.5);
+  tag(g,'作用点 '+d.sa,cx-94,GY+42,18,C.sa);
+  tag(g,'力点 '+d.ri,cx+94,GY+42,18,C.ri);
+  /* 力の バー（カードの 中） */
+  const bx0=px+44,bx1=px+pw-44,byy=py+ph-66,bh=32,f=f2(d.sa,d.ri);
+  txt(g,'手で おす 力',cx,byy-18,16,'#8a7c63');
+  box(g,bx0,byy,bx1-bx0,bh,9,'#f0e6cf','#d9c9a4',2);
+  if(show){
+    const t=clamp(f/1800,0,1);
+    const gr=g.createLinearGradient(bx0,0,bx1,0);
+    gr.addColorStop(0,'#e8b15a');gr.addColorStop(1,'#c0392b');
+    box(g,bx0,byy,Math.max(16,(bx1-bx0)*t),bh,9,gr,null);
+  }else txt(g,'？',(bx0+bx1)/2,byy+bh/2,24,'#b9a165');
+  const xm=bx0+(bx1-bx0)/3;
+  line(g,xm,byy-7,xm,byy+bh+7,'#6a5a3a',2.5,[5,4]);
+  txt(g,'600g',xm,byy+bh+19,13,'#8a7c63');
+  if(show)tag(g,f+'g',clamp(bx0+(bx1-bx0)*clamp(f/1800,0,1)+8,bx0+50,bx1-50),byy+bh/2,20,'#3a2c05','#fffdf7');
+}
 function load2(g,x,y){
   box(g,x-46,y-62,92,62,8,'#b08a5a','#7b6a52',3);
   g.save();g.strokeStyle='#7b6a52';g.lineWidth=4;g.lineCap='round';
@@ -979,23 +1004,31 @@ function load2(g,x,y){
 function draw2(){
   const {g,w,h}=fit($('c2'));base(g,w,h);
   room(g);
+  /* ---- もんだい：ア と イ を ならべて くらべる ---- */
+  if(quiz2()){
+    box(g,80,8,840,60,12,'#fff8e6','#c9a227',3);
+    txt(g,'ア と イ、どちらが 小さい 力で 持ち上がる？',BW/2,30,21,'#8a6a10');
+    txt(g,'おもりは どちらも 600g。2つの きょりを くらべよう',BW/2,55,15,'#9a8a5a');
+    const q=q2(),sh=!!S2.mark;
+    mini2(g,30,76,460,432,'ア',q.a,S2.pick==='a',sh);
+    mini2(g,510,76,460,432,'イ',q.b,S2.pick==='b',sh);
+    if(sh){
+      const fa=f2(q.a.sa,q.a.ri),fb=f2(q.b.sa,q.b.ri);
+      tag(g,(fa<fb?'ア':'イ')+'の ほうが 小さい 力',BW/2,536,21,'#3f7a33','#e6f0e0');
+    }
+    g.restore();return;
+  }
+  /* ---- 自由に 調べる ---- */
   g.fillStyle='#cdb894';g.fillRect(-900,GY2,BW+1800,34);
   line(g,-900,GY2,BW+900,GY2,'#a89170',3);
-  const c2=cur2(), xs=FX2-c2.sa*U2, xr=FX2+c2.ri*U2;
+  const c2={sa:S2.sa,ri:S2.ri}, xs=FX2-c2.sa*U2, xr=FX2+c2.ri*U2;
   /* 【めあて】**変えるのは きょり、求まるのは 力**。ここを 取りちがえない ように 2行で 書く。
      2026-09-21 の 指摘＝「この 図だと、求めるのは 距離では なく 押す 力に なるのでは？」。
-     まえは「いちばん 小さい 力で 持ち上げるには？」だけで、
-     求める ものが きょり（置き方）に 読めて、画面の 動き（きょりを 変える → 力が 出る）と 合って いなかった。
-     解説の 言い方「**力を加える位置や力の大きさを変えると、てこを傾ける働きが変わり**」に そろえる。
+     解説の 言い方「**力を加える位置や力の大きさを変えると，てこを傾ける働きが変わり**」に そろえる。
      **1行に もどさないこと** */
   box(g,80,8,840,60,12,'#fff8e6','#c9a227',3);
-  if(quiz2()){
-    txt(g,'何g の 力で 持ち上がる？',BW/2,30,21,'#8a6a10');
-    txt(g,'600g の おもり。2つの きょりを 見て 考えよう',BW/2,55,15,'#9a8a5a');
-  }else{
-    txt(g,'おく ところを 変えると、手で おす 力は どう 変わる？',BW/2,30,21,'#8a6a10');
-    txt(g,'600g の おもり。いちばん 小さい 力に なる 置き方を さがそう',BW/2,55,15,'#9a8a5a');
-  }
+  txt(g,'おく ところを 変えると、手で おす 力は どう 変わる？',BW/2,30,21,'#8a6a10');
+  txt(g,'600g の おもり。いちばん 小さい 力に なる 置き方を さがそう',BW/2,55,15,'#9a8a5a');
   /* 棒 */
   box(g,xs-56,FY2-11,(xr-xs)+112,22,7,'#c08f4e','#8d6431',3);
   for(let i=1;i<=5;i++){const x=FX2+i*U2;
@@ -1049,10 +1082,10 @@ function tbl2(){
   el.innerHTML=s;
   fitTbl(el,3,28);
 }
-function rec2(){
-  const c=cur2(), f=force2()+'g', key=c.ri+'-'+c.sa;
+function rec2(sa,ri){
+  const f=f2(sa,ri)+'g', key=ri+'-'+sa;
   if(S2.rows.some(r=>r.k===key))return;
-  S2.rows.unshift({k:key,ri:c.ri,sa:c.sa,f:f});
+  S2.rows.unshift({k:key,ri:ri,sa:sa,f:f});
   if(S2.rows.length>3)S2.rows.pop();
 }
 /* 「自由に 調べる」が 左＝まず 自分で 動かして きまりを つかみ、
@@ -1073,23 +1106,29 @@ function up2(){
     /* ---- もんだい：力を 答える ---- */
     gb.style.display='none';segs.style.display='none';
     gq.style.display='flex';gq.classList.toggle('need',!S2.mark);
-    const q=q2();
+    const q=q2(),fa=f2(q.a.sa,q.a.ri),fb=f2(q.b.sa,q.b.ri);
     $('g2ql').innerHTML='もんだい '+(S2.qi+1)+' / '+Q2.length+'　'+
-      '<b>600g</b> の おもりが 支点から <b style="color:'+C.sa+'">'+q.sa+'</b>、'+
-      '手で おす ところが 支点から <b style="color:'+C.ri+'">'+q.ri+'</b>。'+
-      '<b>何g</b> の 力で 持ち上がる？';
-    $('o2q').innerHTML=q.ch.map(v=>'<button class="opt" data-v="'+v+'">'+v+'g</button>').join('');
+      '<b>ア と イ</b>、どちらが <b>小さい 力</b>で 持ち上がる？';
+    $('o2q').className='opts two';
+    $('o2q').innerHTML='<button class="opt" data-v="a">ア</button><button class="opt" data-v="b">イ</button>';
     [...$('o2q').children].forEach(b=>{
-      const v=Number(b.dataset.v);
+      const v=b.dataset.v;
       b.disabled=!!S2.mark;
       b.className='opt'+(S2.mark&&v===q.ans?' right':'')+
         (S2.mark==='x'&&v===S2.pick?' wrong':'')+(!S2.mark&&v===S2.pick?' sel':'');
     });
+    /* 【大事】こたえの あとに **なぜ そうなるか を 位置の ことばで** 言う。
+       ここが ④（重さ×きょり で 数を 出す）との ちがい */
+    const why=(q.a.sa===q.b.sa)
+      ? '<span class="ri">力点</span>が 支点から <b>遠い</b> ほうが 小さい 力で すむ。'
+      : (q.a.ri===q.b.ri)
+        ? '<span class="sa">作用点</span>が 支点に <b>近い</b> ほうが 小さい 力で すむ。'
+        : '<span class="ri">力点</span>は 遠く、<span class="sa">作用点</span>は 近く。両方 見て くらべよう。';
     $('m2').innerHTML=!S2.mark
-      ? '4つから えらんで、金の「たしかめる」を おそう。'
+      ? '<b>ア</b>か <b>イ</b>を えらんで、金の「たしかめる」を おそう。'
       : (S2.mark==='o'
-          ? '<span class="ok">せいかい！ '+q.ans+'g。</span> 600g の おもりが '+q.ans+'g の 力で 持ち上がる。'
-          : '<span class="ng">ちがったよ。ほんとうは '+q.ans+'g。</span> 下の バーで くらべて みよう。');
+          ? '<span class="ok">せいかい！</span> ア '+fa+'g、イ '+fb+'g。'+why
+          : '<span class="ng">ちがったよ。</span> ア '+fa+'g、イ '+fb+'g。'+why);
     $('b2').innerHTML=mode2()+(!S2.mark
       ? '<button class="btn show" id="b2go"'+(S2.pick==null?' disabled':'')+'>たしかめる</button>'
       : (S2.qi<Q2.length-1
@@ -1098,7 +1137,7 @@ function up2(){
         '<button class="btn sub" id="b2retry">もう一度</button>');
     const go=$('b2go');if(go)go.onclick=()=>{
       S2.mark=(S2.pick===q.ans)?'o':'x';
-      if(S2.mark==='o')rec2();
+      rec2(q.b.sa,q.b.ri);rec2(q.a.sa,q.a.ri);   /* 調べた 2つを 表に */
       up2();
     };
     const nx=$('b2next');if(nx)nx.onclick=()=>{S2.qi++;S2.pick=null;S2.mark=null;up2();};
@@ -1190,11 +1229,11 @@ $('o2').addEventListener('click',e=>{
 });
 $('o2q').addEventListener('click',e=>{
   const b=e.target.closest('.opt');if(!b||b.disabled)return;
-  S2.pick=Number(b.dataset.v);up2();
+  S2.pick=b.dataset.v;up2();
 });
 function pick2(key,v){
   if(!S2.g[key])return;
-  S2[key]=v;S2.tried[key][v]=true;rec2();
+  S2[key]=v;S2.tried[key][v]=true;rec2(S2.sa,S2.ri);
   if(Object.keys(S2.tried[key]).length>=2)S2.done[key]=true;
   up2();
 }
