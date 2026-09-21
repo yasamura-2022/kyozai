@@ -66,51 +66,28 @@ main{flex:1; min-height:0; display:flex; flex-direction:column}
 }
 
 /* 子どもが なにを するかを 画面に 書く。
-   ろくおんは べつの アプリ（おんせいメモ）なので、それも ここで つたえる */
+   ろくおんは べつの アプリ（おんせいメモ）なので、それも ここで つたえる。
+   ここで する ことは 2つだけ＝「はなす ことを かく」と「Gemini に わたす」。
+   **考えを 打ちこむ 欄は 置かない**（下の JS の 注を 見ること） */
 .howto{
-  flex:0 0 auto; display:flex; gap:6px; flex-wrap:wrap; align-items:center;
-}
-.hstep{
-  display:flex; align-items:center; gap:6px; background:#f3e8cf;
-  border:2px solid var(--line); border-radius:999px; padding:4px 11px 4px 5px;
-  font-size:clamp(12px,1.4vw,16px); font-weight:800; color:var(--ink2);
-}
-.hnum{
-  width:22px; height:22px; border-radius:50%; background:var(--gold-d); color:#fff;
-  display:flex; align-items:center; justify-content:center; font-size:14px; flex:0 0 auto;
-}
-.optlab{
-  flex:0 0 auto; font-size:clamp(11px,1.3vw,15px); font-weight:800; color:var(--ink2);
-}
-.optlab b{color:var(--ink)}
-
-.cards{
   flex:1; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch;
   background:var(--card); border:2px solid var(--line); border-radius:14px;
-  padding:8px; display:flex; flex-direction:column; gap:7px;
+  padding:clamp(10px,2.2vh,22px) clamp(12px,2.4vw,26px);
+  display:flex; flex-direction:column; justify-content:center;
+  gap:clamp(10px,2.4vh,24px);
 }
-.empty{
-  margin:auto; text-align:center; color:var(--ink2); line-height:1.9;
-  font-size:clamp(14px,1.8vw,19px); font-weight:700; padding:16px;
+.hstep{display:flex; gap:clamp(9px,1.4vw,15px); align-items:flex-start}
+.hnum{
+  flex:0 0 auto; width:clamp(30px,4.4vh,44px); height:clamp(30px,4.4vh,44px);
+  border-radius:50%; background:var(--gold-d); color:#fff;
+  display:flex; align-items:center; justify-content:center;
+  font-size:clamp(17px,2.6vh,26px); font-weight:800;
 }
-.card{display:flex; align-items:flex-start; gap:9px; background:#fffef9;
-      border:2px solid #eadfc6; border-radius:12px; padding:7px 9px}
-.pin{flex:0 0 auto; width:11px; height:11px; border-radius:50%;
-     background:var(--gold); margin-top:.55em}
-.ctext{flex:1; min-width:0; font-size:clamp(15px,1.8vw,20px); line-height:1.5;
-       font-weight:700; word-break:break-word; white-space:pre-wrap; user-select:text; -webkit-user-select:text}
-.del{flex:0 0 auto; width:34px; height:34px; background:#efe3c8; color:var(--sub);
-     font-size:19px; font-weight:800; border-radius:50%}
-
-.entry{flex:0 0 auto; display:flex; flex-direction:column; gap:7px}
-.row{display:flex; gap:8px; align-items:stretch}
-#say{
-  flex:1; min-width:0; height:104px; resize:none; padding:9px 11px;
-  border:2px solid var(--line); border-radius:12px; background:var(--card);
-  line-height:1.45; font-weight:700; user-select:text; -webkit-user-select:text;
-}
-#add{flex:0 0 auto; width:104px; background:var(--blue); font-size:clamp(15px,1.9vw,21px); font-weight:800}
-.mic{flex:0 0 auto; font-size:clamp(11px,1.3vw,14px); color:var(--ink2); font-weight:700; line-height:1.4}
+.hbody{flex:1; min-width:0}
+.httl{font-size:clamp(16px,2.5vh,25px); font-weight:800; line-height:1.4}
+.hsub{font-size:clamp(12px,1.8vh,18px); font-weight:700; color:var(--ink2);
+      line-height:1.6; margin-top:3px}
+.hsub b{color:var(--gold-d)}
 
 /* ---------- ② スライド ---------- */
 .pastewrap{flex:1; min-height:0; display:flex; flex-direction:column; gap:8px}
@@ -156,7 +133,6 @@ footer{
 .btn.gold{background:var(--gold-d)}
 .btn.ok{background:var(--ok)}
 .btn.sub{background:var(--sub)}
-.btn.warn{background:#c0563a}
 .btn.ghost{background:#efe3c8; color:var(--ink2); border:2px solid var(--line)}
 .btn:disabled{opacity:.36}
 .spacer{flex:1}
@@ -183,7 +159,6 @@ footer{
 #copied{font-size:clamp(13px,1.6vw,18px); font-weight:800; color:var(--ok)}
 
 @media (max-height:620px){
-  #say{height:74px}
   .stage{padding:12px 16px}
   .btn{height:42px}
 }
@@ -208,18 +183,28 @@ footer{
     </div>
 
     <div class="howto">
-      <span class="hstep"><span class="hnum">1</span>はなす ことを かく</span>
-      <span class="hstep"><span class="hnum">2</span>おんせいメモ で ろくおんする</span>
-      <span class="hstep"><span class="hnum">3</span>おわったら「Gemini に わたす」</span>
-    </div>
-
-    <div class="cards" id="cards"></div>
-
-    <div class="entry">
-      <div class="optlab"><b>かきとめる</b>　（なくても いいよ。ろくおんが ぜんぶ ひろって いるから）</div>
-      <div class="row">
-        <textarea id="say" placeholder="出た 考えを かく。まとめて かいても いいよ。&#10;キーボードの マイク を おすと こえで かけるよ。"></textarea>
-        <button id="add" class="btn blue">ふやす<br>＋</button>
+      <div class="hstep">
+        <div class="hnum">1</div>
+        <div class="hbody">
+          <div class="httl">はなす ことを かく</div>
+          <div class="hsub">↑の ますに かこう。キーボードの マイク で こえでも かけるよ。</div>
+        </div>
+      </div>
+      <div class="hstep">
+        <div class="hnum">2</div>
+        <div class="hbody">
+          <div class="httl">おんせいメモ で ろくおんする</div>
+          <div class="hsub">iPadを 班の まん中に おいて、ふつうに 話そう。<br>
+            話しおわったら ろくおんを とめる。</div>
+        </div>
+      </div>
+      <div class="hstep">
+        <div class="hnum">3</div>
+        <div class="hbody">
+          <div class="httl">下の <b>「Gemini に わたす」</b>を おす</div>
+          <div class="hsub">ことばが コピーされるので、Gemini を ひらいて、<br>
+            <b>ろくおんを つけて</b> はりつけて おくる。</div>
+        </div>
       </div>
     </div>
   </section>
@@ -274,37 +259,27 @@ var SLIDE_PLAN =
   "## ちがう 考え・ぎもん\n- （1文）\n- （1文）\n" +
   "## つぎに 考えたい こと\n- （1文）\n";
 
-function buildPrompt(topic, items){
-  var body = items.length
-    ? items.map(function(c){ return "・" + String(c.t).replace(/\n+/g," "); }).join("\n")
-    : "（書きとめた記録はありません。いっしょに送る録音か文字おこしを読んでください）";
+function buildPrompt(topic){
   return [
     "あなたは小学3年生の担任の先生です。",
     "班の話し合いを、子どもに見せるスライドの原稿にまとめてください。",
-    "話し合いの中身は、いっしょに送る録音か、その文字おこしか、下の「書きとめた記録」にあります。",
-    "送られてきたものを読んでください。いくつかあるときは、合わせて読んでください。",
+    "話し合いの中身は、いっしょに送る録音（または、その文字おこし）にあります。",
     "",
     "【守ること】",
     "・小学3年生が読んで分かる言葉にする。むずかしい言葉は言いかえる",
     "・話し合いになかったことを足さない。だれかの意見を勝手に変えない",
     "・意見が分かれているところは、どちらかに決めずに両方書く",
-    "・1つの文は25字くらいまで。1まいに3〜4つまで",
-    "・下の「出す形」のとおりに書く。あいさつや説明は書かない",
-    "",
-    "【録音や文字おこしを読むときに、とくに守ること】",
     "・聞きとれていないところは、無理に書かない。だれの声かは分からなくてよい",
     "・教室ではとなりの班の声も入る。下の「話し合いの題」と関係のない話は使わない",
     "・「えーっと」「あのね」のような言いよどみは書かない",
+    "・1つの文は25字くらいまで。1まいに3〜4つまで",
+    "・下の「出す形」のとおりに書く。あいさつや説明は書かない",
     "",
     "【出す形】",
     "# （話し合いの題）",
     SLIDE_PLAN,
-    "",
     "【話し合いの題】",
-    (topic || "（題は話し合いから考えてください）"),
-    "",
-    "【書きとめた記録】",
-    body
+    (topic || "（題は話し合いから考えてください）")
   ].join("\n");
 }
 
@@ -334,59 +309,31 @@ function loadRaw(){
   for(var i=0;i<cand.length;i++){
     try{
       var o=JSON.parse(cand[i]);
-      var n=(o.items?o.items.length:0) + (o.src?1:0) + (o.topic?1:0);
+      var n=(o.src?1:0) + (o.topic?1:0);
       if(n>bestN){ bestN=n; best=o; }
     }catch(e){}
   }
   return best;
 }
 
-var D={ topic:"", items:[], src:"" };
-function save(){ saveRaw(JSON.stringify({topic:D.topic, items:D.items, src:D.src})); }
+var D={ topic:"", src:"" };
+function save(){ saveRaw(JSON.stringify({topic:D.topic, src:D.src})); }
 
 /* ========================= ① きろく =========================
-   だれが 言ったか は 記録しない。話し合いは 入りまじって 進むので
-   3年生の 記録係には 追えない。Gemini へ わたす 文も「だれの声かは
-   分からなくてよい」と 書いてある（まとめる のに 話者は いらない）。
-   1まいの カード＝1つの 考え。まとめて 何行 書いても よい。
+   **考えを 打ちこむ 欄を もどさないこと**（2026-09-21）。
+   はじめは 記録係が 全部 打つ 作りだったが、それは「教室の 雑音では
+   文字おこしが 使いものに ならない」という まちがった 見立てから 来ていた。
+   じっさいは 音声メモ → NotebookLM で すでに 回っていた。
+   前提が くずれた あとも 欄を のこして いたので 消した。
+   ・「考えが ○○と ××に わかれた」と 書ける子は、Gemini に させたい
+     まとめを もう 自分で して いる＝道具が いらない
+   ・文字おこしを 貼る 場所としても 手数は 減らない
+     （欄あり：メモでコピー→アプリに貼る→わたすでコピー→Geminiに貼る）
+     （欄なし：わたすでコピー→Geminiに貼る→メモでコピー→Geminiに貼る）
+     どちらも コピー2回・貼りつけ2回・アプリの行き来3回で 同じ
+   ここで する ことは「はなす ことを かく」と「Gemini に わたす」の 2つだけ。
    ============================================================ */
-function paintCards(){
-  var box=$("cards");
-  if(!D.items.length){
-    box.innerHTML='<div class="empty">ここは からっぽの ままで いいよ。<br><br>「みんなの 考えが ○○と ××に わかれた」の ように、<br>かきとめて おきたい ことが あれば 下に かこう。</div>';
-  }else{
-    var h="";
-    for(var i=0;i<D.items.length;i++){
-      var c=D.items[i];
-      h+='<div class="card">'
-       +   '<div class="pin"></div>'
-       +   '<div class="ctext">'+esc(c.t)+'</div>'
-       +   '<button class="del" data-i="'+i+'">×</button>'
-       + '</div>';
-    }
-    box.innerHTML=h;
-    box.scrollTop=box.scrollHeight;
-  }
-  paintFoot();
-}
 function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
-
-$("cards").addEventListener("click",function(e){
-  var b=e.target.closest(".del"); if(!b) return;
-  D.items.splice(+b.dataset.i,1); save(); paintCards();
-});
-
-function addSay(){
-  var t=$("say").value.replace(/\s+$/,"").replace(/^\s+/,"");
-  if(!t) return;
-  D.items.push({t:t});
-  $("say").value=""; save(); paintCards();
-  $("say").focus();
-}
-$("add").addEventListener("click",addSay);
-["input","change","blur"].forEach(function(ev){
-  $("topic").addEventListener(ev,function(){ D.topic=$("topic").value; save(); });
-});
 
 /* ========================= ② スライド ========================= */
 var SL={ pages:[], page:0, doc:false, shown:false };
@@ -489,12 +436,8 @@ var STEP=1;
 function paintFoot(){
   var f=$("foot"), h="";
   if(STEP===1){
-    var n=D.items.length;
     h  = '<button class="btn gold" id="fPass">Gemini に わたす</button>';
-    h += '<span class="note">'+(n ? "かきとめた こと "+n+" こ" : "ろくおん だけでも わたせるよ")+'</span>';
-    h += '<div class="spacer"></div>';
-    h += '<button class="btn '+(clearArm?"warn":"sub")+'" id="fClear"'+(n?"":" disabled")+'>'
-       + (clearArm ? "ほんとうに けす？" : "ぜんぶ けす") + '</button>';
+    h += '<span class="note">Gemini で <b>ろくおんを つけて</b> はりつけよう</span>';
   }else{
     if(!SL.shown){
       h  = '<button class="btn blue" id="fMake"'+($("src").value.trim()?"":" disabled")+'>スライドに する ▶</button>';
@@ -514,30 +457,18 @@ function paintFoot(){
     }
   }
   f.innerHTML=h;
-  bind("fPass", openPass); bind("fClear", clearAll);
+  bind("fPass", openPass);
   bind("fMake", makeSlide); bind("fBack", backToPaste);
   bind("fPrev", function(){go(-1)}); bind("fNext", function(){go(1)});
   bind("fDoc", function(){ SL.doc=!SL.doc; $("dots").style.display=SL.doc?"none":"flex"; render(); paintFoot(); });
 }
 function bind(id,fn){ var e=$(id); if(e) e.addEventListener("click",fn); }
 
-var clearArm=false, clearT=null;
-function disarm(){ clearArm=false; if(clearT){clearTimeout(clearT); clearT=null;} }
-function clearAll(){
-  if(!clearArm){                       /* 1回めは かくにん、2回めで けす */
-    clearArm=true; paintFoot();
-    clearT=setTimeout(function(){ disarm(); paintFoot(); },4000);
-    return;
-  }
-  disarm();
-  D.items=[]; save(); paintCards();
-}
-
 /* ========================= わたす ========================= */
 function openPass(){
   D.topic = $("topic").value;          /* 🎤 が input を 出さなくても ひろえるように */
   save();
-  $("out").value = buildPrompt(D.topic, D.items);
+  $("out").value = buildPrompt(D.topic);
   $("copied").textContent=""; $("copyFall").style.display="none";
   $("modal").classList.add("on");
 }
@@ -569,7 +500,7 @@ function copyText(s){
 
 /* ========================= タブ ========================= */
 function step(n){
-  STEP=n; disarm();
+  STEP=n;
   $("s1").classList.toggle("on", n===1);
   $("s2").classList.toggle("on", n===2);
   $("t1").classList.toggle("on", n===1);
@@ -583,10 +514,10 @@ $("t2").addEventListener("click",function(){step(2)});
 /* ========================= はじめ ========================= */
 (function init(){
   var o=loadRaw();
-  if(o){ D.topic=o.topic||""; D.items=o.items||[]; D.src=o.src||""; }
+  if(o){ D.topic=o.topic||""; D.src=o.src||""; }
   $("topic").value=D.topic;
   $("src").value=D.src;
-  paintCards(); paintFoot();
+  paintFoot();
 })();
 
 var rz;
