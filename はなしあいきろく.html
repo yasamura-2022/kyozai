@@ -149,6 +149,7 @@ footer{
 .btn.gold{background:var(--gold-d)}
 .btn.ok{background:var(--ok)}
 .btn.sub{background:var(--sub)}
+.btn.warn{background:#c0563a}
 .btn.ghost{background:#efe3c8; color:var(--ink2); border:2px solid var(--line)}
 .btn:disabled{opacity:.36}
 .spacer{flex:1}
@@ -384,7 +385,9 @@ function addSay(){
   $("say").focus();
 }
 $("add").addEventListener("click",addSay);
-$("topic").addEventListener("input",function(){ D.topic=$("topic").value; save(); });
+["input","change","blur"].forEach(function(ev){
+  $("topic").addEventListener(ev,function(){ D.topic=$("topic").value; save(); });
+});
 
 /* ========================= ② スライド ========================= */
 var SL={ pages:[], page:0, doc:false, shown:false };
@@ -476,7 +479,11 @@ function go(d){
   render(); paintFoot();
 }
 $("stage").addEventListener("click",function(){ if(!SL.doc) go(1); });
-$("src").addEventListener("input",function(){ D.src=$("src").value; save(); paintFoot(); });
+["input","change","blur","paste"].forEach(function(ev){
+  $("src").addEventListener(ev,function(){
+    setTimeout(function(){ D.src=$("src").value; save(); paintFoot(); },0);
+  });
+});
 
 /* ========================= フッター ========================= */
 var STEP=1;
@@ -487,7 +494,8 @@ function paintFoot(){
     h  = '<button class="btn gold" id="fPass">Gemini に わたす</button>';
     h += '<span class="note">'+(n ? "かきとめた いけん "+n+" こ" : "ろくおん だけでも わたせるよ")+'</span>';
     h += '<div class="spacer"></div>';
-    h += '<button class="btn sub" id="fClear"'+(n?"":" disabled")+'>ぜんぶ けす</button>';
+    h += '<button class="btn '+(clearArm?"warn":"sub")+'" id="fClear"'+(n?"":" disabled")+'>'
+       + (clearArm ? "ほんとうに けす？" : "ぜんぶ けす") + '</button>';
   }else{
     if(!SL.shown){
       h  = '<button class="btn blue" id="fMake"'+($("src").value.trim()?"":" disabled")+'>スライドに する ▶</button>';
@@ -514,13 +522,22 @@ function paintFoot(){
 }
 function bind(id,fn){ var e=$(id); if(e) e.addEventListener("click",fn); }
 
+var clearArm=false, clearT=null;
+function disarm(){ clearArm=false; if(clearT){clearTimeout(clearT); clearT=null;} }
 function clearAll(){
-  if(!confirm("きろくを ぜんぶ けします。いいですか？")) return;
+  if(!clearArm){                       /* 1回めは かくにん、2回めで けす */
+    clearArm=true; paintFoot();
+    clearT=setTimeout(function(){ disarm(); paintFoot(); },4000);
+    return;
+  }
+  disarm();
   D.items=[]; save(); paintCards();
 }
 
 /* ========================= わたす ========================= */
 function openPass(){
+  D.topic = $("topic").value;          /* 🎤 が input を 出さなくても ひろえるように */
+  save();
   $("out").value = buildPrompt(D.topic, D.items);
   $("copied").textContent=""; $("copyFall").style.display="none";
   $("modal").classList.add("on");
@@ -553,7 +570,7 @@ function copyText(s){
 
 /* ========================= タブ ========================= */
 function step(n){
-  STEP=n;
+  STEP=n; disarm();
   $("s1").classList.toggle("on", n===1);
   $("s2").classList.toggle("on", n===2);
   $("t1").classList.toggle("on", n===1);
