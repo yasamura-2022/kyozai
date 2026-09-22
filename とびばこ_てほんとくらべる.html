@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
-<title>とびばこ　てほんと くらべる</title>
+<title>とび箱　手本と くらべる</title>
 <style>
 /* =========================================================
-   とびばこ　てほんと くらべる（3・4年 体育 B 器械運動「跳び箱運動」）
+   とび箱　手本と くらべる（3・4年 体育 B 器械運動「跳び箱運動」）
    学習指導要領解説 体育編 p.85-87 より
 
    (1) 知識及び技能
@@ -31,10 +31,10 @@
    だから この アプリは 解説が 名ざしした
    　「連続図」＋「目印」＋「手の着く位置／着地する位置／目線が向く場所」
    を そのまま ICT で やる。
-   　① てほんの 連続図を 見る
+   　① 手本の 連続図を 見る
    　② 自分の 動画から 4つの こまを 取り出して 自分の 連続図を つくる
-   　③ てほんと ならべて、3つの 目じるしを 置く
-   　④ 見つけた 課題に 合う 練習の 場を えらぶ
+   　③ 手本と ならべて、3つの 目じるしを 置く
+   　④ 見つけた 課題に 合う 練習の 場を 選ぶ
 
    【入れない もの】
    ・角度の 数値・速度・重心・関節角など 数で 出す 評価。解説に ない。
@@ -71,7 +71,7 @@
 
    【字】3・4年が 読む ので UIは ひらがな。
    　漢字に するのは 技の 名前（開脚跳び・台上前転）だけで、ruby で ふりがなを ふる。
-   　「ふみきり」「手を つく」「ちゃくち」は ひらがな
+   　「ふみきり」「とびこす」「こし」は ひらがな（踏・跳・腰は 3年より 上）
    　（解説の 語は「踏切り・着手・着地」。踏は 中学配当）
 
    外部読み込みは なし。1ファイルで 動く
@@ -140,6 +140,9 @@ nav{display:flex;gap:5px;flex-wrap:wrap;justify-content:center;}
      切れる（768x1024 で 実測）。たて長では 2れつに する */
   #mk1,#mk3{display:grid;grid-template-columns:1fr 1fr;align-content:start;}
   .stage .side>.panel.wide{flex:1.35;}
+  /* ②は 右の らんに パネルが 3つ（わざ・こま・速さ）ならぶ。
+     4れつだと 1まいが 69pxより ほそく できず 横に はみ出すので 2れつに する */
+  #s2 .shots{grid-template-columns:repeat(2,1fr);}
 }
 .card{
   position:relative;background:var(--card);border:1px solid var(--line);
@@ -263,6 +266,10 @@ input[type=file]{display:none;}
    **この きまりを 消さないこと** */
 @media (orientation:landscape) and (max-height:660px){
   .shot{aspect-ratio:16/10;min-height:40px;}
+  /* ②だけ わざを 選ぶ パネルが ふえる ぶん、こまの ふだを もう一段 ひらたく する
+     （1024x560 で 19px はみ出して いた）。中の 絵は object-fit:contain なので ゆがまない */
+  #s2 .shot{aspect-ratio:2.1/1;}
+  #s2 .panel{gap:3px;padding:4px 6px;}
   #mk1,#mk3{display:grid;grid-template-columns:1fr 1fr;align-content:start;}
   .seg button{min-height:38px;padding:5px 3px;font-size:clamp(10px,1.08vw,13px);}
   .panel{padding:5px 6px;gap:4px;}
@@ -278,24 +285,24 @@ input[type=file]{display:none;}
 <body>
 <div id="app">
   <header>
-    <h1>とびばこ<span class="sub">てほんと くらべる</span></h1>
+    <h1>とび箱<span class="sub">手本と くらべる</span></h1>
     <nav id="tabs">
-      <button class="tab on" data-s="1">① てほんを 見る</button>
-      <button class="tab" data-s="2">② こまを えらぶ</button>
+      <button class="tab on" data-s="1">① 手本を 見る</button>
+      <button class="tab" data-s="2">② こまを 選ぶ</button>
       <button class="tab" data-s="3">③ ならべて くらべる</button>
-      <button class="tab" data-s="4">④ 練習の 場を えらぶ</button>
+      <button class="tab" data-s="4">④ 練習の 場を 選ぶ</button>
     </nav>
   </header>
 
   <div id="main">
 
-    <!-- ========== ① てほんを 見る ========== -->
+    <!-- ========== ① 手本を 見る ========== -->
     <section class="stage on" id="s1">
       <div class="cols">
         <div class="card"><canvas id="c1"></canvas></div>
         <div class="side">
           <div class="panel">
-            <div class="ttl">わざを えらぶ</div>
+            <div class="ttl">わざを 選ぶ</div>
             <div class="seg col" id="tech1"></div>
           </div>
           <div class="panel wide" style="flex:1">
@@ -304,36 +311,40 @@ input[type=file]{display:none;}
           </div>
         </div>
       </div>
-      <div class="msg" id="m1">とびばこの てほんだよ。<b>4つの こま</b>を 見て みよう。</div>
+      <div class="msg" id="m1">とび箱の 手本だよ。<b>4つの こま</b>を 見て みよう。</div>
       <div class="bar">
         <button class="btn sub" id="b1back">◀ もどる</button>
         <button class="btn play" id="b1next">1つずつ 見る ▶</button>
-        <button class="btn sub" id="b1all">ぜんぶ 見る</button>
-        <button class="btn next" id="b1go">② こまを えらぶ →</button>
+        <button class="btn sub" id="b1all">全部 見る</button>
+        <button class="btn next" id="b1go">② こまを 選ぶ →</button>
       </div>
     </section>
 
-    <!-- ========== ② こまを えらぶ ========== -->
+    <!-- ========== ② こまを 選ぶ ========== -->
     <section class="stage" id="s2">
       <div class="cols">
         <div class="card">
           <div id="vwrap"><video id="vid" playsinline webkit-playsinline muted preload="metadata"></video></div>
           <div id="vnone">
-            <div class="lead">とった 動画を えらんで ください。<br>
+            <div class="lead">とった 動画を 選んで ください。<br>
               <b style="color:var(--gold-d)">動画は どこにも 送られません。</b><br>
               この ページの 中だけで 見て います。</div>
-            <button class="btn show big" id="bpick">動画を えらぶ</button>
+            <button class="btn show big" id="bpick">動画を 選ぶ</button>
             <div class="lead" style="font-size:clamp(11px,1.3vw,14px)">
-              カメラアプリで 横むきに とって おくと 見やすいです</div>
+              カメラアプリで 横向きに とって おくと 見やすいです</div>
           </div>
         </div>
         <div class="side">
+          <div class="panel">
+            <div class="ttl">わざを 選ぶ</div>
+            <div class="seg" id="tech2"></div>
+          </div>
           <div class="panel">
             <div class="ttl">この こまだ、と 思ったら おす</div>
             <div class="shots" id="shots2"></div>
           </div>
           <div class="panel">
-            <div class="ttl">はやさ・むき</div>
+            <div class="ttl">速さ・向き</div>
             <div class="seg" id="rate2"></div>
             <div class="seg"><button id="bflip">左右を かえる</button></div>
           </div>
@@ -343,13 +354,13 @@ input[type=file]{display:none;}
         <button class="btn play" id="bprev" style="padding:9px 11px">◀ 1こま</button>
         <button class="btn play" id="bplay" style="padding:9px 11px">▶</button>
         <input type="range" id="scrub" min="0" max="1" step="0.001" value="0" aria-label="どの こま">
-        <span class="tnum" id="tnum">0.00びょう</span>
+        <span class="tnum" id="tnum">0.00秒</span>
         <button class="btn play" id="bnext" style="padding:9px 11px">1こま ▶</button>
       </div>
-      <div class="msg" id="m2">上の ボタンで 動画を えらぼう。</div>
+      <div class="msg" id="m2">上の ボタンで 動画を 選ぼう。</div>
       <div class="bar">
         <button class="btn show" id="bpick2">べつの 動画</button>
-        <button class="btn sub" id="bclear2">動画を けす</button>
+        <button class="btn sub" id="bclear2">動画を 消す</button>
         <button class="btn next" id="b2go">③ ならべて くらべる →</button>
       </div>
       <input type="file" id="file" accept="video/*">
@@ -365,25 +376,25 @@ input[type=file]{display:none;}
             <div class="shots" id="shots3"></div>
           </div>
           <div class="panel wide" style="flex:1">
-            <div class="ttl">目じるしを 置く</div>
+            <div class="ttl">目じるしを おく</div>
             <div class="seg col" id="mk3" style="flex:1"></div>
           </div>
         </div>
       </div>
-      <div class="msg" id="m3">②で こまを えらぶと、ここに ならぶよ。</div>
+      <div class="msg" id="m3">②で こまを 選ぶと、ここに ならぶよ。</div>
       <div class="bar">
-        <button class="btn sub" id="b3clr">しるしを けす</button>
-        <button class="btn next" id="b3go">④ 練習の 場を えらぶ →</button>
+        <button class="btn sub" id="b3clr">しるしを 消す</button>
+        <button class="btn next" id="b3go">④ 練習の 場を 選ぶ →</button>
       </div>
     </section>
 
-    <!-- ========== ④ 練習の 場を えらぶ ========== -->
+    <!-- ========== ④ 練習の 場を 選ぶ ========== -->
     <section class="stage" id="s4">
       <div class="cols">
         <div class="card"><canvas id="c4"></canvas></div>
         <div class="side">
           <div class="panel">
-            <div class="ttl">わざを えらぶ</div>
+            <div class="ttl">わざを 選ぶ</div>
             <div class="seg col" id="tech4"></div>
           </div>
           <div class="panel" style="flex:1">
@@ -394,7 +405,7 @@ input[type=file]{display:none;}
       </div>
       <div class="msg" id="m4"></div>
       <div class="bar">
-        <button class="btn next" id="b4go">① てほんに もどる</button>
+        <button class="btn next" id="b4go">① 手本に もどる</button>
       </div>
     </section>
 
@@ -403,7 +414,7 @@ input[type=file]{display:none;}
   <!-- 【消さないこと】この アプリが 動画を どう あつかうかの ことわり書き -->
   <div id="note">
     <b>動画は どこにも 送られません</b>・<b>ほぞんも しません</b>。この ページを とじると 消えます。
-    音は 鳴りません。／ ばしょや 器械の あんぜんを たしかめてから とびましょう。
+    音は 鳴りません。／ 場所や とび箱の 安全を たしかめてから とびましょう。
   </div>
 </div>
 <script>
@@ -419,7 +430,7 @@ const INK='#2b2118',DIM='#7a6a52',LINE='#e7d9b8';
 const C={te:'#7a4fa3',ch:'#1f7a5a',me:'#2f6fa8',ex:'#E2621C',gold:'#c9a227',goldD:'#9a7c1e',blue:'#2f6fa8'};
 
 /* =========================================================
-   てほんの 連続図（解説の「連続図」）
+   手本の 連続図（解説の「連続図」）
    1つの こま＝1つの 姿勢。関節の 場所を そのまま 書いて ある。
    うごかして 見る ときは この 5つの あいだを つないで 出す。
    foc＝③で 大きく 出す ときに 切り取る ところ [まん中x, まん中y, よこはば]
@@ -475,7 +486,7 @@ const TECH={
     plain:'かいきゃくとび',
     kind:'切りかえす わざ',
     /* 解説の 例示 そのまま */
-    say:'じょそうから 両足で ふみきり、足を 左右に ひらいて 手を つき、とびこえて ちゃくちする',
+    say:'じょ走から 両足で ふみきり、足を 左右に 開いて 手を つき、とびこえて 着地する',
     raw:unwrap([cp(RUN),cp(TAKE),
       /* 手を つく＝両手が とびばこの 上（y=298）、こしは 上がり、目は 前を 見る */
       /* 手を つく＝**とびばこの 奥のほうに つく**（2026-09-22 指摘）。
@@ -487,37 +498,38 @@ const TECH={
          向こうがわの 足を 上へ 大きく ひらいて「ひらいて いる」と 読めるように する。
          向こうがわの 足は drawFig が うすく かく */
       /* とびこす＝足を 左右に ひらく。
-         【大事】**2本の 足は こしを はさんで 左右 そろえて 開く**（142°と 218°＝
-         まうしろ 180°から 上下 38°ずつ）。足の 先は こしから 55 上と 55 下で **同じ だけ**。
-         2026-09-22 指摘＝「左右の 脚の 高さが 違って 見えます」。
-         まえは 下の 足が 73 下、上の 足が 37 上＝**ちぐはぐ**で、
-         左右に ひらいた 形では なく 前後に 割った 形（かた足を ひきずる）に 見えて いた。
-         よこから 見た 図で 左右の 開脚を 出すには **上下 対称**に する しか ない。
-         ほんとうの 左右の 開きは 右上の「前から 見ると」の 図が 受けもつ。
-         **上下を ちぐはぐに もどさないこと** */
-      {hp:[672,250],tr:-80,hdo:4,a1:[-8,-30],a2:[2,-22],l1:[142,142],l2:[218,218],gz:-6,foc:[664,246,330]},
+         【最重要】**2本の 足は 同じ 高さに そろえる**（150°と 157°、足の 先の 高さの 差は 10 だけ）。
+         2026-09-22 に 2回 指摘された＝「左右の 脚の 高さが 違って 見えます」
+         「左足だけ 上がって いるので、右足と 高さを そろえて ください」。
+         1回目は 上下 対称（±55）に したが、それでも **かた足を 上げて いる**ように 見えた。
+         とうぜんで、**左右に 開いた 足は よこから 見ると かさなる**。
+         上下に 開いて かくと、どんなに 対称でも「前後に 割った」形に しか ならない。
+         よこから 見た 図で 左右の 開脚は **出せない**。
+         出すのは 右上の「前から 見ると」の 図の 役目。
+         **足を 上下に 開いた 形に もどさないこと** */
+      {hp:[672,250],tr:-80,hdo:4,a1:[-8,-30],a2:[2,-22],l1:[150,146],l2:[157,153],gz:-6,foc:[664,246,330]},
       cp(LANDK)]),
-    names:['じょそう','ふみきり','手を つく','とびこす','ちゃくち'],
+    names:['じょ走','ふみきり','手を つく','とびこす','着地'],
     /* こまごとの ことば。解説の 例示「助走から両足で踏み切り，足を左右に開いて着手し，
        跳び越えて着地する」を こまに 割った もの */
-    steps:['まっすぐ はしって くる',
+    steps:['まっすぐ 走って くる',
            '<b>両足で</b> ふみきる',
-           '足を <b>左右に ひらいて</b>、とびばこに 両手を つく',
-           '足を ひらいた まま <b>とびこえる</b>',
-           '両足で おりて <b>ぴたっと 止まる</b>'],
+           '足を <b>左右に 開いて</b>、とび箱に 両手を つく',
+           '足を 開いた まま <b>とびこえる</b>',
+           '両足で 下りて <b>ぴたっと 止まる</b>'],
     /* アニメだけに はさむ こま（連続図には 出さない）。
        手を つく → とびこす は はなれて いるので、まっすぐ つなぐと
        足が とびばこを 24px つきぬけて いた。おし切って こしが いちばん 高い
        ところ（足が ひらきはじめる）を あいだに 入れる */
     tePt:[530,298],chPt:[796,462],teLo:[0,58],chLo:[84,-12],
-    ex:{k:'ex',sym:'■',label:'足を 左右に ひらく',sub:'ひらけて いる？',pose:3,pt:[672,250],lo:[96,-6]},
+    ex:{k:'ex',sym:'■',label:'足を 左右に 開く',sub:'開いて いる？',pose:3,pt:[672,250],lo:[96,-6]},
   },
   dai:{
     key:'dai',
     html:'<ruby>台上前転<rt>だいじょうぜんてん</rt></ruby>',
-    plain:'だいじょうぜんてん',
+    plain:'台上前転',
     kind:'回る わざ',
-    say:'じょそうから 両足で ふみきり、こしの いちを 高く たもって 手を つき、前に 回って ちゃくちする',
+    say:'じょ走から 両足で ふみきり、こしの いちを 高く たもって 手を つき、前に 回って 着地する',
     raw:unwrap([cp(RUN),cp(TAKE),
       /* 手を つく＝解説の「腰の位置を高く保って着手し」。
          こし(y=198)が かた(y=241)より 上に ある＝tr が 下むき(＋)に なる。
@@ -550,14 +562,14 @@ const TECH={
          **あたまを めりこませたり、手を 先に はなしたり しないこと** */
       {hp:[494,210],tr:117,hdo:-27,a1:[155,72],a2:[162,66],l1:[-68,60],l2:[-62,52],gz:286,foc:[490,238,330]},
       cp(LANDD)]),
-    names:['じょそう','ふみきり','手を つく','回る','ちゃくち'],
+    names:['じょ走','ふみきり','手を つく','回る','着地'],
     /* 解説の「助走から両足で踏み切り，腰の位置を高く保って着手し，前方に回転して着地する」
        ＋ 前転の 接する 順（後頭部－背中－尻－足裏）を こまに 割った もの */
-    steps:['まっすぐ はしって くる',
+    steps:['まっすぐ 走って くる',
            '<b>両足で</b> ふみきる',
            '<b>こしを 高く たもって</b> 手を つく',
-           '<b>頭の うしろ</b>を つけて、せなかで 前に 回る',
-           '両足で おりて <b>ぴたっと 止まる</b>'],
+           '<b>頭の 後ろ</b>を つけて、せなかで 前に 回る',
+           '両足で 下りて <b>ぴたっと 止まる</b>'],
     tePt:[454,298],chPt:[778,462],teLo:[0,58],chLo:[84,-12],
     ex:{k:'ex',sym:'■',label:'こしを 高く する',sub:'こしは 上がって いる？',pose:2,pt:[420,198],lo:[-96,-16]},
   }
@@ -576,8 +588,8 @@ function marks(t){
   return [
     {k:'te',sym:'●',col:C.te,label:'手を つく ところ',sub:'どこに 手を ついた？',pose:2,pt:T.tePt,lo:T.teLo},
     T.ex,
-    {k:'ch',sym:'▲',col:C.ch,label:'おりる ところ',sub:'どこに おりた？',pose:4,pt:T.chPt,lo:T.chLo},
-    {k:'me',sym:'◆',col:C.me,label:'目を むける ところ',sub:'どこを 見て いる？',pose:-1,pt:null},
+    {k:'ch',sym:'▲',col:C.ch,label:'着地する ところ',sub:'どこに 着地した？',pose:4,pt:T.chPt,lo:T.chLo},
+    {k:'me',sym:'◆',col:C.me,label:'目を 向ける ところ',sub:'どこを 見て いる？',pose:-1,pt:null},
   ];
 }
 TECH.kai.ex.col=C.ex;TECH.dai.ex.col=C.ex;
@@ -585,25 +597,25 @@ TECH.kai.ex.col=C.ex;TECH.dai.ex.col=C.ex;
 /* 練習の 場（解説の「運動が苦手な児童への配慮の例」と (2)ア の 目印） */
 const BA={
   kai:[
-    {t:'マットを かさねた 上に とびばこ 1だん',
-     w:'手が つきやすく、とびこしやすく なる。ふみきり → 手を つく → ちゃくち の 動きを つかむ',
+    {t:'マットを 重ねた 上に とび箱 1だん',
+     w:'手が つきやすく、とびこしやすく なる。ふみきり → 手を つく → 着地 の 動きを つかむ',
      d:'low'},
     {t:'手を つく ところに 目じるし',
-     w:'どこに 手を つくかを 目で たしかめる。とびばこの 上に わっかや テープを 置く',
+     w:'どこに 手を つくかを 目で たしかめる。とび箱の 上に わっかや テープを おく',
      d:'mte'},
-    {t:'ちゃくちする ところに 目じるし',
-     w:'どこに おりるかを 目で たしかめる。マットの 上に わっかや テープを 置く',
+    {t:'着地する ところに 目じるし',
+     w:'どこに 着地するかを 目で たしかめる。マットの 上に わっかや テープを おく',
      d:'mch'},
   ],
   dai:[
-    {t:'マットを かさねた 場で 前転',
-     w:'こしを 上げて 回る 動きを つかむ。とびばこの 高さが こわい 子も できる',
+    {t:'マットを 重ねた 場で 前転',
+     w:'こしを 上げて 回る 動きを つかむ。とび箱の 高さが こわい 子も できる',
      d:'mat'},
-    {t:'とびばこと 同じ はばの テープ',
-     w:'マットに とびばこと 同じ はばの 線を 引いて、はやさの ある 前転・まっすぐ 回る 前転をする',
+    {t:'とび箱と 同じ はばの テープ',
+     w:'マットに とび箱と 同じ はばの 線を 引いて、速さの ある 前転・まっすぐ 回る 前転を する',
      d:'tape'},
-    {t:'手を つく ところ・おりる ところに 目じるし',
-     w:'どこに 手を つき、どこに おりるかを 目で たしかめる',
+    {t:'手を つく ところ・着地する ところに 目じるし',
+     w:'どこに 手を つき、どこに 着地するかを 目で たしかめる',
      d:'mboth'},
   ]
 };
@@ -766,7 +778,7 @@ function headContact(g,iv){
   g.setLineDash([]);g.lineWidth=2.5*k;
   g.beginPath();g.moveTo(x,y+5);g.lineTo(x,y+34);g.stroke();
   g.restore();
-  tag(g,'頭の うしろを つく',x,y+52,19*k,C.ex);
+  tag(g,'頭の 後ろを つく',x,y+52,19*k,C.ex);
 }
 
 /* ========================= 器械の 絵 ========================= */
@@ -830,13 +842,13 @@ let flip=false,vurl=null,rate=1;
 let ba4=0;
 let IMR=null;                     /* ③の 右がわ（自分の 絵）の 場所。タップの あたり判定に つかう */
 
-/* ========================= ① てほんを 見る ========================= */
+/* ========================= ① 手本を 見る ========================= */
 function buildTech(id){
   const el=$(id);el.innerHTML='';
   ['kai','dai'].forEach(k=>{
     const T=TECH[k],b=document.createElement('button');
     b.className=(k===tech?'on':'');
-    b.innerHTML=T.html+'<b>'+T.kind+'</b>';
+    b.innerHTML=T.html+(id==='tech2'?'':'<b>'+T.kind+'</b>');
     b.onclick=()=>{tech=k;mk1=null;ba4=0;buildAll();dirty=true;say1();say4();};
     el.appendChild(b);
   });
@@ -857,14 +869,14 @@ function say1(){
     if(cur<4){
       $('m1').innerHTML='<b>'+(cur+1)+'　'+T.names[cur]+'</b>　'+T.steps[cur];
     }else{
-      $('m1').innerHTML=T.html+'の てほん。<b>'+T.say+'</b>';
+      $('m1').innerHTML=T.html+'の 手本。<b>'+T.say+'</b>';
     }
     return;
   }
   const m=marks(tech).find(x=>x.k===mk1);
   const cl={te:'te',ch:'ch',me:'me',ex:'ex'}[m.k];
   $('m1').innerHTML='<span class="'+cl+'">'+m.sym+' '+m.label+'</span>　'+m.sub+
-    '　じぶんの 動画と くらべて みよう。';
+    '　自分の 動画と くらべて みよう。';
 }
 function draw1(){
   const {g,w,h}=fit($('c1'));base(g,w,h);
@@ -901,14 +913,14 @@ function draw1(){
     const lo=fm.lo||[0,-48];
     tag(g,fm.label,fm.pt[0]+lo[0],fm.pt[1]+lo[1],19,fm.col);
   }else if(mk1==='me'){
-    tag(g,'目を むける ところ',BW/2,72,19,C.me);
+    tag(g,'目を 向ける ところ',BW/2,72,19,C.me);
   }
   if(tech==='kai'&&(!mk1||mk1==='ex')&&cur>=3)frontInset(g,782,96,178,152);
   if(tech==='dai'&&!mk1&&cur>=3)headContact(g,1);
   g.restore();
 }
 
-/* ========================= ② こまを えらぶ ========================= */
+/* ========================= ② こまを 選ぶ ========================= */
 function thumb(src){
   const cv=document.createElement('canvas');cv.width=160;cv.height=120;
   const g=cv.getContext('2d');g.fillStyle='#15120c';g.fillRect(0,0,160,120);
@@ -948,11 +960,11 @@ function buildRate(){
 function hasVid(){return !!vurl;}
 function say2(){
   const v=$('vid');
-  if(!hasVid()){$('m2').innerHTML='上の ボタンで <b>動画を えらぼう</b>。';return;}
+  if(!hasVid()){$('m2').innerHTML='上の ボタンで <b>動画を 選ぼう</b>。';return;}
   const n=SHOT.filter(Boolean).length;
-  if(n===0){$('m2').innerHTML='<b>1こまずつ</b> すすめて、右の 4つの ボタンで その こまを とめよう。';return;}
+  if(n===0){$('m2').innerHTML='<b>1こまずつ</b> 進めて、右の 4つの ボタンで その こまを 止めよう。';return;}
   if(n<4){$('m2').innerHTML='<b>'+n+'まい</b> とれたよ。のこり '+(4-n)+'まい。';return;}
-  $('m2').innerHTML='4まい そろったね。<b>③ ならべて くらべる</b> へ すすもう。';
+  $('m2').innerHTML='4まい そろったね。<b>③ ならべて くらべる</b> へ 進もう。';
 }
 function capture(i){
   const v=$('vid');
@@ -973,7 +985,7 @@ function clearVid(){
   const v=$('vid');v.pause();v.removeAttribute('src');v.load();
   if(vurl){URL.revokeObjectURL(vurl);vurl=null;}
   for(let i=0;i<4;i++){SHOT[i]=null;UMK[i]={};}
-  $('vnone').style.display='';$('scrub').value=0;$('tnum').textContent='0.00びょう';
+  $('vnone').style.display='';$('scrub').value=0;$('tnum').textContent='0.00秒';
   buildShots('shots2','cap');buildShots('shots3','pick');say2();say3();dirty=true;
 }
 function loadVid(f){
@@ -1000,7 +1012,7 @@ function upTime(){
   const v=$('vid'),d=dur();
   $('scrub').disabled=!d;
   if(d){$('scrub').max=d;$('scrub').value=v.currentTime;}
-  $('tnum').textContent=(v.currentTime||0).toFixed(2)+'びょう';
+  $('tnum').textContent=(v.currentTime||0).toFixed(2)+'秒';
 }
 
 /* ========================= ③ ならべて くらべる ========================= */
@@ -1023,12 +1035,12 @@ function say3(){
   const T=TECH[tech],pi=SC[shotIdx],m=marks(tech).find(x=>x.k===mk3);
   const cl={te:'te',ch:'ch',me:'me',ex:'ex'}[m.k];
   if(!SHOT[shotIdx]){
-    $('m3').innerHTML='この こまは まだ ないよ。<b>② こまを えらぶ</b> で '+
+    $('m3').innerHTML='この こまは まだ ないよ。<b>② こまを 選ぶ</b> で '+
       (shotIdx+1)+'「'+T.names[pi]+'」を とろう。';
     return;
   }
   $('m3').innerHTML='<span class="'+cl+'">'+m.sym+' '+m.label+'</span>　'+m.sub+
-    '　<b>右の じぶんの えを おす</b>と しるしが つくよ。';
+    '　<b>右の 自分の 絵を おす</b>と しるしが つくよ。';
 }
 function draw3(){
   const {g,w,h}=fit($('c3'));base(g,w,h);
@@ -1050,7 +1062,7 @@ function draw3(){
   g.restore();
   g.restore();
   g.strokeStyle=LINE;g.lineWidth=2;rr(g,LX,py,pw,ph,13);g.stroke();
-  tag(g,'てほん',LX+50,py+22,17,C.goldD);
+  tag(g,'手本',LX+50,py+22,17,C.goldD);
 
   /* ---- 右＝じぶん ---- */
   g.save();rr(g,RX,py,pw,ph,13);g.clip();
@@ -1069,15 +1081,15 @@ function draw3(){
     IMR=null;
     g.fillStyle='#fdf6e3';g.fillRect(RX,py,pw,ph);
     txt(g,'この こまは まだ ないよ',RX+pw/2,py+ph/2-16,21,DIM);
-    txt(g,'② こまを えらぶ で とろう',RX+pw/2,py+ph/2+18,19,'#a4957a');
+    txt(g,'② こまを 選ぶ で とろう',RX+pw/2,py+ph/2+18,19,'#a4957a');
   }
   g.restore();
   g.strokeStyle=LINE;g.lineWidth=2;rr(g,RX,py,pw,ph,13);g.stroke();
-  tag(g,'じぶん',RX+50,py+22,17,C.goldD);
+  tag(g,'自分',RX+50,py+22,17,C.goldD);
   g.restore();
 }
 
-/* ========================= ④ 練習の 場を えらぶ ========================= */
+/* ========================= ④ 練習の 場を 選ぶ ========================= */
 /* わっか（目じるし）は 面の 上に ねかせて かく＝だ円の わ */
 function hoop(g,x,y,rx,ry,col){
   g.save();g.strokeStyle=col;g.lineWidth=7;
@@ -1125,13 +1137,13 @@ function draw4(){
     drawMat(g,650,330,GY-8,22);
     figAt(g,TECH.kai.poses[2],52,top-48-298,1);
     tag(g,'ひくいので 手が つきやすい',V.cx,V.y0+26/V.s,21/V.s,C.goldD);
-    tag(g,'マットを かさねる',430,GY+34,19/V.s,DIM);
+    tag(g,'マットを 重ねる',430,GY+34,19/V.s,DIM);
   }else if(b.d==='mat'){
     V=view(g,540,362,600);drawFloor(g);
     const top=stack(g,300,470,3);
     figAt(g,TECH.dai.poses[3],18,top-298,1);
     tag(g,'こしを 上げて 回る',V.cx,V.y0+26/V.s,21/V.s,C.goldD);
-    tag(g,'マットを かさねる',430,GY+34,19/V.s,DIM);
+    tag(g,'マットを 重ねる',430,GY+34,19/V.s,DIM);
   }else if(b.d==='tape'){
     /* よこの ならびは 横から 見た 図では 出せないので、ここだけ 上から 見た 図 */
     V=view(g,530,290,980);drawFloor(g);
@@ -1148,8 +1160,8 @@ function draw4(){
     g.beginPath();g.moveTo(530,250);g.lineTo(516,278);g.lineTo(544,278);g.closePath();
     g.fillStyle=C.ex;g.fill();g.restore();
     tag(g,'上から 見た ところ',530,V.y0+26/V.s,21/V.s,C.goldD);
-    tag(g,'とびばこと 同じ はばの テープ',530,170,19/V.s,DIM);
-    tag(g,'まっすぐ・はやさの ある 前転',530,505,19/V.s,DIM);
+    tag(g,'とび箱と 同じ はばの テープ',530,170,19/V.s,DIM);
+    tag(g,'まっすぐ・速さの ある 前転',530,505,19/V.s,DIM);
   }else{
     const showTe=(b.d==='mte'||b.d==='mboth'),showCh=(b.d==='mch'||b.d==='mboth');
     V=view(g,b.d==='mte'?500:(b.d==='mch'?760:630),356,b.d==='mboth'?800:580);
@@ -1164,16 +1176,16 @@ function draw4(){
       figAt(g,T.poses[4],0,0,.28);
       hoop(g,T.chPt[0],GY-2,62,15,C.ch);
       drawMark(g,'▲',T.chPt[0],GY-4,19/V.s,C.ch,1);
-      tag(g,'ここに おりる',T.chPt[0],GY+42,19/V.s,C.ch);
+      tag(g,'ここに 着地する',T.chPt[0],GY+42,19/V.s,C.ch);
     }
-    tag(g,'わっかや テープを 置いて、目で たしかめる',V.cx,V.y0+26/V.s,21/V.s,C.goldD);
+    tag(g,'わっかや テープを おいて、目で たしかめる',V.cx,V.y0+26/V.s,21/V.s,C.goldD);
   }
   g.restore();
 }
 
 /* ========================= 組み立て ========================= */
 function buildAll(){
-  buildTech('tech1');buildTech('tech4');buildMk1();buildMk3();
+  buildTech('tech1');buildTech('tech2');buildTech('tech4');buildMk1();buildMk3();
   buildShots('shots2','cap');buildShots('shots3','pick');buildBa();buildRate();
   say1();say2();say3();say4();
 }
@@ -1202,7 +1214,7 @@ $('tabs').addEventListener('click',e=>{
 
 /* ---- ① ---- */
 function upB1(){
-  $('b1next').textContent=(cur>=4)?'1つずつ 見る ▶':'つぎの こま ▶';
+  $('b1next').textContent=(cur>=4)?'1つずつ 見る ▶':'次の こま ▶';
   $('b1back').disabled=(cur<=0||cur>=4);
   $('b1all').disabled=(cur>=4);
 }
@@ -1238,7 +1250,7 @@ $('b2go').onclick=()=>show(3);
   v.addEventListener('pause',upPlay);
   v.addEventListener('ended',upPlay);
   v.addEventListener('error',()=>{
-    $('m2').innerHTML='この 動画は ひらけませんでした。<b>Safari</b> で ためして みて ください。';
+    $('m2').innerHTML='この 動画は 開けませんでした。<b>Safari</b> で ためして みて ください。';
   });
 })();
 
