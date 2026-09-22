@@ -11,9 +11,8 @@
   --ink:#2b2118;
   --dim:#7a6a52;
   --line:#e7d9b8;
-  --gold:#c9a227;   /* こたえあわせ・いま えらぶ ところ */
+  --gold:#c9a227;   /* いま えらぶ ところ・めあて */
   --blue:#2f6fa8;   /* 同じ ところで すすむ・みず */
-  --ok:#5a8a4c;     /* べつの もんだいへ */
   --sub:#a99a7c;    /* もどる・やりなおす */
   --f-round:"Zen Maru Gothic","Hiragino Maru Gothic ProN","ヒラギノ丸ゴ ProN W4","Klee One","BIZ UDPGothic","Yu Gothic UI",sans-serif;
 }
@@ -28,32 +27,34 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .hide{display:none !important}
 
 #app{display:flex;flex-direction:column;height:var(--appH,100vh);padding:6px 10px 7px;gap:6px}
-
 header{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:10px}
 h1{margin:0;font-size:clamp(14px,1.9vw,24px);letter-spacing:.04em}
 .btn{font-weight:700;border-radius:999px;color:#fff;padding:6px 15px;
   font-size:clamp(11px,1.2vw,16px);box-shadow:0 2px 0 rgba(0,0,0,.18);white-space:nowrap}
 .btn:active{transform:translateY(2px);box-shadow:none}
-.btn.sub{background:var(--sub)} .btn.gold{background:var(--gold)}
-.btn.blue{background:var(--blue)} .btn.ok{background:var(--ok)}
+.btn.sub{background:var(--sub)} .btn.blue{background:var(--blue)}
 .btn[disabled]{opacity:.45;box-shadow:none;cursor:default}
-.btn.ghost{background:var(--paper);color:var(--dim);border:2px solid var(--line);box-shadow:none}
 
-#tabs{flex:0 0 auto;display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
+#tabs{flex:0 0 auto;display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
 #tabs button{background:var(--paper);border:2px solid var(--line);border-radius:12px;
-  padding:5px 2px;font-weight:700;font-size:clamp(10px,1.15vw,16px);color:var(--dim)}
+  padding:5px 2px;font-weight:700;font-size:clamp(11px,1.3vw,18px);color:var(--dim)}
 #tabs button.on{background:var(--gold);border-color:var(--gold);color:#fff}
 
 #main{flex:1 1 auto;min-height:0;display:flex}
 section.step{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;gap:6px}
+.cap{font-size:clamp(10px,1.1vw,15px);color:var(--dim);font-weight:700}
+.sml{font-size:clamp(9px,1.0vw,13px);color:var(--dim)}
+/* めあて＝この がめんで 何を するか。かならず 画面に 出す */
+.aim{flex:0 0 auto;text-align:center;font-weight:700;color:#8a6d12;
+  background:#fdf3d4;border:2px solid var(--gold);border-radius:10px;
+  padding:3px 8px;font-size:clamp(10px,1.2vw,17px);line-height:1.3}
 
-/* ===== ①② まぜる がめん ===== */
+/* ===== ① まぜて みる ===== */
 #stage{flex:1 1 auto;min-height:0;display:grid;grid-template-columns:1fr 1.3fr 1fr;gap:7px}
 .slot{background:var(--paper);border:3px solid var(--line);border-radius:16px;
   padding:5px 8px;display:flex;flex-direction:column;align-items:center;justify-content:center;
   gap:4px;min-height:0;min-width:0;cursor:pointer}
 .slot.on{border-color:var(--gold);box-shadow:0 0 0 4px rgba(201,162,39,.22)}
-.cap{font-size:clamp(10px,1.1vw,15px);color:var(--dim);font-weight:700}
 .dot{width:clamp(40px,9.6vh,86px);height:clamp(40px,9.6vh,86px);border-radius:50%;
   border:4px solid #e3d7bd;background:var(--paper);
   box-shadow:inset 0 3px 8px rgba(0,0,0,.14);display:flex;align-items:center;justify-content:center}
@@ -62,23 +63,16 @@ section.step{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;gap:6
 .nm{font-size:clamp(11px,1.3vw,18px);font-weight:700;min-height:1em}
 .amt{display:flex;align-items:center;gap:6px;width:100%}
 .amt .num{font-size:clamp(13px,1.6vw,22px);font-weight:700;min-width:1.5em;text-align:center}
-.sml{font-size:clamp(9px,1.0vw,13px);color:var(--dim)}
-
 #center{background:var(--paper);border:3px solid var(--line);border-radius:16px;
   padding:5px 9px;display:flex;flex-direction:column;align-items:center;justify-content:center;
-  gap:4px;min-height:0}
-#bowls{display:flex;align-items:center;justify-content:center;gap:12px}
-.bwrap{position:relative;flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:2px}
+  gap:4px;min-height:0;--bs:clamp(70px,18vh,150px)}
 .bowl{position:relative;width:var(--bs);height:var(--bs);border-radius:50%;background:var(--paper);
   border:5px solid #e3d7bd;box-shadow:inset 0 5px 14px rgba(0,0,0,.16);transition:background-color .18s}
 .bowl i{position:absolute;left:16%;top:12%;width:26%;height:18%;border-radius:50%;
   background:rgba(255,255,255,.45)}
-#center{--bs:clamp(70px,18vh,150px)}
-#center.quiz{--bs:clamp(56px,13.5vh,112px)}
 #ratio{font-size:clamp(11px,1.35vw,19px);font-weight:700;text-align:center;line-height:1.25;min-height:1.2em}
 #made{font-size:clamp(11px,1.3vw,18px);color:var(--dim);min-height:1.2em}
 #made b{color:var(--ink);font-size:1.12em}
-#paperCap{font-size:clamp(8px,.92vw,12px);color:var(--dim)}
 #paperBox{width:100%;max-width:330px;position:relative;height:clamp(20px,5.4vh,42px);
   border-radius:8px;overflow:hidden;border:2px solid var(--line);flex:0 0 auto;
   background:repeating-linear-gradient(90deg,#fffdf7 0 26px,#f3ead6 26px 28px),#fffdf7}
@@ -86,13 +80,6 @@ section.step{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;gap:6
 #water{width:100%;max-width:330px;display:flex;align-items:center;gap:7px;flex:0 0 auto}
 #water .lb{font-size:clamp(10px,1.15vw,15px);font-weight:700;color:var(--blue);white-space:nowrap}
 #water .num{font-size:clamp(12px,1.4vw,19px);font-weight:700;color:var(--blue);min-width:1.3em;text-align:center}
-
-/* ちかさの ぼう */
-#near{width:100%;max-width:330px;flex:0 0 auto}
-#nbar{height:14px;border-radius:7px;background:#ecdfc4;overflow:hidden}
-#nfill{height:100%;width:0;background:var(--ok);transition:width .25s}
-#nsay{font-size:clamp(11px,1.3vw,18px);font-weight:700;text-align:center;min-height:1.25em;margin-top:2px}
-#qbtns{display:flex;gap:7px;justify-content:center;flex:0 0 auto}
 
 input[type=range]{-webkit-appearance:none;appearance:none;flex:1 1 auto;min-width:0;height:24px;background:transparent;margin:0}
 input[type=range]::-webkit-slider-runnable-track{height:10px;border-radius:5px;background:#ecdfc4}
@@ -107,7 +94,6 @@ input[type=range]:focus{outline:none}
 .wslider::-moz-range-thumb{border-color:var(--blue)}
 .wslider::-moz-range-track{background:#cfe0ef}
 
-/* ===== した：パレット と よこの パネル ===== */
 #bot{flex:0 0 auto;display:grid;grid-template-columns:2.15fr 1fr;gap:6px}
 .box{background:var(--paper);border:3px solid var(--line);border-radius:14px;padding:5px 7px 4px}
 .boxttl{font-size:clamp(9px,1.02vw,14px);color:var(--dim);text-align:center;font-weight:700;margin-bottom:3px}
@@ -118,52 +104,59 @@ input[type=range]:focus{outline:none}
 .pc:active .sw{transform:scale(.88)}
 .pc.on .sw{border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,162,39,.3)}
 .pl{font-size:clamp(8px,.95vw,13px);font-weight:700;white-space:nowrap}
-
-#side{display:flex;flex-direction:column;gap:3px;min-height:0}
 #cards{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
 .card{position:relative;border-radius:8px;border:3px solid #e3d7bd;overflow:hidden;
   height:clamp(22px,4.6vh,38px);background:var(--paper);cursor:pointer}
 .card.empty{border-style:dashed;opacity:.5;cursor:default}
-.card.on{border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,162,39,.3)}
 .card .mix{position:absolute;inset:0}
 .card .rec{position:absolute;left:0;right:0;bottom:0;height:5px;display:flex}
 .card .wm{position:absolute;right:1px;top:0;font-size:8px;color:#fff;text-shadow:0 0 2px #000}
-#qlist{display:grid;grid-template-columns:repeat(4,1fr);gap:3px}
-#qlist button{background:var(--paper);border:2px solid var(--line);border-radius:8px;
-  font-weight:700;font-size:clamp(9px,1.0vw,14px);padding:3px 0;color:var(--dim)}
-#qlist button.on{background:var(--gold);border-color:var(--gold);color:#fff}
 
-/* ===== ③ わで くらべる ===== */
-#s3 .wrap{flex:1 1 auto;min-height:0;display:grid;grid-template-columns:1.25fr 1fr;gap:7px}
+/* ===== ② わで くらべる ===== */
+#s2 .wrap{flex:1 1 auto;min-height:0;display:grid;grid-template-columns:1.1fr 1fr;gap:7px}
 #wheelBox{background:var(--paper);border:3px solid var(--line);border-radius:16px;
-  display:flex;align-items:center;justify-content:center;padding:5px;min-height:0}
+  display:flex;align-items:center;justify-content:center;padding:4px;min-height:0}
 #wheel{width:100%;height:100%}
 #wheel path{cursor:pointer}
 #wpanel{background:var(--paper);border:3px solid var(--line);border-radius:16px;
-  padding:6px 8px;display:flex;flex-direction:column;align-items:center;gap:5px;min-height:0;overflow:hidden}
-#wres{width:clamp(48px,12vh,104px);height:clamp(48px,12vh,104px);border-radius:50%;
-  border:5px solid #e3d7bd;background:var(--paper);box-shadow:inset 0 4px 12px rgba(0,0,0,.16)}
-#wkind{font-size:clamp(11px,1.3vw,18px);font-weight:700;min-height:1.2em;text-align:center}
-#wsay{font-size:clamp(10px,1.15vw,15px);color:var(--dim);text-align:center;line-height:1.3}
-#opp{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;width:100%}
-.opair{display:flex;flex-direction:column;align-items:center;gap:1px}
-.opair .two{display:flex;width:100%;height:9px;border-radius:3px;overflow:hidden}
+  padding:5px 8px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:5px;min-height:0;overflow:hidden}
+#mixrow{display:flex;align-items:center;justify-content:center;gap:5px;flex:0 0 auto}
+.mcol{display:flex;flex-direction:column;align-items:center;gap:1px}
+.md{width:clamp(28px,6.4vh,58px);height:clamp(28px,6.4vh,58px);border-radius:50%;
+  border:4px solid #e3d7bd;background:var(--paper)}
+.md.big{width:clamp(42px,9.6vh,84px);height:clamp(42px,9.6vh,84px);
+  box-shadow:inset 0 4px 10px rgba(0,0,0,.16)}
+.sign{font-size:clamp(13px,1.7vw,24px);font-weight:700;color:var(--dim);padding-bottom:12px}
+#wkind{font-size:clamp(11px,1.35vw,19px);font-weight:700;min-height:1.2em;text-align:center}
+#wsay{font-size:clamp(10px,1.15vw,15px);color:var(--dim);text-align:center;line-height:1.3;min-height:2.6em}
+#wbtns{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;flex:0 0 auto}
+#oppTtl{font-size:clamp(9px,1.0vw,13px);color:var(--dim);font-weight:700;text-align:center}
+#opp{display:grid;grid-template-columns:repeat(6,1fr);gap:3px;width:100%}
+.opair{display:flex;flex-direction:column;gap:1px}
+.opair .two{display:flex;height:6px;border-radius:2px;overflow:hidden;background:#eee6d2}
 .opair .two div{flex:1}
-.opair .rr{width:100%;height:clamp(16px,3.4vh,30px);border-radius:5px;border:2px solid #e3d7bd}
+.opair .rr{height:clamp(14px,3.0vh,26px);border-radius:4px;border:2px dashed #ddd0b4;background:var(--paper)}
+.opair.got .rr{border-style:solid;border-color:#e3d7bd}
 
-/* ===== ④ ぬって みる ===== */
-#s4 .wrap{flex:1 1 auto;min-height:0;display:grid;grid-template-columns:1.35fr 1fr;gap:7px}
+/* ===== ③ ぬって みる ===== */
+#s3 .wrap{flex:1 1 auto;min-height:0;display:grid;grid-template-columns:1.35fr 1fr;gap:7px}
 #artBox{background:var(--paper);border:3px solid var(--line);border-radius:16px;
   display:flex;align-items:center;justify-content:center;padding:5px;min-height:0}
 #art{width:100%;height:100%}
 #art .rg{cursor:pointer;stroke:#6b5a44;stroke-width:2.5;stroke-linejoin:round}
 #apanel{background:var(--paper);border:3px solid var(--line);border-radius:16px;
-  padding:6px 8px;display:flex;flex-direction:column;gap:4px;min-height:0;overflow:hidden}
+  padding:5px 8px;display:flex;flex-direction:column;gap:3px;min-height:0;overflow:hidden}
+#scenes{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
+#scenes button{background:var(--paper);border:2px solid var(--line);border-radius:9px;
+  font-weight:700;font-size:clamp(9px,1.05vw,14px);padding:4px 0;color:var(--dim)}
+#scenes button.on{background:var(--gold);border-color:var(--gold);color:#fff}
 #nowc{display:flex;align-items:center;justify-content:center;gap:7px}
 #nowdot{width:clamp(22px,4.6vh,38px);height:clamp(22px,4.6vh,38px);border-radius:50%;
   border:3px solid #e3d7bd;background:var(--paper)}
+#cards3{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
 
-#tip{flex:0 0 auto;text-align:center;font-size:clamp(10px,1.15vw,16px);color:var(--dim);
+.tipline{flex:0 0 auto;text-align:center;font-size:clamp(10px,1.15vw,16px);color:var(--dim);
   min-height:1.3em;line-height:1.3}
 
 @media (max-height:640px){
@@ -173,7 +166,7 @@ input[type=range]:focus{outline:none}
 @media (orientation:portrait){
   #stage{grid-template-columns:1fr 1fr;grid-template-rows:auto 1fr}
   #center{grid-column:1 / -1;grid-row:2}
-  #s3 .wrap,#s4 .wrap{grid-template-columns:1fr;grid-template-rows:1.15fr 1fr}
+  #s2 .wrap,#s3 .wrap{grid-template-columns:1fr;grid-template-rows:1.1fr 1fr}
   #bot{grid-template-columns:1.7fr 1fr}
 }
 </style>
@@ -188,15 +181,14 @@ input[type=range]:focus{outline:none}
 
   <nav id="tabs">
     <button data-s="1" class="on">まぜて みる</button>
-    <button data-s="2">いろを つくる</button>
-    <button data-s="3">わで くらべる</button>
-    <button data-s="4">ぬって みる</button>
+    <button data-s="2">わで くらべる</button>
+    <button data-s="3">ぬって みる</button>
   </nav>
 
   <div id="main">
 
-    <!-- ①② まぜる がめん（おなじ そうさ） -->
-    <section class="step" id="s12">
+    <!-- ① まぜて みる -->
+    <section class="step" id="s1">
       <div id="stage">
         <section class="slot on" id="slot0">
           <div class="cap">1つめの いろ</div>
@@ -207,32 +199,15 @@ input[type=range]:focus{outline:none}
         </section>
 
         <section id="center">
-          <div id="bowls">
-            <div class="bwrap hide" id="tgtWrap">
-              <div class="cap">おだいの いろ</div>
-              <div class="bowl" id="tgt"><i></i></div>
-            </div>
-            <div class="bwrap">
-              <div class="cap hide" id="mineCap">じぶんの いろ</div>
-              <div class="bowl" id="bowl"><i></i></div>
-            </div>
-          </div>
+          <div class="bowl" id="bowl"><i></i></div>
           <div id="ratio">えのぐを えらんでね</div>
           <div id="made"></div>
-          <div id="paperCap">かみに ぬると…</div>
+          <div class="sml">かみに ぬると…</div>
           <div id="paperBox"><div id="stroke"></div></div>
           <div id="water">
             <div class="lb">💧 みず</div>
             <input type="range" id="wt" class="wslider" min="0" max="8" step="1" value="0">
             <div class="num" id="wn">0</div>
-          </div>
-          <div id="near" class="hide">
-            <div id="nbar"><div id="nfill"></div></div>
-            <div id="nsay"></div>
-          </div>
-          <div id="qbtns" class="hide">
-            <button id="check" class="btn gold">くらべて みる</button>
-            <button id="qnext" class="btn ok">つぎの もんだい →</button>
           </div>
         </section>
 
@@ -247,51 +222,62 @@ input[type=range]:focus{outline:none}
 
       <div id="bot">
         <div class="box">
-          <div class="boxttl" id="palTtl">したの えのぐを おすと、ひかっている まるに 入るよ</div>
+          <div class="boxttl">したの えのぐを おすと、ひかっている まるに 入るよ</div>
           <div class="pal" id="pal12"></div>
         </div>
-        <div class="box" id="side">
-          <div class="boxttl" id="sideTtl">つくった いろ</div>
+        <div class="box">
+          <div class="boxttl">つくった いろ</div>
           <div id="cards"></div>
-          <div id="qlist" class="hide"></div>
-          <div style="display:flex;gap:5px;justify-content:center;margin-top:3px">
+          <div style="display:flex;justify-content:center;margin-top:3px">
             <button id="save" class="btn blue">カードに のこす</button>
-            <button id="qhint" class="btn ghost hide">つかう えのぐ</button>
           </div>
         </div>
       </div>
-      <p id="tip"></p>
+      <p class="tipline" id="tip1"></p>
     </section>
 
-    <!-- ③ わで くらべる -->
-    <section class="step hide" id="s3">
+    <!-- ② わで くらべる -->
+    <section class="step hide" id="s2">
+      <div class="aim">この わの いろは、ぜんぶ <b>あか・きいろ・あお</b> から できて いるよ。<br>
+        <b>となりどうし</b>と <b>むかいあわせ</b>を まぜて、くらべて みよう</div>
       <div class="wrap">
         <div id="wheelBox"><svg id="wheel" viewBox="0 0 320 320"></svg></div>
         <div id="wpanel">
-          <div class="cap">まぜた いろ</div>
-          <div id="wres"></div>
+          <div id="mixrow">
+            <div class="mcol"><div class="md" id="wa"></div><div class="sml">1つめ</div></div>
+            <div class="sign">＋</div>
+            <div class="mcol"><div class="md" id="wb"></div><div class="sml">2つめ</div></div>
+            <div class="sign">→</div>
+            <div class="mcol"><div class="md big" id="wres"></div><div class="sml">まぜた いろ</div></div>
+          </div>
           <div id="wkind"></div>
-          <div id="wsay">わの 中の いろを 2つ おしてね</div>
-          <button id="oppBtn" class="btn blue">むかいあわせを ぜんぶ 見る ▶</button>
-          <div id="opp" class="hide"></div>
+          <div id="wsay"></div>
+          <div id="wbtns">
+            <button id="bNear" class="btn blue">となりどうし ▶</button>
+            <button id="bOpp" class="btn blue">むかいあわせ ▶</button>
+          </div>
+          <div id="oppTtl">むかいあわせ 6つ（見た ものから たまる）</div>
+          <div id="opp"></div>
         </div>
       </div>
-      <p id="tip3" style="text-align:center;min-height:1.3em" class="sml"></p>
+      <p class="tipline" id="tip2"></p>
     </section>
 
-    <!-- ④ ぬって みる -->
-    <section class="step hide" id="s4">
+    <!-- ③ ぬって みる -->
+    <section class="step hide" id="s3">
       <div class="wrap">
         <div id="artBox"><svg id="art" viewBox="0 0 400 300"></svg></div>
         <div id="apanel">
+          <div class="boxttl">ぬりえを えらぶ</div>
+          <div id="scenes"></div>
           <div id="nowc"><div class="cap">えらんだ いろ</div><div id="nowdot"></div></div>
           <div class="boxttl">つくった いろ</div>
-          <div id="cards4" style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px"></div>
+          <div id="cards3"></div>
           <div class="boxttl">えのぐ</div>
-          <div class="pal" id="pal12b" style="grid-template-columns:repeat(6,1fr)"></div>
+          <div class="pal" id="pal12b"></div>
         </div>
       </div>
-      <p id="tip4" style="text-align:center;min-height:1.3em" class="sml"></p>
+      <p class="tipline" id="tip3"></p>
     </section>
 
   </div>
@@ -301,7 +287,6 @@ input[type=range]:focus{outline:none}
 "use strict";
 /* ============================================================
    えのぐの まぜかた（RYB顔料モデル ＋ 三線形補間）
-   くわしい わけは CLAUDE.md に 書いて ある。
    ・ひかりの まぜかた（RGB）の 平均では「きいろ＋あお」が はいいろに なる
    ・ネットの rgbToRyb/rybToRgb の 対は まぜると 暗く なる
      （あか＋きいろ が こげ茶に なった）ので つかわない
@@ -333,7 +318,6 @@ var COLORS=[
   {name:"くろ",      p:[0,0,0],           w:0.00,k:1.00,s:2.80}
 ];
 function byName(n){for(var i=0;i<COLORS.length;i++) if(COLORS[i].name===n) return COLORS[i]; return null;}
-
 function mixPaint(list){
   var R=0,Y=0,B=0,W=0,K=0,i,q,a;
   for(i=0;i<list.length;i++){
@@ -353,24 +337,17 @@ function mixPaint(list){
   for(i=0;i<3;i++) out[i]=Math.round(base[i]*fc+PAPER[i]*fw+BLACKP[i]*fk);
   return out;
 }
-/* みず＝かみの しろが すける ぶん */
-function waterT(paintAmt,w){ if(w<=0||paintAmt<=0) return 0; return Math.min(0.88, w/(w+paintAmt*1.15)); }
-function withWater(base,paintAmt,w){
-  var t=waterT(paintAmt,w),o=[0,0,0];
+function waterT(pa,w){ if(w<=0||pa<=0) return 0; return Math.min(0.88, w/(w+pa*1.15)); }
+function withWater(base,pa,w){
+  var t=waterT(pa,w),o=[0,0,0];
   for(var i=0;i<3;i++) o[i]=Math.round(base[i]+(PAPER[i]-base[i])*t);
   return o;
 }
 function css(c){return "rgb("+c[0]+","+c[1]+","+c[2]+")";}
-/* 2つの いろの ちがい（redmean）。小さいほど 近い */
-function cdist(a,b){
-  var rm=(a[0]+b[0])/2, dr=a[0]-b[0], dg=a[1]-b[1], db=a[2]-b[2];
-  return Math.sqrt((2+rm/256)*dr*dr + 4*dg*dg + (2+(255-rm)/256)*db*db);
-}
 
 /* ---- できた いろの なまえ ----
-   いろの なまえは「きまった なまえの いろ」を ならべて おいて、
-   いちばん 近い ものを えらぶ。しきい値で ばあい分け すると
-   しろが「うすい やまぶきいろ」に なる（HSLの さいどは 白に 近いほど はねる）。
+   しきい値で ばあい分け すると しろが「うすい やまぶきいろ」に なる
+   （HSLの さいどは 白に 近いほど はねる）。いちばん 近い なまえを えらぶ。
    合わない 色が 出たら ここに 1行 足すだけで よい。同じ なまえを 2行 書いて よい。 */
 var NAMES=[
   ["しろ",253,250,244],["うすい はいいろ",198,194,188],["はいいろ",142,138,132],["はいいろ",108,104,100],
@@ -395,7 +372,7 @@ function colorName(c){
 }
 
 /* ============ ほぞん（iPadの iframe で 消えるので 3か所） ============ */
-var KEY="enogu_v1";
+var KEY="enogu_v2";
 function sSave(){
   var s=JSON.stringify({cards:CARDS,art:ART});
   try{localStorage.setItem(KEY,s)}catch(e){}
@@ -410,52 +387,35 @@ function sLoad(){
   for(i=0;i<c.length;i++){ if(!c[i]) continue;
     try{o=JSON.parse(c[i]);}catch(e){continue;}
     if(!o) continue;
-    if(!best || (o.cards||[]).length>(best.cards||[]).length) best=o;
+    if(!best||(o.cards||[]).length>(best.cards||[]).length) best=o;
   }
   return best;
 }
 
 /* ============ じょうたい ============ */
-var STEP=1, MODE="free";
+var STEP=1;
 var S={sel:[null,null], amt:[1,1], water:0, active:0};
-var CARDS=[];            /* {rgb,c1,a1,c2,a2,w} さいだい6まい */
-var ART={};              /* ぬりえ： id -> "rgb(...)" */
-var QI=0, QDONE=false, QHINT=false;
-var W3={a:null,b:null};
-var PICK4=null;          /* ④で えらんだ いろ */
+var CARDS=[];        /* {rgb,c1,a1,c2,a2,w} さいだい6まい */
+var ART={};          /* ぬりえ： sceneId -> {regionId:"rgb(...)"} */
+var W2={a:null,b:null}, NEARI=0, OPPI=0, OPPSEEN=[false,false,false,false,false,false];
+var SCENE=0, PICK=null;
 function $(id){return document.getElementById(id);}
-
-/* ============ ② もんだい（ランダムに しない。8もん 固定） ============ */
-var QUIZ=[
-  {c1:"あか",  a1:1,c2:"きいろ",a2:1,w:0},
-  {c1:"きいろ",a1:1,c2:"あお",  a2:1,w:0},
-  {c1:"あか",  a1:1,c2:"あお",  a2:1,w:0},
-  {c1:"あか",  a1:1,c2:"しろ",  a2:2,w:0},
-  {c1:"きいろ",a1:2,c2:"あお",  a2:1,w:0},
-  {c1:"あか",  a1:1,c2:"きいろ",a2:3,w:0},
-  {c1:"あお",  a1:1,c2:"しろ",  a2:1,w:0},
-  {c1:"あか",  a1:1,c2:"きいろ",a2:1,w:4}
-];
-function qColor(q){
-  var base=mixPaint([{c:byName(q.c1),a:q.a1},{c:byName(q.c2),a:q.a2}]);
-  return withWater(base,q.a1+q.a2,q.w);
-}
 
 /* ============ パレット ============ */
 function swatchOf(c){ return css(mixPaint([{c:c,a:1}])); }
 function buildPal(box,onClick){
   box.innerHTML="";
-  COLORS.forEach(function(c,i){
-    var b=document.createElement("button"); b.className="pc"; b.dataset.i=i;
+  COLORS.forEach(function(c){
+    var b=document.createElement("button"); b.className="pc";
     var sw=document.createElement("div"); sw.className="sw"; sw.style.background=swatchOf(c);
     var lb=document.createElement("div"); lb.className="pl"; lb.textContent=c.name;
     b.appendChild(sw); b.appendChild(lb);
-    b.addEventListener("click",function(){ onClick(c,i); });
+    b.addEventListener("click",function(){ onClick(c); });
     box.appendChild(b);
   });
 }
 
-/* ============ ①② まぜる ============ */
+/* ============ ① まぜて みる ============ */
 function curList(){
   var l=[],i;
   for(i=0;i<2;i++) if(S.sel[i]&&S.amt[i]>0) l.push({c:S.sel[i],a:S.amt[i]});
@@ -478,7 +438,6 @@ function draw(){
     $("an"+i).textContent=S.amt[i];
   }
   $("wn").textContent=S.water;
-
   var shown=curShown(), l=curList();
   if(!shown){
     $("bowl").style.background="var(--paper)";
@@ -491,7 +450,7 @@ function draw(){
     $("stroke").style.background=css(base);
     $("stroke").style.opacity=(1-waterT(pa,S.water)).toFixed(3);
     var txt;
-    if(l.length===2 && S.sel[0]!==S.sel[1]){
+    if(l.length===2&&S.sel[0]!==S.sel[1]){
       var a=S.amt[0],b=S.amt[1],g=gcd(a,b)||1;
       txt=S.sel[0].name+" "+(a/g)+" : "+S.sel[1].name+" "+(b/g);
     }else txt=l[0].c.name+" だけ";
@@ -499,102 +458,41 @@ function draw(){
     $("ratio").textContent=txt;
     $("made").innerHTML="できた いろ　<b>"+colorName(shown)+"</b>";
   }
-  if(MODE==="quiz") drawQuiz(); else drawCards();
-  tip();
+  drawCards(); tip1();
 }
-
-/* ---- ② クイズ ---- */
-function drawQuiz(){
-  var q=QUIZ[QI];
-  $("tgt").style.background=css(qColor(q));
-  var shown=curShown();
-  $("check").disabled=(curList().length<2);
-  if(!QDONE){ $("nfill").style.width="0%"; $("nsay").textContent=""; }
-  var i,bs=$("qlist").children;
-  for(i=0;i<bs.length;i++) bs[i].classList.toggle("on",i===QI);
-  $("sideTtl").textContent = QHINT
-    ? "この 2つの えのぐを つかうよ　→　"+q.c1+"　"+q.c2
-    : "もんだいを えらぶ";
-}
-function judge(){
-  if(curList().length<2){ $("nsay").textContent="まだ 2つ えらんで いないよ"; return; }
-  var q=QUIZ[QI], t=qColor(q), me=curShown();
-  /* ちがい（redmean）で 見る。ぴったり d<=24／おしい d<=75。
-     ％は バーの ながさ。ためした 回数は 数えない（点とりに しない） */
-  var d=cdist(me,t), sc=Math.max(0,Math.round(100*(1-d/300)));
-  var ok=(d<=24), near=(d<=75);
-  QDONE=true;
-  $("nfill").style.width=sc+"%";
-  $("nfill").style.background = ok?"var(--ok)" : near?"var(--gold)" : "#d9a06a";
-  var head = ok ? "ぴったり！　" : near ? "おしい！　" : "もう ちょっと　";
-  $("nsay").textContent = head+"ちかさ "+sc+"%"+(ok?"":"　"+advice());
-  if(ok) $("tip").textContent="よく できました！　つぎの もんだいへ いこう";
-}
-/* ×で おわらせず、つぎに 何を すれば いいかを 出す。
-   【大事】「みずの ちがい」と「色みの ちがい」を 分けて 見る。
-   いっしょに 見ると、みずが 多すぎる ときに「あかを ふやそう」と
-   出て しまう（えのぐを ふやしても うすさは 減るから。2026-09-22）。
-   ①うすさが ちがえば みずの こと だけ 言う
-   ②同じなら、みずを のぞいた 色どうしで くらべて、りょうを 1つ 動かす */
-function advice(){
-  var q=QUIZ[QI];
-  var tt=waterT(q.a1+q.a2,q.w), tc=waterT(curPaintAmt(),S.water);
-  if(tc-tt>0.10) return "みずを へらして みよう";
-  if(tt-tc>0.10) return "みずを ふやして みよう";
-  var tb=mixPaint([{c:byName(q.c1),a:q.a1},{c:byName(q.c2),a:q.a2}]);
-  var bd=cdist(mixPaint(curList()),tb), best=null, i, dv, keep, d, l;
-  for(i=0;i<2;i++){
-    if(!S.sel[i]) continue;
-    for(dv=-1;dv<=1;dv+=2){
-      if(S.amt[i]+dv<0||S.amt[i]+dv>8) continue;
-      keep=S.amt[i]; S.amt[i]+=dv;
-      l=curList(); d = l.length ? cdist(mixPaint(l),tb) : 9999;
-      S.amt[i]=keep;
-      if(d<bd-1){ bd=d; best={i:i,dv:dv}; }
-    }
-  }
-  if(!best) return "えのぐの くみあわせを かえて みよう";
-  return S.sel[best.i].name+(best.dv>0?"を ふやして みよう":"を へらして みよう");
-}
-
-/* ---- ① つくった いろの カード ---- */
 function recipeBar(cd){
-  var h="";
   var c1=COLORS[cd.c1], c2=(cd.c2>=0?COLORS[cd.c2]:null);
-  var t=cd.a1+(c2?cd.a2:0)||1;
+  var t=cd.a1+(c2?cd.a2:0)||1, h="";
   h+='<div style="flex:'+(cd.a1/t)+';background:'+swatchOf(c1)+'"></div>';
   if(c2) h+='<div style="flex:'+(cd.a2/t)+';background:'+swatchOf(c2)+'"></div>';
   return h;
 }
+function cardHTML(cd){
+  return '<div class="mix" style="background:'+css(cd.rgb)+'"></div>'
+        +'<div class="rec">'+recipeBar(cd)+'</div>'
+        +(cd.w>0?'<div class="wm">💧'+cd.w+'</div>':'');
+}
 function drawCards(){
   var box=$("cards"); box.innerHTML="";
   for(var i=0;i<6;i++){
-    var d=document.createElement("div");
-    var cd=CARDS[i];
-    if(!cd){ d.className="card empty"; }
-    else{
-      d.className="card";
-      d.innerHTML='<div class="mix" style="background:'+css(cd.rgb)+'"></div>'
-                 +'<div class="rec">'+recipeBar(cd)+'</div>'
-                 +(cd.w>0?'<div class="wm">💧'+cd.w+'</div>':'');
-      (function(k){ d.addEventListener("click",function(){ loadCard(k); }); })(i);
-    }
+    var d=document.createElement("div"), cd=CARDS[i];
+    if(!cd) d.className="card empty";
+    else{ d.className="card"; d.innerHTML=cardHTML(cd);
+      (function(k){ d.addEventListener("click",function(){ loadCard(k); }); })(i); }
     box.appendChild(d);
   }
-  $("sideTtl").textContent="つくった いろ";
   $("save").disabled=(curList().length===0);
 }
 function saveCard(){
   var l=curList(); if(!l.length) return;
-  /* かならず curList から 作る。S.sel[0] が からっぽの ことが あるので
-     S.amt[0] を 見て きめては いけない（カードが こわれる） */
-  var e1=l[0], e2=(l.length>1)?l[1]:null;
+  /* かならず curList から 作る。S.amt[0] を 見て きめると
+     1つめが からっぽの ときに COLORS[-1] を つかんで こわれる */
+  var e1=l[0], e2=(l.length>1)?l[1]:null, over=false;
   CARDS.push({rgb:curShown(), c1:COLORS.indexOf(e1.c), a1:e1.a,
               c2:e2?COLORS.indexOf(e2.c):-1, a2:e2?e2.a:0, w:S.water});
-  var over=false;
   while(CARDS.length>6){ CARDS.shift(); over=true; }
-  sSave(); drawCards(); build4Cards();
-  $("tip").textContent = over
+  sSave(); drawCards(); drawCards3();
+  $("tip1").textContent = over
     ? "カードが いっぱいなので、いちばん 古い カードと 入れかえたよ"
     : "カードに のこしたよ。カードを おすと、また その いろに もどるよ";
 }
@@ -605,36 +503,29 @@ function loadCard(i){
   S.water=cd.w;
   $("amt0").value=S.amt[0]; $("amt1").value=S.amt[1]; $("wt").value=S.water;
   draw();
-  $("tip").textContent="この いろの 作りかたは 上に 出て いるよ";
+  $("tip1").textContent="この いろの 作りかたは 上に 出て いるよ";
 }
-
-function tip(){
-  if(STEP!==1&&STEP!==2) return;
+function tip1(){
   var t="", has=function(n){ return (S.sel[0]&&S.sel[0].name===n)||(S.sel[1]&&S.sel[1].name===n); };
-  if(MODE==="quiz"){
-    t="おだいの いろに ちかづけて、金の「くらべて みる」を おそう";
-    if(QHINT) t="つかう えのぐは 右に 出て いるよ。りょうを かえて ちかづけよう";
-  }
-  else if(!S.sel[0]&&!S.sel[1]) t="したの えのぐを おすと、ひかっている まるに 入るよ。2つ えらんで まぜて みよう";
+  if(!S.sel[0]&&!S.sel[1]) t="したの えのぐを おすと、ひかっている まるに 入るよ。2つ えらんで まぜて みよう";
   else if(S.water>0) t="みずを ふやすと、かみが すけて うすく なるよ（したの ぼうを 見てね）";
   else if(has("くろ")) t="くろは とても つよい いろ。ちょっとだけ 入れて みよう";
   else if(has("しろ")) t="しろを まぜると あかるく なるけど、すこし くすむよ。みずと くらべて みよう";
   else if(!S.sel[0]||!S.sel[1]) t="もう ひとつ えらぶと、まざった いろに なるよ";
   else t="えのぐの りょうを かえると、いろが かわるよ";
-  $("tip").textContent=t;
+  $("tip1").textContent=t;
 }
 
-/* ============ ③ いろの わ ============
+/* ============ ② いろの わ ============
    あか・きいろ・あお の 3つから 作った 12の いろを 輪に する。
-   むかいあわせ（6つ はなれた ところ）を まぜると にごる。 */
+   【大事】ます目ごとに 絵の具の りょうを そろえる（合計3.0）。
+   そろえないと「あか3」と「きいろ1＋あお1」を まぜた ときに あかが 勝ち、
+   むかいあわせなのに にごらない。もどさないこと */
 var WHEEL=[
   [["あか",3]], [["あか",2],["きいろ",1]], [["あか",1],["きいろ",1]], [["あか",1],["きいろ",2]],
   [["きいろ",3]], [["きいろ",2],["あお",1]], [["きいろ",1],["あお",1]], [["きいろ",1],["あお",2]],
   [["あお",3]], [["あお",2],["あか",1]], [["あお",1],["あか",1]], [["あお",1],["あか",2]]
 ];
-/* どの ます目も 絵の具の りょうを そろえる。
-   そろえないと「あか3」と「きいろ1＋あお1」を まぜた ときに あかが 勝って しまい、
-   むかいあわせなのに にごらない（2026-09-22）。もどさないこと */
 function wList(i){
   var l=WHEEL[i].map(function(x){ return {c:byName(x[0]),a:x[1]}; }), t=0, j;
   for(j=0;j<l.length;j++) t+=l[j].a*l[j].c.s;
@@ -643,8 +534,9 @@ function wList(i){
   return l;
 }
 function wColor(i){ return mixPaint(wList(i)); }
+var NS="http://www.w3.org/2000/svg";
 function buildWheel(){
-  var sv=$("wheel"), cx=160, cy=160, R=148, r=62, i, NS="http://www.w3.org/2000/svg";
+  var sv=$("wheel"), cx=160, cy=160, R=150, r=66, i;
   sv.innerHTML="";
   for(i=0;i<12;i++){
     var a0=(i*30-105)*Math.PI/180, a1=((i+1)*30-105)*Math.PI/180;
@@ -654,103 +546,167 @@ function buildWheel(){
     p.setAttribute("d","M"+x0+" "+y0+"A"+R+" "+R+" 0 0 1 "+x1+" "+y1+"L"+x2+" "+y2+"A"+r+" "+r+" 0 0 0 "+x3+" "+y3+"Z");
     p.setAttribute("fill",css(wColor(i)));
     p.setAttribute("stroke","#fffdf7"); p.setAttribute("stroke-width","3");
-    p.dataset.i=i;
     (function(k,el){ el.addEventListener("click",function(){ wPick(k); }); })(i,p);
     sv.appendChild(p);
   }
   var t=document.createElementNS(NS,"circle");
-  t.setAttribute("cx",cx); t.setAttribute("cy",cy); t.setAttribute("r",r-6);
+  t.setAttribute("cx",cx); t.setAttribute("cy",cy); t.setAttribute("r",r-5);
   t.setAttribute("fill","#fffdf7"); t.setAttribute("stroke","#e7d9b8"); t.setAttribute("stroke-width","3");
+  t.setAttribute("id","wcenter");
   sv.appendChild(t);
-  var lb=document.createElementNS(NS,"text");
-  lb.setAttribute("x",cx); lb.setAttribute("y",cy+6); lb.setAttribute("text-anchor","middle");
-  lb.setAttribute("font-size","19"); lb.setAttribute("font-weight","700"); lb.setAttribute("fill","#7a6a52");
-  lb.textContent="いろの わ";
-  sv.appendChild(lb);
-  wMark();
+  var l1=document.createElementNS(NS,"text");
+  l1.setAttribute("x",cx); l1.setAttribute("y",cy-6); l1.setAttribute("text-anchor","middle");
+  l1.setAttribute("font-size","22"); l1.setAttribute("font-weight","700"); l1.setAttribute("fill","#c9a227");
+  l1.setAttribute("id","wc1"); l1.textContent="わを";
+  sv.appendChild(l1);
+  var l2=document.createElementNS(NS,"text");
+  l2.setAttribute("x",cx); l2.setAttribute("y",cy+20); l2.setAttribute("text-anchor","middle");
+  l2.setAttribute("font-size","22"); l2.setAttribute("font-weight","700"); l2.setAttribute("fill","#c9a227");
+  l2.setAttribute("id","wc2"); l2.textContent="2つ おそう";
+  sv.appendChild(l2);
+  wShow();
 }
 function wMark(){
   var ps=$("wheel").querySelectorAll("path");
   for(var i=0;i<ps.length;i++){
-    var on=(W3.a===i||W3.b===i);
+    var on=(W2.a===i||W2.b===i);
     ps[i].setAttribute("stroke", on?"#c9a227":"#fffdf7");
-    ps[i].setAttribute("stroke-width", on?"7":"3");
+    ps[i].setAttribute("stroke-width", on?"8":"3");
   }
 }
 function wPick(i){
-  if(W3.a===null){ W3.a=i; }
-  else if(W3.b===null){ if(i===W3.a) return; W3.b=i; }
-  else { W3.a=i; W3.b=null; }
-  wMark(); wShow();
+  if(W2.a===null) W2.a=i;
+  else if(W2.b===null){ if(i===W2.a) return; W2.b=i; }
+  else { W2.a=i; W2.b=null; }
+  wShow();
 }
+function wSet(a,b){ W2.a=a; W2.b=b; wShow(); }
 function wShow(){
-  if(W3.a===null){ $("wres").style.background="var(--paper)"; $("wkind").textContent="";
-    $("wsay").textContent="わの 中の いろを 2つ おしてね"; return; }
-  if(W3.b===null){ $("wres").style.background=css(wColor(W3.a)); $("wkind").textContent="";
-    $("wsay").textContent="もう ひとつ おしてね"; return; }
-  var mix=mixPaint(wList(W3.a).concat(wList(W3.b)));
+  wMark();
+  var c1=$("wc1"), c2=$("wc2"), cc=$("wcenter");
+  $("wa").style.background = (W2.a===null)?"var(--paper)":css(wColor(W2.a));
+  $("wb").style.background = (W2.b===null)?"var(--paper)":css(wColor(W2.b));
+  if(W2.a===null||W2.b===null){
+    $("wres").style.background="var(--paper)";
+    $("wkind").textContent="";
+    $("wsay").textContent = (W2.a===null)
+      ? "わを 2つ おすか、下の 青い ボタンを おそう"
+      : "あと 1つ おそう";
+    if(c1) c1.textContent = (W2.a===null)?"わを":"あと";
+    if(c2) c2.textContent = (W2.a===null)?"2つ おそう":"1つ おそう";
+    if(cc) cc.setAttribute("fill","#fffdf7");
+    return;
+  }
+  if(c1) c1.textContent=""; if(c2) c2.textContent="";
+  var mix=mixPaint(wList(W2.a).concat(wList(W2.b)));
+  /* わの まん中にも まざった いろを 出す＝わの 中で まざる ことが 目で わかる */
+  if(cc) cc.setAttribute("fill",css(mix));
   $("wres").style.background=css(mix);
-  var d=Math.abs(W3.a-W3.b); if(d>6) d=12-d;
+  var d=Math.abs(W2.a-W2.b); if(d>6) d=12-d;
   var kind = d===1?"となりどうし" : d===6?"むかいあわせ" : d+"つ はなれて いる";
   $("wkind").textContent=kind+"　→　"+colorName(mix);
-  if(d===6) $("wsay").textContent="むかいあわせの いろを まぜると、くすんで 暗い 色に なるよ";
+  if(d===6){
+    var n=0,i;
+    OPPSEEN[Math.min(W2.a,W2.b)%6]=true;
+    drawOpp();
+    for(i=0;i<6;i++) if(OPPSEEN[i]) n++;
+    $("wsay").textContent = (n>=6)
+      ? "6つとも くすんで 暗い 色に なったね。むかいあわせは にごるよ"
+      : "むかいあわせを まぜると、くすんで 暗い 色に なるよ（"+n+" / 6）";
+  }
   else if(d===1) $("wsay").textContent="となりどうしは、まぜても きれいな 色の まま";
   else $("wsay").textContent="はなれて いるほど、にごって いくよ";
 }
-function buildOpp(){
+function drawOpp(){
   var box=$("opp"); box.innerHTML="";
   for(var i=0;i<6;i++){
-    var j=i+6, mix=mixPaint(wList(i).concat(wList(j)));
-    var d=document.createElement("div"); d.className="opair";
-    d.innerHTML='<div class="two"><div style="background:'+css(wColor(i))+'"></div>'
-               +'<div style="background:'+css(wColor(j))+'"></div></div>'
-               +'<div class="rr" style="background:'+css(mix)+'"></div>';
+    var d=document.createElement("div");
+    d.className="opair"+(OPPSEEN[i]?" got":"");
+    var mix=OPPSEEN[i]?css(mixPaint(wList(i).concat(wList(i+6)))):"var(--paper)";
+    d.innerHTML='<div class="two"><div style="background:'+(OPPSEEN[i]?css(wColor(i)):"transparent")+'"></div>'
+               +'<div style="background:'+(OPPSEEN[i]?css(wColor(i+6)):"transparent")+'"></div></div>'
+               +'<div class="rr" style="background:'+mix+'"></div>';
     box.appendChild(d);
   }
 }
 
-/* ============ ④ ぬって みる ============ */
-var SCENE=[
-  {id:"sora", d:"M0 0H400V300H0Z", nm:"そら"},
-  {id:"tiyo", d:"M340 52m-34 0a34 34 0 1 0 68 0a34 34 0 1 0 -68 0", nm:"たいよう"},
-  {id:"jimen",d:"M0 232C70 214 130 244 200 232C270 220 330 246 400 232V300H0Z", nm:"じめん"},
-  {id:"miki", d:"M186 242V162H214V242Z", nm:"みき"},
-  {id:"ha",   d:"M200 44C126 44 84 92 84 132C84 168 118 190 152 190H248C282 190 316 168 316 132C316 92 274 44 200 44Z", nm:"は"},
-  {id:"ringoA",d:"M148 128m-20 0a20 20 0 1 0 40 0a20 20 0 1 0 -40 0", nm:"りんご"},
-  {id:"ringoB",d:"M212 108m-20 0a20 20 0 1 0 40 0a20 20 0 1 0 -40 0", nm:"りんご"},
-  {id:"ringoC",d:"M258 150m-20 0a20 20 0 1 0 40 0a20 20 0 1 0 -40 0", nm:"りんご"}
+/* ============ ③ ぬって みる ============ */
+var SCENES=[
+  {nm:"き", rg:[
+    {id:"sora", d:"M0 0H400V300H0Z", nm:"そら"},
+    {id:"taiyo",d:"M344 54m-32 0a32 32 0 1 0 64 0a32 32 0 1 0 -64 0", nm:"たいよう"},
+    {id:"jimen",d:"M0 232C70 214 130 244 200 232C270 220 330 246 400 232V300H0Z", nm:"じめん"},
+    {id:"miki", d:"M186 242V162H214V242Z", nm:"みき"},
+    {id:"ha",   d:"M200 44C126 44 84 92 84 132C84 168 118 190 152 190H248C282 190 316 168 316 132C316 92 274 44 200 44Z", nm:"は"},
+    {id:"rA",   d:"M148 128m-19 0a19 19 0 1 0 38 0a19 19 0 1 0 -38 0", nm:"りんご"},
+    {id:"rB",   d:"M212 106m-19 0a19 19 0 1 0 38 0a19 19 0 1 0 -38 0", nm:"りんご"},
+    {id:"rC",   d:"M258 150m-19 0a19 19 0 1 0 38 0a19 19 0 1 0 -38 0", nm:"りんご"}
+  ]},
+  {nm:"さかな", rg:[
+    {id:"umi",  d:"M0 0H400V300H0Z", nm:"うみ"},
+    {id:"kusa", d:"M36 300C36 250 18 226 28 186C46 210 58 244 62 300Z M96 300C96 258 84 238 92 206C106 226 116 254 118 300Z", nm:"みずくさ"},
+    {id:"tail", d:"M124 140L82 106V174Z", nm:"しっぽ"},
+    {id:"body", d:"M200 96C240 96 272 116 282 140C272 164 240 184 200 184C160 184 128 164 118 140C128 116 160 96 200 96Z", nm:"からだ"},
+    {id:"hire", d:"M192 102C198 74 212 60 230 56C232 76 224 94 216 104Z", nm:"せびれ"},
+    {id:"koza", d:"M250 232L228 216V252Z M300 214C324 214 344 226 350 234C344 244 324 254 300 254C276 254 258 244 252 234C258 226 276 214 300 214Z", nm:"こざかな"},
+    {id:"awa",  d:"M320 120m-13 0a13 13 0 1 0 26 0a13 13 0 1 0 -26 0 M354 82m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0 M336 54m-6 0a6 6 0 1 0 12 0a6 6 0 1 0 -12 0", nm:"あわ"}
+  ]},
+  {nm:"はな", rg:[
+    {id:"sora", d:"M0 0H400V300H0Z", nm:"そら"},
+    {id:"jimen",d:"M0 246C80 234 140 256 210 246C280 236 330 254 400 246V300H0Z", nm:"じめん"},
+    {id:"kuki", d:"M194 252V126H206V252Z", nm:"くき"},
+    {id:"haL",  d:"M200 208C164 204 138 182 136 156C172 154 196 178 200 204Z", nm:"ひだりの は"},
+    {id:"haR",  d:"M200 198C236 194 262 172 264 146C228 144 204 168 200 194Z", nm:"みぎの は"},
+    {id:"hana", d:"M200 46m-27 0a27 27 0 1 0 54 0a27 27 0 1 0 -54 0 M240 70m-27 0a27 27 0 1 0 54 0a27 27 0 1 0 -54 0 M240 116m-27 0a27 27 0 1 0 54 0a27 27 0 1 0 -54 0 M200 140m-27 0a27 27 0 1 0 54 0a27 27 0 1 0 -54 0 M160 116m-27 0a27 27 0 1 0 54 0a27 27 0 1 0 -54 0 M160 70m-27 0a27 27 0 1 0 54 0a27 27 0 1 0 -54 0", nm:"はなびら"},
+    {id:"naka", d:"M200 93m-25 0a25 25 0 1 0 50 0a25 25 0 1 0 -50 0", nm:"まんなか"},
+    {id:"cho",  d:"M320 96C306 76 290 68 282 76C274 84 280 100 298 106C306 109 315 105 320 96Z M328 96C342 76 358 68 366 76C374 84 368 100 350 106C342 109 333 105 328 96Z M324 84C327 84 329 90 329 104C329 118 327 128 324 131C321 128 319 118 319 104C319 90 321 84 324 84Z", nm:"ちょう"}
+  ]},
+  {nm:"ちょう", rg:[
+    {id:"sora", d:"M0 0H400V300H0Z", nm:"そら"},
+    {id:"kusa", d:"M0 262C60 250 120 268 200 258C280 248 340 266 400 258V300H0Z M56 264V214H64V264Z", nm:"くさ"},
+    {id:"uwa",  d:"M194 152C158 96 118 72 94 86C70 100 76 148 118 168C148 182 178 174 194 152Z M206 152C242 96 282 72 306 86C330 100 324 148 282 168C252 182 222 174 206 152Z", nm:"うわばね"},
+    {id:"shita",d:"M197 160C174 178 148 202 154 220C160 236 190 228 200 198Z M203 160C226 178 252 202 246 220C240 236 210 228 200 198Z", nm:"したばね"},
+    {id:"kara", d:"M200 86C209 86 213 104 213 148C213 192 209 222 200 232C191 222 187 192 187 148C187 104 191 86 200 86Z", nm:"からだ"},
+    {id:"hana", d:"M60 204m-26 0a26 26 0 1 0 52 0a26 26 0 1 0 -52 0", nm:"はな"}
+  ]}
 ];
+function buildScenes(){
+  var box=$("scenes"); box.innerHTML="";
+  SCENES.forEach(function(sc,i){
+    var b=document.createElement("button"); b.textContent=sc.nm;
+    b.addEventListener("click",function(){ SCENE=i; buildArt(); });
+    box.appendChild(b);
+  });
+}
 function buildArt(){
-  var sv=$("art"), NS="http://www.w3.org/2000/svg";
+  var sv=$("art"), sc=SCENES[SCENE], i, bs=$("scenes").children;
+  for(i=0;i<bs.length;i++) bs[i].classList.toggle("on",i===SCENE);
+  if(!ART[sc.nm]) ART[sc.nm]={};
   sv.innerHTML="";
-  SCENE.forEach(function(g){
+  sc.rg.forEach(function(g){
     var p=document.createElementNS(NS,"path");
-    p.setAttribute("d",g.d); p.setAttribute("class","rg"); p.dataset.id=g.id;
-    p.setAttribute("fill", ART[g.id]||"#fffdf7");
+    p.setAttribute("d",g.d); p.setAttribute("class","rg");
+    p.setAttribute("fill", ART[sc.nm][g.id]||"#fffdf7");
     p.addEventListener("click",function(){
-      if(!PICK4){ $("tip4").textContent="さきに いろを えらんでね"; return; }
-      ART[g.id]=PICK4; p.setAttribute("fill",PICK4); sSave();
-      $("tip4").textContent=g.nm+"を ぬったよ";
+      if(!PICK){ $("tip3").textContent="さきに いろを えらんでね"; return; }
+      ART[sc.nm][g.id]=PICK; p.setAttribute("fill",PICK); sSave();
+      $("tip3").textContent=g.nm+"を ぬったよ";
     });
     sv.appendChild(p);
   });
 }
-function build4Cards(){
-  var box=$("cards4"); if(!box) return;
+function drawCards3(){
+  var box=$("cards3"); if(!box) return;
   box.innerHTML="";
   for(var i=0;i<6;i++){
     var d=document.createElement("div"), cd=CARDS[i];
-    if(!cd){ d.className="card empty"; }
-    else{
-      d.className="card";
-      d.innerHTML='<div class="mix" style="background:'+css(cd.rgb)+'"></div>'
-                 +'<div class="rec">'+recipeBar(cd)+'</div>';
-      (function(col,el){ el.addEventListener("click",function(){ pick4(col); }); })(css(cd.rgb),d);
-    }
+    if(!cd) d.className="card empty";
+    else{ d.className="card"; d.innerHTML=cardHTML(cd);
+      (function(col,el){ el.addEventListener("click",function(){ pick(col); }); })(css(cd.rgb),d); }
     box.appendChild(d);
   }
 }
-function pick4(c){ PICK4=c; $("nowdot").style.background=c; $("tip4").textContent="えの 中を おすと ぬれるよ"; }
+function pick(c){ PICK=c; $("nowdot").style.background=c; $("tip3").textContent="えの 中を おすと ぬれるよ"; }
 
 /* ============ そうさ ============ */
 [0,1].forEach(function(i){
@@ -758,72 +714,34 @@ function pick4(c){ PICK4=c; $("nowdot").style.background=c; $("tip4").textConten
     if(e.target.tagName==="INPUT") return;
     S.active=i; draw();
   });
-  $("amt"+i).addEventListener("input",function(e){ S.amt[i]=parseInt(e.target.value,10); QDONE=false; draw(); });
+  $("amt"+i).addEventListener("input",function(e){ S.amt[i]=parseInt(e.target.value,10); draw(); });
 });
-$("wt").addEventListener("input",function(e){ S.water=parseInt(e.target.value,10); QDONE=false; draw(); });
+$("wt").addEventListener("input",function(e){ S.water=parseInt(e.target.value,10); draw(); });
 $("save").addEventListener("click",saveCard);
-$("check").addEventListener("click",judge);
-$("qnext").addEventListener("click",function(){ setQ((QI+1)%QUIZ.length); });
-$("qhint").addEventListener("click",function(){ QHINT=!QHINT; drawQuiz(); tip(); });
-$("oppBtn").addEventListener("click",function(){
-  var h=$("opp").classList.toggle("hide");
-  $("oppBtn").textContent = h ? "むかいあわせを ぜんぶ 見る ▶" : "わに もどす";
-  if(!h) $("wsay").textContent="6つの くみあわせ。どれも くすんで 暗い 色に なるよ";
-});
+$("bNear").addEventListener("click",function(){ wSet(NEARI%12,(NEARI+1)%12); NEARI=(NEARI+1)%12; });
+$("bOpp").addEventListener("click",function(){ wSet(OPPI%6,(OPPI%6)+6); OPPI=(OPPI+1)%6; });
 
-function setQ(i){
-  QI=i; QDONE=false;
-  S.sel=[null,null]; S.amt=[1,1]; S.water=0; S.active=0;
-  $("amt0").value=1; $("amt1").value=1; $("wt").value=0;
-  draw();
-}
-function buildQList(){
-  var box=$("qlist"); box.innerHTML="";
-  QUIZ.forEach(function(q,i){
-    var b=document.createElement("button"); b.textContent=(i+1);
-    b.addEventListener("click",function(){ setQ(i); });
-    box.appendChild(b);
-  });
-}
-
-/* ---- タブ ---- */
 function show(n){
   STEP=n;
   var tb=$("tabs").children,i;
-  for(i=0;i<tb.length;i++) tb[i].classList.toggle("on", i===n-1);
-  $("s12").classList.toggle("hide", n>2);
-  $("s3").classList.toggle("hide", n!==3);
-  $("s4").classList.toggle("hide", n!==4);
-  if(n<=2){
-    MODE=(n===2)?"quiz":"free";
-    var q=(MODE==="quiz");
-    $("center").classList.toggle("quiz",q);
-    $("tgtWrap").classList.toggle("hide",!q);
-    $("mineCap").classList.toggle("hide",!q);
-    $("near").classList.toggle("hide",!q);
-    $("qbtns").classList.toggle("hide",!q);
-    $("made").classList.toggle("hide",q);
-    $("paperCap").classList.toggle("hide",q);
-    $("paperBox").classList.toggle("hide",q);
-    $("cards").classList.toggle("hide",q);
-    $("qlist").classList.toggle("hide",!q);
-    $("save").classList.toggle("hide",q);
-    $("qhint").classList.toggle("hide",!q);
-    if(q) setQ(QI); else draw();
-  }
-  if(n===3){ wShow(); $("tip3").textContent="この わの いろは、ぜんぶ あか・きいろ・あお から 作って あるよ"; }
-  if(n===4){ build4Cards(); $("tip4").textContent=PICK4?"えの 中を おすと ぬれるよ":"いろを えらんで、えの 中を おそう"; }
+  for(i=0;i<tb.length;i++) tb[i].classList.toggle("on",i===n-1);
+  $("s1").classList.toggle("hide",n!==1);
+  $("s2").classList.toggle("hide",n!==2);
+  $("s3").classList.toggle("hide",n!==3);
+  if(n===1){ draw(); }
+  if(n===2){ wShow(); $("tip2").textContent="わの いろを 2つ えらぶと、まざった いろが 出るよ"; }
+  if(n===3){ drawCards3(); buildArt();
+    $("tip3").textContent=PICK?"えの 中を おすと ぬれるよ":"いろを えらんで、えの 中を おそう"; }
 }
 var tbs=$("tabs").children;
 for(var ti=0;ti<tbs.length;ti++){
   (function(n){ tbs[n-1].addEventListener("click",function(){ show(n); }); })(ti+1);
 }
-
 $("reset").addEventListener("click",function(){
-  if(STEP===3){ W3={a:null,b:null}; wMark(); wShow(); $("opp").classList.add("hide");
-    $("oppBtn").textContent="むかいあわせを ぜんぶ 見る ▶"; return; }
-  if(STEP===4){ ART={}; buildArt(); sSave(); $("tip4").textContent="ぜんぶ けしたよ"; return; }
-  if(STEP===2){ setQ(QI); return; }
+  if(STEP===2){ W2={a:null,b:null}; NEARI=0; OPPI=0;
+    OPPSEEN=[false,false,false,false,false,false]; drawOpp(); wShow(); return; }
+  if(STEP===3){ ART[SCENES[SCENE].nm]={}; buildArt(); sSave();
+    $("tip3").textContent="この ぬりえを ぜんぶ けしたよ"; return; }
   S.sel=[null,null]; S.amt=[1,1]; S.water=0; S.active=0;
   $("amt0").value=1; $("amt1").value=1; $("wt").value=0;
   draw();
@@ -841,13 +759,11 @@ fit();
 /* ---- はじめ ---- */
 var saved=sLoad();
 if(saved){ CARDS=saved.cards||[]; ART=saved.art||{}; }
-buildPal($("pal12"),function(c){
-  S.sel[S.active]=c; S.active=(S.active===0)?1:0; QDONE=false; draw();
-});
-buildPal($("pal12b"),function(c){ pick4(swatchOf(c)); });
-buildQList();
+buildPal($("pal12"),function(c){ S.sel[S.active]=c; S.active=(S.active===0)?1:0; draw(); });
+buildPal($("pal12b"),function(c){ pick(swatchOf(c)); });
 buildWheel();
-buildOpp();
+drawOpp();
+buildScenes();
 buildArt();
 show(1);
 </script>
