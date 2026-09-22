@@ -306,8 +306,9 @@ input[type=file]{display:none;}
       </div>
       <div class="msg" id="m1">とびばこの てほんだよ。<b>4つの こま</b>を 見て みよう。</div>
       <div class="bar">
-        <button class="btn play" id="b1play">うごかして 見る ▶</button>
-        <button class="btn sub" id="b1rst">さいしょから</button>
+        <button class="btn sub" id="b1back">◀ もどる</button>
+        <button class="btn play" id="b1next">1つずつ 見る ▶</button>
+        <button class="btn sub" id="b1all">ぜんぶ 見る</button>
         <button class="btn next" id="b1go">② こまを えらぶ →</button>
       </div>
     </section>
@@ -497,11 +498,17 @@ const TECH={
       {hp:[672,250],tr:-80,hdo:4,a1:[-8,-30],a2:[2,-22],l1:[142,142],l2:[218,218],gz:-6,foc:[664,246,330]},
       cp(LANDK)]),
     names:['じょそう','ふみきり','手を つく','とびこす','ちゃくち'],
+    /* こまごとの ことば。解説の 例示「助走から両足で踏み切り，足を左右に開いて着手し，
+       跳び越えて着地する」を こまに 割った もの */
+    steps:['まっすぐ はしって くる',
+           '<b>両足で</b> ふみきる',
+           '足を <b>左右に ひらいて</b>、とびばこに 両手を つく',
+           '足を ひらいた まま <b>とびこえる</b>',
+           '両足で おりて <b>ぴたっと 止まる</b>'],
     /* アニメだけに はさむ こま（連続図には 出さない）。
        手を つく → とびこす は はなれて いるので、まっすぐ つなぐと
        足が とびばこを 24px つきぬけて いた。おし切って こしが いちばん 高い
        ところ（足が ひらきはじめる）を あいだに 入れる */
-    mid:{2:{hp:[580,200],tr:-28,hdo:-16,a1:[44,28],a2:[52,24],l1:[168,160],l2:[196,188],gz:12,foc:[600,196,330]}},
     tePt:[530,298],chPt:[796,462],teLo:[0,58],chLo:[84,-12],
     ex:{k:'ex',sym:'■',label:'足を 左右に ひらく',sub:'ひらけて いる？',pose:3,pt:[672,250],lo:[96,-6]},
   },
@@ -544,54 +551,18 @@ const TECH={
       {hp:[494,210],tr:117,hdo:-27,a1:[155,72],a2:[162,66],l1:[-68,60],l2:[-62,52],gz:286,foc:[490,238,330]},
       cp(LANDD)]),
     names:['じょそう','ふみきり','手を つく','回る','ちゃくち'],
-    /* アニメだけに はさむ こま（連続図には 出さない）。
-       **後頭部を ついた あと、そのまま ちゃくちに つなぐと 頭が とびばこを
-       14px つきぬけて いた**（体が 起き上がる より 先に 頭が 下がる ため）。
-       せなかが とびばこに つき、**あごを 引いた まま 頭が むねの がわへ 上がる** ところを
-       あいだに 入れる。頭を 首の 下に ぶら下げた まま 回すと、体が 起き上がる より 先に
-       頭が 下がって とびばこを つきぬける。hdo を -50 → -211 と 大きく まわして、
-       頭を「首の 下」→「首の 前」→「首の 上」と 送るのが かなめ。
-       **この こまを 消すと 頭が また とびばこに めりこむ** */
-    mid:{
-      /* とんで いる あいだ（ふみきり → 着手）。
-         **ここが「顔から つっこんで 見える」の 正体だった**（2026-09-22 に 3回 指摘された）。
-         まっすぐ つなぐと、体が 回る とちゅうで 頭が 首の 真下に 来る 瞬間が あり、
-         その とき **頭が 体の いちばん 下・いちばん 前**に なって 手より 先に とびばこへ
-         向かう。頭の 向き（目線）を 直しても、この 形が 出る かぎり 顔から 見える。
-         だから この こまでは
-         　・**頭を 首より 上・うしろ**に 置く（hdo=130＝あごを 引いた まま 頭は 高い）
-         　・**手を 頭より 下・前**に のばす（手 y=272 / 頭の 下のはし 265、手 x=448 / 頭 x=406）
-         　＝**手が 先、頭は あと**。これで どの こまでも 頭が 先に 出ない。
-         **頭を 下げない／手より 前に 出さないこと** */
-      1:{hp:[365,250],tr:-25,hdo:130,a1:[50,55],a2:[56,60],l1:[119,112],l2:[131,108],gz:40,foc:[400,250,330]},
-      /* **せなかが とびばこに つく** こま（2026-09-22 指摘＝「台の上で 首を 引きずって
-         いるように 見えます」）。まえは この こまでも かたが 30px 浮いた ままで、
-         **接して いるのが 頭だけ**だった。だから 頭が とびばこの 上を 64px（箱の 36%）
-         すべって いき、首を ひきずる ように 見えた。
-         じっさいの 前転は「後頭部 → **背中** → 尻 → 足裏」の 順に 接して いく（解説）。
-         かたを 下ろして せなかで 受ければ、頭は そこで 浮く。
-         　・かたの 下のはし y=296＝とびばこの 上ばん(298)に ほぼ 接する
-         　・あたまの 下のはし y=284＝14 うく
-         【もう ひとつ 大事】**この こまの かたは、回るこまで 頭が ついた ところの すぐ 上に 置く**
-         （頭 x=470 → かた x=485）。前へ 80 も 進めると、頭が 接した まま その ぶん
-         前へ 運ばれ、けっきょく 箱の 上を すべる。前転は **頭を じくに して 体が 回る**ので、
-         接点は ほとんど 動かない。**かたを 前へ 出しすぎないこと**
-         **かたを 上げて 頭だけで 受ける 形に もどさないこと** */
-      3:{hp:[517,245],tr:126,hdo:-196,a1:[0,-10],a2:[8,-20],l1:[326,70],l2:[335,65],gz:315,foc:[517,250,330]},
-      4:{hp:[660,290],tr:196,hdo:-215,a1:[-40,-70],a2:[-30,-60],l1:[10,70],l2:[20,62],gz:340,foc:[660,290,330]}},
+    /* 解説の「助走から両足で踏み切り，腰の位置を高く保って着手し，前方に回転して着地する」
+       ＋ 前転の 接する 順（後頭部－背中－尻－足裏）を こまに 割った もの */
+    steps:['まっすぐ はしって くる',
+           '<b>両足で</b> ふみきる',
+           '<b>こしを 高く たもって</b> 手を つく',
+           '<b>頭の うしろ</b>を つけて、せなかで 前に 回る',
+           '両足で おりて <b>ぴたっと 止まる</b>'],
     tePt:[454,298],chPt:[778,462],teLo:[0,58],chLo:[84,-12],
     ex:{k:'ex',sym:'■',label:'こしを 高く する',sub:'こしは 上がって いる？',pose:2,pt:[420,198],lo:[-96,-16]},
   }
 };
-['kai','dai'].forEach(k=>{
-  TECH[k].poses=TECH[k].raw.map(mk);
-  /* うごかして 見る ときの 通り道。連続図の 5こまに、出さない 中間こまを はさむ。
-     raw（＝連続図）と path（＝アニメ）を 分けて あるので、
-     **中間こまを ふやしても 連続図は 5こまの まま** */
-  const path=[];
-  TECH[k].raw.forEach((r,i)=>{path.push(cp(r));if(TECH[k].mid&&TECH[k].mid[i])path.push(cp(TECH[k].mid[i]));});
-  TECH[k].path=unwrap(path);
-});
+['kai','dai'].forEach(k=>{TECH[k].poses=TECH[k].raw.map(mk);});
 
 /* ②③で 取り出す 4つの こま＝連続図の 2〜5こまめ。
    解説の 配慮の例「踏切り－着手－着地までの動きが身に付くように」＋
@@ -839,23 +810,25 @@ function drawGear(g){
 
 /* ========================= じょうたい ========================= */
 let step=1,dirty=true,tech='kai',mk1=null,mk3='te';
-let anim=null;                    /* ①の うごかして 見る */
+/* ①は **こま送り**。連続再生は しない。
+   【2026-09-22 の きめごと】うごかして 見る（角度を まっすぐ つないで まわす）を
+   やめた。理由:
+   　・接地点を 止めて いないので、手や 頭が 台の 上を すべる
+   　　（「首を ひきずる」。1つ 直すと べつの ところに 出る）
+   　・こしを 直線で つなぐので 飛んで いる あいだが 放物線に ならない
+   　・こまの きれめで 向きが カクッと 変わる／緩急が ない
+   これらは 補間を やめれば **原理的に 起きない**。
+   このフォルダの ほかの 11本も ぜんぶ こま送り（「1つ すすむ ▶」）で、
+   解説が 名ざして いるのも 動画では なく **連続図**。
+   **連続再生に もどさないこと**（もどすなら 放物線＋接地点の 固定＋緩急が いる）。
+   cur＝いま 見せて いる こま（0〜4）。4 は「ぜんぶ」 */
+let cur=4;
 let shotIdx=0;                    /* ③で 見て いる こま */
 const SHOT=[null,null,null,null]; /* ②で 取り出した 4まい（canvas） */
 const UMK=[{},{},{},{}];          /* 自分の 絵に 置いた 目じるし（0〜1に なおして もつ） */
 let flip=false,vurl=null,rate=1;
 let ba4=0;
 let IMR=null;                     /* ③の 右がわ（自分の 絵）の 場所。タップの あたり判定に つかう */
-
-/* こまと こまの あいだを つなぐ＝うごかして 見る。
-   場所では なく 角度を つなぐので、手足の 長さが 変わらない */
-function lerpRaw(rs,t){
-  const n=rs.length,i=Math.max(0,Math.min(n-2,Math.floor(t))),u=Math.max(0,Math.min(1,t-i));
-  const a=rs[i],b=rs[i+1],L=(x,y)=>x+(y-x)*u,A=(p,q)=>[L(p[0],q[0]),L(p[1],q[1])];
-  return mk({hp:A(a.hp,b.hp),tr:L(a.tr,b.tr),hdo:L(a.hdo||0,b.hdo||0),
-    a1:A(a.a1,b.a1),a2:A(a.a2,b.a2),l1:A(a.l1,b.l1),l2:A(a.l2,b.l2),
-    gz:L(a.gz,b.gz),foc:a.foc});
-}
 
 /* ========================= ① てほんを 見る ========================= */
 function buildTech(id){
@@ -874,14 +847,20 @@ function buildMk1(){
     const b=document.createElement('button');
     b.className='m-'+m.k+(mk1===m.k?' on':'');
     b.innerHTML=m.sym+' '+m.label+'<b>'+m.sub+'</b>';
-    b.onclick=()=>{mk1=(mk1===m.k?null:m.k);buildMk1();dirty=true;say1();};
+    b.onclick=()=>{mk1=(mk1===m.k?null:m.k);if(mk1)cur=4;buildMk1();upB1();dirty=true;say1();};
     el.appendChild(b);
   });
 }
 function say1(){
   const T=TECH[tech];
-  if(anim){$('m1').innerHTML='うごきを 見て いるよ。';return;}
-  if(!mk1){$('m1').innerHTML=T.html+'の てほん。<b>'+T.say+'</b>';return;}
+  if(!mk1){
+    if(cur<4){
+      $('m1').innerHTML='<b>'+(cur+1)+'　'+T.names[cur]+'</b>　'+T.steps[cur];
+    }else{
+      $('m1').innerHTML=T.html+'の てほん。<b>'+T.say+'</b>';
+    }
+    return;
+  }
   const m=marks(tech).find(x=>x.k===mk1);
   const cl={te:'te',ch:'ch',me:'me',ex:'ex'}[m.k];
   $('m1').innerHTML='<span class="'+cl+'">'+m.sym+' '+m.label+'</span>　'+m.sub+
@@ -893,16 +872,19 @@ function draw1(){
   const T=TECH[tech],MS=marks(tech);
   const fm=mk1?MS.find(x=>x.k===mk1):null;
   const fp=fm?fm.pose:null;
+  const focus=!!fm&&fp>=0;
   T.poses.forEach((p,i)=>{
-    let a=0.92;
-    if(anim)a=0.16;
-    else if(fm&&fp>=0)a=(i===fp)?1:0.15;
+    /* こま送り中は、まだ 来て いない こまは かかない。
+       通りすぎた こまは うすく のこす＝おすたびに 連続図が できあがって いく */
+    if(!focus&&cur<4&&i>cur)return;
+    const a=focus?((i===fp)?1:0.15):(cur>=4?0.92:(i===cur?1:0.26));
     drawFig(g,p,INK,a);
-    if(mk1==='me'&&!anim)drawGaze(g,p,0.95);
+    if(mk1==='me')drawGaze(g,p,0.95);
+    else if(!mk1&&cur<4&&i===cur)drawGaze(g,p,0.9);
     /* こまの 名前。4つの こま（②で 取り出す もの）には ①〜④を つける */
     const sc=SC.indexOf(i);
     const lx=p.foc[0],ly=502;
-    g.save();g.globalAlpha=anim?0.3:1;
+    g.save();g.globalAlpha=(!focus&&cur<4&&i!==cur)?0.45:1;
     if(sc>=0){
       g.fillStyle=C.gold;g.beginPath();g.arc(lx,ly,14,0,7);g.fill();
       txt(g,String(sc+1),lx,ly+1,17,'#3a2c05');
@@ -912,10 +894,7 @@ function draw1(){
     }
     g.restore();
   });
-  if(anim){
-    const p=lerpRaw(T.path,anim.t);
-    drawFig(g,p,INK,1);drawGaze(g,p,0.9);
-  }else if(fm&&fm.pt){
+  if(fm&&fm.pt){
     drawMark(g,fm.sym,fm.pt[0],fm.pt[1],21,fm.col,1);
     /* 名前を 出す むきは しるしごとに きめて ある（人・とびばこ・マットと かさならない ように）。
        まとめて「上に 出す」に すると 人の うでや あしに かぶる */
@@ -924,8 +903,8 @@ function draw1(){
   }else if(mk1==='me'){
     tag(g,'目を むける ところ',BW/2,72,19,C.me);
   }
-  if(tech==='kai'&&!anim&&(!mk1||mk1==='ex'))frontInset(g,782,96,178,152);
-  if(tech==='dai'&&!anim&&!mk1)headContact(g,1);
+  if(tech==='kai'&&(!mk1||mk1==='ex')&&cur>=3)frontInset(g,782,96,178,152);
+  if(tech==='dai'&&!mk1&&cur>=3)headContact(g,1);
   g.restore();
 }
 
@@ -1206,7 +1185,6 @@ function show(n){
     const on=(i===n-1);el.classList.toggle('on',on);el.style.display=on?'flex':'none';
   });
   [...document.querySelectorAll('.tab')].forEach(b=>b.classList.toggle('on',Number(b.dataset.s)===n));
-  if(n!==1)anim=null;
   if(n!==2)$('vid').pause();
   /* 【大事】かくれて いる あいだに 中身が 変わって いるので、出すたびに 文を 出しなおす。
      ②で こまを とった あと ③に 来ても「この こまは まだ ないよ」と 出て いた */
@@ -1223,8 +1201,14 @@ $('tabs').addEventListener('click',e=>{
 });
 
 /* ---- ① ---- */
-$('b1play').onclick=()=>{anim={t:0};say1();dirty=true;};
-$('b1rst').onclick=()=>{anim=null;mk1=null;buildMk1();say1();dirty=true;};
+function upB1(){
+  $('b1next').textContent=(cur>=4)?'1つずつ 見る ▶':'つぎの こま ▶';
+  $('b1back').disabled=(cur<=0||cur>=4);
+  $('b1all').disabled=(cur>=4);
+}
+$('b1next').onclick=()=>{cur=(cur>=4)?0:cur+1;mk1=null;buildMk1();upB1();say1();dirty=true;};
+$('b1back').onclick=()=>{if(cur>0&&cur<4){cur--;upB1();say1();dirty=true;}};
+$('b1all').onclick=()=>{cur=4;upB1();say1();dirty=true;};
 $('b1go').onclick=()=>show(2);
 
 /* ---- ② ---- */
@@ -1277,15 +1261,7 @@ $('b3go').onclick=()=>show(4);
 $('b4go').onclick=()=>show(1);
 
 /* ---- まわす ---- */
-function frame(ts){
-  if(anim){
-    const dt=Math.min(0.05,(ts-(frame.last||ts))/1000);
-    const seg=TECH[tech].path.length-1;
-    anim.t+=dt*seg/3.6;   /* 中間こまを ふやしても ぜんたいの ながさは 3.6びょうの まま */
-    if(anim.t>=seg){anim=null;say1();}
-    dirty=true;
-  }
-  frame.last=ts;
+function frame(){
   if(dirty){
     dirty=false;
     try{
@@ -1298,7 +1274,7 @@ let rzT=null;
 addEventListener('resize',()=>{dirty=true;clearTimeout(rzT);rzT=setTimeout(()=>{dirty=true;},140);});
 addEventListener('orientationchange',()=>{setTimeout(()=>{dirty=true;},250);});
 
-buildAll();show(1);upPlay();
+buildAll();upB1();show(1);upPlay();
 requestAnimationFrame(frame);
 </script>
 </body>
