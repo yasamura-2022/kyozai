@@ -251,6 +251,22 @@ input[type=file]{display:none;}
   padding:2px 1px;font-size:clamp(9px,1vw,12px);
 }
 .shot.on{border-color:var(--gold);box-shadow:0 0 0 3px #f5d97a inset;}
+/* とった こまを 1まいだけ 消す ×。
+   【大事】`.shot` は button なので、その 中に button は 入れられない。
+   `.shotwrap` で つつんで きょうだいに する。
+   同じ ふだを もう一度 おせば とり直せるが、**消す みちも 用意する**
+   （2026-09-22 要望＝「間違えた ところで 止めて しまった ときに、こまを 消す 機能が ほしい」）。
+   ②（とる がめん）だけに 出す。③は 見る だけなので 出さない */
+.shotwrap{position:relative;min-width:0;}
+.shotwrap>.shot{width:100%;}
+.del{
+  position:absolute;top:2px;right:2px;width:34px;height:34px;min-height:0;z-index:3;
+  border:2px solid rgba(255,255,255,.92);border-radius:50%;background:rgba(43,33,24,.78);
+  color:#fff;font:inherit;font-size:18px;line-height:1;padding:0;cursor:pointer;
+  touch-action:manipulation;
+}
+.del:active{transform:scale(.9);}
+.del:focus-visible{outline:3px solid var(--gold);outline-offset:2px;}
 
 /* ---- いちばん下の ことわり書き。**消さないこと** ---- */
 #note{
@@ -270,6 +286,7 @@ input[type=file]{display:none;}
      （1024x560 で 19px はみ出して いた）。中の 絵は object-fit:contain なので ゆがまない */
   #s2 .shot{aspect-ratio:2.1/1;}
   #s2 .panel{gap:3px;padding:4px 6px;}
+  .del{width:28px;height:28px;font-size:15px;}
   #mk1,#mk3{display:grid;grid-template-columns:1fr 1fr;align-content:start;}
   .seg button{min-height:38px;padding:5px 3px;font-size:clamp(10px,1.08vw,13px);}
   .panel{padding:5px 6px;gap:4px;}
@@ -934,6 +951,7 @@ function buildShots(id,mode){
   const el=$(id);el.innerHTML='';
   const T=TECH[tech];
   SC.forEach((pi,i)=>{
+    const w=document.createElement('div');w.className='shotwrap';
     const b=document.createElement('button');
     b.className='shot'+(SHOT[i]?' has':'')+(mode==='pick'&&shotIdx===i?' on':'');
     if(SHOT[i])b.appendChild(thumb(SHOT[i]));
@@ -945,7 +963,16 @@ function buildShots(id,mode){
       if(mode==='cap'){capture(i);}
       else{shotIdx=i;buildShots('shots3','pick');dirty=true;say3();}
     };
-    el.appendChild(b);
+    w.appendChild(b);
+    if(mode==='cap'&&SHOT[i]){
+      const d=document.createElement('button');
+      d.className='del';d.textContent='×';
+      d.title=(i+1)+' '+T.names[pi]+' を 消す';
+      d.setAttribute('aria-label',(i+1)+' '+T.names[pi]+' を 消す');
+      d.onclick=e=>{e.stopPropagation();delShot(i);};
+      w.appendChild(d);
+    }
+    el.appendChild(w);
   });
 }
 function buildRate(){
@@ -963,8 +990,9 @@ function say2(){
   if(!hasVid()){$('m2').innerHTML='上の ボタンで <b>動画を 選ぼう</b>。';return;}
   const n=SHOT.filter(Boolean).length;
   if(n===0){$('m2').innerHTML='<b>1こまずつ</b> 進めて、右の 4つの ボタンで その こまを 止めよう。';return;}
-  if(n<4){$('m2').innerHTML='<b>'+n+'まい</b> とれたよ。のこり '+(4-n)+'まい。';return;}
-  $('m2').innerHTML='4まい そろったね。<b>③ ならべて くらべる</b> へ 進もう。';
+  const redo='　同じ ふだを もう一度 おすと とり直し、<b>×</b>で 消せるよ。';
+  if(n<4){$('m2').innerHTML='<b>'+n+'まい</b> とれたよ。のこり '+(4-n)+'まい。'+redo;return;}
+  $('m2').innerHTML='4まい そろったね。<b>③ ならべて くらべる</b> へ 進もう。'+redo;
 }
 function capture(i){
   const v=$('vid');
@@ -980,6 +1008,15 @@ function capture(i){
   UMK[i]={};
   buildShots('shots2','cap');buildShots('shots3','pick');
   say2();dirty=true;
+}
+/* とった こまを 1まいだけ 消す。動画と ほかの こまは のこす */
+function delShot(i){
+  if(!SHOT[i])return;
+  const nm=(i+1)+' '+TECH[tech].names[SC[i]];
+  SHOT[i]=null;UMK[i]={};
+  buildShots('shots2','cap');buildShots('shots3','pick');
+  $('m2').innerHTML='<b>'+nm+'</b> を 消したよ。とり直せるよ。';
+  say3();dirty=true;
 }
 function clearVid(){
   const v=$('vid');v.pause();v.removeAttribute('src');v.load();
