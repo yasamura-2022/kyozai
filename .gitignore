@@ -3,6 +3,7 @@
 
 # Claude Code のローカル設定・メモ（公開しない）
 .claude/settings.local.json
+.claude/tools/
 CLAUDE.md
 
 # 作業用
