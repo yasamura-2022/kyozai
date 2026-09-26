@@ -162,21 +162,21 @@
   .tab.on .step{color:var(--gold);opacity:1}
 
   /* ===== ステップ３：高さを のばす ===== */
-  #main3,#main4{flex:1;min-height:0;display:grid;gap:8px;
+  #main1,#main3,#main4{flex:1;min-height:0;display:grid;gap:8px;
     grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) auto;grid-template-areas:"stage" "work"}
   @media (orientation:landscape){
-    #main3,#main4{grid-template-columns:minmax(0,1.3fr) minmax(330px,1fr);grid-template-rows:minmax(0,1fr);grid-template-areas:"stage work"}
-    #work3,#work4{justify-content:center}
+    #main1,#main3,#main4{grid-template-columns:minmax(0,1.3fr) minmax(330px,1fr);grid-template-rows:minmax(0,1fr);grid-template-areas:"stage work"}
+    #work1,#work3,#work4{justify-content:center}
   }
-  @media (orientation:portrait){ #work3,#work4{min-height:clamp(300px,46vh,560px)} }
-  #stage3,#stage4{grid-area:stage;min-height:0;border-radius:18px;border:3px solid #b9d9d5;
+  @media (orientation:portrait){ #work1,#work3,#work4{min-height:clamp(300px,46vh,560px)} }
+  #stage1,#stage3,#stage4{grid-area:stage;min-height:0;border-radius:18px;border:3px solid #b9d9d5;
     background:linear-gradient(#fbfefd,#eef7f5);position:relative;overflow:hidden;padding:6px;contain:size}
-  #stage3 > svg,#stage4 > svg{width:100%;height:100%;display:block}
-  #stage3.tapped,#stage4.tapped{animation:tapped .25s}
-  #work3,#work4{grid-area:work;display:flex;flex-direction:column;gap:8px;min-height:0}
+  #stage1 > svg,#stage3 > svg,#stage4 > svg{width:100%;height:100%;display:block}
+  #stage1.tapped,#stage3.tapped,#stage4.tapped{animation:tapped .25s}
+  #work1,#work3,#work4{grid-area:work;display:flex;flex-direction:column;gap:8px;min-height:0}
   /* 3択と ボタンの 場所は いつも とって おく＝場面が かわっても 絵の 大きさが 動かない */
-  #actions3,#actions4{min-height:54px}
-  @media (max-height:640px){ #actions3,#actions4{min-height:46px} }
+  #actions1,#actions3,#actions4{min-height:54px}
+  @media (max-height:640px){ #actions1,#actions3,#actions4{min-height:46px} }
   .tblwrap{position:relative;background:var(--card);border:2px solid var(--line);border-radius:14px;
     padding:calc(1.9em + 4px) 8px calc(1.9em + 4px);font-size:clamp(15px,calc(.7vw + 1.5vh),24px)}
   .tbl{width:100%;border-collapse:collapse;table-layout:fixed;font-weight:800;font-variant-numeric:tabular-nums;text-align:center}
@@ -236,12 +236,23 @@
   <header><h1>体積</h1></header>
 
   <div class="tabs">
-    <button class="tab on" data-m="s2"><span class="step">ステップ２</span>1だんずつ 積む</button>
+    <button class="tab on" data-m="s1"><span class="step">ステップ１</span>1cm³で 測る</button>
+    <button class="tab" data-m="s2"><span class="step">ステップ２</span>1だんずつ 積む</button>
     <button class="tab" data-m="s3"><span class="step">ステップ３</span>高さを のばす</button>
     <button class="tab" data-m="s4"><span class="step">ステップ４</span>大きな 単位</button>
   </div>
 
-  <div id="main">
+  <div id="main1">
+    <div id="stage1"><svg id="pic1"></svg></div>
+    <div id="work1">
+      <div class="prob" id="prob1"></div>
+      <div class="say" id="say1"></div>
+      <div class="choices off" id="choices1"></div>
+      <div class="actions" id="actions1"></div>
+    </div>
+  </div>
+
+  <div id="main" class="hidden">
     <div id="stage">
       <div class="unit" id="unit"></div>
       <button id="explode" type="button" class="hidden">だんを 分けて 見る</button>
@@ -296,7 +307,7 @@ function setFH(){
   document.documentElement.style.setProperty('--fh',v+'px');
 }
 setFH();
-addEventListener('resize',()=>{setFH();draw();if(MODE==='s3')draw3();if(MODE==='s4')draw4();});
+addEventListener('resize',()=>{setFH();draw();if(MODE==='s1')draw1();if(MODE==='s3')draw3();if(MODE==='s4')draw4();});
 if(window.visualViewport) visualViewport.addEventListener('resize',setFH);
 
 /* ===== 問題（じゅんばんは きめて ある。ランダムに しない）
@@ -1152,20 +1163,159 @@ function t_ask(){
 }
 document.querySelectorAll('.part').forEach(b=>b.addEventListener('click',()=>{if(!S4.busy)part4(+b.dataset.p);}));
 
+
+/* =====================================================================
+   ステップ１：1cm³で 測る
+   解説（p.260）：「面積を単位となる大きさを基に求めたことからの類推により，体積の単位としては
+   空間を隙間なく埋め尽くす立体図形が適当であることについて理解できるようにする。そして，その立体図形
+   としては一辺の長さでその大きさが決まる立方体が便利で，その一辺の長さが１㎝や１ｍのように長さの単位の
+   大きさであるものが都合がよい」
+   → 問題1＝ボールと 立方体、すき間なく 入るのは どっち？ → 1cm³ の 定義
+     問題2〜4＝形の ちがう 2つの 箱。見た目で 予想（まるつけ しない）→ 1cm³ を 入れて 何個分か 見る →
+     どちらが 何cm³ 大きい？（3択）。4問目は 同じ 大きさ（見た目では わからない）
+   立方体は 1色（だんを 数える ステップでは ないので、だんごとの 色分けは しない）
+   ===================================================================== */
+const P1=[{intro:true},
+          {a:[4,3,2],b:[2,2,5]},      /* 24 と 20 */
+          {a:[3,3,2],b:[2,2,5]},      /* 18 と 20 */
+          {a:[4,2,3],b:[2,3,4]}];     /* 24 と 24 */
+const S1={pi:0,ph:0,guess:null,L:0,busy:false,solved:false};
+const vol=x=>x[0]*x[1]*x[2];
+function draw1(){
+  const q=P1[S1.pi];let g='',vb;
+  const fs=U*0.62;
+  if(q.intro){
+    /* 左＝ボール（すき間が できる）、右＝立方体（ぴったり） 3×3×3 */
+    const N=3,bw=N*U+N*DX,gap=U*2.6,ox=bw+gap;
+    const p=(i,j,k)=>[i*U+j*DX,-k*U+j*DY];
+    g+=`<defs><radialGradient id="ball" cx="35%" cy="35%" r="70%"><stop offset="0" stop-color="#fff3d6"/><stop offset=".6" stop-color="#f2c690"/><stop offset="1" stop-color="#c98f4a"/></radialGradient></defs>`;
+    g+=outlineAt(N,N,N,0,'#7d9a97',true,0);
+    for(let j=N-1;j>=0;j--)for(let k=0;k<N;k++)for(let i=0;i<N;i++){
+      const c=p(i+.5,j+.5,k+.5);g+=`<circle cx="${c[0]}" cy="${c[1]}" r="${U*0.47}" fill="url(#ball)" stroke="#a0702f" stroke-width="1.4"/>`;
+    }
+    g+=outlineAt(N,N,N,0,'#5c7d7a',true,1);
+    g+=box3(N,N,N,ox,()=>TONE[0],-1);
+    g+=txt(bw/2-N*DX/2,U*1.2,'ボール',{fs});
+    g+=txt(ox+bw/2-N*DX/2,U*1.2,'立方体',{fs});
+    if(S1.solved){
+      g+=txt(bw/2-N*DX/2,U*2.2,'すき間が できる',{fs:fs*0.85,c:'#b3566f'});
+      g+=txt(ox+bw/2-N*DX/2,U*2.2,'ぴったり 入る',{fs:fs*0.85,c:'#2f7f79'});
+    }
+    vb=[-U*0.8,-N*U+N*DY-U*0.8,ox+bw+U*1.6,N*U-N*DY+U*3.4];
+  }else{
+    const A=q.a,B=q.b,gap=U*2.6;
+    const bwA=A[0]*U+A[1]*DX,bwB=B[0]*U+B[1]*DX,ox=bwA+gap;
+    const one=(X,x0,name)=>{
+      let h='';
+      h+=outlineAt(X[0],X[1],X[2],x0,'#7d9a97',true,0);
+      h+=box3(X[0],X[1],Math.min(S1.L,X[2]),x0,()=>TONE[0],S1.anim&&S1.L-1<X[2]?S1.L-1:-1);   /* 落ちて くる 動きは 入れた ときだけ */
+      h+=outlineAt(X[0],X[1],X[2],x0,'#5c7d7a',true,1);
+      const cx=x0+X[0]*U/2;
+      h+=txt(cx+X[1]*DX/2,-X[2]*U+X[1]*DY-U*0.5,name,{fs:fs*1.2,c:'#2f7f79'});
+      h+=txt(cx,U*1.1,`横${X[0]}cm たて${X[1]}cm 高さ${X[2]}cm`,{fs:fs*0.66,c:'#8a7a5f'});
+      const n=X[0]*X[1]*Math.min(S1.L,X[2]);
+      h+=txt(cx,U*2.2,S1.L===0?'？':(S1.solved?`${n}cm<tspan dy="-${fs*0.4}" font-size="${fs*0.6}">3</tspan>`:`${n}個`),{fs});
+      return h;
+    };
+    g+=one(A,0,'A')+one(B,ox,'B');
+    const hmax=Math.max(A[2],B[2]),dmax=Math.max(A[1],B[1]);
+    vb=[-U*1.8,-hmax*U+dmax*DY-U*1.6,ox+bwB+U*3.6,hmax*U-dmax*DY+U*4.4];   /* 「横3cm たて3cm 高さ2cm」が 箱より 広い */
+  }
+  const svg=$('pic1');svg.setAttribute('viewBox',vb.join(' '));svg.innerHTML=g;
+}
+/* 見取図の 入れもの（part 0＝見えない 辺、1＝見える 辺） */
+function outlineAt(W,D,H,ox,col,dash,part){
+  const p=(i,j,k)=>[ox+i*U+j*DX,-k*U+j*DY],c=(a,b,e)=>p(a*W,b*D,e*H);
+  const E=(a,b,d)=>`<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="${col}" stroke-width="2.2" ${d?'stroke-dasharray="7 6"':''} stroke-linecap="round"/>`;
+  if(part===0) return E(c(0,1,0),c(1,1,0),1)+E(c(0,1,0),c(0,0,0),1)+E(c(0,1,0),c(0,1,1),1);
+  return E(c(0,0,0),c(1,0,0),dash)+E(c(1,0,0),c(1,0,1),dash)+E(c(1,0,1),c(0,0,1),dash)+E(c(0,0,1),c(0,0,0),dash)+
+    E(c(0,0,1),c(0,1,1),dash)+E(c(0,1,1),c(1,1,1),dash)+E(c(1,1,1),c(1,0,1),dash)+E(c(1,0,0),c(1,1,0),dash)+E(c(1,1,0),c(1,1,1),dash);
+}
+function say1(h,cls){const e=$('say1');e.className='say'+(cls?' '+cls:'');e.innerHTML=`<span>${h}</span>`;}
+function actions1(list){
+  const a=$('actions1');a.innerHTML='';
+  list.forEach(([c,t,f,dis])=>{
+    const b=document.createElement('button');b.className='btn '+c;b.innerHTML=t;b.disabled=!!dis;
+    b.addEventListener('click',()=>{if(!S1.busy)f();});a.appendChild(b);
+  });
+}
+function noChoices1(){const ch=$('choices1');ch.classList.add('off');ch.innerHTML=[1,2,3].map(()=>'<button class="choice" disabled>0</button>').join('');}
+/* 3択（judge＝false なら まるつけ しない＝予想） */
+function choices1(list,ok,onPick,wrongMsg){
+  const ch=$('choices1');ch.classList.remove('off');ch.innerHTML='';S1.solved=false;
+  list.forEach(v=>{
+    const b=document.createElement('button');b.className='choice'+(v.length>3?' long':'');b.innerHTML=v;
+    b.addEventListener('click',()=>{
+      if(S1.busy)return;
+      if(ok!==null&&v!==ok){b.disabled=true;say1(wrongMsg,'try');return;}
+      ch.querySelectorAll('.choice').forEach(x=>x.disabled=x!==b);b.classList.add('good');
+      onPick(v);
+    });
+    ch.appendChild(b);
+  });
+  actions1([]);
+}
+function s1start(){
+  Object.assign(S1,{ph:0,guess:null,L:0,busy:false,solved:false});
+  const q=P1[S1.pi];
+  $('prob1').innerHTML=`<span class="no">問題 ${S1.pi+1} / ${P1.length}</span><span class="dim">${q.intro?'何で 測ると いいかな':'A と B、どちらが 大きい？'}</span>`;
+  noChoices1();
+  if(q.intro){
+    say1('箱の 大きさを くらべたい。<br>何を 入れて 数えると いいかな？ すき間なく ぴったり 入るのは どっち？');
+    choices1(['ボール','立方体'],'立方体',()=>{
+      S1.solved=true;draw1();
+      say1('よくできました！ 立方体は すき間なく ぴったり 入るね。<br>1辺が 1cmの 立方体の 体積を <b>1cm<sup>3</sup></b>（1立方センチメートル）と いうよ','ok');
+      actions1([['next','次の 問題 →',next1]]);
+    },'もう一回。ボールと ボールの あいだを 見てみよう');
+  }else{
+    say1('A と B、どちらが 大きいと 思う？<br>まず 予想しよう');
+    choices1(['A','B','同じ'],null,v=>{
+      S1.guess=v;
+      say1(`予想は「${v}」だね。<br>1cm<sup>3</sup>の 立方体を 入れて たしかめよう`);
+      noChoices1();
+      actions1([['play','1cm<sup>3</sup>を 入れる ▶',fill1]]);
+    });
+  }
+  draw1();
+}
+function fill1(){
+  const q=P1[S1.pi],H=Math.max(q.a[2],q.b[2]);
+  S1.busy=true;actions1([]);
+  const tick=()=>{S1.L++;S1.anim=true;draw1();S1.anim=false;if(S1.L<H)setTimeout(tick,420);else setTimeout(()=>{S1.busy=false;ask1();},450);};
+  tick();
+}
+function ask1(){
+  const q=P1[S1.pi],va=vol(q.a),vb=vol(q.b),d=Math.abs(va-vb)||2;
+  const ans=va>vb?`Aが ${d}cm<sup>3</sup>`:va<vb?`Bが ${d}cm<sup>3</sup>`:'同じ';
+  say1(`A は 1cm<sup>3</sup>が ${va}個分、B は ${vb}個分。<br>どちらが 何cm<sup>3</sup> 大きい？`);
+  choices1([`Aが ${d}cm<sup>3</sup>`,`Bが ${d}cm<sup>3</sup>`,'同じ'],ans,()=>{
+    S1.solved=true;draw1();
+    const hit=S1.guess===(va>vb?'A':va<vb?'B':'同じ');
+    const res=va===vb?`A も B も ${va}cm<sup>3</sup>。形が ちがっても 体積は 同じ`:`A は ${va}cm<sup>3</sup>、B は ${vb}cm<sup>3</sup>`;
+    say1(`よくできました！ ${res}。<br>${hit?'予想どおり だったね':'見た目では わかりにくいね'}`,'ok');
+    const last=S1.pi===P1.length-1;
+    actions1([['sub','もう一度',s1start],['next',last?'はじめの 問題へ →':'次の 問題 →',next1]]);
+  },`もう一回。${va}個と ${vb}個を くらべよう`);
+}
+function next1(){S1.pi=(S1.pi+1)%P1.length;s1start();}
+
 /* ===== タブ ===== */
-let MODE='s2';
+let MODE='s1';
 document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
   MODE=t.dataset.m;killGhost();
   document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x===t));
+  $('main1').classList.toggle('hidden',MODE!=='s1');
   $('main').classList.toggle('hidden',MODE!=='s2');
   $('main3').classList.toggle('hidden',MODE!=='s3');
   $('main4').classList.toggle('hidden',MODE!=='s4');
   if(MODE==='s3'){if(!S3.started){S3.started=true;s3start();}else draw3();}
   else if(MODE==='s4'){if(!S4.started){S4.started=true;part4(0);}else draw4();}
+  else if(MODE==='s1') draw1();
   else draw();
 }));
 
 start();
+s1start();
 </script>
 </body>
 </html>
