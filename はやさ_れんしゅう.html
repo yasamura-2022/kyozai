@@ -136,6 +136,7 @@
   .choice.pick{border-color:var(--blue);background:#eaf1f8}
   .choice .emo{font-size:1.2em;margin-right:.15em}
   .choices.off{visibility:hidden}
+  .choices.need{outline:3px dashed var(--gold);outline-offset:4px;border-radius:18px}
 
   /* ボタン：青＝同じ 問題の 中で 進む／金＝答え合わせ／みどり＝次の 問題／茶＝もどす */
   .actions{display:flex;gap:8px;flex-shrink:0;margin-top:auto;min-height:54px}
@@ -268,7 +269,7 @@ function actions(list){
   });
 }
 function choices(list,onPick){
-  const box=$('choices');box.innerHTML='';box.classList.toggle('off',!list);
+  const box=$('choices');box.innerHTML='';box.classList.remove('need');box.classList.toggle('off',!list);
   if(!list)return;
   list.forEach((c,i)=>{
     const b=document.createElement('button');b.className='choice';b.innerHTML=c;
@@ -393,8 +394,8 @@ function drawRace(){
     g+=line(gx,y-FS*1.4,gx,y+FS*0.9,`stroke="${CI}" stroke-width="3"`);
     g+=`<path d="M${gx} ${y-FS*1.4} l${FS*0.9} ${FS*0.3} l${-FS*0.9} ${FS*0.3}z" fill="#d9748f"/>`;
     /* 名前と 数（左） */
-    g+=`<text x="${x0-FS*2.2}" y="${y+FS*0.2}" font-size="${FS*1.6}" text-anchor="middle" dominant-baseline="central">${r.e}</text>`;
-    g+=tx(x0-FS*2.2,y+FS*1.6,r.n,CI,{k:.8});
+    /* 左は 名前だけ（動物の 絵は コースの 上の 1つだけ。2つ ならぶと まぎらわしい） */
+    g+=tx(x0-FS*1.3,y,r.n,CI,{anc:"end"});   /* スタートの 絵と かさならない ように はなす */
     g+=tx(gx,y-FS*2.05,`<tspan fill="${CM}">${r.d}m</tspan> <tspan fill="${CT}">${r.t}秒</tspan>`,CI,{k:.85});
     /* あしあと（1秒ごと） */
     const now=R.phase==='pred'||R.phase==='ready'?0:Math.min(R.clock,r.t);
@@ -440,16 +441,16 @@ const P2=[
   {kind:'v',e:'🚄',nm:'新幹線',D:520,du:'km',T:2,tu:'時間',txt:'新幹線が <b class="m">520km</b> を <b class="t">2時間</b> で 進みました。'},
   {kind:'v',e:'🏃',nm:'100m走',D:100,du:'m',T:8,tu:'秒',txt:'<b class="m">100m</b> を <b class="t">8秒</b> で 走りました。'}
 ];
-/* ステップ３：道のり と 時間 を こうごに。1〜4問は 区切って 見てから、5〜8問は 見るのは ヒント */
+/* ステップ３：道のり と 時間 を こうごに。どの 問題も 区切って 見てから 式（2026-09-27：5〜8問だけ ヒントに して いたら、流れが 2とおりに なって まぎらわしかった） */
 const P3=[
   {kind:'d',e:'🚶',nm:'歩く',V:60,T:5,du:'m',tu:'分',txt:'<b class="h">分速 60m</b> で <b class="t">5分</b> 歩くと、何m 進む？'},
   {kind:'t',e:'🚶',nm:'歩く',V:60,D:300,du:'m',tu:'分',txt:'<b class="h">分速 60m</b> で <b class="m">300m</b> 歩くと、何分 かかる？'},
   {kind:'d',e:'🚗',nm:'車',V:40,T:3,du:'km',tu:'時間',txt:'<b class="t">3時間</b>、<b class="h">時速 40km</b> で 走ると、何km 進む？'},
   {kind:'t',e:'🏃',nm:'走る',V:8,D:48,du:'m',tu:'秒',txt:'<b class="m">48m</b> を <b class="h">秒速 8m</b> で 走ると、何秒 かかる？'},
-  {kind:'d',e:'🐆',nm:'チーター',V:30,T:4,du:'m',tu:'秒',txt:'チーターが <b class="h">秒速 30m</b> で <b class="t">4秒</b> 走ると、何m 進む？',free:1},
-  {kind:'t',e:'🚃',nm:'電車',V:80,D:240,du:'km',tu:'時間',txt:'<b class="m">240km</b> を <b class="h">時速 80km</b> の 電車で 行くと、何時間 かかる？',free:1},
-  {kind:'d',e:'🚲',nm:'自転車',V:250,T:12,du:'m',tu:'分',txt:'<b class="h">分速 250m</b> の 自転車で <b class="t">12分</b> 走ると、何m 進む？',free:1},
-  {kind:'t',e:'🚄',nm:'新幹線',V:260,D:780,du:'km',tu:'時間',txt:'<b class="h">時速 260km</b> の 新幹線で <b class="m">780km</b> 進むと、何時間 かかる？',free:1}
+  {kind:'d',e:'🐆',nm:'チーター',V:30,T:4,du:'m',tu:'秒',txt:'チーターが <b class="h">秒速 30m</b> で <b class="t">4秒</b> 走ると、何m 進む？'},
+  {kind:'t',e:'🚃',nm:'電車',V:80,D:240,du:'km',tu:'時間',txt:'<b class="m">240km</b> を <b class="h">時速 80km</b> の 電車で 行くと、何時間 かかる？'},
+  {kind:'d',e:'🚲',nm:'自転車',V:250,T:12,du:'m',tu:'分',txt:'<b class="h">分速 250m</b> の 自転車で <b class="t">12分</b> 走ると、何m 進む？'},
+  {kind:'t',e:'🚄',nm:'新幹線',V:260,D:780,du:'km',tu:'時間',txt:'<b class="h">時速 260km</b> の 新幹線で <b class="m">780km</b> 進むと、何時間 かかる？'}
 ];
 /* ステップ４：時速・分速・秒速を なおす。1時間＝60分、1分＝60秒 の 数直線 */
 const P4=[
@@ -487,7 +488,6 @@ function lineStart(){
   Object.assign(L,{phase:'look',st:0,slots:[],sel:null,cards:[],nameDone:false});
   hideAll();stageTap=null;
   prob(`<span class="no">問題 ${S.idx[MODE]+1} / ${list.length}</span><span>${q.txt}</span>`);
-  if(q.free){ask();return;}
   lookStep();
 }
 /* 見る ところ（青い ボタン）の ならび */
@@ -522,13 +522,6 @@ function advance(){
     if(L.st<steps.length) lookStep(); else ask();
   },t=>t);
 }
-/* ヒント（5〜8問）：区切って 見る */
-function hintRun(){
-  if(S.busy||G.hint)return;
-  G.hint=true;G.p=0;
-  anim(Math.min(4200,Math.max(1800,full(Q()).T*420)),t=>{G.p=t;draw();},()=>{askButtons();},t=>t);
-}
-
 /* ===== 式 ===== */
 function eqTokens(q){ return MODE==='s2'?['lead','s','÷','s']:['s','o','s']; }
 function makeCards(q){
@@ -558,7 +551,6 @@ function ask(){
 function askButtons(){
   const q=full(Q());
   const list=[['sub','カードを もどす',resetCards]];
-  if(q.free&&!G.hint) list.push(['play','数直線で 区切る',hintRun]);
   list.push(['show','答え',check]);
   actions(list);
 }
@@ -701,14 +693,17 @@ function check(){
 function nameAsk(q){
   L.phase='name';
   const v=fmt(q.V)+q.du;
-  say(`よくできました！ <b class="t">1${q.tu}</b>に <b class="h">${v}</b> 進むね。<br>この 速さを 何と いう？<br><small>1秒あたり＝秒速　1分あたり＝分速　1時間あたり＝時速</small>`,'ok');
+  /* 2026-09-27：「よくできました」の みどりの 中に 問いを 書いたら、終わったと 思われて 先に 進めなかった。
+     問いは ふつうの わくで 出し、次へ の ボタンは えらぶまで 理由つきで おせなく する */
+  say(`<b class="t">1${q.tu}</b>に <b class="h">${v}</b> 進むね。<br><b>この 速さの 名前を 下から えらぼう</b>`);
   const ops=['秒','分','時間'];
-  choices(ops.map(u=>`${SOKU[u]} ${v}`),(i,btn)=>{
-    if(ops[i]!==q.tu){btn.disabled=true;say(`<b class="t">1${q.tu}</b>あたりに 進む 道のりだよ。<br><small>1秒あたり＝秒速　1分あたり＝分速　1時間あたり＝時速</small>`,'try');return;}
+  choices(ops.map(u=>`${SOKU[u]} ${v}<br><small style="font-size:.55em;color:#8a7a5f">1${u}あたり</small>`),(i,btn)=>{
+    if(ops[i]!==q.tu){btn.disabled=true;say(`<b class="t">1${q.tu}</b>あたりに 進む 道のりだよ。<br>ボタンの 下の 字を 見よう`,'try');return;}
     [...$('choices').children].forEach((b,j)=>{b.disabled=true;b.classList.toggle('good',j===i);});
-    finishLine(q);
+    $('choices').classList.remove('need');finishLine(q);
   });
-  actions([['sub','もう一度 見る',lineStart]]);
+  $('choices').classList.add('need');
+  actions([['sub','もう一度 見る',lineStart],['next','↑ 名前を えらぼう',()=>{},true]]);
 }
 function finishLine(q){
   const v=`${q.vu} ${fmt(q.V)}${q.du}`;
