@@ -148,7 +148,8 @@
   .btn:disabled{opacity:.45;box-shadow:none}
 
 
-  /* ===== タブ ===== */
+  
+/* ===== タブ ===== */
   .tabs{display:flex;gap:6px;flex-shrink:0}
   .tab{
     flex:1;border:2px solid var(--line);border-radius:14px;background:var(--card);
@@ -161,21 +162,21 @@
   .tab.on .step{color:var(--gold);opacity:1}
 
   /* ===== ステップ３：高さを のばす ===== */
-  #main3{flex:1;min-height:0;display:grid;gap:8px;
+  #main3,#main4{flex:1;min-height:0;display:grid;gap:8px;
     grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) auto;grid-template-areas:"stage" "work"}
   @media (orientation:landscape){
-    #main3{grid-template-columns:minmax(0,1.3fr) minmax(330px,1fr);grid-template-rows:minmax(0,1fr);grid-template-areas:"stage work"}
-    #work3{justify-content:center}
+    #main3,#main4{grid-template-columns:minmax(0,1.3fr) minmax(330px,1fr);grid-template-rows:minmax(0,1fr);grid-template-areas:"stage work"}
+    #work3,#work4{justify-content:center}
   }
-  @media (orientation:portrait){ #work3{min-height:clamp(300px,46vh,560px)} }
-  #stage3{grid-area:stage;min-height:0;border-radius:18px;border:3px solid #b9d9d5;
+  @media (orientation:portrait){ #work3,#work4{min-height:clamp(300px,46vh,560px)} }
+  #stage3,#stage4{grid-area:stage;min-height:0;border-radius:18px;border:3px solid #b9d9d5;
     background:linear-gradient(#fbfefd,#eef7f5);position:relative;overflow:hidden;padding:6px;contain:size}
-  #stage3 > svg{width:100%;height:100%;display:block}
-  #stage3.tapped{animation:tapped .25s}
-  #work3{grid-area:work;display:flex;flex-direction:column;gap:8px;min-height:0}
+  #stage3 > svg,#stage4 > svg{width:100%;height:100%;display:block}
+  #stage3.tapped,#stage4.tapped{animation:tapped .25s}
+  #work3,#work4{grid-area:work;display:flex;flex-direction:column;gap:8px;min-height:0}
   /* 3択と ボタンの 場所は いつも とって おく＝場面が かわっても 絵の 大きさが 動かない */
-  #actions3{min-height:54px}
-  @media (max-height:640px){ #actions3{min-height:46px} }
+  #actions3,#actions4{min-height:54px}
+  @media (max-height:640px){ #actions3,#actions4{min-height:46px} }
   .tblwrap{position:relative;background:var(--card);border:2px solid var(--line);border-radius:14px;
     padding:calc(1.9em + 4px) 8px calc(1.9em + 4px);font-size:clamp(15px,calc(.7vw + 1.5vh),24px)}
   .tbl{width:100%;border-collapse:collapse;table-layout:fixed;font-weight:800;font-variant-numeric:tabular-nums;text-align:center}
@@ -195,6 +196,23 @@
   .choice:active{transform:translateY(2px)}
   .choice:disabled{opacity:.35;box-shadow:none}
   .choice.good{border-color:var(--ok);background:#eaf5e4}
+
+  /* ===== ステップ４：大きな 単位 ===== */
+  .parts{display:flex;gap:6px}
+  .part{flex:1;border:2px solid var(--line);border-radius:12px;background:var(--card);padding:6px 2px;font-weight:800;color:#8a7a5f;
+    font-size:clamp(12px,calc(.5vw + 1.1vh),17px);line-height:1.2;word-break:keep-all}
+  .part.on{background:var(--acc-s);border-color:var(--acc);color:var(--acc)}
+  .choice.long{font-size:clamp(17px,calc(.8vw + 2vh),28px);max-width:190px}
+  #utbl{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:10px}
+  #utbl table{border-collapse:separate;border-spacing:6px;font-weight:800;text-align:center;font-variant-numeric:tabular-nums;
+    font-size:clamp(16px,calc(.9vw + 2vh),32px)}
+  #utbl th{color:#6f5d3d;font-size:.72em;padding:0 .3em;white-space:nowrap}
+  #utbl td{background:#fff;border:3px solid var(--line);border-radius:12px;padding:.35em .5em;min-width:4.6em;white-space:nowrap}
+  #utbl td.blank{border-style:dashed;color:#b9a67c}
+  #utbl td.cur{border:3px solid var(--gold);background:#fff4c9;color:var(--ink)}
+  #utbl td.done{border-color:var(--acc);color:var(--acc)}
+  #utbl td.x{background:transparent;border:none;color:#a8691f;font-size:.8em;min-width:3.6em;padding:0 .1em}   /* 「×1000」の 場所を はじめから とって おく */
+  #utbl .note{font-size:.55em;color:#8a7a5f;display:block}
   @media (orientation:landscape){ #work{justify-content:center} }
   /* たて長：下の らんの 高さを 先に とって おく（進むたびに 絵の 大きさが 変わらない ように） */
   @media (orientation:portrait){ #work{min-height:clamp(260px,43vh,540px)} }
@@ -220,6 +238,7 @@
   <div class="tabs">
     <button class="tab on" data-m="s2"><span class="step">ステップ２</span>1だんずつ 積む</button>
     <button class="tab" data-m="s3"><span class="step">ステップ３</span>高さを のばす</button>
+    <button class="tab" data-m="s4"><span class="step">ステップ４</span>大きな 単位</button>
   </div>
 
   <div id="main">
@@ -252,6 +271,20 @@
       <div class="actions" id="actions3"></div>
     </div>
   </div>
+
+  <div id="main4" class="hidden">
+    <div id="stage4"><svg id="pic4"></svg><div id="utbl" class="hidden"></div></div>
+    <div id="work4">
+      <div class="parts" id="parts4">
+        <button class="part" data-p="0">1辺 10cmの 立方体</button>
+        <button class="part" data-p="1">1辺 1mの 立方体</button>
+        <button class="part" data-p="2">表に まとめる</button>
+      </div>
+      <div class="say" id="say4"></div>
+      <div class="choices off" id="choices4"></div>
+      <div class="actions" id="actions4"></div>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -263,7 +296,7 @@ function setFH(){
   document.documentElement.style.setProperty('--fh',v+'px');
 }
 setFH();
-addEventListener('resize',()=>{setFH();draw();if(MODE==='s3')draw3();});
+addEventListener('resize',()=>{setFH();draw();if(MODE==='s3')draw3();if(MODE==='s4')draw4();});
 if(window.visualViewport) visualViewport.addEventListener('resize',setFH);
 
 /* ===== 問題（じゅんばんは きめて ある。ランダムに しない）
@@ -818,6 +851,266 @@ $('stage3').addEventListener('click',()=>{
   grow();const st=$('stage3');st.classList.remove('tapped');void st.offsetWidth;st.classList.add('tapped');
 });
 
+
+/* =====================================================================
+   ステップ４：大きな 単位
+   解説（p.260-261）：
+   ・「実際に１㎥の大きさの立方体を観察する活動などにより，体積の大きさについての感覚が育成されるよう配慮」
+   ・「一辺が 10㎝の立方体の体積が１Ｌに当たることにも触れるようにする」
+   ・「長さ，面積などの単位間の関係と，体積の単位間の関係を比較し，総合的に考察する」
+     （解説の 表：長さ 1cm (10cm) 1m／面積 1cm² (100cm²) 1m²／体積 1cm³ (1000cm³) 1m³／かさ 1mL 1L 1kL）
+   → 3つの パート。どれも はじめから えらべる（鍵を かけない）。
+     ① 1辺 10cmの 立方体に 1cm³ を しきつめる → 1000cm³ → 水を 入れると ちょうど 1L
+     ② 1辺 1mの 立方体（となりに 子どもの 人かげ）→ 100 × 100 × 100 ＝ 1000000cm³ → 1Lますが 1000こ ＝ 1kL
+     ③ 解説の 表を うめる → 1辺が 10倍 → 面積 100倍・体積 1000倍
+   答えは 3択。見せてから 聞く（1だん目を しきつめてから「何個？」）
+   ===================================================================== */
+const S4={part:0,ph:0,rows:0,layers:0,water:0,slab:0,grid:false,newK:-1,busy:false,solved:false,ti:0,tdone:[]};
+const WATER={f:'rgba(96,165,214,.55)',t:'rgba(150,200,236,.7)',r:'rgba(70,140,196,.6)',s:'#3a78ad'};
+const sup3=f=>`<tspan dy="-${f*0.4}" font-size="${f*0.6}">3</tspan><tspan dy="${f*0.4}"> </tspan>`;
+
+/* 見取図の 面を まとめて かく（ちょくほうたい 1つ） */
+function slabSVG(W,D,H,k0,tone,ox=0){
+  const p=(i,j,k)=>[ox+i*U+j*DX,-k*U+j*DY];
+  const c=(a,b,e)=>p(a*W,b*D,k0+e*H);
+  return `<polygon points="${ps([c(0,0,0),c(1,0,0),c(1,0,1),c(0,0,1)])}" fill="${tone.f}" stroke="${tone.s}" stroke-width="2" stroke-linejoin="round"/>`+
+         `<polygon points="${ps([c(0,0,1),c(1,0,1),c(1,1,1),c(0,1,1)])}" fill="${tone.t}" stroke="${tone.s}" stroke-width="2" stroke-linejoin="round"/>`+
+         `<polygon points="${ps([c(1,0,0),c(1,1,0),c(1,1,1),c(1,0,1)])}" fill="${tone.r}" stroke="${tone.s}" stroke-width="2" stroke-linejoin="round"/>`;
+}
+function outline(W,D,H,col,dash){
+  const p=(i,j,k)=>[i*U+j*DX,-k*U+j*DY],c=(a,b,e)=>p(a*W,b*D,e*H);
+  const E=(a,b,d)=>`<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="${col}" stroke-width="2.4" ${d?'stroke-dasharray="7 6"':''} stroke-linecap="round"/>`;
+  return E(c(0,1,0),c(1,1,0),1)+E(c(0,1,0),c(0,0,0),1)+E(c(0,1,0),c(0,1,1),1)+
+    E(c(0,0,0),c(1,0,0),dash)+E(c(1,0,0),c(1,0,1),dash)+E(c(1,0,1),c(0,0,1),dash)+E(c(0,0,1),c(0,0,0),dash)+
+    E(c(0,0,1),c(0,1,1),dash)+E(c(0,1,1),c(1,1,1),dash)+E(c(1,1,1),c(1,0,1),dash)+E(c(1,0,0),c(1,1,0),dash)+E(c(1,1,0),c(1,1,1),dash);
+}
+/* 面に 10等分の 線（10cmごと） */
+function gridLines(N,col){
+  const p=(i,j,k)=>[i*U+j*DX,-k*U+j*DY];let g='';
+  const L=(a,b)=>`<line x1="${a[0].toFixed(1)}" y1="${a[1].toFixed(1)}" x2="${b[0].toFixed(1)}" y2="${b[1].toFixed(1)}" stroke="${col}" stroke-width="1.2"/>`;
+  for(let t=1;t<N;t++){
+    g+=L(p(t,0,0),p(t,0,N))+L(p(0,0,t),p(N,0,t));            /* 前 */
+    g+=L(p(t,0,N),p(t,N,N))+L(p(0,t,N),p(N,t,N));            /* 上 */
+    g+=L(p(N,t,0),p(N,t,N))+L(p(N,0,t),p(N,N,t));            /* 右 */
+  }
+  return g;
+}
+/* 子どもの 人かげ（身長 135cm＝1辺 1m の 1.35倍） */
+function person(x,side){
+  const h=side*1.35,hr=h*0.085,sw=h*0.2;
+  return `<g fill="#c9b79a" stroke="#8a7a5f" stroke-width="2">`+
+    `<circle cx="${x}" cy="${-h+hr}" r="${hr}"/>`+
+    `<path d="M${x-sw/2} ${-h+hr*2.3} h${sw} l${sw*0.12} ${h*0.36} h-${sw*0.2} l-${sw*0.06} -${h*0.2} v${h*0.66} h-${sw*0.32} v-${h*0.4} h-${sw*0.04} v${h*0.4} h-${sw*0.32} v-${h*0.66} l-${sw*0.06} ${h*0.2} h-${sw*0.2} z"/></g>`+
+    txt(x,-h-hr*0.7,'135cm',{fs:side*0.075,c:'#8a7a5f'});
+}
+function draw4(){
+  const svg=$('pic4'),tb=$('utbl');
+  if(S4.part===2){svg.innerHTML='';svg.classList.add('hidden');tb.classList.remove('hidden');table4();return;}
+  svg.classList.remove('hidden');tb.classList.add('hidden');
+  let g='',vb;
+  if(S4.part===0){
+    const N=10,fs=U*0.95;
+    if(S4.water>0){
+      g+=outline(N,N,N,'#5c7d7a',false);
+      g+=slabSVG(N,N,N*S4.water,0,WATER);
+      g+=outline(N,N,N,'#3f5f5c',false).replace(/stroke-dasharray="7 6"/g,'');
+    }else{
+      g+=outline(N,N,N,'#7d9a97',true).split('<line').slice(0,4).join('<line');
+      for(let k=0;k<Math.max(S4.layers,S4.rows?1:0);k++){
+        const rowsHere=k<S4.layers?N:S4.rows;
+        g+=box3part(N,N,k,rowsHere,TONE[k%2],k===S4.newK);
+      }
+      g+=outline(N,N,N,'#5c7d7a',true).split('<line').slice(4).map(x=>'<line'+x).join('');
+    }
+    const a=[0,0],b=[N*U,0],t=[N*U+N*DX,N*DY];
+    g+=txt(N*U/2,U*1.6,'10cm',{fs});
+    g+=txt((b[0]+t[0])/2+U*1.1,(b[1]+t[1])/2+U*1.3,'10cm',{fs,a:'start'});
+    g+=txt(-U*0.6,-N*U/2+fs*0.35,'10cm',{fs,a:'end'});
+    if(S4.water>=1) g+=txt((N*U+N*DX)/2,-N*U+N*DY-U*1.0,'1L',{fs:fs*1.6,c:'#3a78ad'});
+    vb=[-U*4.2,-N*U+N*DY-U*2.8,N*U+N*DX+U*8.6,N*U-N*DY+U*5.2];
+  }else{
+    const N=10,side=N*U,fs=side*0.085;
+    g+=person(-side*0.42,side);
+    if(S4.grid){
+      /* 1Lます（1辺 10cm）が 10 × 10 × 10 */
+      g+=slabSVG(N,N,N,0,{f:'#dcefeb',t:'#eef8f6',r:'#c3e2dd',s:'#5c7d7a'});
+      g+=gridLines(N,'#7fb3ad');
+      g+=slabSVG(1,1,1,0,WATER);   /* かどの 1つ＝1L */
+      g+=txt(U*0.5,U*1.25,'1L',{fs:fs*0.8,c:'#3a78ad'});
+    }else{
+      g+=outline(N,N,N,'#7d9a97',true).split('<line').slice(0,4).join('<line');
+      if(S4.slab>0) g+=slabSVG(N,N,Math.max(N*S4.slab,0.09),0,TONE[0]);
+      g+=outline(N,N,N,'#5c7d7a',true).split('<line').slice(4).map(x=>'<line'+x).join('');
+      if(S4.slab>0&&S4.slab<0.02) g+=txt(side/2,-U*0.7,'高さ 1cm の 1だん',{fs:fs*0.8,c:'#2f7f79'});
+    }
+    const b=[side,0],t=[side+N*DX,N*DY];
+    g+=txt(side/2,fs*1.5,'1m',{fs});
+    g+=txt((b[0]+t[0])/2+fs*0.9,(b[1]+t[1])/2+fs*1.4,'1m',{fs,a:'start'});
+    g+=txt(side+N*DX+fs*0.4,-side/2+N*DY,'1m',{fs,a:'start'});
+    vb=[-side*0.78,-side*1.35-fs*1.6,side*1.78+N*DX+fs*2.2,side*1.35+fs*3.6];
+  }
+  svg.setAttribute('viewBox',vb.join(' '));
+  svg.innerHTML=g;S4.newK=-1;
+}
+/* 1だん（k）を rowsHere 列ぶん。1000こ かくので 面を まとめない ぶん 手前だけ 見える ように かく */
+function box3part(W,D,k,rowsHere,tone,isNew){
+  const p=(i,j,kk)=>[i*U+j*DX,-kk*U+j*DY];let g=`<g class="${isNew?'nw':''}">`;
+  for(let j=rowsHere-1;j>=0;j--)for(let i=0;i<W;i++){
+    const c=(a,b,e)=>p(i+a,j+b,k+e);
+    g+=`<polygon points="${ps([c(0,0,1),c(1,0,1),c(1,1,1),c(0,1,1)])}" fill="${tone.t}" stroke="${tone.s}" stroke-width="1.2"/>`;
+    if(j===0) g+=`<polygon points="${ps([c(0,0,0),c(1,0,0),c(1,0,1),c(0,0,1)])}" fill="${tone.f}" stroke="${tone.s}" stroke-width="1.2"/>`;
+    if(i===W-1) g+=`<polygon points="${ps([c(1,0,0),c(1,1,0),c(1,1,1),c(1,0,1)])}" fill="${tone.r}" stroke="${tone.s}" stroke-width="1.2"/>`;
+  }
+  return g+'</g>';
+}
+
+/* ===== 表（解説の 表そのもの）===== */
+const T4=[                       /* r＝行, c＝列（0:1cm 1:10cm 2:1m）, v＝答え, ch＝3択 */
+  {r:1,c:1,v:'100cm²',ch:['20cm²','100cm²','1000cm²'],q:'1辺が 10cmの 正方形の 面積は？'},
+  {r:2,c:1,v:'1000cm³',ch:['30cm³','100cm³','1000cm³'],q:'1辺が 10cmの 立方体の 体積は？'},
+  {r:3,c:0,v:'1mL',ch:['1mL','1dL','1L'],q:'1cm³ は、かさで いうと？'},
+  {r:3,c:1,v:'1L',ch:['1mL','1dL','1L'],q:'1000cm³ は、かさで いうと？'},
+  {r:3,c:2,v:'1kL',ch:['10L','100L','1kL'],q:'1m³ は、かさで いうと？（1kL＝1000L）'}];
+const TROW=[['長さ','1cm','10cm','1m'],['面積','1cm²','100cm²','1m²'],['体積','1cm³','1000cm³','1m³'],['かさ','1mL','1L','1kL']];
+const cm2=t=>t.replace(/cm²/,'cm<sup>2</sup>').replace(/m²/,'m<sup>2</sup>').replace(/cm³/,'cm<sup>3</sup>').replace(/m³/,'m<sup>3</sup>');
+function table4(){
+  const cur=S4.ph===1?T4[S4.ti]:null;
+  let h='<table>';
+  TROW.forEach((row,r)=>{
+    h+=`<tr><th>${row[0]}</th>`;
+    for(let c=0;c<3;c++){
+      const t=T4.findIndex(x=>x.r===r&&x.c===c);
+      if(t<0) h+=`<td>${cm2(row[c+1])}</td>`;
+      else if(S4.tdone.includes(t)) h+=`<td class="done">${cm2(row[c+1])}</td>`;
+      else h+=`<td class="blank${cur&&t===S4.ti?' cur':''}">？</td>`;
+      if(c<2) h+=`<td class="x">${S4.ph===2?['×10','×100','×1000','×1000'][r]:''}</td>`;
+    }
+    h+='</tr>';
+  });
+  $('utbl').innerHTML=h+'</table>';
+  fitTable4();
+}
+/* 表が 枠に 入る 大きさまで 字を 小さく する（画面の 大きさで 列の はばが かわる） */
+function fitTable4(){
+  const box=$('utbl'),t=box.querySelector('table');if(!t||!box.clientWidth)return;
+  let f=Math.min(34,Math.max(14,box.clientHeight/9));
+  t.style.fontSize=f+'px';
+  while(f>11&&(t.offsetWidth>box.clientWidth-16||t.offsetHeight>box.clientHeight-16)){f-=1;t.style.fontSize=f+'px';}
+}
+
+function say4(h,cls){const e=$('say4');e.className='say'+(cls?' '+cls:'');e.innerHTML=`<span>${h}</span>`;}
+function actions4(list){
+  const a=$('actions4');a.innerHTML='';
+  list.forEach(([c,t,f,dis])=>{
+    const b=document.createElement('button');b.className='btn '+c;b.innerHTML=t;b.disabled=!!dis;
+    b.addEventListener('click',()=>{if(!S4.busy)f();});a.appendChild(b);
+  });
+}
+function choices4(list,ok,onOK,wrongMsg){
+  const ch=$('choices4');ch.classList.remove('off');ch.innerHTML='';S4.solved=false;
+  list.forEach(v=>{
+    const b=document.createElement('button');b.className='choice'+(String(v).length>4?' long':'');b.innerHTML=cm2(String(v));
+    b.addEventListener('click',()=>{
+      if(S4.solved)return;
+      if(v!==ok){b.disabled=true;say4(wrongMsg,'try');return;}
+      S4.solved=true;b.classList.add('good');ch.querySelectorAll('.choice').forEach(x=>x.disabled=x!==b);onOK();
+    });
+    ch.appendChild(b);
+  });
+  actions4([]);
+}
+function noChoices(){const ch=$('choices4');ch.classList.add('off');ch.innerHTML=[1,2,3].map(()=>'<button class="choice" disabled>0</button>').join('');}
+function anim(ms,f,done){
+  S4.busy=true;const t0=performance.now();
+  const step=now=>{const r=Math.min(1,(now-t0)/ms);f(r);draw4();if(r<1)requestAnimationFrame(step);else{S4.busy=false;done&&done();}};
+  requestAnimationFrame(step);
+}
+function part4(p){
+  S4.part=p;Object.assign(S4,{ph:0,rows:0,layers:0,water:0,slab:0,grid:false,ti:0,tdone:[]});
+  document.querySelectorAll('.part').forEach(b=>b.classList.toggle('on',+b.dataset.p===p));
+  noChoices();
+  if(p===0){
+    say4('1辺が 10cmの 立方体に、1cm<sup>3</sup>の 立方体を しきつめると 何個 入るかな？');
+    actions4([['play','1だん目を しきつめる ▶',t_fill]]);
+  }else if(p===1){
+    say4('1辺が 1mの 立方体の 体積を <b>1m<sup>3</sup></b>（1立方メートル）と いうよ。<br>となりの 人と くらべて みよう。1m<sup>3</sup> は 何cm<sup>3</sup> かな？');
+    actions4([['play','しらべる ▶',m_len]]);
+  }else{
+    say4('長さ・面積・体積・かさの 単位を 表に まとめよう');
+    actions4([['play','表を うめる ▶',()=>{S4.ph=1;S4.ti=0;t_ask();}]]);
+  }
+  draw4();
+}
+/* ① 10cm */
+function t_fill(){
+  S4.busy=true;actions4([]);
+  const tick=()=>{S4.rows++;S4.newK=0;draw4();if(S4.rows<10)setTimeout(tick,120);else{S4.busy=false;
+    say4('1だん目に 何個 ならんだ？');
+    choices4([20,100,1000],100,()=>{S4.layers=1;S4.rows=0;draw4();
+      say4('10 × 10 ＝ 100。1だん目は <span class="a">100個</span>。<br>これを 高さ 10cm まで 積もう','ok');
+      actions4([['play','10だん 積む ▶',t_stack]]);},'もう一回。たてに 10列、横に 10個 ならんで いるね');}};
+  tick();
+}
+function t_stack(){
+  S4.busy=true;actions4([]);noChoices();
+  const tick=()=>{S4.newK=S4.layers;S4.layers++;draw4();if(S4.layers<10)setTimeout(tick,260);else{S4.busy=false;
+    say4('全部で 何cm<sup>3</sup>？');
+    choices4(['110cm³','1000cm³','10000cm³'],'1000cm³',()=>{
+      say4('100 × 10 ＝ 1000。<span class="a">1000cm<sup>3</sup></span> だね。<br>この 立方体の 入れものに 水を 入れて みよう','ok');
+      actions4([['play','水を 入れる ▶',t_water]]);},'もう一回。1だん 100個が 10だん あるよ');}};
+  tick();
+}
+function t_water(){
+  noChoices();actions4([]);
+  anim(1600,r=>{S4.water=Math.max(0.001,r);},()=>{
+    say4('ちょうど <b>1L</b> 入ったよ。<br><span class="a">1000cm<sup>3</sup> ＝ 1L</span>、だから <span class="a">1cm<sup>3</sup> ＝ 1mL</span>','ok');
+    actions4([['sub','もう一度',()=>part4(0)],['next','次へ →',()=>part4(1)]]);
+  });
+}
+/* ② 1m */
+function m_len(){
+  say4('1m は 何cm？');
+  choices4([10,100,1000],100,m_slab,'もう一回。ものさしを 思い出そう');
+}
+function m_slab(){
+  noChoices();actions4([]);
+  anim(700,r=>{S4.slab=0.01*r;},()=>{
+    say4('1辺 1cmの 立方体を 1だん（高さ 1cm）しきつめたよ。<br>1だんに 何個？（たて 100列 × 横 100個）');
+    choices4([200,1000,10000],10000,()=>{
+      say4('100 × 100 ＝ <span class="a">10000個</span>。これを 100だん 積むと？','ok');
+      actions4([['play','100だん 積む ▶',m_stack]]);},'もう一回。100 × 100 を 計算しよう');
+  });
+}
+function m_stack(){
+  noChoices();actions4([]);
+  anim(1800,r=>{S4.slab=0.01+0.99*r;},()=>{
+    say4('全部で 何cm<sup>3</sup>？（10000 × 100）');
+    choices4(['10000','100000','1000000'],'1000000',()=>{
+      say4('<span class="a">1m<sup>3</sup> ＝ 1000000cm<sup>3</sup></span>（100万cm<sup>3</sup>）。<br>こんどは 1Lます（1辺 10cm）で しきつめて みよう','ok');
+      actions4([['play','1Lますで 見る ▶',m_grid]]);},'もう一回。10000 に 0を 2つ つけると？');
+  });
+}
+function m_grid(){
+  S4.grid=true;draw4();
+  say4('1Lますが たてに 10列、横に 10個、10だん。<br>1m<sup>3</sup> は 1Lます 何こ分？');
+  choices4([100,1000,10000],1000,()=>{
+    say4('10 × 10 × 10 ＝ 1000。<span class="a">1m<sup>3</sup> ＝ 1000L ＝ 1kL</span>','ok');
+    actions4([['sub','もう一度',()=>part4(1)],['next','次へ →',()=>part4(2)]]);},'もう一回。1だんに 100こ、それが 10だん');
+}
+/* ③ 表 */
+function t_ask(){
+  const t=T4[S4.ti];draw4();
+  say4(cm2(t.q));
+  choices4(t.ch,t.v,()=>{
+    S4.tdone.push(S4.ti);draw4();
+    if(S4.ti<T4.length-1){say4('よくできました！','ok');actions4([['play','表の 続きを うめる ▶',()=>{S4.ti++;t_ask();}]]);return;}
+    S4.ph=2;draw4();
+    say4('1辺が <b>10倍</b>に なると、面積は <b>100倍</b>、体積は <b>1000倍</b>。<br>体積の 単位は 1000倍ずつ 大きく なるね','ok');
+    actions4([['sub','もう一度',()=>part4(2)]]);
+  },'もう一回。ここまでに しらべた ことを 思い出そう');
+}
+document.querySelectorAll('.part').forEach(b=>b.addEventListener('click',()=>{if(!S4.busy)part4(+b.dataset.p);}));
+
 /* ===== タブ ===== */
 let MODE='s2';
 document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
@@ -825,7 +1118,9 @@ document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
   document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x===t));
   $('main').classList.toggle('hidden',MODE!=='s2');
   $('main3').classList.toggle('hidden',MODE!=='s3');
+  $('main4').classList.toggle('hidden',MODE!=='s4');
   if(MODE==='s3'){if(!S3.started){S3.started=true;s3start();}else draw3();}
+  else if(MODE==='s4'){if(!S4.started){S4.started=true;part4(0);}else draw4();}
   else draw();
 }));
 
