@@ -125,7 +125,14 @@
   .stp b{min-width:1.6em;text-align:center;font-size:1.3em;font-variant-numeric:tabular-nums}
   .aslot{min-width:2.6em;text-align:center;border:3px dashed #cbb98f;border-radius:10px;padding:0 .2em;background:#fff;font-size:1.2em;color:var(--kaku)}
   .aslot.fill{border-style:solid;border-color:var(--kaku);background:var(--kaku-s)}
+  .aslot.nsl{color:var(--acc)} .aslot.nsl.fill{border-color:var(--acc);background:var(--acc-s)}
+  .pick{display:grid;grid-template-columns:auto 1fr;gap:5px 8px;align-items:center}
+  .plab{font-size:.85em;white-space:nowrap}
   .angs{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+  .nums{display:grid;grid-template-columns:repeat(8,1fr);gap:4px}
+  .num{border:2px solid var(--acc);border-radius:10px;background:#fff;color:var(--acc);font-weight:800;padding:6px 0;
+    font-size:clamp(13px,calc(.45vw + 1.2vh),19px);box-shadow:0 3px 0 #b9d9d5;white-space:nowrap}
+  .num.on{background:var(--acc);color:#fff;box-shadow:0 3px 0 #1f6763}
   .ang{border:2px solid var(--kaku);border-radius:10px;background:#fff;color:var(--kaku);font-weight:800;padding:6px 0;
     font-size:clamp(14px,calc(.5vw + 1.3vh),20px);box-shadow:0 3px 0 #e3c5a6}
   .ang.on{background:var(--kaku);color:#fff;box-shadow:0 3px 0 #8a4515}
@@ -208,7 +215,7 @@
     .check .row{padding:3px 8px}
     .prog{padding:5px 6px;gap:4px}
     .blk{padding:4px 6px;gap:3px}
-    .ang{padding:4px 0}
+    .ang,.num{padding:4px 0}
     .shiki{padding:5px;gap:5px}
     .choice{padding:4px 2px;font-size:24px}
     .choice.txt{font-size:14px;padding:5px 4px}
@@ -421,7 +428,7 @@ function shape1(){
 const S1step={
   enter(){
     parts(null);sum(null);
-    legend([['line',CA,'辺'],['arc',CK,'角'],['tick','','同じ しるし ＝ 同じ 長さ・大きさ']]);
+    legend([['line',CA,'辺'],['arc',CK,'角']]);
     choices(null,null);
     s1start();
   },
@@ -434,7 +441,8 @@ const S1step={
     let g=polyS(pts,`fill="${FILL}" stroke="none"`);
     /* 角 */
     if(showK) pts.forEach((V,i)=>{
-      const P=pts[(i+1)%n],from=Math.atan2(P[1]-V[1],P[0]-V[0])*180/Math.PI,k=uA.indexOf(ang[i])+1;
+      /* 同じ 大きさの しるし（弧の 数）は 答えた あとだけ。先に 出すと 答えを 見せる ことに なる */
+      const P=pts[(i+1)%n],from=Math.atan2(P[1]-V[1],P[0]-V[0])*180/Math.PI,k=ph==='done'?uA.indexOf(ang[i])+1:1;
       for(let j=0;j<k;j++) g+=arc(V,tw(24)+j*tw(6),from,ang[i],ln(CK,3));
       const bis=from+ang[i]/2,lp=at(V,tw(34)+(k-1)*tw(6)+fw()*.95,bis);
       g+=lab(lp[0],lp[1],ang[i]+'°',CK,{k:.8});
@@ -446,7 +454,8 @@ const S1step={
     });
     if(showH) pts.forEach((p,i)=>{
       const qq=pts[(i+1)%n],k=uL.indexOf(len[i])+1,m2=mid(p,qq);
-      g+=ticks(p,qq,k,'#fff').replace(/stroke-width="[^"]+"/g,`stroke-width="${W(7)}"`)+ticks(p,qq,k,CA);
+      /* 同じ 長さの しるしも 答えた あとだけ */
+      if(ph==='done') g+=ticks(p,qq,k,'#fff').replace(/stroke-width="[^"]+"/g,`stroke-width="${W(7)}"`)+ticks(p,qq,k,CA);
       const d=[qq[0]-p[0],qq[1]-p[1]],L=Math.hypot(...d),nrm=[d[1]/L,-d[0]/L];   /* そとむき */
       const lp=[m2[0]+nrm[0]*(tw(14)+fw()*.75),m2[1]+nrm[1]*(tw(14)+fw()*.75)];
       g+=lab(lp[0],lp[1],len[i]+'cm',CA,{k:.85});
@@ -461,6 +470,7 @@ const S1step={
 };
 function s1start(){
   S1.ph='hen';S1.ans={};sum(null);
+  legend([['line',CA,'辺'],['arc',CK,'角']]);
   prob(`<span class="no">問題 ${S1.i+1} / ${P1.length}</span><span class="goal">正多角形かな？ 辺と 角を 調べよう</span>`);
   s1ask();
 }
@@ -469,8 +479,8 @@ function s1box(){
      S1.ans[k]?`<span class="r yes">全部 等しい</span>`:`<span class="r no">ちがうのが ある</span>`;
   const done=S1.ph==='done',reg=S1.ans.hen&&S1.ans.kaku;
   box(`<div class="check">
-    <div class="row${S1.ph==='hen'?' now':''}"><span><b class="a">辺の 長さ</b>は？</span>${r('hen')}</div>
-    <div class="row${S1.ph==='kaku'?' now':''}"><span><b class="k">角の 大きさ</b>は？</span>${r('kaku')}</div>
+    <div class="row${S1.ph==='hen'?' now':''}"><span><b class="a">辺の 長さ</b>は 全部 等しい？</span>${r('hen')}</div>
+    <div class="row${S1.ph==='kaku'?' now':''}"><span><b class="k">角の 大きさ</b>は 全部 等しい？</span>${r('kaku')}</div>
     <div class="row res">${done?(reg?'両方 等しい → <b>正多角形</b>':'正多角形では ない'):'両方 等しいと 正多角形'}</div>
   </div>`);
 }
@@ -487,7 +497,7 @@ function s1pick(i,btn){
   const truth=k==='hen'?uL.length===1:uA.length===1,said=i===0;
   if(said!==truth){
     btn.disabled=true;
-    const u=k==='hen'?uL.map(v=>v+'cm'):uA.map(v=>v+'°'),what=k==='hen'?'<span class="a">しるし</span>':'<span class="k">角の しるし</span>';
+    const u=k==='hen'?uL.map(v=>v+'cm'):uA.map(v=>v+'°'),what=k==='hen'?'<span class="a">辺の 長さ</span>':'<span class="k">角の 大きさ</span>';
     say(truth?`${what}を 見て みよう。<br>全部 ${u[0]} だね`
              :`${what}を 見て みよう。<br>${u.join(' と ')} が あるね`,'try');
     return;
@@ -498,6 +508,7 @@ function s1pick(i,btn){
   const {q}=shape1(),reg=S1.ans.hen&&S1.ans.kaku;
   s1box();
   choices(null,null,true);
+  legend([['line',CA,'辺'],['arc',CK,'角'],['tick','','同じ しるし ＝ 同じ 長さ・大きさ']]);
   prob(`<span class="no">問題 ${S1.i+1} / ${P1.length}</span><span>この 形は <b class="goal">${q.nm}</b></span>`);
   let m;
   if(reg) m=`よくできました！ 辺も 角も 全部 等しい。<br><b>${q.nm}</b>は 正多角形`;
@@ -538,8 +549,7 @@ const S2step={
       for(let j=0;j<n;j++) g+=polyS([O,V(j),V(j+1)],`fill="${j%2?'#e9e0f7':'#ffe9a8'}" opacity=".85"`);
     /* 360° */
     if(ph==='q'){
-      g+=arc(O,1.3,0,360,ln(CK,3.5,dash(8)));
-      g+=lab(0,1.3+fw()*.9,'360°',CK,{k:1});
+      g+=lab(0,fw()*1.3,'360°',CK,{k:1.25});
     }
     /* 半径 */
     const nr=Math.min(n,S2.kR);
@@ -610,7 +620,7 @@ function s2radii(){
 }
 function s2edges(){
   const n=+S2.part;actions([['play','点を つなぐ ▶',()=>{},true]]);
-  anim(n*260,t=>{S2.kE=n*t;draw();},()=>{
+  anim(n*800,t=>{S2.kE=n*t;draw();},()=>{
     S2.ph='tri';
     say(`${KAN[n]}角形が できた！ 中に 三角形が ${n}つ。<br>この 三角形は 何 三角形？ <span class="d">半径の しるし</span>を 見よう`);
     choices(['二等辺三角形','正三角形','直角三角形'],s2pickTri);
@@ -666,7 +676,7 @@ function s2cmark(){
 }
 function s2cedges(){
   actions([['play','点を つなぐ ▶',()=>{},true]]);
-  anim(1500,t=>{S2.kE=6*t;draw();},()=>{
+  anim(6*800,t=>{S2.kE=6*t;draw();},()=>{
     S2.ph='ask';
     say('どんな 形が できた？');
     choices(['正五角形','正六角形','正八角形'],s2cpick);
@@ -723,6 +733,7 @@ function draw2c(){
    ===================================================================== */
 const P3=[3,4,6,5,8];
 const ANG3=[45,60,72,90,108,120,135];
+const NUM3=[3,4,5,6,7,8,9,10];
 const S3={pi:0,n:3,a:null,ph:'edit',prog:0,path:null,runN:0,runA:0,fails:0,res:null};
 const L3=3;
 function tpath(n,a){
@@ -782,38 +793,40 @@ const S3step={
 };
 function s3start(){
   const N=P3[S3.pi];
-  Object.assign(S3,{n:3,a:null,ph:'edit',prog:0,path:null,fails:0});
+  Object.assign(S3,{n:null,a:null,ph:'edit',prog:0,path:null,fails:0});
   prob(`<span class="no">問題 ${S3.pi+1} / ${P3.length}</span><span class="goal">ロボットで 正${KAN[N]}角形を かこう</span>`);
-  say('回数と 回る 角を えらんで、<br>金の ボタンで 動かそう');
+  say('<span class="a">回数</span>と <span class="k">回る 角</span>を 下から えらんで、<br>金の ボタンで 動かそう');
   s3box();
   s3act();
   draw();
 }
 function s3box(){
+  const sl=(v,c)=>`<span class="aslot${v!=null?' fill':''} ${c}">${v!=null?v:'？'}</span>`;
   box(`<div class="prog">
     <div class="blk">
-      <div class="top"><span class="stp"><button id="nm">−</button><b id="nv">${S3.n}</b><button id="np">＋</button></span><span>回 くりかえす</span></div>
+      <div class="top">${sl(S3.n,'nsl')}<span>回 くりかえす</span></div>
       <div class="in">
         <div class="cmd">${L3}cm 進む</div>
-        <div class="cmd">左に <span class="aslot${S3.a!=null?' fill':''}" id="av">${S3.a!=null?S3.a:'？'}</span>° 回る</div>
+        <div class="cmd">左に ${sl(S3.a,'asl')}° 回る</div>
       </div>
     </div>
-    <div class="angs">${ANG3.map(v=>`<button class="ang${S3.a===v?' on':''}" data-v="${v}">${v}°</button>`).join('')}</div>
+    <div class="pick">
+      <span class="plab a">回数</span>
+      <div class="nums">${NUM3.map(v=>`<button class="num${S3.n===v?' on':''}" data-n="${v}">${v}回</button>`).join('')}</div>
+      <span class="plab k">回る 角</span>
+      <div class="angs">${ANG3.map(v=>`<button class="ang${S3.a===v?' on':''}" data-v="${v}">${v}°</button>`).join('')}</div>
+    </div>
   </div>`);
   const edit=()=>{if(S3.ph==='done'||BUSY)return false;if(S3.path){S3.path=null;S3.prog=0;draw();}return true;};
-  $('nm').onclick=()=>{if(edit()&&S3.n>3){S3.n--;$('nv').textContent=S3.n;}};
-  $('np').onclick=()=>{if(edit()&&S3.n<10){S3.n++;$('nv').textContent=S3.n;}};
-  document.querySelectorAll('.ang').forEach(b=>b.onclick=()=>{
-    if(!edit())return;S3.a=+b.dataset.v;
-    document.querySelectorAll('.ang').forEach(x=>x.classList.toggle('on',x===b));
-    const av=$('av');av.textContent=S3.a;av.className='aslot fill';
-  });
+  document.querySelectorAll('.num').forEach(b=>b.onclick=()=>{if(edit()){S3.n=+b.dataset.n;s3box();}});
+  document.querySelectorAll('.ang').forEach(b=>b.onclick=()=>{if(edit()){S3.a=+b.dataset.v;s3box();}});
 }
 function s3act(){
   actions([['show','動かして たしかめる',s3run]]);
 }
 function s3run(){
-  if(S3.a==null){say('回る 角を えらんで いないよ。<br>下の だいだいの ボタンから えらぼう','try');return;}
+  if(S3.n==null){say('<span class="a">回数</span>を えらんで いないよ。<br>下の 青みどりの ボタンから えらぼう','try');return;}
+  if(S3.a==null){say('<span class="k">回る 角</span>を えらんで いないよ。<br>下の だいだいの ボタンから えらぼう','try');return;}
   S3.runN=S3.n;S3.runA=S3.a;S3.path=tpath(S3.n,S3.a);S3.prog=0;
   actions([['show','動かして たしかめる',()=>{},true]]);
   say('うごいて いるよ…');
@@ -842,8 +855,9 @@ function s3judge(){
 
 /* =====================================================================
    ステップ４：円周を 調べる
-   (a) 見通す：内がわの 正六角形（まわり＝直径×3）と 外がわの 正方形（まわり＝直径×4）で はさむ。
-       まわりの 長さを まっすぐに して、直径の テープ いくつ分かで ならべる
+   (a) 見当を つける：内がわの 正六角形（まわり＝直径×3）と 外がわの 正方形（まわり＝直径×4）で はさむ。
+       1回 おすと 1つだけ 出る（かく → まっすぐに する → かく → まっすぐに する → 聞く）。
+       まだ 出て いない 行は かかない（2026-09-26 指摘＝空の 行が はじめから ならんで いて 使い方が 分からなかった）
    (b) ころがす：直径 2・3・4cm の 円を 1回転 ころがす → 表 → 円周 ÷ 直径 は いつも 約3.14
    ===================================================================== */
 const S4={part:'mi',st:0,ph:'look',ci:0,roll:0,rec:[]};
@@ -858,15 +872,14 @@ const S4step={
   draw(){S4.part==='mi'?draw4mi():draw4ko();}
 };
 function s4start(){
-  parts([['mi','見通す'],['ko','ころがす']],S4.part,k=>{S4.part=k;s4start();});
+  parts([['mi','① 見当を つける'],['ko','② ころがして はかる']],S4.part,k=>{S4.part=k;s4start();});
   sum(null);
   if(S4.part==='mi'){
     Object.assign(S4,{st:0,ph:'look',anim:0});
     box(null);
-    prob('<span class="goal">円周は 直径の 何倍 くらい？</span>');
-    say('円の <span class="a">まわりの 長さ</span>（円周）を、<br>正六角形と 正方形で はさんで みよう');
+    prob('<span class="goal">円周は 直径の 何倍 くらいか 見当を つけよう</span>');
     choices(null,null);
-    actions([['play','内がわに 正六角形を かく ▶',s4mi]]);
+    s4miStep();
   }else{
     Object.assign(S4,{ci:0,roll:0,ph:'look',rec:[]});
     prob('<span class="goal">円を ころがして 円周を はかろう</span>');
@@ -875,30 +888,33 @@ function s4start(){
   }
   draw();
 }
-function s4mi(){
-  actions([['play','…',()=>{},true]]);
-  anim(900,t=>{S4.anim=t;S4.st=S4.st<1?1:S4.st;draw();},()=>{
-    S4.anim=1;
-    if(S4.st===1&&S4.ph==='look'){
-      say('正六角形の 1辺 ＝ 半径。<br>まわり ＝ 半径 × 6 ＝ <span class="d">直径</span> × 3');
-      actions([['play','外がわに 正方形を かく ▶',()=>{
-        actions([['play','…',()=>{},true]]);
-        S4.st=2;anim(900,t=>{S4.anim=t;draw();},()=>{
-          S4.anim=1;S4.ph='ask';
-          say('正方形の 1辺 ＝ 直径。まわり ＝ <span class="d">直径</span> × 4<br>円周は どこに 入る？');
-          choices(['直径の 3倍より 短い','3倍より 長く、4倍より 短い','直径の 4倍より 長い'],s4miPick);
-          actions([]);draw();
-        });
-      }]]);
-    }
-    draw();
-  });
+const MI_SAY=[
+  '<span class="a">円周</span>（円の まわりの 長さ）は <span class="d">直径</span>の 何倍 くらい？<br>まず、円の 中に 正六角形を かいて みよう',
+  '正六角形の まわりは <span class="a">円周</span>より <b>短い</b>ね。<br>まわりを まっすぐに して <span class="d">直径</span>と くらべよう',
+  '正六角形の まわり ＝ <span class="d">直径</span> 3つ分。<br>こんどは 円の 外に 正方形を かいて みよう',
+  '正方形の まわりは <span class="a">円周</span>より <b>長い</b>ね。<br>まわりを まっすぐに して くらべよう',
+  '正方形の まわり ＝ <span class="d">直径</span> 4つ分。<br><span class="a">円周</span>は <span class="d">直径</span>の 何倍 くらい？'
+];
+const MI_BTN=['正六角形を かく ▶','まっすぐに する ▶','正方形を かく ▶','まっすぐに する ▶'];
+function s4miStep(){
+  say(MI_SAY[S4.st]);
+  if(S4.st<4){
+    actions([['play',MI_BTN[S4.st],()=>{
+      actions([['play',MI_BTN[S4.st],()=>{},true]]);
+      S4.st++;S4.anim=0;
+      anim(S4.st%2?1500:1300,t=>{S4.anim=t;draw();},()=>{S4.anim=1;s4miStep();draw();},t=>t);
+    }]]);
+  }else{
+    S4.ph='ask';
+    choices(['直径の 3倍より 短い','3倍より 長く、4倍より 短い','直径の 4倍より 長い'],s4miPick);
+    actions([]);
+  }
 }
 function s4miPick(i,btn){
   if(i!==1){btn.disabled=true;say('円は 正六角形の 外がわ、正方形の 内がわに あるね。<br>まわりの 長さも その あいだ','try');return;}
   btn.classList.add('good');S4.ph='done';choices(null,null,true);
-  S4.anim=0;
-  anim(900,t=>{S4.anim=t;draw();},()=>{S4.anim=1;draw();});
+  S4.st=5;S4.anim=0;
+  anim(1300,t=>{S4.anim=t;draw();},()=>{S4.anim=1;draw();},t=>t);
   say('よくできました！ 円周は 直径の 3倍と 4倍の あいだ。<br>くわしく 何倍かは ころがして 調べよう','ok');
   sum('<span class="f"><span class="d">直径</span> × 3 ＜ <span class="a">円周</span> ＜ <span class="d">直径</span> × 4</span>');
   actions([['sub','もう一度',s4start],['next','ころがして 調べる →',()=>{S4.part='ko';s4start();}]]);
@@ -915,35 +931,42 @@ function bar(x,y,len,D,col,lbl,o={}){
   }
   return g;
 }
+/* 折れ線を とちゅうまで（まわりを なぞって かく） */
+function polyPart(pts,f,a){
+  const P=pts.concat([pts[0]]),Ls=P.slice(1).map((q,i)=>Math.hypot(q[0]-P[i][0],q[1]-P[i][1]));
+  let rest=Ls.reduce((x,y)=>x+y)*f;const out=[P[0]];
+  for(let i=0;i<Ls.length&&rest>0;i++){const t=Math.min(1,rest/Ls[i]);out.push(lerp(P[i],P[i+1],t));rest-=Ls[i];}
+  return `<polyline points="${out.map(P2).join(' ')}" ${a}/>`;
+}
 function draw4mi(){
-  const R=2,D=4,x0=.2,C=[x0+R,6.5];
-  frame(-.5,17.2,-1.3,8.9);
+  const R=2,D=4,x0=.2,C=[x0+R,7.2],st=S4.st;
+  const f=k=>st>k?1:st===k?S4.anim:0;          /* 1＝正六角形 2＝そのテープ 3＝正方形 4＝そのテープ 5＝円周の テープ */
+  frame(-.5,17.2,-1.3,9.6);
   let g='';
-  const a=S4.st>=1?(S4.st===1?S4.anim??1:1):0,b=S4.st>=2?(S4.st===2&&S4.ph!=='done'?S4.anim??1:1):0;
-  /* 目もり（直径 1つ分 ごと）。円の 直径の はしから まっすぐ 下へ */
-  for(let k=0;k<=4;k++) g+=seg([x0+k*D,-.3],[x0+k*D,k<=1?C[1]:4.3],ln('#c9bfa5',1.5,dash(4)));
-  for(let k=1;k<=4;k++) g+=lab(x0+k*D,-.8,'直径の '+k+'倍','#8a7a5f',{k:.74});
-  /* 正方形（外） */
-  if(S4.st>=2) g+=polyS([[C[0]-R,C[1]-R],[C[0]+R,C[1]-R],[C[0]+R,C[1]+R],[C[0]-R,C[1]+R]],`fill="none" stroke="${CB}" stroke-width="${W(3.5)}" opacity="${b}"`);
+  /* 円の 直径の はしから まっすぐ 下へ＝テープ 1つ分が 直径 */
+  g+=seg([x0,C[1]],[x0,-.3],ln('#c9bfa5',1.5,dash(4)))+seg([x0+D,C[1]],[x0+D,-.3],ln('#c9bfa5',1.5,dash(4)));
+  if(st>=2) for(let k=2;k<=4;k++) g+=seg([x0+k*D,-.3],[x0+k*D,4.3],ln('#c9bfa5',1.5,dash(4)));
+  g+=lab(x0+D,-.8,'直径',CD,{k:.8});
+  if(st>=2) for(let k=2;k<=4;k++) g+=lab(x0+k*D,-.8,'直径の '+k+'倍','#8a7a5f',{k:.74});
   g+=circ(C,R,`fill="#fffdf7" stroke="${CA}" stroke-width="${W(5)}"`);
-  if(S4.st>=1){
-    const hx=[0,1,2,3,4,5].map(j=>at(C,R,60*j));
-    g+=polyS(hx,`fill="none" stroke="${CK}" stroke-width="${W(3.5)}" opacity="${a}"`);
-  }
+  const hx=[0,1,2,3,4,5].map(j=>at(C,R,-120+60*j)),sq=[[C[0]-R,C[1]-R],[C[0]+R,C[1]-R],[C[0]+R,C[1]+R],[C[0]-R,C[1]+R]];
+  if(f(1)>0) g+=polyPart(hx,f(1),ln(CK,4.5));
+  if(f(3)>0) g+=polyPart(sq,f(3),ln(CB,4.5));
   g+=seg([C[0]-R,C[1]],[C[0]+R,C[1]],ln(CD,5));
   g+=lab(C[0],C[1]+fw()*.75,'直径',CD,{k:.8});
   g+=dot(C,3.5,CB);
-  /* まっすぐに した まわりの 長さ */
-  const rows=[[3.5,'正六角形の まわり',CK],[2,'円周',CA],[.5,'正方形の まわり',CB]];
-  rows.forEach(([y,t,c],ri)=>{
-    const show=ri===0?S4.st>=1:ri===2?S4.st>=2:S4.ph==='done';
-    g+=lab(x0,y+.31+fw()*.55,t,c,{k:.72,anc:'start'});
-    if(ri===1&&!show){g+=lab(x0+D*3.5,y,'？',CA,{k:1.1});return;}
-    if(!show)return;
-    const f=ri===0?a:ri===2?b:(S4.anim??1),full=ri===0?3*D:ri===2?4*D:Math.PI*D;
-    g+=bar(x0,y,full*f,D,c,'',{bit:ri===1&&f>=1?'少し':''});
-    g+=seg([x0,y-.31],[x0+full*f,y-.31],ln(c,4));
-  });
+  /* まっすぐに した まわり（出た ものだけ かく） */
+  const row=(y,t,c,full,fr,bit)=>{
+    g+=lab(x0,y+.31+fw()*.6,t,c,{k:.78,anc:'start'});
+    g+=bar(x0,y,full*fr,D,c,'',{bit:bit&&fr>=1?bit:''});
+    g+=seg([x0,y-.31],[x0+full*fr,y-.31],ln(c,4));
+  };
+  if(f(2)>0) row(3.5,'正六角形の まわり',CK,3*D,f(2));
+  if(st>=4){
+    if(f(5)>0) row(2,'円周',CA,Math.PI*D,f(5),'少し');
+    else{g+=lab(x0,2+.31+fw()*.6,'円周',CA,{k:.78,anc:'start'});g+=lab(x0+D*3.5,2,'？',CA,{k:1.2});}
+  }
+  if(f(4)>0) row(.5,'正方形の まわり',CB,4*D,f(4));
   svg.innerHTML=g;
 }
 function s4tbl(){
