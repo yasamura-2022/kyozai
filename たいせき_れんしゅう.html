@@ -196,6 +196,12 @@
   .choice:active{transform:translateY(2px)}
   .choice:disabled{opacity:.35;box-shadow:none}
   .choice.good{border-color:var(--ok);background:#eaf5e4}
+  /* ことばが 長い 3択は たてに ならべる（「Aが 4cm³ 大きい」） */
+  .choices.col .choice{max-width:none;font-size:clamp(17px,calc(.7vw + 1.9vh),28px)}
+  @media (orientation:landscape){   /* よこ長は 右の らんが せまいので たてに（たて長は よこ はばが あるので よこの まま＝絵の 大きさが 動かない） */
+    .choices.col{flex-direction:column;align-items:stretch;gap:6px}
+    .choices.col .choice{padding:5px 0}
+  }
 
   /* ===== ステップ４：大きな 単位 ===== */
   .parts{display:flex;gap:6px}
@@ -1239,7 +1245,7 @@ function actions1(list){
     b.addEventListener('click',()=>{if(!S1.busy)f();});a.appendChild(b);
   });
 }
-function noChoices1(){const ch=$('choices1');ch.classList.add('off');ch.innerHTML=[1,2,3].map(()=>'<button class="choice" disabled>0</button>').join('');}
+function noChoices1(){const ch=$('choices1');ch.classList.add('off');ch.classList.remove('col');ch.innerHTML=[1,2,3].map(()=>'<button class="choice" disabled>0</button>').join('');}
 /* 3択（judge＝false なら まるつけ しない＝予想） */
 function choices1(list,ok,onPick,wrongMsg){
   const ch=$('choices1');ch.classList.remove('off');ch.innerHTML='';S1.solved=false;
@@ -1286,9 +1292,11 @@ function fill1(){
 }
 function ask1(){
   const q=P1[S1.pi],va=vol(q.a),vb=vol(q.b),d=Math.abs(va-vb)||2;
-  const ans=va>vb?`Aが ${d}cm<sup>3</sup>`:va<vb?`Bが ${d}cm<sup>3</sup>`:'同じ';
+  /* 「Aが 4cm³」だけでは 何が 4cm³ なのか 分かりにくい（2026-09-26 指摘）→「Aが 4cm³ 大きい」 */
+  const ans=va>vb?`Aが ${d}cm<sup>3</sup> 大きい`:va<vb?`Bが ${d}cm<sup>3</sup> 大きい`:'同じ';
   say1(`A は 1cm<sup>3</sup>が ${va}個分、B は ${vb}個分。<br>どちらが 何cm<sup>3</sup> 大きい？`);
-  choices1([`Aが ${d}cm<sup>3</sup>`,`Bが ${d}cm<sup>3</sup>`,'同じ'],ans,()=>{
+  $('choices1').classList.add('col');
+  choices1([`Aが ${d}cm<sup>3</sup> 大きい`,`Bが ${d}cm<sup>3</sup> 大きい`,'同じ'],ans,()=>{
     S1.solved=true;draw1();
     const hit=S1.guess===(va>vb?'A':va<vb?'B':'同じ');
     const res=va===vb?`A も B も ${va}cm<sup>3</sup>。形が ちがっても 体積は 同じ`:`A は ${va}cm<sup>3</sup>、B は ${vb}cm<sup>3</sup>`;
