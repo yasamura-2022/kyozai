@@ -147,11 +147,63 @@
   .btn.sub{background:#a99a7c;box-shadow:0 4px 0 #85795f;flex:.6}
   .btn:disabled{opacity:.45;box-shadow:none}
 
+
+  /* ===== タブ ===== */
+  .tabs{display:flex;gap:6px;flex-shrink:0}
+  .tab{
+    flex:1;border:2px solid var(--line);border-radius:14px;background:var(--card);
+    padding:7px 4px;color:#8a7a5f;font-weight:800;
+    font-size:clamp(12px,calc(.9vw + .7vh),17px);display:flex;flex-direction:column;align-items:center;gap:1px;
+    line-height:1.15;word-break:keep-all;
+  }
+  .tab .step{font-size:11px;font-weight:700;opacity:.7}
+  .tab.on{color:var(--ink);border-color:var(--gold);box-shadow:0 3px 0 #a5811a}
+  .tab.on .step{color:var(--gold);opacity:1}
+
+  /* ===== ステップ３：高さを のばす ===== */
+  #main3{flex:1;min-height:0;display:grid;gap:8px;
+    grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) auto;grid-template-areas:"stage" "work"}
+  @media (orientation:landscape){
+    #main3{grid-template-columns:minmax(0,1.3fr) minmax(330px,1fr);grid-template-rows:minmax(0,1fr);grid-template-areas:"stage work"}
+    #work3{justify-content:center}
+  }
+  @media (orientation:portrait){ #work3{min-height:clamp(300px,46vh,560px)} }
+  #stage3{grid-area:stage;min-height:0;border-radius:18px;border:3px solid #b9d9d5;
+    background:linear-gradient(#fbfefd,#eef7f5);position:relative;overflow:hidden;padding:6px;contain:size}
+  #stage3 > svg{width:100%;height:100%;display:block}
+  #stage3.tapped{animation:tapped .25s}
+  #work3{grid-area:work;display:flex;flex-direction:column;gap:8px;min-height:0}
+  /* 3択と ボタンの 場所は いつも とって おく＝場面が かわっても 絵の 大きさが 動かない */
+  #actions3{min-height:54px}
+  @media (max-height:640px){ #actions3{min-height:46px} }
+  .tblwrap{position:relative;background:var(--card);border:2px solid var(--line);border-radius:14px;
+    padding:calc(1.9em + 4px) 8px calc(1.9em + 4px);font-size:clamp(15px,calc(.7vw + 1.5vh),24px)}
+  .tbl{width:100%;border-collapse:collapse;table-layout:fixed;font-weight:800;font-variant-numeric:tabular-nums;text-align:center}
+  .tbl th{font-size:.72em;color:#6f5d3d;width:5.2em;line-height:1.2;padding:2px;word-break:keep-all}
+  .tbl th small{display:block;font-size:.9em;color:#8a7a5f}
+  .tbl td{border:2px solid var(--line);background:#fff;height:1.8em;padding:0}
+  .tbl tr.h td{color:var(--dan)}
+  .tbl tr.v td{color:var(--ink)}
+  .tbl td.new{background:#fff6cf}
+  .tbl td.hl{background:#fff4c9;border-color:var(--gold)}
+  .tbl td.emp{color:transparent}
+  #arrows{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+  .choices{display:flex;gap:10px;justify-content:center}
+  .choices.off{visibility:hidden}
+  .choice{flex:1;max-width:150px;border:3px solid var(--line);border-radius:16px;background:#fff;font-weight:800;color:var(--ink);
+    padding:8px 0;font-size:clamp(20px,calc(1vw + 2.4vh),34px);box-shadow:0 4px 0 #d8c79f}
+  .choice:active{transform:translateY(2px)}
+  .choice:disabled{opacity:.35;box-shadow:none}
+  .choice.good{border-color:var(--ok);background:#eaf5e4}
   @media (orientation:landscape){ #work{justify-content:center} }
   /* たて長：下の らんの 高さを 先に とって おく（進むたびに 絵の 大きさが 変わらない ように） */
   @media (orientation:portrait){ #work{min-height:clamp(260px,43vh,540px)} }
   @media (max-height:640px){
     header{display:none}
+    .tab{padding:5px 4px}
+    .tab .step{display:none}
+    #work3{gap:5px}
+    .choice{padding:4px 0;font-size:22px}
     #work{gap:5px}
     .prob{padding:4px 10px}
     .say{padding:5px 10px;min-height:calc(3em + 10px);font-size:14px}
@@ -163,7 +215,12 @@
 </head>
 <body>
 <div class="app">
-  <header><h1>体積</h1><span class="sub">1だんずつ 積む</span></header>
+  <header><h1>体積</h1></header>
+
+  <div class="tabs">
+    <button class="tab on" data-m="s2"><span class="step">ステップ２</span>1だんずつ 積む</button>
+    <button class="tab" data-m="s3"><span class="step">ステップ３</span>高さを のばす</button>
+  </div>
 
   <div id="main">
     <div id="stage">
@@ -184,6 +241,17 @@
       <div class="actions" id="actions"></div>
     </div>
   </div>
+
+  <div id="main3" class="hidden">
+    <div id="stage3"><svg id="pic3"></svg></div>
+    <div id="work3">
+      <div class="prob" id="prob3"></div>
+      <div class="tblwrap" id="tblwrap"><table class="tbl" id="tbl"></table><svg id="arrows"></svg></div>
+      <div class="say" id="say3"></div>
+      <div class="choices hidden" id="choices3"></div>
+      <div class="actions" id="actions3"></div>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -195,7 +263,7 @@ function setFH(){
   document.documentElement.style.setProperty('--fh',v+'px');
 }
 setFH();
-addEventListener('resize',()=>{setFH();draw();});
+addEventListener('resize',()=>{setFH();draw();if(MODE==='s3')draw3();});
 if(window.visualViewport) visualViewport.addEventListener('resize',setFH);
 
 /* ===== 問題（じゅんばんは きめて ある。ランダムに しない）
@@ -557,6 +625,206 @@ $('stage').addEventListener('click',()=>{
   else return;
   const st=$('stage');st.classList.remove('tapped');void st.offsetWidth;st.classList.add('tapped');
 });
+
+
+/* =====================================================================
+   ステップ３：高さを のばす
+   解説（p.260）：「縦と横の長さを固定した直方体について，高さが２倍，３倍，４倍，…になるときの
+   体積の変化を考えさせるなどして，体積の公式の意味について，『Ｃ変化と関係』の比例の学習との
+   関連で理解を深めさせる」。
+   → たて・横は そのまま、高さを 1cmずつ のばして 表に ためる（動きを 見せる）→
+     表の 2つの 列を くらべて「高さが □倍 → 体積は 何倍？」（表で きまりを 見つける）。
+   答えた あと（まちがえた ときも）右の 直方体を「左の 直方体の かたまり」ごとに 色を かえて 見せる
+   ＝ 高さが 2倍 → 同じ かたまりが 2つ分 → 体積も 2倍。
+   「比例」と いう ことばは 出さない（教科書に よって 体積と 比例の じゅんばんが ちがう）
+   ===================================================================== */
+const HMAX=6;
+const P3=[{d:2,w:3,q:[[1,2],[1,3],[2,4],[1,4]]},
+          {d:3,w:4,q:[[1,3],[2,4],[1,4],[3,6]]},
+          {d:2,w:5,q:[[2,4],[1,4],[2,6],[3,6]]},
+          {d:4,w:4,q:[[1,2],[2,6],[1,4],[3,6]]}];
+const S3={pi:0,h:1,phase:'grow',qi:0,rev:false,newH:-1,busy:false};
+const Q3=()=>P3[S3.pi];
+const base3=()=>Q3().d*Q3().w;
+
+function box3(W,D,H,ox,toneOf,newK){
+  const p=(i,j,k)=>[ox+i*U+j*DX,-k*U+j*DY];
+  let g='';
+  for(let k=0;k<H;k++){
+    const tone=toneOf(k);
+    for(let j=D-1;j>=0;j--)for(let i=0;i<W;i++){
+      const c=(a,b,e)=>p(i+a,j+b,k+e);
+      g+=`<g class="${k===newK?'nw':''}">`+
+        `<polygon points="${ps([c(0,0,0),c(1,0,0),c(1,0,1),c(0,0,1)])}" fill="${tone.f}" stroke="${tone.s}" stroke-width="1.6" stroke-linejoin="round"/>`+
+        `<polygon points="${ps([c(0,0,1),c(1,0,1),c(1,1,1),c(0,1,1)])}" fill="${tone.t}" stroke="${tone.s}" stroke-width="1.6" stroke-linejoin="round"/>`+
+        `<polygon points="${ps([c(1,0,0),c(1,1,0),c(1,1,1),c(1,0,1)])}" fill="${tone.r}" stroke="${tone.s}" stroke-width="1.6" stroke-linejoin="round"/></g>`;
+    }
+  }
+  return g;
+}
+/* かたまりの 色（左の 直方体 1つ分ごとに かえる）。まちがえた ときは かたまりだけ 見せ、右の 体積は 答えるまで「？」の まま */
+const CHUNK=[{f:'#8fd0c9',t:'#c4ebe6',r:'#62aca4',s:'#2f7f79'},{f:'#f2c690',t:'#fae2c1',r:'#d6a263',s:'#a0702f'},
+             {f:'#b9c6ee',t:'#dce3f8',r:'#8e9fd6',s:'#55679e'},{f:'#e8b3c8',t:'#f6dbe6',r:'#cf8aa6',s:'#9a506f'}];
+function draw3(){
+  const {d:D,w:W}=Q3(),b=base3();
+  const M=Math.max(1,(W+0.46*D)/5.2,HMAX/5.2),V=U*M,fs=V*0.5;
+  let g='',minX,maxX,topY,botY;
+  const bw=W*U+D*DX;
+  if(S3.phase==='grow'||S3.phase==='ready'){
+    /* 1つの 直方体。のびる 先（高さ 6cm）を うすい 点線で 見せる */
+    const h=S3.h,p=(i,j,k)=>[i*U+j*DX,-k*U+j*DY];
+    const E=(a,c)=>`<line x1="${a[0]}" y1="${a[1]}" x2="${c[0]}" y2="${c[1]}" stroke="#9fb9b6" stroke-width="2" stroke-dasharray="6 6"/>`;
+    g+=E(p(0,0,h),p(0,0,HMAX))+E(p(W,0,h),p(W,0,HMAX))+E(p(W,D,h),p(W,D,HMAX))
+      +E(p(0,0,HMAX),p(W,0,HMAX))+E(p(W,0,HMAX),p(W,D,HMAX))+E(p(0,0,HMAX),p(0,D,HMAX))+E(p(0,D,HMAX),p(W,D,HMAX));
+    g+=box3(W,D,h,0,k=>TONE[k%2],S3.newH);
+    const a0=p(0,0,0),a1=p(W,0,0),t0=p(W,D,0);
+    g+=txt((a0[0]+a1[0])/2,V*1.0,`横 ${W}cm`,{fs});
+    g+=txt((a1[0]+t0[0])/2+V*0.6,(a1[1]+t0[1])/2+V*0.9,`たて ${D}cm`,{fs,a:'start'});
+    g+=txt(-V*0.35,-h*U/2-fs*0.1,'高さ',{fs,a:'end',c:'#a8691f'});
+    g+=txt(-V*0.35,-h*U/2+fs*0.95,`${h}cm`,{fs,a:'end',c:'#a8691f'});
+    minX=-V*2.2;maxX=Math.max(bw+V*0.6,(a1[0]+t0[0])/2+V*3.6);
+    topY=-HMAX*U+D*DY-V*0.4;botY=V*1.4;
+  }else{
+    /* 2つを ならべる：左＝高さ a、右＝高さ b */
+    const [a,c]=Q3().q[S3.qi],k=c/a,gap=V*2.4;
+    const ox2=bw+gap;
+    g+=box3(W,D,a,0,()=>CHUNK[0],-1);
+    g+=box3(W,D,c,ox2,S3.rev?(kk=>CHUNK[Math.floor(kk/a)%CHUNK.length]):(kk=>TONE[kk%2]),-1);
+    const lab=(x,h,v)=>txt(x+bw/2-D*DX/2,V*0.95,`高さ ${h}cm`,{fs,c:'#a8691f'})+txt(x+bw/2-D*DX/2,V*1.95,v,{fs});
+    g+=lab(0,a,`${b*a}cm<tspan dy="-${fs*0.4}" font-size="${fs*0.6}">3</tspan>`);
+    g+=lab(ox2,c,S3.solved?`${b*c}cm<tspan dy="-${fs*0.4}" font-size="${fs*0.6}">3</tspan>`:'？');
+    if(S3.rev){
+      /* かたまりの よこに 「12cm³」 */
+      for(let m=0;m<k;m++){
+        const y0=-m*a*U,y1=-(m+1)*a*U,x=ox2+bw+V*0.3,tone=CHUNK[m%CHUNK.length];
+        g+=`<path d="M${x} ${y0+DY*D-3} h${V*0.18} V${y1+DY*D+3} h-${V*0.18}" fill="none" stroke="${tone.s}" stroke-width="3"/>`;
+        g+=txt(x+V*0.3,(y0+y1)/2+DY*D+fs*0.35,`${b*a}`,{fs:fs*0.9,c:tone.s,a:'start'});
+      }
+    }
+    minX=-V*0.6;maxX=ox2+bw+V*(S3.rev?1.9:0.8);
+    topY=-c*U+D*DY-V*0.5;botY=V*2.4;
+    topY=Math.min(topY,-Math.max(...Q3().q.map(x=>x[1]))*U+D*DY-V*0.5);   /* 問題の 中で 大きさを かえない */
+  }
+  const svg=$('pic3');
+  svg.setAttribute('viewBox',`${minX} ${topY} ${maxX-minX} ${botY-topY}`);
+  svg.innerHTML=g;S3.newH=-1;
+  table3();
+}
+function table3(){
+  const b=base3(),q=(S3.phase==='q'||S3.phase==='end')?Q3().q[S3.qi]:null;
+  let r1='<tr class="h"><th>高さ<small>(cm)</small></th>',r2='<tr class="v"><th>体積<small>(cm<sup>3</sup>)</small></th>';
+  for(let h=1;h<=HMAX;h++){
+    const hl=q&&(h===q[0]||h===q[1])?' hl':'';
+    const nw=S3.phase==='grow'&&h===S3.h&&h>1?' new':'';
+    r1+=`<td class="${hl}" data-h="${h}">${h}</td>`;
+    r2+=`<td class="${hl}${nw}${h>S3.h?' emp':''}" data-v="${h}">${h<=S3.h?b*h:'-'}</td>`;
+  }
+  $('tbl').innerHTML=r1+'</tr>'+r2+'</tr>';
+  requestAnimationFrame(arrows3);
+}
+/* 表の 上（高さ）と 下（体積）に 「□倍」の 矢じるし */
+function arrows3(){
+  const svg=$('arrows'),wrap=$('tblwrap');
+  if(S3.phase!=='q'&&S3.phase!=='end'){svg.innerHTML='';return;}
+  const [a,c]=Q3().q[S3.qi],k=c/a,W0=wrap.getBoundingClientRect();
+  const cell=sel=>{const r=wrap.querySelector(sel).getBoundingClientRect();return {x:r.left-W0.left+r.width/2,t:r.top-W0.top,b:r.bottom-W0.top};};
+  const fs=parseFloat(getComputedStyle(wrap).fontSize);
+  const arc=(p,q,up,label,col)=>{
+    const y=up?p.t-3:p.b+3,dy=up?-fs*1.2:fs*1.2,mx=(p.x+q.x)/2;
+    return `<path d="M${p.x} ${y} Q${mx} ${y+dy*1.6} ${q.x} ${y}" fill="none" stroke="${col}" stroke-width="3"/>`+
+      `<path d="M${q.x} ${y} l${up?-9:-9} ${up?-6:6} M${q.x} ${y} l${up?2:2} ${up?-10:10}" stroke="${col}" stroke-width="3" fill="none" stroke-linecap="round"/>`+
+      `<text x="${mx}" y="${y+dy*0.95+(up?0:fs*0.35)}" text-anchor="middle" font-weight="800" font-size="${fs*0.95}" fill="${col}" paint-order="stroke" stroke="#fffdf7" stroke-width="5">${label}</text>`;
+  };
+  svg.innerHTML=arc(cell(`td[data-h="${a}"]`),cell(`td[data-h="${c}"]`),true,`${k}倍`,'#a8691f')+
+                arc(cell(`td[data-v="${a}"]`),cell(`td[data-v="${c}"]`),false,S3.rev&&S3.solved?`${k}倍`:'？倍',S3.solved?'#5a8a4c':'#8f7417');
+}
+function say3(h,cls){const e=$('say3');e.className='say'+(cls?' '+cls:'');e.innerHTML=`<span>${h}</span>`;}
+function actions3(list){
+  const a=$('actions3');a.innerHTML='';
+  list.forEach(([c,t,f,dis])=>{
+    const b=document.createElement('button');b.className='btn '+c;b.innerHTML=t;b.disabled=!!dis;
+    b.addEventListener('click',()=>{if(!S3.busy)f();});a.appendChild(b);
+  });
+}
+function s3start(){
+  Object.assign(S3,{h:1,phase:'grow',qi:0,rev:false,solved:false,newH:0});
+  const {d,w}=Q3();
+  $('prob3').innerHTML=`<span class="no">問題 ${S3.pi+1} / ${P3.length}</span>`+
+    `<span class="dim">たて <b>${d}</b>cm　横 <b>${w}</b>cm は そのまま。高さを のばす</span>`;
+  const ch=$('choices3');ch.classList.remove('hidden');ch.classList.add('off');
+  ch.innerHTML=[2,3,4].map(n=>`<button class="choice" disabled>${n}倍</button>`).join('');
+  growSay();growActions();draw3();
+}
+function growSay(){
+  const {d,w}=Q3(),h=S3.h;
+  say3(`高さ <span class="d">${h}cm</span>　${d} × ${w} × <span class="d">${h}</span> ＝ ${d*w*h}cm<sup>3</sup>`+
+       (h<HMAX?'<br>高さを 1cmずつ のばして、表に 書いて いこう':''));
+}
+function growActions(){
+  actions3([['sub','1cm もどす',shrink,S3.h<=1],['play','高さを 1cm のばす ▶',grow]]);
+}
+function grow(){
+  if(S3.phase!=='grow')return;
+  S3.h++;S3.newH=S3.h-1;growSay();
+  if(S3.h>=HMAX){
+    S3.phase='ready';draw3();
+    say3(`高さ ${HMAX}cm まで のばしたよ。<br>表を 見て、高さと 体積の きまりを 見つけよう`);
+    actions3([['sub','1cm もどす',()=>{S3.phase='grow';shrink();}],['play','きまりを 見つける ▶',askQ]]);
+    return;
+  }
+  growActions();draw3();
+}
+function shrink(){
+  if(S3.h<=1)return;
+  S3.phase='grow';S3.h--;growSay();growActions();draw3();
+}
+function askQ(){
+  S3.phase='q';S3.rev=false;S3.solved=false;
+  const [a,c]=Q3().q[S3.qi];
+  say3(`高さが ${a}cm から ${c}cm に（<span class="d">${c/a}倍</span>に）なると、<br>体積は 何倍？`);
+  const ch=$('choices3');ch.classList.remove('hidden','off');ch.innerHTML='';
+  [2,3,4].forEach(n=>{
+    const b=document.createElement('button');b.className='choice';b.innerHTML=`${n}倍`;
+    b.addEventListener('click',()=>pick(n,b));ch.appendChild(b);
+  });
+  actions3([]);draw3();
+}
+function pick(n,btn){
+  if(S3.phase!=='q'||S3.solved)return;
+  const [a,c]=Q3().q[S3.qi],k=c/a,b=base3();
+  S3.rev=true;
+  if(n!==k){
+    btn.disabled=true;
+    say3(`もう一回。右の 直方体に、左と 同じ <span class="a">${b*a}cm<sup>3</sup></span>の かたまりが いくつ あるかな？`,'try');
+    draw3();return;
+  }
+  S3.solved=true;btn.classList.add('good');
+  $('choices3').querySelectorAll('.choice').forEach(x=>x.disabled=x!==btn);
+  say3(`よくできました！ <span class="a">${b*a}cm<sup>3</sup></span>の かたまりが ${k}つ分。<br>高さが ${k}倍 → 体積も ${k}倍 だね`,'ok');
+  draw3();
+  const last=S3.qi===Q3().q.length-1;
+  if(!last){actions3([['play','ほかの 高さで しらべる ▶',()=>{S3.qi++;askQ();}]]);return;}
+  S3.phase='end';
+  setTimeout(()=>{
+    say3('高さが 2倍、3倍、4倍…に なると、<br>体積も 2倍、3倍、4倍…に なるね','ok');
+    actions3([['sub','もう一度',s3start],['next',S3.pi===P3.length-1?'はじめの 問題へ →':'次の 問題 →',()=>{S3.pi=(S3.pi+1)%P3.length;s3start();}]]);
+  },1400);
+}
+$('stage3').addEventListener('click',()=>{
+  if(S3.busy||S3.phase!=='grow')return;
+  grow();const st=$('stage3');st.classList.remove('tapped');void st.offsetWidth;st.classList.add('tapped');
+});
+
+/* ===== タブ ===== */
+let MODE='s2';
+document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
+  MODE=t.dataset.m;killGhost();
+  document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x===t));
+  $('main').classList.toggle('hidden',MODE!=='s2');
+  $('main3').classList.toggle('hidden',MODE!=='s3');
+  if(MODE==='s3'){if(!S3.started){S3.started=true;s3start();}else draw3();}
+  else draw();
+}));
 
 start();
 </script>
