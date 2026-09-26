@@ -208,6 +208,26 @@
   .btn.sub{background:#a99a7c;box-shadow:0 4px 0 #85795f;flex:.6}
   .btn:disabled{opacity:.45;box-shadow:none}
 
+  /* ===== ステップ４：絵を 出さない。上＝ちゅうもん、まん中＝大きな 式、下＝ボタン（2026-09-26 指摘＝
+     「まだ分かりにくい。これならイラストはいらない」。答える 前の 絵は 何も 助けて いなかった） ===== */
+  .eqR{display:contents}
+  #main.m4{grid-template-columns:1fr;grid-template-rows:auto minmax(0,1fr);grid-template-areas:"order" "work"}
+  .m4 #stage{display:none}
+  .m4 .guest{flex:none;flex-direction:row;justify-content:center;gap:12px}
+  .m4 .guest .face{width:clamp(56px,calc(3vw + 6vh),110px)}
+  .m4 .bubble{flex:0 1 auto;width:auto;max-width:760px;font-size:clamp(18px,calc(1vw + 2vh),32px)}
+  .m4 .bubble::before{left:-14px;top:50%;margin:-10px 0 0 0;border:10px solid transparent;border-right:14px solid var(--sakura);border-left:0}
+  .m4 .bubble::after{left:-9px;top:50%;margin:-7px 0 0 0;border:7px solid transparent;border-right:10px solid #fff;border-left:0}
+  .m4 #work{width:100%;max-width:820px;justify-self:center;justify-content:center}
+  .m4 .shiki{padding:14px 10px;gap:14px}
+  .m4 .eq{font-size:clamp(34px,calc(2vw + 5vh),76px)}
+  .m4 .slotw .what{font-size:clamp(13px,calc(.6vw + 1.3vh),22px)}
+  .m4 .cards{gap:22px;min-height:clamp(60px,calc(2vw + 7vh),100px)}
+  .m4 .cardn{width:clamp(72px,calc(3vw + 7vh),120px);height:clamp(60px,calc(2vw + 7vh),100px);font-size:clamp(32px,calc(1.5vw + 4vh),60px)}
+  .m4 .dg{height:clamp(46px,calc(1.5vw + 6vh),80px);font-size:clamp(24px,calc(1vw + 3vh),42px)}
+  .m4 .tasu{font-size:clamp(18px,calc(1vw + 2vh),32px)}
+  .m4 .m3title{margin-top:auto}      /* まん中の まとまりを 上下の まん中に。ボタンは いちばん下 */
+  .m4 #actions{margin-top:auto}
   @media (max-height:640px){
     header{display:none}
     .tab{padding:5px 4px}
@@ -269,9 +289,9 @@
           <div class="slotw"><div class="slot" data-i="0"></div><div class="what" id="what0"></div></div>
           <span class="op">÷</span>
           <div class="slotw"><div class="slot" data-i="1"></div><div class="what" id="what1"></div></div>
-          <span class="op">＝</span>
+          <span id="eqR" class="eqR"><span class="op">＝</span>
           <div class="slotw"><div class="resbox" id="res">？</div><div class="what" id="whatR"></div></div>
-          <span class="unit" id="unit"></span>
+          <span class="unit" id="unit"></span></span>
         </div>
         <div class="cards" id="cards"></div>
         <div class="tasu hidden" id="kake"></div>
@@ -440,6 +460,7 @@ $('stage').addEventListener('click',()=>{
 /* ===== がめん ===== */
 function render(){
   if(M==='s3'){render3();return;}
+  if(M==='s4')return;
   const {t,d}=Q(),q=t/d,tou=isTou();
   let o;
   if(tou){
@@ -451,8 +472,6 @@ function render(){
     o={nSk:r,per:Array(r).fill(d),maxPer:d,cols:Math.max(6,q),total:t,tray:t-r*d,just:(S.r>0&&!S.done4)?d:0,
        hlSk:(M!=='s4'&&S.phase==='deal'&&S.r>0)?S.r-1:null,skBadges:M==='s4'?null:S.r,newOrder:'col'};
   }
-  /* ステップ４の こたえる まえは くしの たかさを とらない（空の 場所で おさらが 小さく なる） */
-  if(M==='s4'&&!S.done4){o.maxPer=3;o.cols=Math.max(6,o.nSk);}
   o.newKeys=S.newKeys;
   $('stage').innerHTML=stageSVG(o);
   S.newKeys=null;          // うごきは 1回だけ（画面の 大きさが かわって かき直しても また 落ちて こない）
@@ -464,13 +483,15 @@ function resetWork(){
   $('what0').textContent='';$('what1').textContent='';$('whatR').textContent='';$('unit').textContent='';
   $('res').className='resbox';$('res').textContent='？';
   document.querySelectorAll('.slot').forEach(sl=>sl.classList.remove('good'));
+  $('eqR').classList.remove('hidden');
   S.blue=null;
 }
 
 function newQ(){
   S.run++;resetWork();
   if(M==='s3'){newS3();return;}
-  $('main').classList.remove('m3');
+  $('main').classList.remove('m3','m4');
+  if(M==='s4')$('main').classList.add('m4');
   S.phase='deal';S.r=0;S.slots=[null,null];S.sel=null;S.ans='';S.done4=false;S.newKeys=null;
   $('face').innerHTML=face(GUEST(),false);$('face').classList.remove('hop');void $('face').offsetWidth;$('face').classList.add('hop');
   $('bubble').innerHTML=orderText();
@@ -684,7 +705,7 @@ function choose3(v,b){
    ① しきを つくる … カードで □ ÷ □。青「こたえを 入れる ▶」
    ② こたえを 入れる … 「ぜんぶの かず／くしの かず」の 名前が ついた 式の ？に、数の ボタンで 入れる。金「こたえ」
    ヒントは ② だけ。式 1つ（さす＝3 × ? ＝ 12／くばる＝? × 3 ＝ 12）。もんだいが かわっても 消さない
-   だんごの 絵は こたえあわせの あとに さした／くばった すがたに なる（先に 出すと 数えるだけに なる） ===== */
+   絵は 出さない（ステップ１〜３で 意味を つかんだ あと、式と 九九で こたえる ところ。絵が あると 数えて しまう） ===== */
 (function(){
   const box=$('digits');
   for(let v=1;v<=9;v++){
@@ -711,10 +732,11 @@ function newS4(){
   const {t,d}=Q();
   S.cards=[d,t];S.slots=[null,null];S.sel=null;S.ans='';
   drawCards();drawSlots();drawAns();
-  say('① ちゅうもんを よんで、しきを つくろう');
+  $('eqR').classList.add('hidden');          // ① の あいだは □ ÷ □ だけ。こたえの ますは ② で 出す
+  $('m3title').classList.remove('hidden');$('m3title').textContent='① しきを つくろう';
+  say('カードを □ に 入れてね');
   actions([['sub','カードを もどす',()=>{S.slots=[null,null];S.sel=null;drawCards();drawSlots();}],
            ['play','こたえを 入れる ▶',toAns4]]);
-  render();
 }
 function toAns4(){
   if(S.phase!=='shiki')return;
@@ -722,10 +744,12 @@ function toAns4(){
   if(!shikiOK())return;
   S.phase='ans';S.ans='';
   labelShiki();drawAns();
+  $('eqR').classList.remove('hidden');
+  $('m3title').textContent='② こたえを 入れよう';
   $('cards').classList.add('hidden');
   $('hintbar').classList.remove('hidden');$('digits').classList.remove('hidden');drawHint();
   document.querySelectorAll('.dg').forEach(b=>b.disabled=false);
-  say(isTou()?'② 1本に なんこ？ 九九で かんがえよう':'② くしは なん本？ 九九で かんがえよう');
+  say(isTou()?'1本に なんこ？ 九九で かんがえよう':'くしは なん本？ 九九で かんがえよう');
   actions([['show','こたえ',check4]]);
 }
 function check4(){
@@ -742,11 +766,7 @@ function check4(){
   $('res').textContent=q;drawAns();
   $('hintbar').classList.add('hidden');$('digits').classList.add('hidden');
   $('kake').classList.remove('hidden');$('kake').innerHTML=kakeLine().replace('かけ算で みると','たしかめ');
-  /* さした／くばった すがたを 見せる */
-  const nk=new Set();
-  if(tou){for(let j=0;j<d;j++)for(let i=0;i<q;i++)nk.add(j+'-'+i);}
-  else{for(let j=0;j<q;j++)for(let i=0;i<d;i++)nk.add(j+'-'+i);}
-  S.newKeys=nk;render();
+  $('m3title').textContent='できた！';
   $('face').innerHTML=face(GUEST(),true);
   say(tou?`よくできました！ ${t} ÷ ${d} ＝ ${q}　1本に ${q}こずつ`:`よくできました！ ${t} ÷ ${d} ＝ ${q}　くしは ${q}本`,'ok');
   actions([['next','つぎの もんだい →',()=>{S.pi.s4++;newQ();}]]);
