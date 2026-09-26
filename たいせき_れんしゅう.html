@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>体積</title>
+<style>
+  :root{
+    --ink:#2b2118;
+    --paper:#fdf6e3;
+    --card:#fffdf7;
+    --line:#e7d9b8;
+    --gold:#c9a227;
+    --gold-d:#8f7417;
+    --ok:#5a8a4c;
+    --flash:#ffe14d;
+    --blue:#2f6fa8;          /* 同じ 問題の 中で 進む */
+    --acc:#2f8f8a;           /* この アプリの 色＝1だん分（たて × 横） */
+    --acc-s:#e2f3f1;
+    --dan:#a8691f;           /* だんの 数（高さ） */
+    --dan-s:#fbeedb;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:'Hiragino Maru Gothic ProN','BIZ UDPGothic','Yu Gothic',sans-serif;
+    background:
+      radial-gradient(circle at 12% 8%,#dff2ef 0,transparent 38%),
+      radial-gradient(circle at 88% 92%,#fbe6cf 0,transparent 45%),
+      var(--paper);
+    color:var(--ink);
+    position:fixed;inset:0;width:100%;
+    height:var(--fh,100dvh);
+    padding:6px 8px 10px;
+    overflow:hidden;overscroll-behavior:none;touch-action:manipulation;
+    display:flex;flex-direction:column;align-items:center;
+    -webkit-user-select:none;user-select:none;
+  }
+  button{font-family:inherit;touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;cursor:pointer}
+  .app{width:100%;max-width:1100px;height:100%;display:flex;flex-direction:column;gap:6px;min-height:0}
+  .hidden{display:none !important}
+
+  header{text-align:center;flex-shrink:0;display:flex;align-items:baseline;justify-content:center;gap:14px}
+  h1{font-size:clamp(18px,calc(1.2vw + 1.5vh),28px);letter-spacing:.08em;color:var(--acc)}
+  header .sub{font-weight:800;color:#6f5d3d;font-size:clamp(14px,calc(.8vw + 1.1vh),21px)}
+
+  /* ===== ならび：よこ長＝左に 絵、右に はたらく ところ／たて長＝上に 絵 ===== */
+  #main{flex:1;min-height:0;display:grid;gap:8px;
+    grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) auto;grid-template-areas:"stage" "work"}
+  @media (orientation:landscape){
+    #main{grid-template-columns:minmax(0,1.45fr) minmax(310px,1fr);grid-template-rows:minmax(0,1fr);
+      grid-template-areas:"stage work"}
+  }
+
+  /* ===== 絵 ===== */
+  #stage{grid-area:stage;min-height:0;border-radius:18px;border:3px solid #b9d9d5;
+    background:linear-gradient(#fbfefd,#eef7f5);
+    position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;padding:6px;
+    contain:size}      /* 絵の 大きさで 行を おし広げない */
+  #stage > svg{width:100%;height:100%;display:block}
+  #stage.tapped{animation:tapped .25s}
+  @keyframes tapped{50%{background:#fff6cf}}
+  .nw{animation:drop .42s cubic-bezier(.3,1.35,.6,1) both}
+  @keyframes drop{0%{transform:translateY(-60px);opacity:0}100%{transform:none;opacity:1}}
+
+  /* 1cm³ の しるし（左上） */
+  .unit{position:absolute;left:8px;top:8px;display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.88);
+    border:2px solid #cfe5e2;border-radius:12px;padding:4px 10px 4px 6px;font-weight:800;color:#3d5e5b;
+    font-size:clamp(12px,calc(.5vw + 1vh),17px);line-height:1.25;pointer-events:none}
+  .unit svg{width:clamp(26px,3.6vh,40px);height:auto;flex:none}
+  .unit b{color:var(--acc);font-size:1.12em}
+  /* だんを 分けて 見る（右上） */
+  #explode{position:absolute;right:8px;top:8px;border:2px solid var(--line);background:var(--card);border-radius:12px;
+    padding:6px 12px;font-weight:800;color:#6f5d3d;font-size:clamp(13px,calc(.5vw + 1.1vh),18px)}
+  #explode.on{background:var(--dan-s);border-color:var(--dan);color:var(--dan)}
+
+  /* ===== はたらく ところ ===== */
+  #work{grid-area:work;display:flex;flex-direction:column;gap:8px;min-height:0}
+  .prob{display:flex;align-items:center;gap:10px;background:var(--card);border:2px solid var(--line);border-radius:14px;padding:6px 12px;
+    font-weight:800;font-size:clamp(14px,calc(.6vw + 1.3vh),21px);word-break:keep-all;flex-wrap:wrap;justify-content:center}
+  .prob .no{color:#8a7a5f;font-size:.82em}
+  .prob .dim{white-space:nowrap}
+  .prob .dim b{font-size:1.2em}
+  .say{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:8px 12px;
+    font-weight:800;color:#5d5040;line-height:1.5;text-align:center;word-break:keep-all;
+    min-height:calc(3em + 20px);display:flex;align-items:center;justify-content:center;
+    font-size:clamp(14px,calc(.7vw + 1.25vh),21px)}
+  .say.ok{color:var(--ok);border-color:var(--ok);background:#f2f9ee}
+  .say.try{color:#b3566f;border-color:#d9748f;background:#fbe3ea}
+  .say .a{color:var(--acc)} .say .d{color:var(--dan)}
+
+  /* 積んで いく ときの 数 */
+  .trail{text-align:center;font-weight:800;color:#5d5040;font-variant-numeric:tabular-nums;
+    font-size:clamp(20px,calc(1vw + 2.4vh),36px)}
+  .trail .a{color:var(--acc)} .trail .d{color:var(--dan)}
+  .trail small{font-size:.6em}
+
+  /* しき */
+  .shiki{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:8px;
+    display:flex;flex-direction:column;align-items:center;gap:8px}
+  .eq{display:flex;align-items:flex-start;justify-content:center;gap:6px;font-weight:800;
+    font-size:clamp(24px,calc(1.3vw + 3vh),46px);line-height:1;font-variant-numeric:tabular-nums}
+  .eq .op{padding-top:.28em}
+  .eq .u{padding-top:.42em;font-size:.6em}
+  .slotw{display:flex;flex-direction:column;align-items:center;gap:4px}
+  .slot,.resbox{min-width:1.7em;height:1.5em;padding:0 .12em;border:3px dashed #cbb98f;border-radius:12px;background:#fff;
+    display:flex;align-items:center;justify-content:center}
+  .slot.sel{border-color:var(--blue);background:#eaf1f8}
+  .slot.fill{border-style:solid;border-color:#9a8763}
+  .slot.fix{border:3px solid var(--acc);background:var(--acc-s);color:var(--acc)}
+  .slot.good{border-color:var(--ok);background:#eaf5e4}
+  .slot.gd-a{border:3px solid var(--acc);background:var(--acc-s);color:var(--acc)}
+  .slot.gd-d{border:3px solid var(--dan);background:var(--dan-s);color:var(--dan)}
+  .resbox{border-color:transparent;background:transparent;color:#8a7a5f}
+  .resbox.good{border:3px solid var(--gold);background:#fff4c9;color:var(--ink)}
+  .what{font-size:clamp(11px,calc(.5vw + .95vh),16px);color:#8a7a5f;white-space:nowrap;min-height:1.2em}
+  .what.a{color:var(--acc)} .what.d{color:var(--dan)}
+  .cards{display:flex;gap:14px;justify-content:center;min-height:clamp(48px,calc(2vw + 4.6vh),74px)}
+  .cardn{width:clamp(56px,calc(2.6vw + 5vh),84px);height:clamp(48px,calc(2vw + 4.6vh),74px);border-radius:14px;
+    background:#fff;border:3px solid var(--acc);box-shadow:0 4px 0 #1f6763;
+    font-weight:800;font-size:clamp(24px,calc(1.2vw + 2.8vh),42px);color:var(--ink);touch-action:none}
+  .cardn.sel{background:var(--flash);transform:translateY(-3px)}
+  .cardn.gone{visibility:hidden}
+  .ghost{position:fixed;z-index:50;pointer-events:none;opacity:.9;transform:translate(-50%,-50%) scale(1.08)}
+
+  /* まとめ */
+  .sum{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:8px 10px;text-align:center;
+    font-weight:800;font-variant-numeric:tabular-nums;display:flex;flex-direction:column;align-items:center;gap:4px}
+  .fgrid{display:grid;grid-template-columns:repeat(5,auto);column-gap:.3em;row-gap:0;align-items:end;justify-items:center;
+    font-size:clamp(20px,calc(1vw + 2.3vh),36px);line-height:1.15}
+  .fgrid .lb{font-size:.5em;color:#8a7a5f;padding-bottom:.15em}
+  .fgrid .a{color:var(--acc)} .fgrid .d{color:var(--dan)}
+  .fgrid .lb.a,.fgrid .lb.d{font-weight:800}
+  .fgrid .lb.sp{padding-top:.35em}
+  .vol{font-size:clamp(20px,calc(1vw + 2.4vh),36px)}
+  .vol .gd{background:#fff4c9;border:2px solid var(--gold);border-radius:8px;padding:0 .25em}
+  sup{font-size:.6em;vertical-align:.55em;line-height:0}
+
+  /* ボタン：青＝同じ 問題の 中で 進む／金＝答え合わせ／みどり＝次の 問題／茶＝もどす */
+  .actions{display:flex;gap:8px;flex-shrink:0;margin-top:auto}
+  .btn{flex:1;border:none;border-radius:14px;padding:13px 4px;font-weight:800;color:#fff;
+    font-size:clamp(15px,calc(.7vw + 1.6vh),23px);transition:transform .08s;word-break:keep-all}
+  .btn:active{transform:translateY(2px)}
+  .btn.play{background:var(--blue);box-shadow:0 4px 0 #214f7a}
+  .btn.show{background:var(--gold);box-shadow:0 4px 0 #a5811a}
+  .btn.next{background:var(--ok);box-shadow:0 4px 0 #446838}
+  .btn.sub{background:#a99a7c;box-shadow:0 4px 0 #85795f;flex:.6}
+  .btn:disabled{opacity:.45;box-shadow:none}
+
+  @media (orientation:landscape){ #work{justify-content:center} }
+  /* たて長：下の らんの 高さを 先に とって おく（進むたびに 絵の 大きさが 変わらない ように） */
+  @media (orientation:portrait){ #work{min-height:clamp(260px,43vh,540px)} }
+  @media (max-height:640px){
+    header{display:none}
+    #work{gap:5px}
+    .prob{padding:4px 10px}
+    .say{padding:5px 10px;min-height:calc(3em + 10px);font-size:14px}
+    .shiki{padding:5px;gap:5px}
+    .btn{padding:10px 4px}
+    .sum{padding:5px 8px}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header><h1>体積</h1><span class="sub">1だんずつ 積む</span></header>
+
+  <div id="main">
+    <div id="stage">
+      <div class="unit" id="unit"></div>
+      <button id="explode" type="button" class="hidden">だんを 分けて 見る</button>
+      <svg id="pic"></svg>
+    </div>
+
+    <div id="work">
+      <div class="prob" id="prob"></div>
+      <div class="say" id="say"></div>
+      <div class="trail hidden" id="trail"></div>
+      <div class="shiki hidden" id="shiki">
+        <div class="eq" id="eq"></div>
+        <div class="cards" id="cards"></div>
+      </div>
+      <div class="sum hidden" id="sum"></div>
+      <div class="actions" id="actions"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+
+/* ===== 画面の 高さ（Googleサイトの iframe でも ずれないように） ===== */
+function setFH(){
+  const v=(window.visualViewport&&window.visualViewport.height)||window.innerHeight;
+  document.documentElement.style.setProperty('--fh',v+'px');
+}
+setFH();
+addEventListener('resize',()=>{setFH();draw();});
+if(window.visualViewport) visualViewport.addEventListener('resize',setFH);
+
+/* ===== 問題（じゅんばんは きめて ある。ランダムに しない）
+   解説（算数編 p.259-261 第5学年 B(4) 立体図形の体積）：
+   「単位体積の立方体をきちんと敷き詰めた１段分の個数を（縦）×（横），その段の個数を（高さ）で
+     それぞれ表すことができることについての理解を確実にする必要がある」
+   → 1だん目を しきつめて「たて × 横」、同じ だんを 積んで「× 高さ」。
+   d＝たて（おく）、w＝横、h＝高さ。立方体（さいご）の ほかは 3つの 数を みな ちがう 数に する
+   （カードで どの 数を 入れたか 見分けられる ように）。
+   1・2問目と 3〜5問目は 体積が 同じで 形が ちがう（24・60） ===== */
+const P=[{d:2,w:3,h:4},{d:3,w:4,h:2},{d:4,w:5,h:3},{d:2,w:6,h:5},
+         {d:5,w:3,h:4},{d:4,w:6,h:2},{d:5,w:6,h:4},{d:3,w:3,h:3}];
+
+const S={pi:0,phase:'intro',rows:0,layers:0,explode:false,newRow:-1,newLayer:-1,
+         slots:[],sel:null,cards:[],busy:false};
+const Q=()=>P[S.pi];
+const base=()=>Q().d*Q().w;
+
+/* ===== 絵：見取図（前の 面は そのままの 形、おくゆきは 右上へ） ===== */
+const U=40,DX=U*0.46,DY=-U*0.33,GAP=U*0.62;
+const TONE=[{f:'#8fd0c9',t:'#c4ebe6',r:'#62aca4',s:'#2f7f79'},   /* だんごとに 色を かえる＝だんが 見分けられる */
+            {f:'#f2c690',t:'#fae2c1',r:'#d6a263',s:'#a0702f'}];
+function pt(i,j,k,L){return [i*U+j*DX, -k*U+j*DY-(S.explode?L*GAP:0)];}
+const ps=a=>a.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ');
+function cube(i,j,k,L,tone,cls){
+  const c=(a,b,e)=>pt(i+a,j+b,k+e,L);
+  return `<g class="${cls||''}">`+
+    `<polygon points="${ps([c(0,0,0),c(1,0,0),c(1,0,1),c(0,0,1)])}" fill="${tone.f}" stroke="${tone.s}" stroke-width="1.6" stroke-linejoin="round"/>`+
+    `<polygon points="${ps([c(0,0,1),c(1,0,1),c(1,1,1),c(0,1,1)])}" fill="${tone.t}" stroke="${tone.s}" stroke-width="1.6" stroke-linejoin="round"/>`+
+    `<polygon points="${ps([c(1,0,0),c(1,1,0),c(1,1,1),c(1,0,1)])}" fill="${tone.r}" stroke="${tone.s}" stroke-width="1.6" stroke-linejoin="round"/>`+
+    `</g>`;
+}
+function txt(x,y,s,o={}){
+  return `<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" font-size="${o.fs||U*0.5}" font-weight="800" fill="${o.c||'#5d5040'}" `+
+    `text-anchor="${o.a||'middle'}" paint-order="stroke" stroke="#fbfefd" stroke-width="${o.sw==null?5:o.sw}" stroke-linejoin="round">${s}</text>`;
+}
+function draw(){
+  const {d:D,w:W,h:H}=Q(),ex=S.explode;
+  const M=Math.max(1,(W+0.46*D)/5.2,H/4.6),V=U*M;   /* 大きい 直方体でも 字が 小さく ならない ように */
+  const minX=-V*2.5, maxX=Math.max(W*U+D*DX+V*2.6, W*U+D*DX/2+V*3.6);   /* 「たて ○cm」が 右で 切れない ように */
+  const topY=-(H*U+(ex?(H-1)*GAP:0))+D*DY-V*0.5, botY=V*1.45;
+  let g='';
+
+  /* 入れもの（直方体）の 線。見えない 辺も 点線で かく＝見取図 */
+  if(!ex){
+    const c=(a,b,e)=>pt(a*W,b*D,e*H,0);
+    const E=(p,q,dash)=>`<line x1="${p[0]}" y1="${p[1]}" x2="${q[0]}" y2="${q[1]}" stroke="#7d9a97" stroke-width="2" ${dash?'stroke-dasharray="6 6"':''}/>`;
+    g+=`<polygon points="${ps([c(0,0,0),c(1,0,0),c(1,0,1),c(0,0,1)])}" fill="rgba(255,255,255,.55)"/>`;
+    g+=E(c(0,1,0),c(1,1,0),1)+E(c(0,1,0),c(0,0,0),1)+E(c(0,1,0),c(0,1,1),1);
+  }
+
+  /* 立方体。下の だん → おくの 列 → 左から の じゅんに かく（手前・上が あとに かかれて かくす） */
+  const n=S.layers;
+  for(let k=0;k<Math.max(n,S.rows>0?1:0);k++){
+    const tone=TONE[k%2];
+    const rowsHere=k<n?D:S.rows;
+    for(let j=D-1;j>=0;j--){
+      if(j>=rowsHere)continue;
+      for(let i=0;i<W;i++){
+        const cls=(k===S.newLayer)||(k===0&&n===0&&j===S.newRow)?'nw':'';
+        g+=cube(i,j,k,k,tone,cls);
+      }
+    }
+  }
+
+  if(!ex){
+    const c=(a,b,e)=>pt(a*W,b*D,e*H,0);
+    const E=(p,q)=>`<line x1="${p[0]}" y1="${p[1]}" x2="${q[0]}" y2="${q[1]}" stroke="#5c7d7a" stroke-width="2.2" stroke-dasharray="7 5" stroke-linecap="round"/>`;
+    g+=E(c(0,0,0),c(1,0,0))+E(c(1,0,0),c(1,0,1))+E(c(1,0,1),c(0,0,1))+E(c(0,0,1),c(0,0,0))
+      +E(c(0,0,1),c(0,1,1))+E(c(0,1,1),c(1,1,1))+E(c(1,1,1),c(1,0,1))+E(c(1,0,0),c(1,1,0))+E(c(1,1,0),c(1,1,1));
+  }
+
+  /* ながさの 名前 */
+  const fs=V*0.52, small=Math.min(V*0.4,U*0.56);
+  const showCount=S.phase==='fill'||S.phase==='A';
+  {
+    const a=pt(0,0,0,0),b=pt(W,0,0,0);
+    g+=txt((a[0]+b[0])/2,a[1]+V*1.15,`横 ${W}cm`,{fs});
+    if(showCount) for(let i=0;i<W;i++) g+=txt((i+.5)*U,V*0.45,i+1,{fs:small,c:'#2f7f79'});
+  }
+  {
+    const a=pt(W,0,0,0),b=pt(W,D,0,0);
+    g+=txt((a[0]+b[0])/2+V*0.75,(a[1]+b[1])/2+V*1.0,`たて ${D}cm`,{fs,a:'start'});
+    if(showCount) for(let j=0;j<D;j++){const p=pt(W,j+.5,0,0);g+=txt(p[0]+V*0.2,p[1]+V*0.3,j+1,{fs:small,c:'#2f7f79',a:'start'});}
+  }
+  if(!ex){
+    const a=pt(0,0,0,0),b=pt(0,0,H,0);
+    g+=txt(a[0]-V*1.55,(a[1]+b[1])/2-V*0.05,'高さ',{fs});
+    g+=txt(a[0]-V*1.55,(a[1]+b[1])/2+fs*1.05,`${H}cm`,{fs});
+  }
+  /* 積んだ だんの 数（左）と 1だんの 数（右） */
+  if(n>0){
+    for(let k=0;k<n;k++){
+      const L=pt(0,0,k+.5,k), R=pt(W,D,k+.5,k);
+      g+=txt(L[0]-V*0.3,L[1]+small*0.35,k+1,{fs:small*1.1,c:'#a8691f',a:'end'});
+      g+=txt(R[0]+V*0.25,R[1]+small*0.35,`${base()}個`,{fs:small*1.05,c:'#2f7f79',a:'start'});
+    }
+    if(ex){const L=pt(0,0,0,0);g+=txt(L[0]-V*0.3,L[1]+V*0.95,'だん',{fs:small,c:'#a8691f',a:'end'});}
+  }
+
+  const svg=$('pic');
+  svg.setAttribute('viewBox',`${minX} ${topY} ${maxX-minX} ${botY-topY}`);
+  svg.innerHTML=g;
+  S.newRow=-1;S.newLayer=-1;
+  $('explode').classList.toggle('hidden',!(n>=2&&(S.phase==='stack'||S.phase==='B'||S.phase==='done')));
+  $('explode').classList.toggle('on',ex);
+  $('explode').textContent=ex?'もとに もどす':'だんを 分けて 見る';
+}
+$('explode').addEventListener('click',e=>{e.stopPropagation();S.explode=!S.explode;draw();});
+
+/* 1cm³ の しるし */
+$('unit').innerHTML=(()=>{
+  const t=TONE[0],u=24,dx=u*0.46,dy=-u*0.33;
+  const p=(a,b,c)=>[4+a*u+b*dx,30-c*u+b*dy];
+  const pl=a=>a.map(q=>q.join(',')).join(' ');
+  return `<svg viewBox="0 0 42 34"><polygon points="${pl([p(0,0,0),p(1,0,0),p(1,0,1),p(0,0,1)])}" fill="${t.f}" stroke="${t.s}" stroke-width="1.4"/>`+
+    `<polygon points="${pl([p(0,0,1),p(1,0,1),p(1,1,1),p(0,1,1)])}" fill="${t.t}" stroke="${t.s}" stroke-width="1.4"/>`+
+    `<polygon points="${pl([p(1,0,0),p(1,1,0),p(1,1,1),p(1,0,1)])}" fill="${t.r}" stroke="${t.s}" stroke-width="1.4"/></svg>`+
+    `<span>1辺が 1cmの 立方体<br><b>1cm<sup>3</sup></b></span>`;
+})();
+
+/* ===== ことば・ボタン ===== */
+function say(h,cls){const e=$('say');e.className='say'+(cls?' '+cls:'');e.innerHTML=`<span>${h}</span>`;}
+function actions(list){
+  const a=$('actions');a.innerHTML='';
+  list.forEach(([c,t,f,dis])=>{
+    const b=document.createElement('button');b.className='btn '+c;b.innerHTML=t;b.disabled=!!dis;
+    b.addEventListener('click',()=>{if(!S.busy)f();});a.appendChild(b);
+  });
+}
+function prob(){
+  const {d,w,h}=Q(),cube=d===w&&w===h;
+  $('prob').innerHTML=`<span class="no">問題 ${S.pi+1} / ${P.length}</span>`+
+    `<span class="dim">たて <b>${d}</b>cm　横 <b>${w}</b>cm　高さ <b>${h}</b>cm の ${cube?'立方体':'直方体'}</span>`;
+}
+
+/* ===== すすみ方 ===== */
+function start(){
+  S.phase='intro';S.rows=0;S.layers=0;S.explode=false;S.busy=false;
+  prob();
+  $('trail').classList.add('hidden');$('shiki').classList.add('hidden');$('sum').classList.add('hidden');
+  say(`この ${Q().d===Q().w&&Q().w===Q().h?'立方体':'直方体'}の 体積は、1cm<sup>3</sup>の 立方体 何個分かな？<br>まず 1だん目に しきつめよう`);
+  actions([['play','1だん目を しきつめる ▶',fill]]);
+  draw();
+}
+function fill(){
+  if(S.phase!=='intro')return;
+  S.phase='fill';S.busy=true;
+  say('1列ずつ ならべて いくよ');
+  actions([['play','1だん目を しきつめる ▶',()=>{},true]]);
+  const tick=()=>{
+    S.newRow=S.rows;S.rows++;draw();
+    if(S.rows<Q().d)setTimeout(tick,420);
+    else setTimeout(()=>{S.busy=false;askA();},450);
+  };
+  tick();
+}
+
+/* 式①：1だん目は 何個？ □ × □ ＝ ？ */
+function makeCards(){
+  const {d,w,h}=Q();
+  S.cards=[{v:d,r:'d'},{v:w,r:'w'},{v:h,r:'h'}].sort((a,b)=>a.v-b.v);   /* 小さい じゅん（ならびで 答えが 分からない ように） */
+}
+function askA(){
+  S.phase='A';makeCards();S.slots=[null,null];S.sel=null;S.fixed=[null,null];
+  say('1だん目に 何個 ならんだかな？<br>式に 表そう。カードを □ に 入れてね');
+  buildEq(['','×','','＝']);draw();
+  $('shiki').classList.remove('hidden');
+  actions([['sub','カードを もどす',resetCards],['show','答え',checkA]]);
+}
+/* 式②：全部で 何個？ 12 × □ ＝ ？（12 は 1だん分＝はじめから 入って いる） */
+function askB(){
+  S.phase='B';makeCards();S.slots=['fix',null];S.sel=null;
+  say(`高さ ${Q().h}cm まで 積めたね。<br>全部で 何個？ 式に 表そう`);
+  buildEq(['','×','','＝']);
+  $('shiki').classList.remove('hidden');$('trail').classList.add('hidden');
+  actions([['sub','カードを もどす',resetCards],['show','答え',checkB]]);
+  draw();
+}
+function buildEq(){
+  const eq=$('eq');
+  const slot=i=>`<div class="slotw"><div class="slot" data-i="${i}"></div><div class="what" id="what${i}"></div></div>`;
+  eq.innerHTML=slot(0)+`<span class="op">×</span>`+slot(1)+`<span class="op">＝</span>`+
+    `<div class="slotw"><div class="resbox" id="res">？</div><div class="what" id="whatR"></div></div><span class="u">個</span>`;
+  eq.querySelectorAll('.slot').forEach(sl=>sl.addEventListener('click',()=>{
+    if(!(S.phase==='A'||S.phase==='B')||Date.now()-justDropped<350)return;
+    const i=+sl.dataset.i;if(S.slots[i]==='fix')return;
+    if(S.sel!=null){place(S.sel,i);return;}
+    if(S.slots[i]!=null){S.slots[i]=null;drawCards();drawSlots();}   /* 入って いる ますを おすと もどる */
+  }));
+  drawCards();drawSlots();
+}
+function drawCards(){
+  const box=$('cards');box.innerHTML='';
+  S.cards.forEach((c,i)=>{
+    const b=document.createElement('button');
+    b.className='cardn'+(S.slots.includes(i)?' gone':'')+(S.sel===i?' sel':'');
+    b.textContent=c.v;dragCard(b,i);box.appendChild(b);
+  });
+}
+function drawSlots(){
+  document.querySelectorAll('.slot').forEach(sl=>{
+    const i=+sl.dataset.i,c=S.slots[i];
+    if(c==='fix'){sl.textContent=base();sl.className='slot fix';$('what'+i).textContent='1だん分';$('what'+i).className='what a';return;}
+    sl.textContent=c==null?'':S.cards[c].v;
+    sl.className='slot'+(c!=null?' fill':'')+(S.sel!=null&&c==null?' sel':'');
+  });
+}
+function place(ci,si){
+  if(S.slots[si]==='fix')return;
+  const old=S.slots.indexOf(ci);if(old>=0)S.slots[old]=null;
+  S.slots[si]=ci;S.sel=null;drawCards();drawSlots();
+  if(S.slots.every(s=>s!=null)) say('できたら 金の「答え」を おそう');
+}
+function resetCards(){
+  S.slots=S.slots.map(s=>s==='fix'?'fix':null);S.sel=null;drawCards();drawSlots();
+}
+let justDropped=0;
+function dragCard(el,ci){
+  let sx=null,sy,ghost=null;
+  el.addEventListener('pointerdown',e=>{
+    if(!(S.phase==='A'||S.phase==='B'))return;
+    sx=e.clientX;sy=e.clientY;ghost=null;el.setPointerCapture(e.pointerId);
+  });
+  el.addEventListener('pointermove',e=>{
+    if(sx==null)return;
+    if(!ghost&&Math.hypot(e.clientX-sx,e.clientY-sy)>8){
+      ghost=el.cloneNode(true);ghost.classList.add('ghost');document.body.appendChild(ghost);
+    }
+    if(ghost){ghost.style.left=e.clientX+'px';ghost.style.top=e.clientY+'px';}
+  });
+  const end=e=>{
+    if(sx==null)return;
+    const moved=Math.hypot(e.clientX-sx,e.clientY-sy)>8;
+    sx=null;
+    document.querySelectorAll('.ghost').forEach(g=>g.remove());ghost=null;
+    if(moved){
+      const tg=document.elementFromPoint(e.clientX,e.clientY);
+      const sl=tg&&tg.closest&&tg.closest('.slot');
+      if(sl){place(ci,+sl.dataset.i);justDropped=Date.now();}
+    }else{
+      S.sel=S.sel===ci?null:ci;drawCards();drawSlots();
+    }
+  };
+  el.addEventListener('pointerup',end);
+  el.addEventListener('pointercancel',()=>{sx=null;document.querySelectorAll('.ghost').forEach(g=>g.remove());});
+}
+
+/* 答え合わせ①：たて と 横 なら どちらの じゅんでも よい。高さを 入れたら 「まだ 積んで いない」と 言って もどす（×に しない） */
+function checkA(){
+  if(S.slots.some(s=>s==null)){say('まだ とちゅうだよ。□ を 2つとも うめよう','try');return;}
+  const r=S.slots.map(s=>S.cards[s].r),{d,w,h}=Q();
+  const cube=d===w&&w===h;
+  if(!cube&&r.includes('h')){
+    say(`<span class="d">${h}</span> は 高さの 数だよ。<br>1だん目は <b>たて</b>と <b>横</b>で きまるね`,'try');
+    resetCards();return;
+  }
+  document.querySelectorAll('.slot').forEach((sl,i)=>{
+    sl.classList.add('gd-a');$('what'+i).textContent=r[i]==='d'?'たて':'横';$('what'+i).className='what a';
+  });
+  if(cube){$('what0').textContent='たて';$('what1').textContent='横';}
+  $('res').textContent=base();$('res').className='resbox good';$('whatR').textContent='1だん分';$('whatR').className='what a';
+  $('cards').innerHTML='';   /* のこった カード（高さ）は 次の 式まで しまう */
+  S.phase='A2';S.layers=1;S.rows=0;
+  say(`よくできました！ 1だん目は <span class="a">${base()}個</span>。<br>この だんを 高さの 分だけ 積んで いこう`,'ok');
+  draw();
+  actions([['play','1だん 積む ▶',()=>{goStack();stackOne();}]]);
+}
+function goStack(){
+  S.phase='stack';$('shiki').classList.add('hidden');$('trail').classList.remove('hidden');
+}
+function trail(){
+  const n=S.layers,b=base();
+  $('trail').innerHTML=`<span class="a">${b}</span> × <span class="d">${n}</span><small>だん</small> ＝ ${b*n}<small>個</small>`;
+}
+function stackActions(){
+  actions([['sub','1だん もどす',unstack,S.layers<=1],['play','1だん 積む ▶',stackOne]]);
+}
+function stackOne(){
+  if(S.phase!=='stack'||S.layers>=Q().h)return;
+  S.newLayer=S.layers;S.layers++;
+  trail();draw();
+  if(S.layers>=Q().h){S.busy=true;setTimeout(()=>{S.busy=false;askB();},650);actions([['play','1だん 積む ▶',()=>{},true]]);return;}
+  say(`${S.layers}だん 積んだよ。1だん ふえるたびに <span class="a">${base()}個</span>ずつ ふえるね`);
+  stackActions();
+}
+function unstack(){
+  if(S.phase!=='stack'||S.layers<=1)return;
+  S.layers--;trail();draw();
+  say(`${S.layers}だんに もどしたよ`);stackActions();
+}
+
+/* 答え合わせ②：12 × 高さ。たてや 横を 入れたら 「何だん 積んだか」と 言って もどす */
+function checkB(){
+  if(S.slots[1]==null){say('まだ とちゅうだよ。□ に カードを 入れよう','try');return;}
+  const c=S.cards[S.slots[1]],{d,w,h}=Q(),cube=d===w&&w===h;
+  if(!cube&&c.r!=='h'){
+    say(`<span class="a">${base()}個</span>の だんが 何だん あるかな？ 左の 数を 見てみよう`,'try');
+    resetCards();return;
+  }
+  const v=base()*h;
+  document.querySelector('.slot[data-i="1"]').classList.add('gd-d');
+  $('what1').textContent='だんの 数';$('what1').className='what d';
+  $('res').textContent=v;$('res').className='resbox good';$('whatR').textContent='全部';$('whatR').className='what';
+  S.phase='done';
+  say(`よくできました！ 1だん分（<span class="a">たて × 横</span>）に だんの 数（<span class="d">高さ</span>）を かけると、全部の 数が 求められるね`,'ok');
+  const s=$('sum');s.classList.remove('hidden');
+  s.innerHTML=`<div class="fgrid">`+
+    `<span class="lb a">1だん分</span><span></span><span class="lb d">だんの 数</span><span></span><span></span>`+
+    `<span class="a">${base()}</span><span>×</span><span class="d">${h}</span><span>＝</span><span>${v}</span>`+
+    `<span class="lb a sp">たて × 横</span><span></span><span class="lb d sp">高さ</span><span></span><span></span>`+
+    `<span class="a">${d} × ${w}</span><span>×</span><span class="d">${h}</span><span>＝</span><span>${v}</span></div>`+
+    `<div class="vol">体積は <span class="gd">${v}cm<sup>3</sup></span></div>`;
+  $('shiki').classList.add('hidden');
+  const last=S.pi===P.length-1;
+  actions([['sub','もう一度',start],['next',last?'はじめの 問題へ →':'次の 問題 →',next]]);
+  draw();
+}
+function next(){
+  S.pi=(S.pi+1)%P.length;start();
+}
+
+/* 絵を おしても 青い ボタンと 同じに 進む（宣伝しない にげ道） */
+$('stage').addEventListener('click',()=>{
+  if(S.busy)return;
+  if(S.phase==='intro'){fill();}
+  else if(S.phase==='A2'){goStack();stackOne();}
+  else if(S.phase==='stack'){stackOne();}
+  else return;
+  const st=$('stage');st.classList.remove('tapped');void st.offsetWidth;st.classList.add('tapped');
+});
+
+start();
+</script>
+</body>
+</html>
