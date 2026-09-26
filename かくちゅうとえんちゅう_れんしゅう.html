@@ -67,8 +67,12 @@
   @media (orientation:portrait){ .work{min-height:clamp(290px,37vh,480px)} }
 
   /* 絵の 上の しるし */
-  .hint{position:absolute;left:8px;top:8px;background:rgba(255,255,255,.9);border:2px solid #cfe5e2;border-radius:12px;
-    padding:3px 10px;font-weight:800;color:#3d5e5b;font-size:clamp(12px,calc(.4vw + 1vh),16px);pointer-events:none}
+  .hint{position:absolute;left:8px;top:8px;background:#fff;border:3px solid var(--blue);border-radius:14px;
+    padding:5px 12px;font-weight:800;color:var(--blue);font-size:clamp(14px,calc(.5vw + 1.3vh),20px);pointer-events:none;
+    display:flex;align-items:center;gap:6px;max-width:calc(100% - 16px)}
+  .hint b{font-size:1.35em;line-height:1}
+  .hint.wig{animation:hintpop .8s ease-in-out 2}
+  @keyframes hintpop{50%{background:#eaf1f8;transform:scale(1.06)}}
   .reset{position:absolute;right:8px;top:8px;border:2px solid #cfe5e2;border-radius:12px;background:#fff;color:#3d5e5b;
     font-weight:800;padding:4px 10px;font-size:clamp(12px,calc(.4vw + 1vh),16px)}
   .legend{position:absolute;left:8px;bottom:8px;display:flex;gap:10px;background:rgba(255,255,255,.9);border:2px solid #cfe5e2;
@@ -172,7 +176,7 @@
   <div class="main" id="main">
     <div class="stage" id="stage">
       <svg id="pic"></svg>
-      <div class="hint hidden" id="hint">指で 動かすと 回せるよ</div>
+      <div class="hint hidden" id="hint"><b>↔</b><span>指で 動かすと いろいろな 向きに 回せるよ</span></div>
       <button class="reset hidden" id="reset">もとの 向き</button>
       <div class="legend hidden" id="legend"><span class="lt"><i></i>底面</span><span class="ls"><i></i>側面</span></div>
     </div>
@@ -460,6 +464,7 @@ let ROT={on:false,yaw:0,pitch:0};
 let ptr=null;
 $('stage').addEventListener('pointerdown',e=>{
   if(e.target.closest('.reset'))return;
+  stopWiggle();
   ptr={x:e.clientX,y:e.clientY,moved:false,id:e.pointerId};
   try{$('stage').setPointerCapture(e.pointerId);}catch(_){}
 });
@@ -484,7 +489,7 @@ function endPtr(e){
 $('stage').addEventListener('pointerup',endPtr);
 $('stage').addEventListener('pointercancel',e=>{ptr=null;});
 $('reset').addEventListener('click',()=>{ROT={on:false,yaw:0,pitch:0};draw();});
-function resetRot(){ROT={on:false,yaw:0,pitch:0};}
+function resetRot(){stopWiggle();ROT={on:false,yaw:0,pitch:0};}
 function canRotate(){
   if(ANIM)return false;
   if(MODE==='s3')return S3.done;
@@ -494,6 +499,26 @@ function canRotate(){
 const baseYaw=()=>{const s=SH[CURKEY];return s&&s.yaw!=null?s.yaw:VIEW.yaw;};
 function viewYaw(){return baseYaw()+ROT.yaw;}
 function viewPitch(){return Math.max(-60,Math.min(60,VIEW.pitch+ROT.pitch));}
+
+/* ===================== 回せる ことを 見せる =====================
+   しるしの 字だけでは 気づかれなかった（2026-09-26 指摘）。
+   各ステップで はじめて 回せるように なった とき、形が 左右に ゆれて もどる（1ステップ 1回）。
+   ボタンは おせる まま（ANIM とは べつに 動かす）。指で さわったら すぐ やめる。 */
+const WIG={};let WIGRAF=null;
+function wiggle(){
+  if(WIG[MODE])return;WIG[MODE]=true;
+  const m=MODE,t0=performance.now()+250;
+  $('hint').classList.remove('wig');void $('hint').offsetWidth;$('hint').classList.add('wig');
+  const fr=now=>{
+    if(MODE!==m||ROT.on){WIGRAF=null;return;}
+    const t=Math.max(0,(now-t0)/1800);
+    ROT.yaw=t>=1?0:32*Math.sin(2*Math.PI*t)*(1-t*.35);
+    draw();
+    if(t<1)WIGRAF=requestAnimationFrame(fr);else WIGRAF=null;
+  };
+  WIGRAF=requestAnimationFrame(fr);
+}
+function stopWiggle(){if(WIGRAF){cancelAnimationFrame(WIGRAF);WIGRAF=null;if(!ROT.on)ROT.yaw=0;}}
 
 /* ===================== うごき ===================== */
 let ANIM=null;
@@ -599,7 +624,7 @@ function start1(){
 }
 function grow1(){
   S1.phase='anim';actions([]);
-  animate(1700,t=>{S1.t=ease(t);draw();},()=>{S1.t=1;S1.phase='made';after1();});
+  animate(1700,t=>{S1.t=ease(t);draw();},()=>{S1.t=1;S1.phase='made';after1();wiggle();});
 }
 function after1(){
   const it=L1[S1.i];
@@ -726,7 +751,7 @@ function start2(){
   const key=L2[S2.i];
   if(S2.i===3){['v','e','f'].forEach(w=>delete S2.T[3][w]);}
   prob(`<span class="no">${S2.i+1} / 4</span><span><b>${SH[key].name}</b>${S2.i===3?'は 表を 見て 考えよう':'を 調べよう'}</span>`);
-  show('sum',false);tbl2();step2();
+  show('sum',false);tbl2();step2();wiggle();
 }
 function scr2(){return S2.i===3?SCR2P:SCR2;}
 function step2(){
@@ -922,7 +947,7 @@ function onHit3(h){
   S3.added[e.id]=true;S3.flash=e.id;
   const left=S.E.filter(x=>it.miss(x)&&!S3.added[x.id]).length;
   if(left===0){
-    S3.done=true;S3.flash=null;show('pens',false);
+    S3.done=true;S3.flash=null;show('pens',false);setTimeout(wiggle,300);
     say(`<span>できた！ ${it.done}</span>`,'ok');
     fin3();
   }else say(`いいね！ あと ${left}本`);
@@ -932,7 +957,7 @@ function check3A(){
   const G=S3.G,bad={};let miss=0,extra=0;
   Object.keys(G).forEach(g=>{const d=!!S3.dash[g];if(G[g].hidden&&!d)miss++;if(!G[g].hidden&&d){extra++;bad[g]=true;}});
   if(!miss&&!extra){
-    S3.done=true;S3.faces=true;
+    S3.done=true;S3.faces=true;setTimeout(wiggle,300);
     say('<span>よくできました！ 見えない 辺は <b>点線</b>で かくよ。指で 回すと、見えない 辺が かわるね</span>','ok');
     fin3();draw();return;
   }
@@ -1119,7 +1144,7 @@ function start4(){
   say('「◀ 開く」を おすか、つまみを 左へ 動かすと、てん開図に なるよ');
   choices(null);show('sum',false);show('sliderRow',true);
   actions([]);
-  draw();
+  draw();wiggle();
 }
 function opened4(){
   if(S4.opened)return;S4.opened=true;
@@ -1262,7 +1287,7 @@ function fold5(){
   S5.phase='fold';actions([]);
   [...$('choices').children].forEach(x=>x.disabled=true);
   foldTo(1,2600,()=>{
-    S5.phase='done';const it=L5[S5.i],hit=S5.pred===it.ok;
+    S5.phase='done';const it=L5[S5.i],hit=S5.pred===it.ok;setTimeout(wiggle,50);
     if(it.ok)say(`<span>${hit?'予想どおり！ ':''}<b>${it.name}</b>が できたね。指で 回して 見てみよう</span>`,'ok');
     else say(`<span>${hit?'予想どおり！ ':'組み立てて わかったね。'}${it.why}</span>`,hit?'ok':'');
     show('sliderRow',true);
@@ -1290,7 +1315,7 @@ function draw(){
   else draw5();
 }
 function setMode(m){
-  stopAnim();MODE=m;
+  stopAnim();stopWiggle();MODE=m;
   document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('on',b.dataset.m===m));
   parts(null);show('pens',false);show('sliderRow',false);show('tblw',m==='s2');show('sum',false);
   if(m==='s1')start1();
