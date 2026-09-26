@@ -562,9 +562,9 @@ const S2step={
       if(j+1>nr&&!(j===n-1&&nr>=n))continue;
       const from=-90+180/n+360*j/n,span=360/n;
       if(j<n-1||nr>=n){
-        g+=arc(O,1.25,from,span,ln(CK,3));
-        const lp=at(O,1.25+fw()*.95,from+span/2);
-        g+=lab(lp[0],lp[1],span+'°',CK,{k:.72});
+        /* 弧は かかない（8つ つながると 中心を かこむ 輪に 見える。2026-09-26 指摘）。数字だけ */
+        const lp=at(O,1.2+fw()*.7,from+span/2);
+        g+=lab(lp[0],lp[1],span+'°',CK,{k:.85});
       }
     }
     /* 辺 */
@@ -574,9 +574,8 @@ const S2step={
     }
     /* 半径の しるし（同じ 長さ）、辺の しるし */
     if(ph==='tri'||ph==='done'){
-      for(let j=0;j<n;j++) g+=ticks(O,V(j),1,CD);
-      const a0=-90+180/n,lp=at(mid(O,V(0)),fw()*1.1,a0-90);g+=lab(lp[0],lp[1],'半径',CD,{k:.8});
-      if(ph==='done') for(let j=0;j<n;j++) g+=ticks(V(j),V(j+1),n===6?1:2,n===6?CD:CA);
+      /* 同じ 長さの しるし（ー）は かかない（2026-09-26 指摘＝ごちゃごちゃする）。半径は 色と 名前で 見せる */
+      const a0=-90+180/n,lp=at(lerp(O,V(0),.72),fw()*.9,a0-90);g+=lab(lp[0],lp[1],'半径',CD,{k:.8});
     }
     for(let j=0;j<Math.floor(S2.kR)&&j<n;j++) g+=dot(V(j),4,CB);
     g+=dot(O,4.5,CB);
@@ -589,7 +588,7 @@ function s2start(){
   sum(null);choices(null,null);
   parts(PART2,S2.part,k=>{S2.part=k;s2start();});
   if(S2.part==='c'){s2cstart();return;}
-  legend([['line',CD,'半径'],['arc',CK,'中心の 角'],['line',CA,'辺']]);
+  legend([['line',CD,'半径'],['line',CA,'辺']]);
   const n=+S2.part;
   prob(`<span class="goal">円を 使って ${PART2.find(p=>p[0]===S2.part)[1]}を かこう</span>`);
   say(`中心の まわりの 角（360°）を <b>${n}つ</b>に 等しく 分けよう。<br>1つ分は 何度？`);
@@ -622,7 +621,7 @@ function s2edges(){
   const n=+S2.part;actions([['play','点を つなぐ ▶',()=>{},true]]);
   anim(n*800,t=>{S2.kE=n*t;draw();},()=>{
     S2.ph='tri';
-    say(`${KAN[n]}角形が できた！ 中に 三角形が ${n}つ。<br>この 三角形は 何 三角形？ <span class="d">半径の しるし</span>を 見よう`);
+    say(`${KAN[n]}角形が できた！ 中に 三角形が ${n}つ。<br>この 三角形は 何 三角形？ <span class="d">むらさきの 線</span>は どれも 半径`);
     choices(['二等辺三角形','正三角形','直角三角形'],s2pickTri);
     actions([]);draw();
   },t=>t);
@@ -631,7 +630,7 @@ function s2pickTri(i,btn){
   const n=+S2.part,ok=n===6?1:0;
   if(i!==ok){
     btn.disabled=true;
-    const m=i===2?'直角に なって いる 角は ないね。<br><span class="d">しるしが 同じ 辺</span>は どれかな？'
+    const m=i===2?'直角に なって いる 角は ないね。<br><span class="d">半径</span>が 2本 あるね'
            :i===1?`中心の 角は ${360/n}°。3つの 角が 全部 60° では ないね。<br>等しいのは <span class="d">半径</span>の 2つの 辺`
                  :'2つの 辺は <span class="d">半径</span>で 等しいね。<br>中心の 角が 60° だと、のこりの 2つの 角も 60°';
     say(m,'try');return;
@@ -698,7 +697,7 @@ function draw2c(){
   /* 半径（①まで） */
   g+=seg(O,cP(0),ln(CD,3.5));
   if(!done){const lp=mid(O,cP(0));g+=lab(lp[0],lp[1]+fw()*.8,'半径',CD,{k:.85});}
-  if(done) for(let j=0;j<6;j++){g+=seg(O,cP(j),ln(CD,2.5,dash(6)));g+=ticks(O,cP(j),1,CD);g+=ticks(cP(j),cP(j+1),1,CD);}
+  if(done) for(let j=0;j<6;j++) g+=seg(O,cP(j),ln(CD,2.5,dash(6)));
   /* しるし（弧） */
   for(let j=1;j<=k;j++){
     const c=cP(j-1),dir=180+60*(j-1)+120;   /* 針 c から 点 j への 向き */
@@ -831,7 +830,7 @@ function s3run(){
   actions([['show','動かして たしかめる',()=>{},true]]);
   say('うごいて いるよ…');
   draw();
-  anim(S3.n*2*380,t=>{S3.prog=t*2*S3.runN;draw();},s3judge,t=>t);
+  anim(S3.n*2*600,t=>{S3.prog=t*2*S3.runN;draw();},s3judge,t=>t);
 }
 function s3judge(){
   const N=P3[S3.pi],n=S3.runN,a=S3.runA,tot=n*a,end=S3.path[n],closed=Math.hypot(end[0],end[1])<1e-6;
@@ -889,8 +888,8 @@ function s4start(){
   draw();
 }
 const MI_SAY=[
-  '<span class="a">円周</span>（円の まわりの 長さ）は <span class="d">直径</span>の 何倍 くらい？<br>まず、円の 中に 正六角形を かいて みよう',
-  '正六角形の まわりは <span class="a">円周</span>より <b>短い</b>ね。<br>まわりを まっすぐに して <span class="d">直径</span>と くらべよう',
+  'まず、下の <b>青い ボタン</b>を おして、<br>円の 中に 正六角形を かこう',
+  '正六角形の まわりは <span class="a">円周</span>より <b>短い</b>ね。<br>青い ボタンで まわりを まっすぐに して、<span class="d">直径</span>と くらべよう',
   '正六角形の まわり ＝ <span class="d">直径</span> 3つ分。<br>こんどは 円の 外に 正方形を かいて みよう',
   '正方形の まわりは <span class="a">円周</span>より <b>長い</b>ね。<br>まわりを まっすぐに して くらべよう',
   '正方形の まわり ＝ <span class="d">直径</span> 4つ分。<br><span class="a">円周</span>は <span class="d">直径</span>の 何倍 くらい？'
@@ -944,10 +943,14 @@ function draw4mi(){
   frame(-.5,17.2,-1.3,9.6);
   let g='';
   /* 円の 直径の はしから まっすぐ 下へ＝テープ 1つ分が 直径 */
-  g+=seg([x0,C[1]],[x0,-.3],ln('#c9bfa5',1.5,dash(4)))+seg([x0+D,C[1]],[x0+D,-.3],ln('#c9bfa5',1.5,dash(4)));
-  if(st>=2) for(let k=2;k<=4;k++) g+=seg([x0+k*D,-.3],[x0+k*D,4.3],ln('#c9bfa5',1.5,dash(4)));
-  g+=lab(x0+D,-.8,'直径',CD,{k:.8});
-  if(st>=2) for(let k=2;k<=4;k++) g+=lab(x0+k*D,-.8,'直径の '+k+'倍','#8a7a5f',{k:.74});
+  /* テープが 出るまでは かかない（はじめの 画面に 意味の わからない 線を 出さない。2026-09-26 指摘） */
+  if(st>=2){
+    g+=seg([x0,C[1]],[x0,-.3],ln('#c9bfa5',1.5,dash(4)))+seg([x0+D,C[1]],[x0+D,-.3],ln('#c9bfa5',1.5,dash(4)));
+    for(let k=2;k<=4;k++) g+=seg([x0+k*D,-.3],[x0+k*D,4.3],ln('#c9bfa5',1.5,dash(4)));
+    g+=lab(x0+D,-.8,'直径',CD,{k:.8});
+    for(let k=2;k<=4;k++) g+=lab(x0+k*D,-.8,'直径の '+k+'倍','#8a7a5f',{k:.74});
+  }
+  g+=lab(C[0]+R+.5,C[1]+R*.55,'← <tspan fill="'+CA+'">円周</tspan>（円の まわりの 長さ）','#5d5040',{k:.85,anc:'start'});
   g+=circ(C,R,`fill="#fffdf7" stroke="${CA}" stroke-width="${W(5)}"`);
   const hx=[0,1,2,3,4,5].map(j=>at(C,R,-120+60*j)),sq=[[C[0]-R,C[1]-R],[C[0]+R,C[1]-R],[C[0]+R,C[1]+R],[C[0]-R,C[1]+R]];
   if(f(1)>0) g+=polyPart(hx,f(1),ln(CK,4.5));
