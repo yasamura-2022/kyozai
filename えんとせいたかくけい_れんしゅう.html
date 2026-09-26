@@ -395,7 +395,6 @@ function draw(){const st=STEPS[MODE];if(st&&st.draw)st.draw();}
 
 /* 色（絵の 中） */
 const CA='#2f8f8a',CK='#c0661f',CD='#7a5bb5',CB='#6f5d3d',CG='#b9a67c',FILL='#fdf1d8';
-const CQ='#7d8f2a';   /* ステップ４の 正方形（こげ茶は 黒に 見えた。2026-09-26） */
 
 /* =====================================================================
    ステップ１：見分ける
@@ -856,7 +855,7 @@ function s3judge(){
 
 /* =====================================================================
    ステップ４：円周を 調べる
-   (a) 見当を つける：内がわの 正六角形（辺 6本＝直径×3）と 外がわの 正方形（辺 4本＝直径×4）で はさむ。
+   (a) 見当を つける：内がわの 正六角形（辺 6本＝直径×3）と 円周を テープに して くらべ、「直径 3本分より 少し 長い」を 見る。
        「まわり」は 円周だけに 使う（正六角形の まわり と 書くと 円の まわり と まざる。2026-09-26 指摘）
        1回 おすと 1つだけ 出る（かく → まっすぐに する → かく → まっすぐに する → 聞く）。
        まだ 出て いない 行は かかない（2026-09-26 指摘＝空の 行が はじめから ならんで いて 使い方が 分からなかった）
@@ -890,39 +889,40 @@ function s4start(){
   }
   draw();
 }
+/* 正方形（外接）は 使わない（2026-09-26 先生の 判断＝3.14倍の 話なので「直径 3本分より 少し 長い」が 見えれば よい。
+   正方形が あると テープが 3行に なり ごちゃごちゃ した）。解説 p.252 は 内接正六角形と 外接正方形の 両方を 例に 挙げて いる。
+   もどすなら git の d98740e 以前を 見る */
 const MI_SAY=[
   'まず、下の <b>青い ボタン</b>を おして、<br>円の 中に 正六角形を かこう',
   '<span class="a">円周</span>は 正六角形より 外に <b>ふくらんで</b> いる（<span class="a">色の ところ</span>）。<br>だから 正六角形の 辺 6本を つなげた 長さは 円周より <b>短い</b>',
-  '正六角形の 辺 6本を ならべた。1辺は 半径と 同じ（点線の 正三角形）なので、<br>辺 2本で <span class="d">直径</span> 1つ分。辺 6本 ＝ <span class="d">直径 3つ分</span>。こんどは 正方形を かこう',
-  '正方形の 角は 円より 外に <b>出て</b> いる（<span style="color:#7d8f2a">色の ところ</span>）。<br>だから 正方形の 辺 4本を つなげた 長さは <span class="a">円周</span>より <b>長い</b>',
-  '正方形の 辺 4本を ならべた。1辺は <span class="d">直径</span>と 同じ。辺 4本 ＝ <span class="d">直径 4つ分</span>。<br><span class="a">円周</span>は <span class="d">直径</span>の 何倍 くらい？'
+  '1辺は 半径と 同じ（点線の 正三角形）なので、辺 2本で <span class="d">直径</span> 1本分。<br>辺 6本 ＝ <span class="d">直径 3本分</span>。こんどは <span class="a">円周</span>を まっすぐに して くらべよう',
+  '<span class="a">円周</span>は <span class="d">直径 3本分</span>より 少し 長い（<b style="color:#8f7417">金色の ところ</b>）。<br>円周は 直径の 何倍 くらい？'
 ];
-const MI_BTN=['正六角形を かく ▶','辺を まっすぐに ならべる ▶','正方形を かく ▶','辺を まっすぐに ならべる ▶'];
-/* 色の しるしは 絵に 出て いる ものだけ（正方形を かく 前に「正方形の 辺」を 出さない） */
-function leg4(){legend([['line',CA,'円周（円の まわり）'],['line',CD,'直径']].concat(S4.st>=1?[['line',CK,'正六角形の 辺']]:[],S4.st>=3?[['line',CQ,'正方形の 辺']]:[]));}
+const MI_BTN=['正六角形を かく ▶','辺を まっすぐに ならべる ▶','円周を まっすぐに する ▶'];
+/* 色の しるしは 絵に 出て いる ものだけ */
+function leg4(){legend([['line',CA,'円周（円の まわり）'],['line',CD,'直径']].concat(S4.st>=1?[['line',CK,'正六角形の 辺']]:[]));}
 function s4miStep(){
   say(MI_SAY[S4.st]);
   leg4();
-  if(S4.st<4){
+  if(S4.st<3){
     actions([['play',MI_BTN[S4.st],()=>{
       actions([['play',MI_BTN[S4.st],()=>{},true]]);
       S4.st++;S4.anim=0;leg4();
-      anim(S4.st%2?1500:5200,t=>{S4.anim=t;draw();},()=>{S4.anim=1;s4miStep();draw();},t=>t);
+      anim([0,1500,5200,2600][S4.st],t=>{S4.anim=t;draw();},()=>{S4.anim=1;s4miStep();draw();},t=>t);
     }]]);
   }else{
     S4.ph='ask';
-    choices(['直径の 3倍より 短い','3倍より 長く、4倍より 短い','直径の 4倍より 長い'],s4miPick);
+    choices(['ちょうど 3倍','3倍より 少し 長い','4倍より 長い'],s4miPick);
     actions([]);
   }
 }
 function s4miPick(i,btn){
-  if(i!==1){btn.disabled=true;say('円は 正六角形の 外がわ、正方形の 内がわに あるね。<br>円周の 長さも その あいだ','try');return;}
+  if(i!==1){btn.disabled=true;say(i===0?'<span class="a">円周</span>の テープは 直径 3本分より はみ出して いるね':'4本目の 直径には ずっと とどかないね','try');return;}
   btn.classList.add('good');S4.ph='done';choices(null,null,true);
-  S4.st=5;S4.anim=0;
-  anim(2200,t=>{S4.anim=t;draw();},()=>{S4.anim=1;draw();},t=>t);
-  say('よくできました！ 円周は 直径の 3倍と 4倍の あいだ。<br>くわしく 何倍かは ころがして 調べよう','ok');
-  sum('<span class="f"><span class="d">直径</span> × 3 ＜ <span class="a">円周</span> ＜ <span class="d">直径</span> × 4</span>');
+  say('よくできました！ 円周は 直径の 3倍より 少し 長い。<br>くわしく 何倍かは ころがして 調べよう','ok');
+  sum('<span class="f"><span class="a">円周</span> は <span class="d">直径</span> × 3 より 少し 長い</span>');
   actions([['sub','もう一度',s4start],['next','ころがして 調べる →',()=>{S4.part='ko';s4start();}]]);
+  draw();
 }
 function bar(x,y,len,D,col,lbl,o={}){
   /* 直径の テープ：D ごとに 色を かえて ならべる */
@@ -964,58 +964,51 @@ function flyTape(sides,y,t,col,shade,name,D,x0,noDia){
   if(td>0&&!noDia) g+=bar(x0,y-.72,n*len*td,D,CD,'',{h:.62});
   return g;
 }
-function magnify4(C,R,hx,sq,which){
-  const M=[8.2,C[1]],r=2.35;
-  const Z=which==='hx'?[C[0],C[1]+R*.93]:lerp(at(C,R,45),[C[0]+R,C[1]+R],.45),k=which==='hx'?3:2.4;
+function magnify4(C,R,hx){
+  const M=[8.2,C[1]],r=2.35,Z=[C[0],C[1]+R*.93],k=3;
   const m=p=>[M[0]+(p[0]-Z[0])*k,M[1]+(p[1]-Z[1])*k];
   let g='';
   /* 取っ手（見て いる ところ → 虫めがね） */
   g+=circ(Z,r/k,`fill="none" stroke="#8a7a5f" stroke-width="${W(2)}"`);
   g+=seg([Z[0]+r/k,Z[1]],[M[0]-r,M[1]],ln('#b9a67c',2,dash(5)));
   g+=`<defs><clipPath id="mg"><circle cx="${X(M[0])}" cy="${Y(M[1])}" r="${(r*U).toFixed(1)}"/></clipPath></defs>`;
-  g+=`<g clip-path="url(#mg)">`;
-  g+=circ(M,r,'fill="#fffdf7"');
-  if(which==='hx'){
-    g+=circ(m(C),R*k,'fill="#cfeae6"')+polyS(hx.map(m),'fill="#fffdf7"');
-    g+=circ(m(C),R*k,`fill="none" stroke="${CA}" stroke-width="${W(6)}"`);
-    g+=polyS(hx.map(m),`fill="none" stroke="${CK}" stroke-width="${W(6)}"`);
-  }else{
-    g+=polyS(sq.map(m),'fill="#e6ecc8"')+circ(m(C),R*k,'fill="#fffdf7"');
-    g+=circ(m(C),R*k,`fill="none" stroke="${CA}" stroke-width="${W(6)}"`);
-    g+=polyS(sq.map(m),`fill="none" stroke="${CQ}" stroke-width="${W(6)}"`);
-  }
+  g+=`<g clip-path="url(#mg)">`+circ(M,r,'fill="#fffdf7"');
+  g+=circ(m(C),R*k,'fill="#cfeae6"')+polyS(hx.map(m),'fill="#fffdf7"');
+  g+=circ(m(C),R*k,`fill="none" stroke="${CA}" stroke-width="${W(6)}"`);
+  g+=polyS(hx.map(m),`fill="none" stroke="${CK}" stroke-width="${W(6)}"`);
   g+='</g>'+circ(M,r,`fill="none" stroke="#8a7a5f" stroke-width="${W(4)}"`);
-  const tx=M[0]+r+.35,L=[
-    which==='hx'?['正六角形の 辺は まっすぐ',CK]:['正方形は 角を 回る',CQ],
-    which==='hx'?['円周は 外に ふくらむ',CA]:['円周は 内がわを 通る',CA],
-    which==='hx'?['→ 円周の ほうが 長い','#5d5040']:['→ 円周の ほうが 短い','#5d5040']];
+  const tx=M[0]+r+.35,L=[['正六角形の 辺は まっすぐ',CK],['円周は 外に ふくらむ',CA],['→ 円周の ほうが 長い','#5d5040']];
   const dy=Math.max(.95,fw()*1.3);L.forEach(([t,c],i)=>g+=lab(tx,M[1]+dy-i*dy,t,c,{k:.8,anc:'start'}));
   return g;
 }
 function draw4mi(){
-  const R=2,D=4,x0=.2,st=S4.st;
-  const f=k=>st>k?1:st===k?S4.anim:0;          /* 1＝正六角形 2＝その辺を ならべる 3＝正方形 4＝その辺を ならべる 5＝円周 */
+  const R=2,D=4,x0=.2,st=S4.st,L3=Math.PI*D;
+  const f=k=>st>k?1:st===k?S4.anim:0;          /* 1＝正六角形 2＝その辺を ならべる 3＝円周を まっすぐに */
   /* 行の 高さは 字の 大きさ（fw）から きめる。画面が 小さいと 字が 絵に くらべて 大きく なり、
      きまった 間かくでは 見出しと テープが かさなる（2026-09-26 に 実測） */
-  let yS,yC,yH,C,bot;
+  let yC,yH,C,bot;
   for(let it=0;it<3;it++){
     const F=it?fw():.5,hd=.3+F*1.55+F*.5;
-    bot=-.45-F*1.4;yS=.6;yC=yS+1.03+hd+.15;yH=yC+1.03+hd+.15;
+    bot=-.45-F*1.4;yC=.75;yH=yC+1.03+hd+.25;
     C=[x0+R,yH+hd+.3+R];
-    frame(-.5,17.2,bot,C[1]+R+1.1);
+    frame(-.5,15.6,bot,C[1]+R+1.1);
   }
-  S4.lay={yS,yC,yH,C};
   let g='';
-  const hx=[0,1,2,3,4,5].map(j=>at(C,R,-120+60*j)),sq=[[C[0]-R,C[1]-R],[C[0]+R,C[1]-R],[C[0]+R,C[1]+R],[C[0]-R,C[1]+R]];
+  const hx=[0,1,2,3,4,5].map(j=>at(C,R,-120+60*j));
   const sides=P=>P.map((p,j)=>[p,P[(j+1)%P.length]]);
+  /* はみ出した ぶん（直径 3本分より 長い ところ）を 金で ぬる */
+  if(f(3)>0&&L3*f(3)>3*D){
+    const x1=x0+3*D,x2=x0+Math.min(L3,L3*f(3));
+    g+=`<rect x="${X(x1)}" y="${Y(yC+.55)}" width="${((x2-x1)*U).toFixed(1)}" height="${(1.65*U).toFixed(1)}" fill="#fff0b8" rx="${W(4)}"/>`;
+    if(f(3)>=1) g+=lab(x2+.3,yC+.1,'少し 長い','#8f7417',{k:.85,anc:'start'});
+  }
   /* 目もり（直径 ごと）：直径の テープが 出てから */
   if(st>=2){
-    for(let k=0;k<=4;k++) g+=seg([x0+k*D,-.45],[x0+k*D,k<=1?C[1]:yH+.4],ln('#d8cdb2',1.5,dash(4)));
+    for(let k=0;k<=3;k++) g+=seg([x0+k*D,-.45],[x0+k*D,k<=1?C[1]:yH+.4],ln(k===3?'#c9a227':'#d8cdb2',k===3?2.5:1.5,dash(4)));
     g+=lab(x0+D,-.45-fw()*.75,'直径','#7a5bb5',{k:.8});
-    for(let k=2;k<=4;k++) g+=lab(x0+k*D,-.45-fw()*.75,'直径の '+k+'倍','#8a7a5f',{k:.74});
+    for(let k=2;k<=3;k++) g+=lab(x0+k*D,-.45-fw()*.75,'直径の '+k+'倍','#8a7a5f',{k:.74});
   }
-  /* ぬり：正方形の 角（円の 外）／円の ふくらみ（正六角形の 外） */
-  if(f(3)>0) g+=polyS(sq,`fill="#e6ecc8" opacity="${f(3)}"`);
+  /* 円の ふくらみ（正六角形の 外）を ぬる */
   g+=circ(C,R,`fill="${f(1)>0?'#cfeae6':'#fffdf7'}" stroke="none"`);
   if(f(1)>0) g+=polyS(hx,`fill="#fffdf7" opacity="${f(1)}"`);
   g+=circ(C,R,`fill="none" stroke="${CA}" stroke-width="${W(5)}"`);
@@ -1024,28 +1017,21 @@ function draw4mi(){
     /* 中心と ちょう点を むすぶ＝正三角形が 6つ（ステップ２）→ 1辺 ＝ 半径 */
     if(f(1)>=1) hx.forEach(v=>g+=seg(C,v,ln('#b9a67c',1.6,dash(5))));
   }
-  if(f(3)>0){
-    g+=polyPart(sq,f(3),ln(CQ,4.5));
-  }
   g+=seg([C[0]-R,C[1]],[C[0]+R,C[1]],ln(CD,5));
   g+=lab(C[0],C[1]+fw()*.75,'直径',CD,{k:.8});
   g+=dot(C,3.5,CB);
   if(st===0||(st===1&&f(1)<1)) g+=lab(C[0]+R+.5,C[1]+R*.55,'← <tspan fill="'+CA+'">円周</tspan>（円の まわりの 長さ）','#5d5040',{k:.85,anc:'start'});
   /* 虫めがね：円が 小さくて ふくらみが 見えないので、1か所を 大きく して 見せる */
-  if(st>=1&&f(1)>=1) g+=magnify4(C,R,hx,sq,st>=3&&f(3)>=1?'sq':'hx');
-  /* ならべた まわり */
-  /* 行：正六角形（その 下に 直径の テープ）／円周（その 下に 直径の テープ）／正方形（辺 そのものが 直径） */
+  if(st>=1&&f(1)>=1) g+=magnify4(C,R,hx);
+  /* 行：正六角形の 辺 6本（下に 直径の テープ）／円周（下に 直径の テープ） */
   const head=(y,t,c)=>g+=lab(x0,y+.3+fw()*1.55,t,c,{k:.78,anc:'start'});
   if(f(2)>0){head(yH,'正六角形の 辺 6本',CK);g+=flyTape(sides(hx),yH,f(2),CK,CK,'辺',D,x0);}
-  if(st>=4){
-    head(yC,f(5)>0?'円周（まっすぐに した）':'円周',CA);
-    if(f(5)>0){
-      const L=Math.PI*D*f(5);
-      g+=seg([x0,yC],[x0+L,yC],ln(CA,9).replace('stroke-linecap="round"','stroke-linecap="butt"'));
-      g+=bar(x0,yC-.72,L,D,CD,'',{h:.62,bit:f(5)>=1?'少し':''});
-    }else g+=lab(x0+D*3.5,yC,'？',CA,{k:1.2});
+  if(f(3)>0){
+    head(yC,'円周（まっすぐに した）',CA);
+    const L=L3*f(3);
+    g+=seg([x0,yC],[x0+L,yC],ln(CA,9).replace('stroke-linecap="round"','stroke-linecap="butt"'));
+    g+=bar(x0,yC-.72,L,D,CD,'',{h:.62});
   }
-  if(f(4)>0){head(yS,'正方形の 辺 4本',CQ);g+=flyTape(sides(sq),yS,f(4),CQ,CQ,'辺',D,x0,true);}
   svg.innerHTML=g;
 }
 function s4tbl(){
