@@ -1307,7 +1307,7 @@ function onHit(h){
 function draw(){
   stageSize();
   const rotOK=canRotate()&&!(MODE==='s3'&&!S3.done);
-  show('hint',rotOK&&!ROT.on);
+  show('hint',rotOK&&!ROT.on&&MODE!=='s2');   // ステップ２は 出さない（上の 数の ふだ「3個」に かさなる。2026-09-27）
   show('reset',rotOK&&ROT.on);
   show('legend',MODE==='s1'||MODE==='s4'||MODE==='s5'||(MODE==='s2'&&(S2.lit.fBase||S2.lit.eTop)));
   if(MODE==='s1')draw1();
