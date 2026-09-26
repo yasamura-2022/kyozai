@@ -234,8 +234,8 @@
   <header><h1>おだんごやさんの <span class="em">わり算</span></h1></header>
 
   <div class="tabs">
-    <button class="tab on" data-m="s1"><span class="step">ステップ１</span>くしに くばる</button>
-    <button class="tab" data-m="s2"><span class="step">ステップ２</span>まとめて さす</button>
+    <button class="tab on" data-m="s1"><span class="step">ステップ１</span>まとめて さす</button>
+    <button class="tab" data-m="s2"><span class="step">ステップ２</span>くしに くばる</button>
     <button class="tab" data-m="s3"><span class="step">ステップ３</span>くらべる</button>
     <button class="tab" data-m="s4"><span class="step">ステップ４</span>やって みよう</button>
   </div>
@@ -301,28 +301,29 @@ if(window.visualViewport) visualViewport.addEventListener('resize',setFH);
    ・包含除＝ある数量が もう一方の 幾つ分か（3 × □ ＝ 12 の □）
    ・「まず１人に１個ずつ配ると３個必要になり…」＝等分除の 操作は 包含除の 回数と みられる → 同じ 式
    どの もんだいも こたえ（商）と わる数が おなじに ならない ように して ある（どちらの 数か 見わけられない） ===== */
-/* ステップ１：くしに くばる（等分除）。t＝ぜんぶ、d＝くしの かず */
+/* ステップ２：くしに くばる（等分除）。t＝ぜんぶ、d＝くしの かず */
 const E1=[{t:12,d:3},{t:8,d:2},{t:15,d:5},{t:18,d:3},{t:10,d:2},{t:20,d:4},
           {t:24,d:4},{t:14,d:2},{t:21,d:3},{t:12,d:4},{t:30,d:5},{t:16,d:2}];
-/* ステップ２：まとめて さす（包含除）。t＝ぜんぶ、d＝1本の かず */
+/* ステップ１：まとめて さす（包含除）。t＝ぜんぶ、d＝1本の かず
+   2年の かけ算が「1本に 3こずつ」（一つ分）から 始まるので、その つづきとして 包含除を 先に する（2026-09-26 先生の 指摘） */
 const E2=[{t:12,d:3},{t:10,d:2},{t:15,d:5},{t:18,d:3},{t:8,d:4},{t:20,d:5},
           {t:14,d:2},{t:24,d:4},{t:16,d:2},{t:21,d:3},{t:12,d:2},{t:30,d:5}];
 /* ステップ３：同じ t と d で 2つの わけかたを ならべる */
 const E3=[{t:12,d:3},{t:10,d:2},{t:15,d:3},{t:8,d:4},{t:20,d:5},{t:18,d:3},{t:14,d:2},{t:24,d:4}];
 /* ステップ４：y＝tou（くばる）／hou（まとめて さす）。s＝いいかた（b は わる数が さきに 出る＝うつすだけでは できない） */
 const E4=[
-  {y:'tou',t:12,d:3,s:'a'},{y:'hou',t:12,d:3,s:'a'},{y:'hou',t:20,d:4,s:'b'},{y:'tou',t:18,d:2,s:'b'},
+  {y:'hou',t:12,d:3,s:'a'},{y:'tou',t:12,d:3,s:'a'},{y:'hou',t:20,d:4,s:'b'},{y:'tou',t:18,d:2,s:'b'},
   {y:'tou',t:24,d:6,s:'a'},{y:'hou',t:21,d:7,s:'a'},{y:'hou',t:35,d:5,s:'b'},{y:'tou',t:32,d:4,s:'a'},
   {y:'tou',t:28,d:7,s:'b'},{y:'hou',t:42,d:6,s:'a'},{y:'tou',t:45,d:9,s:'a'},{y:'hou',t:16,d:8,s:'b'}
 ];
-const LIST={s1:E1,s2:E2,s3:E3,s4:E4};
+const LIST={s1:E2,s2:E1,s3:E3,s4:E4};
 const GUESTS=['kuma','usagi','neko','tanuki','panda'];
 
 let M='s1';
 const S={pi:{s1:0,s2:0,s3:0,s4:0},run:0,phase:'deal',r:0,slots:[null,null],sel:null,cards:[],ans:'',hint:false,blue:null,newKeys:null};
 const Q=()=>LIST[M][S.pi[M]%LIST[M].length];
 const GUEST=()=>GUESTS[(S.pi[M]+({s1:0,s2:2,s3:0,s4:4}[M]))%GUESTS.length];
-const isTou=()=>M==='s1'||(M==='s4'&&Q().y==='tou');
+const isTou=()=>M==='s2'||(M==='s4'&&Q().y==='tou');
 
 /* ===== え ===== */
 const DCOL=['#f4a7b9','#fbf5e6','#a9cf86'];
@@ -408,8 +409,8 @@ function face(a,happy){
 const N=v=>`<span class="num">${v}</span>`;
 function orderText(){
   const {t,d}=Q();
-  if(M==='s1') return `${N(t)}この だんごを、${N(d)}本の くしに おなじ かずずつ さしてね<span class="ask">1本に なんこ？</span>`;
-  if(M==='s2') return `${N(t)}この だんごを、1本に ${N(d)}こずつ さしてね<span class="ask">くしは なん本？</span>`;
+  if(M==='s2') return `${N(t)}この だんごを、${N(d)}本の くしに おなじ かずずつ さしてね<span class="ask">1本に なんこ？</span>`;
+  if(M==='s1') return `${N(t)}この だんごを、1本に ${N(d)}こずつ さしてね<span class="ask">くしは なん本？</span>`;
   const {y,s}=Q();
   if(y==='tou') return s==='a'
     ? `${N(t)}この だんごを、${N(d)}本の くしに おなじ かずずつ さしてね<span class="ask">1本に なんこ？</span>`
@@ -475,7 +476,7 @@ function newQ(){
   $('bubble').innerHTML=orderText();
   if(M==='s4'){newS4();return;}
   const {t,d}=Q();
-  if(M==='s1'){
+  if(isTou()){
     say(`${d}本の くしに 1こずつ くばって いこう`);
     setBlue('1こずつ くばる ▶',deal);
   }else{
@@ -493,11 +494,11 @@ function deal(){
   if(S.phase!=='deal'||S.r>=q)return;
   S.r++;
   const nk=new Set();
-  if(M==='s1'){for(let j=0;j<d;j++)nk.add(j+'-'+(S.r-1));}
+  if(isTou()){for(let j=0;j<d;j++)nk.add(j+'-'+(S.r-1));}
   else{for(let i=0;i<d;i++)nk.add((S.r-1)+'-'+i);}
   S.newKeys=nk;render();
   const left=t-S.r*d;
-  if(M==='s1'){
+  if(isTou()){
     say(left>0?`${d}本に 1こずつ。さらから ${d}こ へったよ`:`さらが からっぽ！<br>1本に ${q}こずつ に なったね`, left>0?'':'ok');
   }else{
     /* へって いく ようすを ひき算で ならべる（解説「12−3−3−3−3＝0 となるときの 3 の 個数」） */
@@ -536,7 +537,7 @@ function drawSlots(){
 function place(ci,si){
   const old=S.slots.indexOf(ci);if(old>=0)S.slots[old]=null;
   S.slots[si]=ci;S.sel=null;drawCards();drawSlots();
-  if(S.slots[0]!=null&&S.slots[1]!=null) say(M==='s4'&&!S.ans?'こたえの かずも 下の ボタンで 入れよう':'できたら 金の「こたえ」を おそう');
+  if(S.slots[0]!=null&&S.slots[1]!=null) say(M==='s4'?'できたら 青い「こたえを 入れる ▶」を おそう':'できたら 金の「こたえ」を おそう');
 }
 let justDropped=0;
 document.querySelectorAll('.slot').forEach(sl=>sl.addEventListener('click',()=>{
@@ -607,7 +608,7 @@ function checkShiki(){
   $('cards').classList.add('hidden');
   $('kake').classList.remove('hidden');$('kake').innerHTML=kakeLine();
   $('face').innerHTML=face(GUEST(),true);
-  say(M==='s1'?`よくできました！ ${t} ÷ ${d} ＝ ${q}<br>1本に ${q}こずつ`:`よくできました！ ${t} ÷ ${d} ＝ ${q}<br>くしは ${q}本`,'ok');
+  say(isTou()?`よくできました！ ${t} ÷ ${d} ＝ ${q}<br>1本に ${q}こずつ`:`よくできました！ ${t} ÷ ${d} ＝ ${q}<br>くしは ${q}本`,'ok');
   actions([['next','つぎの おきゃくさん →',()=>{S.pi[M]++;newQ();}]]);
 }
 
@@ -629,13 +630,14 @@ function newS3(){
 }
 function render3(){
   const {t,d}=Q(),q=t/d,r=S.r,mx=Math.max(d,q),live=S.phase==='deal'&&r>0;
-  const L=stageSVG({nSk:d,per:Array(d).fill(r),maxPer:mx,cols:mx,total:t,tray:t-r*d,just:r>0?d:0,
-    hlRow:live?r-1:null,rowBadges:r,newKeys:S.newKeys&&S.newKeys.L,newOrder:'row'});
-  const R=stageSVG({nSk:r,per:Array(r).fill(d),maxPer:mx,cols:mx,total:t,tray:t-r*d,just:r>0?d:0,
-    hlSk:live?r-1:null,skBadges:r,newKeys:S.newKeys&&S.newKeys.R,newOrder:'col'});
+  /* 左＝まとめて さす（ステップ１）、右＝くしに くばる（ステップ２）。タブの じゅんと そろえる */
+  const L=stageSVG({nSk:r,per:Array(r).fill(d),maxPer:mx,cols:mx,total:t,tray:t-r*d,just:r>0?d:0,
+    hlSk:live?r-1:null,skBadges:r,newKeys:S.newKeys&&S.newKeys.L,newOrder:'col'});
+  const R=stageSVG({nSk:d,per:Array(d).fill(r),maxPer:mx,cols:mx,total:t,tray:t-r*d,just:r>0?d:0,
+    hlRow:live?r-1:null,rowBadges:r,newKeys:S.newKeys&&S.newKeys.R,newOrder:'row'});
   $('stage').innerHTML=`<div class="cmp">`+
-    `<div class="pic l"><div class="cap">${d}本の くしに くばる<small>1本に なんこ？</small></div>${L}</div>`+
-    `<div class="pic r"><div class="cap">1本に ${d}こずつ さす<small>くしは なん本？</small></div>${R}</div></div>`;
+    `<div class="pic l"><div class="cap">1本に ${d}こずつ さす<small>くしは なん本？</small></div>${L}</div>`+
+    `<div class="pic r"><div class="cap">${d}本の くしに くばる<small>1本に なんこ？</small></div>${R}</div></div>`;
   S.newKeys=null;
 }
 function deal3(){
@@ -643,8 +645,8 @@ function deal3(){
   if(S.phase!=='deal'||S.r>=q)return;
   S.r++;
   const L=new Set(),R=new Set();
-  for(let j=0;j<d;j++)L.add(j+'-'+(S.r-1));
-  for(let i=0;i<d;i++)R.add((S.r-1)+'-'+i);
+  for(let i=0;i<d;i++)L.add((S.r-1)+'-'+i);
+  for(let j=0;j<d;j++)R.add(j+'-'+(S.r-1));
   S.newKeys={L,R};render3();
   const left=t-S.r*d;
   if(left>0){say(`${S.r}かい め。<br>のこりは どちらも ${left}こ`);return;}
@@ -667,25 +669,27 @@ function choose3(v,b){
     return;
   }
   $('q3').classList.add('hidden');$('choices').classList.add('hidden');
-  /* ひだり（くばる）＝1本の かずを もとめた／みぎ（さす）＝くしの かずを もとめた。どちらも ÷ の 式は おなじ */
+  /* ひだり（さす）＝くしの かずを もとめた／みぎ（くばる）＝1本の かずを もとめた。どちらも ÷ の 式は おなじ */
   $('sum').classList.remove('hidden');
   $('sum').innerHTML=`<div class="big">どちらも ${t} ÷ ${d} ＝ ${q}</div>`+
-    `<div class="l">くばる　<span class="qa">${q}</span> × ${d} ＝ ${t}　<small>1本に ${q}こ</small></div>`+
-    `<div class="r">さす　${d} × <span class="qa">${q}</span> ＝ ${t}　<small>くしが ${q}本</small></div>`;
+    `<div class="l">さす　${d} × <span class="qa">${q}</span> ＝ ${t}　<small>くしが ${q}本</small></div>`+
+    `<div class="r">くばる　<span class="qa">${q}</span> × ${d} ＝ ${t}　<small>1本に ${q}こ</small></div>`;
   say(`そう！ どちらも ${d}こずつ ${q}かい へった。<br>だから おなじ しき ${t} ÷ ${d}`,'ok');
   actions([['next','つぎの もんだい →',()=>{S.pi.s3++;newQ();}]]);
 }
 
 /* ===== ステップ４：やって みよう
-   文を よんで しきを つくり（カード）、こたえを 九九で 入れる。
-   ヒントは 式 1つだけ（くばる＝? × 3 ＝ 12／さす＝3 × ? ＝ 12）。もんだいが かわっても 消さない
-   だんごの 絵は こたえあわせの あとに くばった すがたに なる（先に 出すと 数えるだけに なる） ===== */
+   2だんに 分ける（2026-09-26 指摘＝「分かりにくい」。カード・数の ボタン・ヒント・こたえの ますが
+   いっぺんに 出て いて、何から するのか 分からなかった）。そのとき つかう ものだけ 出す:
+   ① しきを つくる … カードで □ ÷ □。青「こたえを 入れる ▶」
+   ② こたえを 入れる … 「ぜんぶの かず／くしの かず」の 名前が ついた 式の ？に、数の ボタンで 入れる。金「こたえ」
+   ヒントは ② だけ。式 1つ（さす＝3 × ? ＝ 12／くばる＝? × 3 ＝ 12）。もんだいが かわっても 消さない
+   だんごの 絵は こたえあわせの あとに さした／くばった すがたに なる（先に 出すと 数えるだけに なる） ===== */
 (function(){
   const box=$('digits');
   for(let v=1;v<=9;v++){
     const b=document.createElement('button');b.className='dg';b.textContent=v;
-    b.onclick=()=>{if(S.phase!=='shiki')return;S.ans=String(v);drawAns();
-      if(S.slots[0]!=null&&S.slots[1]!=null)say('できたら 金の「こたえ」を おそう');};
+    b.onclick=()=>{if(S.phase!=='ans')return;S.ans=String(v);drawAns();say('できたら 金の「こたえ」を おそう');};
     box.appendChild(b);
   }
 })();
@@ -698,27 +702,35 @@ function drawHint(){
 function drawAns(){
   const r=$('res');
   if(S.phase==='done'){r.className='resbox good';return;}
+  if(S.phase!=='ans'){r.textContent='？';r.className='resbox';return;}
   r.textContent=S.ans||'？';r.className='resbox inp'+(S.ans?' fill':'');
 }
 function newS4(){
   S.phase='shiki';
   $('shiki').classList.remove('hidden');$('cards').classList.remove('hidden');
-  $('hintbar').classList.remove('hidden');$('digits').classList.remove('hidden');
-  $('unit').textContent=isTou()?'こ':'本';
   const {t,d}=Q();
   S.cards=[d,t];S.slots=[null,null];S.sel=null;S.ans='';
-  drawCards();drawSlots();drawAns();drawHint();
-  document.querySelectorAll('.dg').forEach(b=>b.disabled=false);
-  say('しきを つくって、こたえを 入れよう');
+  drawCards();drawSlots();drawAns();
+  say('① ちゅうもんを よんで、しきを つくろう');
   actions([['sub','カードを もどす',()=>{S.slots=[null,null];S.sel=null;drawCards();drawSlots();}],
-           ['show','こたえ',check4]]);
+           ['play','こたえを 入れる ▶',toAns4]]);
   render();
 }
-function check4(){
+function toAns4(){
   if(S.phase!=='shiki')return;
   if(S.slots[0]==null||S.slots[1]==null){say('まだ とちゅうだよ。□ に カードを 入れてね','try');return;}
-  if(!S.ans){say('まだ とちゅうだよ。こたえの かずを 入れてね','try');return;}
   if(!shikiOK())return;
+  S.phase='ans';S.ans='';
+  labelShiki();drawAns();
+  $('cards').classList.add('hidden');
+  $('hintbar').classList.remove('hidden');$('digits').classList.remove('hidden');drawHint();
+  document.querySelectorAll('.dg').forEach(b=>b.disabled=false);
+  say(isTou()?'② 1本に なんこ？ 九九で かんがえよう':'② くしは なん本？ 九九で かんがえよう');
+  actions([['show','こたえ',check4]]);
+}
+function check4(){
+  if(S.phase!=='ans')return;
+  if(!S.ans){say('まだ とちゅうだよ。下の ボタンで かずを 入れてね','try');return;}
   const {t,d}=Q(),q=t/d,tou=isTou();
   if(+S.ans!==q){
     S.ans='';drawAns();
@@ -727,17 +739,16 @@ function check4(){
     return;
   }
   S.phase='done';S.done4=true;
-  labelShiki();$('res').textContent=q;drawAns();
-  $('cards').classList.add('hidden');
+  $('res').textContent=q;drawAns();
+  $('hintbar').classList.add('hidden');$('digits').classList.add('hidden');
   $('kake').classList.remove('hidden');$('kake').innerHTML=kakeLine().replace('かけ算で みると','たしかめ');
-  document.querySelectorAll('.dg').forEach(b=>b.disabled=true);
-  /* くばった／さした すがたを 見せる */
+  /* さした／くばった すがたを 見せる */
   const nk=new Set();
   if(tou){for(let j=0;j<d;j++)for(let i=0;i<q;i++)nk.add(j+'-'+i);}
   else{for(let j=0;j<q;j++)for(let i=0;i<d;i++)nk.add(j+'-'+i);}
   S.newKeys=nk;render();
   $('face').innerHTML=face(GUEST(),true);
-  say(tou?`よくできました！ 1本に ${q}こずつ`:`よくできました！ くしは ${q}本`,'ok');
+  say(tou?`よくできました！ ${t} ÷ ${d} ＝ ${q}　1本に ${q}こずつ`:`よくできました！ ${t} ÷ ${d} ＝ ${q}　くしは ${q}本`,'ok');
   actions([['next','つぎの もんだい →',()=>{S.pi.s4++;newQ();}]]);
 }
 
