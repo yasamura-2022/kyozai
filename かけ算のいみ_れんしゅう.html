@@ -123,7 +123,9 @@
     font-weight:800;white-space:nowrap;font-size:clamp(18px,calc(.9vw + 2vh),32px);font-variant-numeric:tabular-nums}
   .eq3.off{visibility:hidden}
   .eq3 .q{color:var(--sakura-d)}
-  .eq3 .was{color:#6b4f2a}
+  .eq3 .was,.kr .was,.wasc{background:#f3e0c6;color:#6b4f2a;border-radius:8px;padding:0 .25em}
+  .eq3 .l1{font-size:.84em;color:#6b4f2a;line-height:1.3}
+  .eq3 .l2{line-height:1.3}
   .eq3 .add,.addc{background:#ffe98a;border-radius:8px;padding:0 .25em}
   .eq3 .qm{display:inline-block;min-width:1.6em;border-bottom:3px solid var(--ink)}
   /* えらびが 出て いない ときも 場所は とって おく（出る たびに 九九の 字の 大きさが かわらない ように） */
@@ -376,6 +378,8 @@ function dangoSVG(k,n,o={}){
   for(let j=0;j<n;j++){
     const cx=x0+colW*(j+.5);
     const newSk=o.anim&&j>=o.prevN;
+    if(o.band&&o.hl!=null&&j<o.hl)      // ステップ３：前の くし（＝1つ まえの こたえ）を うすい 茶色で
+      s+=`<rect x="${cx-42}" y="10" width="84" height="${H-14}" fill="#f3e0c6"/>`;
     if(o.hl!=null&&(o.only?j===o.hl:j<=o.hl)) s+=`<rect x="${cx-38}" y="10" width="76" height="${H-14}" rx="18" fill="${j===o.hl?'#ffe98a':'#fff2bf'}"/>`;
     s+=`<g class="${newSk?'sk-new':''}">`;
     s+=`<line x1="${cx}" y1="22" x2="${cx}" y2="${bot}" stroke="#caa06a" stroke-width="8" stroke-linecap="round"/>`;
@@ -711,7 +715,7 @@ function newDan(){
   $('build').classList.add('hidden');$('shiki').classList.add('hidden');
   $('dan').classList.remove('hidden');$('choices').classList.remove('hidden');
   $('choices').classList.add('off');$('choices').innerHTML='<button class="choice">0</button>';
-  $('eq3').classList.remove('hidden');$('eq3').classList.add('off');$('eq3').innerHTML='0';
+  $('eq3').classList.remove('hidden');$('eq3').classList.add('off');$('eq3').innerHTML='<div class="l1">0</div><div class="l2">0</div>';
   document.querySelectorAll('#danChips .chip').forEach(c=>c.classList.toggle('on',+c.dataset.d===S.dan));
   say(`<b>${S.k}の だんを じぶんで つくろう。</b><br>${S.k}こ ささった くしを 1本ずつ たして いくよ`);
   render();act3();
@@ -719,7 +723,7 @@ function newDan(){
 function render3(){
   const k=S.k,labels=[];
   for(let j=1;j<=S.n;j++)labels.push(S.pend&&j===S.n?'？':k*j);
-  $('stage').innerHTML=dangoSVG(k,S.n,{cols:9,bottom:true,labels,hl:S.hl,only:true,
+  $('stage').innerHTML=dangoSVG(k,S.n,{cols:9,bottom:true,labels,hl:S.hl,only:true,band:S.pend,
     anim:true,prevK:k,prevN:S.prevN});
   S.prevN=S.n;
   drawKuku();
@@ -732,7 +736,7 @@ function drawKuku(){
     const cls=got?'done':(i===S.n?'done pend':'yet');   // いま つくって いる 行は こく 出す
     const now=i===S.n&&(S.pend||S.hl===i-1);
     h+=`<div class="kr ${cls} ${now?'now':''}"><span class="ex">${k} × ${i}</span>`+
-       `<span class="an">＝ ${got?k*i:(i===S.n?'？':`<i class="ph">${k*i}</i>`)}</span><span class="up ${i>=2?'on':''}">＋${k}</span></div>`;
+       `<span class="an">＝ ${got?(S.pend&&i===S.n-1?`<span class="was">${k*i}</span>`:k*i):(i===S.n?'？':`<i class="ph">${k*i}</i>`)}</span><span class="up ${i>=2?'on':''}">＋${k}</span></div>`;
   }
   $('kuku').innerHTML=h;
   fitKuku();
@@ -763,7 +767,9 @@ function add3(){
   const k=S.k,prev=k*S.n;
   S.n++;S.pend=true;S.hl=S.n-1;render();
   /* 式の 3 は 光って いる くしと 同じ 色。12 は くしの 下の 数と 同じ 色 */
-  $('eq3').innerHTML=`<span class="q">${k} × ${S.n}</span> ＝ <span class="was">${prev}</span> ＋ <span class="add">${k}</span> ＝ <span class="qm">？</span>`;
+  /* 上の 行に「3 × 4 ＝ 12」を 出して、下の 12 が その こたえだと 見える ように する（2026-09-26 指摘） */
+  $('eq3').innerHTML=`<div class="l1">${k} × ${S.n-1} ＝ <span class="was">${prev}</span></div>`+
+    `<div class="l2"><span class="q">${k} × ${S.n}</span> ＝ <span class="was">${prev}</span> ＋ <span class="add">${k}</span> ＝ <span class="qm">？</span></div>`;
   $('eq3').classList.remove('off');
   const n=S.n,right=prev+k;
   /* まちがいの えらび：1だけ たす（かける数が 1 ふえたから）／かける数を たす */
@@ -781,7 +787,7 @@ function choose3(v,b){
   const k=S.k,prev=k*(S.n-1),right=prev+k;
   if(v!==right){
     b.disabled=true;
-    say(`<b>${prev}</b> は ${S.n-1}本ぶん。<span class="addc">ひかって いる 1本の ${k}こ</span>を たそう`,'try');
+    say(`<span class="wasc">${prev}</span> は ${k} × ${S.n-1} の こたえ（${S.n-1}本ぶん）。<br><span class="addc">ひかって いる 1本の ${k}こ</span>を たそう`,'try');
     return;
   }
   S.pend=false;render();
