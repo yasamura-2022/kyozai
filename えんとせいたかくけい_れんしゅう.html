@@ -855,7 +855,8 @@ function s3judge(){
 
 /* =====================================================================
    ステップ４：円周を 調べる
-   (a) 見当を つける：内がわの 正六角形（まわり＝直径×3）と 外がわの 正方形（まわり＝直径×4）で はさむ。
+   (a) 見当を つける：内がわの 正六角形（辺 6本＝直径×3）と 外がわの 正方形（辺 4本＝直径×4）で はさむ。
+       「まわり」は 円周だけに 使う（正六角形の まわり と 書くと 円の まわり と まざる。2026-09-26 指摘）
        1回 おすと 1つだけ 出る（かく → まっすぐに する → かく → まっすぐに する → 聞く）。
        まだ 出て いない 行は かかない（2026-09-26 指摘＝空の 行が はじめから ならんで いて 使い方が 分からなかった）
    (b) ころがす：直径 2・3・4cm の 円を 1回転 ころがす → 表 → 円周 ÷ 直径 は いつも 約3.14
@@ -866,7 +867,6 @@ const PI100=d=>Math.round(Math.PI*d*100);    /* はかった 円周（0.01cm ま
 const S4step={
   enter(){
     choices(null,null);sum(null);
-    legend([['line',CD,'直径'],['line',CA,'円周（円の まわり）']]);
     s4start();
   },
   draw(){S4.part==='mi'?draw4mi():draw4ko();}
@@ -875,12 +875,14 @@ function s4start(){
   parts([['mi','① 見当を つける'],['ko','② ころがして はかる']],S4.part,k=>{S4.part=k;s4start();});
   sum(null);
   if(S4.part==='mi'){
+    legend([['line',CA,'円周（円の まわり）'],['line',CK,'正六角形の 辺'],['line',CB,'正方形の 辺'],['line',CD,'直径']]);
     Object.assign(S4,{st:0,ph:'look',anim:0});
     box(null);
     prob('<span class="goal">円周は 直径の 何倍 くらいか 見当を つけよう</span>');
     choices(null,null);
     s4miStep();
   }else{
+    legend([['line',CA,'円周（円の まわり）'],['line',CD,'直径']]);
     Object.assign(S4,{ci:0,roll:0,ph:'look',rec:[]});
     prob('<span class="goal">円を ころがして 円周を はかろう</span>');
     s4tbl();
@@ -890,12 +892,12 @@ function s4start(){
 }
 const MI_SAY=[
   'まず、下の <b>青い ボタン</b>を おして、<br>円の 中に 正六角形を かこう',
-  '<span class="a">円周</span>は 正六角形より 外に <b>ふくらんで</b> いる（<span class="a">色の ところ</span>）。<br>だから 正六角形の まわりは 円周より <b>短い</b>',
-  '正六角形の 辺 6本を ならべた。1辺は 半径と 同じ（点線の 正三角形）なので、<br>辺 2本で <span class="d">直径</span> 1つ分。まわり ＝ <span class="d">直径 3つ分</span>。こんどは 正方形を かこう',
-  '正方形の 角は 円より 外に <b>出て</b> いる（<span style="color:#8a7a5f">色の ところ</span>）。<br>だから 正方形の まわりは <span class="a">円周</span>より <b>長い</b>',
-  '正方形の 辺 4本を ならべた。1辺は <span class="d">直径</span>と 同じ。まわり ＝ <span class="d">直径 4つ分</span>。<br><span class="a">円周</span>は <span class="d">直径</span>の 何倍 くらい？'
+  '<span class="a">円周</span>は 正六角形より 外に <b>ふくらんで</b> いる（<span class="a">色の ところ</span>）。<br>だから 正六角形の 辺 6本を つなげた 長さは 円周より <b>短い</b>',
+  '正六角形の 辺 6本を ならべた。1辺は 半径と 同じ（点線の 正三角形）なので、<br>辺 2本で <span class="d">直径</span> 1つ分。辺 6本 ＝ <span class="d">直径 3つ分</span>。こんどは 正方形を かこう',
+  '正方形の 角は 円より 外に <b>出て</b> いる（<span style="color:#8a7a5f">色の ところ</span>）。<br>だから 正方形の 辺 4本を つなげた 長さは <span class="a">円周</span>より <b>長い</b>',
+  '正方形の 辺 4本を ならべた。1辺は <span class="d">直径</span>と 同じ。辺 4本 ＝ <span class="d">直径 4つ分</span>。<br><span class="a">円周</span>は <span class="d">直径</span>の 何倍 くらい？'
 ];
-const MI_BTN=['正六角形を かく ▶','まわりを まっすぐに ならべる ▶','正方形を かく ▶','まわりを まっすぐに ならべる ▶'];
+const MI_BTN=['正六角形を かく ▶','辺を まっすぐに ならべる ▶','正方形を かく ▶','辺を まっすぐに ならべる ▶'];
 function s4miStep(){
   say(MI_SAY[S4.st]);
   if(S4.st<4){
@@ -911,7 +913,7 @@ function s4miStep(){
   }
 }
 function s4miPick(i,btn){
-  if(i!==1){btn.disabled=true;say('円は 正六角形の 外がわ、正方形の 内がわに あるね。<br>まわりの 長さも その あいだ','try');return;}
+  if(i!==1){btn.disabled=true;say('円は 正六角形の 外がわ、正方形の 内がわに あるね。<br>円周の 長さも その あいだ','try');return;}
   btn.classList.add('good');S4.ph='done';choices(null,null,true);
   S4.st=5;S4.anim=0;
   anim(2200,t=>{S4.anim=t;draw();},()=>{S4.anim=1;draw();},t=>t);
@@ -1031,7 +1033,7 @@ function draw4mi(){
   /* ならべた まわり */
   /* 行：正六角形（その 下に 直径の テープ）／円周（その 下に 直径の テープ）／正方形（辺 そのものが 直径） */
   const head=(y,t,c)=>g+=lab(x0,y+.3+fw()*1.55,t,c,{k:.78,anc:'start'});
-  if(f(2)>0){head(yH,'正六角形の まわり（辺 6本を ならべた）',CK);g+=flyTape(sides(hx),yH,f(2),CK,CK,'辺',D,x0);}
+  if(f(2)>0){head(yH,'正六角形の 辺 6本',CK);g+=flyTape(sides(hx),yH,f(2),CK,CK,'辺',D,x0);}
   if(st>=4){
     head(yC,f(5)>0?'円周（まっすぐに した）':'円周',CA);
     if(f(5)>0){
@@ -1040,7 +1042,7 @@ function draw4mi(){
       g+=bar(x0,yC-.72,L,D,CD,'',{h:.62,bit:f(5)>=1?'少し':''});
     }else g+=lab(x0+D*3.5,yC,'？',CA,{k:1.2});
   }
-  if(f(4)>0){head(yS,'正方形の まわり（辺 4本を ならべた）',CB);g+=flyTape(sides(sq),yS,f(4),CB,'#6f5d3d','辺',D,x0,true);}
+  if(f(4)>0){head(yS,'正方形の 辺 4本',CB);g+=flyTape(sides(sq),yS,f(4),CB,'#6f5d3d','辺',D,x0,true);}
   svg.innerHTML=g;
 }
 function s4tbl(){
