@@ -124,8 +124,14 @@
   .eq3.off{visibility:hidden}
   .eq3 .q{color:var(--sakura-d)}
   .eq3 .was,.kr .was,.wasc{background:#f3e0c6;color:#6b4f2a;border-radius:8px;padding:0 .25em}
-  .eq3 .l1{font-size:.84em;color:#6b4f2a;line-height:1.3}
+  .eq3{padding-top:calc(1.4em + 12px)}          /* ふきだしの ぶん 上を あける */
   .eq3 .l2{line-height:1.3}
+  .eq3 .tipw{position:relative;display:inline-block}
+  .eq3 .tip{position:absolute;left:50%;bottom:calc(100% + 9px);transform:translateX(-50%);white-space:nowrap;
+    font-size:.86em;line-height:1.2;padding:.06em .5em;border-radius:10px;background:#f3e0c6;color:#6b4f2a;
+    border:2px solid #d9b98f}
+  .eq3 .tip::after{content:"";position:absolute;left:50%;top:100%;transform:translateX(-50%);
+    border:8px solid transparent;border-top-color:#d9b98f}
   .eq3 .add,.addc{background:#ffe98a;border-radius:8px;padding:0 .25em}
   .eq3 .qm{display:inline-block;min-width:1.6em;border-bottom:3px solid var(--ink)}
   /* えらびが 出て いない ときも 場所は とって おく（出る たびに 九九の 字の 大きさが かわらない ように） */
@@ -248,7 +254,7 @@
     .dan .lbl{display:none}
     .chip{min-height:34px;min-width:34px;font-size:16px}
     .m3 .say{min-height:calc(4.5em + 10px);font-size:13px}
-    .eq3{padding:3px 6px;font-size:20px}
+    .eq3{padding:calc(1.4em + 8px) 6px 3px;font-size:20px}   /* 上は ふきだしの ぶん
     .choice{padding:4px 0;font-size:22px}
     header{display:none}
     .tab{padding:5px 4px}
@@ -724,7 +730,7 @@ function newDan(){
   $('build').classList.add('hidden');$('shiki').classList.add('hidden');
   $('dan').classList.remove('hidden');$('choices').classList.remove('hidden');
   $('choices').classList.add('off');$('choices').innerHTML='<button class="choice">0</button>';
-  $('eq3').classList.remove('hidden');$('eq3').classList.add('off');$('eq3').innerHTML='<div class="l1">0</div><div class="l2">0</div>';
+  $('eq3').classList.remove('hidden');$('eq3').classList.add('off');$('eq3').innerHTML='<div class="l2"><span class="tipw">0<span class="tip">0</span></span></div>';
   document.querySelectorAll('#danChips .chip').forEach(c=>c.classList.toggle('on',+c.dataset.d===S.dan));
   say(`<b>${S.k}の だんを じぶんで つくろう。</b><br>青い ボタンで くしを 1本ずつ たそう`);
   render();act3();
@@ -768,7 +774,7 @@ function act3(){
       b.onclick=add3;box.appendChild(b);box.classList.remove('off');
     }else{box.innerHTML='<button class="choice">0</button>';box.classList.add('off');}
   }
-  if(S.n<9) actions([back]);
+  if(S.n<9||S.pend) actions([back]);        // 9×9 に こたえる まえは「つぎの だん」を 出さない
   else actions([back,['next','つぎの だん →',()=>{S.dan=S.dan%9+1;newDan();}]]);
 }
 function less3(){
@@ -784,8 +790,11 @@ function add3(){
   S.n++;S.pend=true;S.hl=S.n-1;render();
   /* 式の 3 は 光って いる くしと 同じ 色。12 は くしの 下の 数と 同じ 色 */
   /* 上の 行に「3 × 4 ＝ 12」を 出して、下の 12 が その こたえだと 見える ように する（2026-09-26 指摘） */
-  $('eq3').innerHTML=`<div class="l1">${k} × ${S.n-1} ＝ <span class="was">${prev}</span></div>`+
-    `<div class="l2"><span class="q">${k} × ${S.n}</span> ＝ <span class="was">${prev}</span> ＋ <span class="add">${k}</span> ＝ <span class="qm">？</span></div>`;
+  /* 8 の 真上に ふきだしで「4 × 2 ＝ 8」。8 を 中心に 左右 同じ 長さで おき、しっぽは 下の 8 を さす
+     （2026-09-26 指摘＝上の 行に べつに 書くと、上の 8 と 下の 8 が 同じ ものだと 分かりにくい） */
+  $('eq3').innerHTML=`<div class="l2"><span class="q">${k} × ${S.n}</span> ＝ `+
+    `<span class="was tipw">${prev}<span class="tip">${k} × ${S.n-1} ＝ ${prev}</span></span>`+
+    ` ＋ <span class="add">${k}</span> ＝ <span class="qm">？</span></div>`;
   $('eq3').classList.remove('off');
   const n=S.n,right=prev+k;
   /* まちがいの えらび：1だけ たす（かける数が 1 ふえたから）／かける数を たす */
