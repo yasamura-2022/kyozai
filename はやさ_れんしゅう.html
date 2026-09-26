@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>速さ</title>
+<style>
+  :root{
+    --ink:#2b2118;
+    --paper:#fdf6e3;
+    --card:#fffdf7;
+    --line:#e7d9b8;
+    --gold:#c9a227;
+    --gold-d:#8f7417;
+    --ok:#5a8a4c;
+    --flash:#ffe14d;
+    --blue:#2f6fa8;          /* 同じ 問題の 中で 進む */
+    --michi:#2f8f8a;         /* 道のり */
+    --michi-s:#e2f3f1;
+    --toki:#c0661f;          /* 時間 */
+    --toki-s:#fbeedb;
+    --haya:#7a52b3;          /* 速さ（1つ分） */
+    --haya-s:#efe7fa;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:'Hiragino Maru Gothic ProN','BIZ UDPGothic','Yu Gothic',sans-serif;
+    background:
+      radial-gradient(circle at 12% 8%,#e9e1f6 0,transparent 38%),
+      radial-gradient(circle at 88% 92%,#fbe6cf 0,transparent 45%),
+      var(--paper);
+    color:var(--ink);
+    position:fixed;inset:0;width:100%;
+    height:var(--fh,100dvh);
+    padding:6px 8px 10px;
+    overflow:hidden;overscroll-behavior:none;touch-action:manipulation;
+    display:flex;flex-direction:column;align-items:center;
+    -webkit-user-select:none;user-select:none;
+  }
+  button{font-family:inherit;touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;cursor:pointer}
+  .app{width:100%;max-width:1100px;height:100%;display:flex;flex-direction:column;gap:6px;min-height:0}
+  .hidden{display:none !important}
+
+  header{text-align:center;flex-shrink:0}
+  h1{font-size:clamp(18px,calc(1.2vw + 1.5vh),28px);letter-spacing:.08em;color:var(--haya)}
+
+  /* ===== タブ ===== */
+  .tabs{display:flex;gap:6px;flex-shrink:0}
+  .tab{flex:1;border:2px solid var(--line);border-radius:14px;background:var(--card);
+    padding:7px 4px;color:#8a7a5f;font-weight:800;
+    font-size:clamp(12px,calc(.9vw + .7vh),17px);display:flex;flex-direction:column;align-items:center;gap:1px;
+    line-height:1.15;word-break:keep-all}
+  .tab .step{font-size:11px;font-weight:700;opacity:.7}
+  .tab.on{color:var(--ink);border-color:var(--gold);box-shadow:0 3px 0 #a5811a}
+  .tab.on .step{color:var(--gold);opacity:1}
+
+  /* ===== ならび：よこ長＝左に 絵、右に はたらく ところ／たて長＝上に 絵 ===== */
+  .main{flex:1;min-height:0;display:grid;gap:8px;
+    grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) auto;grid-template-areas:"stage" "work"}
+  @media (orientation:landscape){
+    .main{grid-template-columns:minmax(0,1.4fr) minmax(330px,1fr);grid-template-rows:minmax(0,1fr);grid-template-areas:"stage work"}
+    .work{justify-content:center}
+  }
+  .stage{grid-area:stage;min-height:0;border-radius:18px;border:3px solid #d6c9ea;
+    background:linear-gradient(#fdfcff,#f3eff9);position:relative;overflow:hidden;padding:6px;
+    contain:size}      /* 絵の 大きさで 行を おし広げない */
+  .stage > svg{width:100%;height:100%;display:block}
+  .stage.tapped{animation:tapped .25s}
+  @keyframes tapped{50%{background:#fff6cf}}
+  .work{grid-area:work;display:flex;flex-direction:column;gap:8px;min-height:0}
+  /* たて長：下の らんの 高さを 先に とって おく（進むたびに 絵の 大きさが 変わらない ように） */
+  @media (orientation:portrait){ .work{min-height:clamp(300px,45vh,560px)} }
+
+  .prob{display:flex;align-items:center;gap:10px;background:var(--card);border:2px solid var(--line);border-radius:14px;padding:6px 12px;
+    font-weight:800;font-size:clamp(14px,calc(.6vw + 1.3vh),21px);word-break:keep-all;flex-wrap:wrap;justify-content:center;line-height:1.45}
+  .prob .no{color:#8a7a5f;font-size:.82em}
+  .say{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:8px 12px;
+    font-weight:800;color:#5d5040;line-height:1.5;text-align:center;word-break:keep-all;
+    min-height:calc(3em + 20px);display:flex;align-items:center;justify-content:center;
+    font-size:clamp(14px,calc(.7vw + 1.25vh),21px)}
+  .say.ok{color:var(--ok);border-color:var(--ok);background:#f2f9ee}
+  .say.try{color:#b3566f;border-color:#d9748f;background:#fbe3ea}
+  .m{color:var(--michi)} .t{color:var(--toki)} .h{color:var(--haya)}
+
+  /* しき */
+  .shiki{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:8px;
+    display:flex;flex-direction:column;align-items:center;gap:8px}
+  .eq{display:flex;align-items:flex-start;justify-content:center;gap:5px;font-weight:800;flex-wrap:nowrap;
+    font-size:clamp(20px,calc(1vw + 2.5vh),40px);line-height:1;font-variant-numeric:tabular-nums}
+  .eq .op{padding-top:.28em;white-space:nowrap}
+  .eq .lead{padding-top:.28em;white-space:nowrap;font-size:.8em;color:var(--haya)}
+  .eq .u{padding-top:.42em;font-size:.6em;white-space:nowrap}
+  .slotw{display:flex;flex-direction:column;align-items:center;gap:4px}
+  .slot,.resbox{min-width:1.7em;height:1.5em;padding:0 .15em;border:3px dashed #cbb98f;border-radius:12px;background:#fff;
+    display:flex;align-items:center;justify-content:center;white-space:nowrap}
+  .slot.opslot{min-width:1.3em}
+  .slot.sel{border-color:var(--blue);background:#eaf1f8}
+  .slot.fill{border-style:solid;border-color:#9a8763}
+  .slot.gm{border:3px solid var(--michi);background:var(--michi-s);color:var(--michi)}
+  .slot.gt{border:3px solid var(--toki);background:var(--toki-s);color:var(--toki)}
+  .slot.gh{border:3px solid var(--haya);background:var(--haya-s);color:var(--haya)}
+  .slot.go{border:3px solid #9a8763;background:#fff}
+  .resbox{border-color:transparent;background:transparent;color:#8a7a5f}
+  .resbox.good{border:3px solid var(--gold);background:#fff4c9;color:var(--ink)}
+  .slot small,.resbox small{font-size:.5em}
+  .what{font-size:clamp(11px,calc(.5vw + .95vh),16px);color:#8a7a5f;white-space:nowrap;min-height:1.2em}
+  .what.m{color:var(--michi)} .what.t{color:var(--toki)} .what.h{color:var(--haya)}
+  .cards{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;min-height:clamp(48px,calc(2vw + 4.6vh),70px)}
+  .cardn{min-width:clamp(56px,calc(2.6vw + 5vh),84px);height:clamp(46px,calc(2vw + 4.4vh),68px);border-radius:14px;padding:0 8px;
+    background:#fff;border:3px solid #9a8763;box-shadow:0 4px 0 #85795f;
+    font-weight:800;font-size:clamp(20px,calc(1vw + 2.3vh),34px);color:var(--ink);touch-action:none;white-space:nowrap}
+  .cardn small{font-size:.55em}
+  .cardn.cm{border-color:var(--michi);box-shadow:0 4px 0 #1f6763}
+  .cardn.ct{border-color:var(--toki);box-shadow:0 4px 0 #8c4a14}
+  .cardn.ch{border-color:var(--haya);box-shadow:0 4px 0 #563a80}
+  .cardn.co{min-width:clamp(48px,calc(2vw + 4.4vh),68px);font-size:clamp(24px,calc(1.2vw + 2.8vh),40px)}
+  .cardn.sel{background:var(--flash);transform:translateY(-3px)}
+  .cardn.gone{visibility:hidden}
+  .ghost{position:fixed;z-index:50;pointer-events:none;opacity:.9;transform:translate(-50%,-50%) scale(1.08)}
+
+  /* まとめ */
+  .sum{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:8px 10px;text-align:center;
+    font-weight:800;font-variant-numeric:tabular-nums;display:flex;flex-direction:column;align-items:center;gap:4px;
+    font-size:clamp(15px,calc(.7vw + 1.5vh),24px);line-height:1.35;word-break:keep-all}
+  .sum .f{font-size:1.12em}
+  .sum .small{font-size:.8em;color:#8a7a5f}
+
+  .choices{display:flex;gap:10px;justify-content:center}
+  .choice{flex:1;max-width:210px;border:3px solid var(--line);border-radius:16px;background:#fff;font-weight:800;color:var(--ink);
+    padding:8px 4px;font-size:clamp(17px,calc(.8vw + 2vh),28px);box-shadow:0 4px 0 #d8c79f;word-break:keep-all;line-height:1.2}
+  .choice:active{transform:translateY(2px)}
+  .choice:disabled{opacity:.35;box-shadow:none}
+  .choice.good{border-color:var(--ok);background:#eaf5e4}
+  .choice.good:disabled,.choice.pick:disabled{opacity:1;box-shadow:none}
+  .choice.pick{border-color:var(--blue);background:#eaf1f8}
+  .choice .emo{font-size:1.2em;margin-right:.15em}
+  .choices.off{visibility:hidden}
+
+  /* ボタン：青＝同じ 問題の 中で 進む／金＝答え合わせ／みどり＝次の 問題／茶＝もどす */
+  .actions{display:flex;gap:8px;flex-shrink:0;margin-top:auto;min-height:54px}
+  .btn{flex:1;border:none;border-radius:14px;padding:13px 4px;font-weight:800;color:#fff;
+    font-size:clamp(15px,calc(.7vw + 1.6vh),23px);transition:transform .08s;word-break:keep-all}
+  .btn:active{transform:translateY(2px)}
+  .btn.play{background:var(--blue);box-shadow:0 4px 0 #214f7a}
+  .btn.show{background:var(--gold);box-shadow:0 4px 0 #a5811a}
+  .btn.next{background:var(--ok);box-shadow:0 4px 0 #446838}
+  .btn.sub{background:#a99a7c;box-shadow:0 4px 0 #85795f;flex:.6}
+  .btn:disabled{opacity:.45;box-shadow:none}
+
+  @media (max-height:640px){
+    header{display:none}
+    .tab{padding:5px 4px}
+    .tab .step{display:none}
+    .work{gap:5px}
+    .prob{padding:4px 10px}
+    .say{padding:5px 10px;min-height:calc(3em + 10px);font-size:14px}
+    .shiki{padding:5px;gap:5px}
+    .choice{padding:4px 2px}
+    .btn{padding:10px 4px}
+    .actions{min-height:46px}
+    .sum{padding:5px 8px}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header><h1>速さ</h1></header>
+
+  <div class="tabs">
+    <button class="tab on" data-m="s1"><span class="step">ステップ１</span>走って 比べる</button>
+    <button class="tab" data-m="s2"><span class="step">ステップ２</span>速さを 求める</button>
+    <button class="tab" data-m="s3"><span class="step">ステップ３</span>道のりと 時間</button>
+    <button class="tab" data-m="s4"><span class="step">ステップ４</span>時速・分速・秒速</button>
+  </div>
+
+  <div class="main" id="main">
+    <div class="stage" id="stage"><svg id="pic"></svg></div>
+    <div class="work">
+      <div class="prob" id="prob"></div>
+      <div class="say" id="say"></div>
+      <div class="choices off" id="choices"></div>
+      <div class="shiki hidden" id="shiki">
+        <div class="eq" id="eq"></div>
+        <div class="cards" id="cards"></div>
+      </div>
+      <div class="sum hidden" id="sum"></div>
+      <div class="actions" id="actions"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =====================================================================
+   速さ（算数5年 C(2) 異種の二つの量の割合）
+   解説（算数編 p.264-266＝~/Downloads/算数.pdf の 270〜272ページ目）：
+   ・「速さを量として表すには，移動する長さと，移動にかかる時間という二つの量が必要」
+     「（速さ）＝（長さ）÷（時間）」「時速 60㎞の速さとは，１時間に 60㎞の長さを移動する速さ」
+   ・「100ｍ走などの競技では，100ｍを走るのにかかる時間によって速さを表している」
+     「一般に…単位時間当たりの長さで比べることが多い」
+   ・「まず，一つの量だけでは比較することができない事象に着目する」
+     「その一方を揃えてほかの量で比較する」「二つの数量の間に比例関係があるという前提」
+     → ステップ１＝走らせて 比べる（道のりが 同じ／時間が 同じ／どちらも ちがう → 1秒に そろえる）
+       ステップ２＝速さ ＝ 道のり ÷ 時間（秒速・分速・時速）
+       ステップ３＝道のり ＝ 速さ × 時間／時間 ＝ 道のり ÷ 速さ
+                   （6年の 解説 p.319 に「５年生の時に学習した…（長さ）＝（速さ）×（時間）」）
+       ステップ４＝時速・分速・秒速を なおす（目的に 応じて 表し方を かえる）
+   ・人口密度・こみぐあい（同じ C(2)）は 入れない＝1アプリ1対象。べつの アプリに する
+   【見せ方】数直線を 2本（上＝道のり、下＝時間）。同じ 時間ずつ 区切ると、
+     道のりも 同じ 長さずつ 区切れる（比例の 前提）＝その 1つ分が「速さ」（むらさき）。
+   【答え】数の 答えは 入力させない。子どもが するのは 数と ×・÷ の カードを □ に 入れる ことだけ。
+   ===================================================================== */
+const $=id=>document.getElementById(id);
+let MODE='s1';
+
+function setFH(){
+  const v=(window.visualViewport&&window.visualViewport.height)||window.innerHeight;
+  document.documentElement.style.setProperty('--fh',v+'px');
+}
+setFH();
+addEventListener('resize',()=>{setFH();draw();});
+if(window.visualViewport) visualViewport.addEventListener('resize',setFH);
+
+const CM='#2f8f8a',CT='#c0661f',CH='#7a52b3',CI='#6f5d3d';
+const easeIO=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+const S={busy:false,idx:{s1:0,s2:0,s3:0,s4:0}};
+function anim(ms,f,done,ease=easeIO){
+  S.busy=true;const t0=performance.now();
+  const step=now=>{const t=Math.min(1,(now-t0)/ms);f(ease(t));
+    if(t<1)requestAnimationFrame(step);else{S.busy=false;done&&done();}};
+  requestAnimationFrame(step);
+}
+const fmt=x=>{const r=Math.round(x*100)/100;return String(r);};
+const SOKU={'秒':'秒速','分':'分速','時間':'時速'};
+
+/* ===== 絵の わく：よこ 1000。たては 画面の 形に あわせる ===== */
+const W=1000;let H=560,FS=26;
+/* need(FS)＝その 字の 大きさで 絵に いる たての 長さ。足りなければ たてを のばす（全体は 小さく なる） */
+function frame(svg,need){
+  const r=$('stage').getBoundingClientRect();
+  const w=Math.max(r.width-12,100),h=Math.max(r.height-12,100);
+  H=Math.max(400,Math.min(1000,W*h/w));
+  const sc=Math.min(w/W,h/H)||1;
+  FS=Math.max(26,19/sc);            /* 画面で 19px 以上 */
+  if(need&&need(FS)>H) H=need(FS);  /* のばした ときは 字も 少し 小さく なる（くりかえすと 止まらない） */
+  svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+}
+function tx(x,y,s,col,o={}){
+  const fs=FS*(o.k||1);
+  return `<text x="${x}" y="${y}" font-size="${fs}" fill="${col}" font-weight="800" text-anchor="${o.anc||'middle'}"
+    dominant-baseline="central" paint-order="stroke" stroke="${o.bg||'#fff'}" stroke-width="${fs*0.3}" stroke-linejoin="round">${s}</text>`;
+}
+/* 右むきの 絵文字（ふつうは 左を むいて いるので 反転する） */
+function emo(x,y,e,size){
+  return `<text transform="translate(${x},${y}) scale(-1,1)" font-size="${size}" text-anchor="middle" dominant-baseline="alphabetic">${e}</text>`;
+}
+const line=(x1,y1,x2,y2,a)=>`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" ${a}/>`;
+
+/* ===== 共通の 画面部品 ===== */
+function say(h,cls){const e=$('say');e.className='say'+(cls?' '+cls:'');e.innerHTML=`<span>${h}</span>`;}
+function prob(h){$('prob').innerHTML=h;}
+function actions(list){
+  killGhost();
+  const a=$('actions');a.innerHTML='';
+  list.forEach(([c,t,f,dis])=>{
+    const b=document.createElement('button');b.className='btn '+c;b.innerHTML=t;b.disabled=!!dis;
+    b.addEventListener('click',()=>{if(!S.busy)f();});a.appendChild(b);
+  });
+}
+function choices(list,onPick){
+  const box=$('choices');box.innerHTML='';box.classList.toggle('off',!list);
+  if(!list)return;
+  list.forEach((c,i)=>{
+    const b=document.createElement('button');b.className='choice';b.innerHTML=c;
+    b.addEventListener('click',()=>{if(!S.busy)onPick(i,b);});box.appendChild(b);
+  });
+}
+function hideAll(){
+  $('shiki').classList.add('hidden');$('sum').classList.add('hidden');choices(null);
+}
+function showSum(h){const e=$('sum');e.classList.remove('hidden');e.innerHTML=h;}
+/* 絵を おしても 青い ボタンと 同じに すすむ（宣伝しない にげ道） */
+let stageTap=null;
+$('stage').addEventListener('click',()=>{
+  if(S.busy||!stageTap)return;
+  $('stage').classList.remove('tapped');void $('stage').offsetWidth;$('stage').classList.add('tapped');
+  stageTap();
+});
+function draw(){ if(MODE==='s1') drawRace(); else drawLine(); }
+
+/* =====================================================================
+   ステップ１：走って 比べる
+   ① 数を 見て 予想（まるつけ しない）→ ② よーい どん（1秒ごとに あしあと）
+   → ③ 道のりが 同じ／時間が 同じ なら そのまま 比べられる。
+      どちらも ちがう ときは 1秒に そろえる（1秒で 進む 道のり）
+   3問目＝速い ほうが 先に つく。4問目＝速い ほうが あとに つく（「先に ついた ほうが 速い」は 通じない）
+   ===================================================================== */
+const P1=[
+  {type:'d',a:{e:'🐇',n:'うさぎ',d:60,t:10},b:{e:'🐕',n:'いぬ',d:60,t:12}},
+  {type:'t',a:{e:'🐇',n:'うさぎ',d:60,t:10},b:{e:'🐕',n:'いぬ',d:50,t:10}},
+  {type:'x',a:{e:'🐕',n:'いぬ',d:70,t:14},b:{e:'🐈',n:'ねこ',d:48,t:8}},
+  {type:'x',a:{e:'🐈',n:'ねこ',d:36,t:6},b:{e:'🐎',n:'うま',d:56,t:8}}
+];
+const R={clock:0,phase:'pred',pred:null,one:false,cmp:0};
+const Q1=()=>P1[S.idx.s1];
+const spd=r=>r.d/r.t;
+function s1start(){
+  const q=Q1();
+  Object.assign(R,{clock:0,phase:'pred',pred:null,one:false,cmp:0});
+  hideAll();stageTap=null;
+  prob(`<span class="no">問題 ${S.idx.s1+1} / ${P1.length}</span><span>どちらが 速い？</span>`);
+  say(`${q.a.n}は <b class="m">${q.a.d}m</b> を <b class="t">${q.a.t}秒</b>、${q.b.n}は <b class="m">${q.b.d}m</b> を <b class="t">${q.b.t}秒</b> で 走るよ。<br>どちらが 速いかな？ 予想しよう`);
+  choices([`<span class="emo">${q.a.e}</span>${q.a.n}`,`<span class="emo">${q.b.e}</span>${q.b.n}`],i=>{
+    if(R.phase!=='pred')return;
+    R.pred=i;R.phase='ready';
+    [...$('choices').children].forEach((b,j)=>{b.classList.toggle('pick',j===i);b.disabled=j!==i;});
+    say(`予想は ${[q.a,q.b][i].n}。<br>走らせて たしかめよう`);
+    actions([['play','よーい どん ▶',run1]]);stageTap=run1;
+  });
+  actions([['play','よーい どん ▶',()=>{},true]]);
+  draw();
+}
+function run1(){
+  if(R.phase!=='ready')return;
+  const q=Q1(),T=Math.max(q.a.t,q.b.t);
+  R.phase='run';stageTap=null;choices(null);
+  actions([['play','走って いるよ…',()=>{},true]]);
+  anim(T*330,t=>{R.clock=t*T;draw();},after1,t=>t);
+}
+function after1(){
+  const q=Q1(),fast=spd(q.a)>spd(q.b)?0:1,F=[q.a,q.b][fast],L=[q.a,q.b][1-fast];
+  const pr=R.pred===fast?'予想 どおり！':'予想と ちがったね。';
+  R.phase='end';
+  if(q.type==='d'){
+    say(`どちらも <b class="m">${q.a.d}m</b>。${F.n}は <b class="t">${F.t}秒</b>、${L.n}は <b class="t">${L.t}秒</b>。<br>${pr} <b>${F.n}</b>の ほうが 速い`,'ok');
+    showSum(`<span class="f">道のりが 同じ → <span class="t">時間</span>が 短い ほうが 速い</span><span class="small">100m走は この 比べ方だね</span>`);
+    actions([['sub','もう一度',s1start],['next','次の 問題 →',next1]]);
+  }else if(q.type==='t'){
+    say(`どちらも <b class="t">${q.a.t}秒</b>。${F.n}は <b class="m">${F.d}m</b>、${L.n}は <b class="m">${L.d}m</b>。<br>${pr} <b>${F.n}</b>の ほうが 速い`,'ok');
+    showSum(`<span class="f">時間が 同じ → <span class="m">道のり</span>が 長い ほうが 速い</span>`);
+    actions([['sub','もう一度',s1start],['next','次の 問題 →',next1]]);
+  }else{
+    const first=q.a.t<q.b.t?q.a:q.b;
+    say(`${first.n}が 先に ついたけど、走った 道のりも ちがう…<br><b class="m">道のり</b>も <b class="t">時間</b>も ちがうと、このままでは 比べにくいね`);
+    actions([['play','1秒に そろえる ▶',one1]]);stageTap=one1;
+  }
+}
+function one1(){
+  if(R.phase!=='end'||R.one)return;
+  R.one=true;stageTap=null;
+  anim(700,t=>{R.cmp=t;draw();},()=>{
+    const q=Q1();
+    say(`<b class="t">1秒</b>で 進む 道のりを 見よう。<br>${q.a.n}は <b class="h">${fmt(spd(q.a))}m</b>、${q.b.n}は <b class="h">${fmt(spd(q.b))}m</b>。速いのは どっち？`);
+    choices([`<span class="emo">${q.a.e}</span>${q.a.n}`,`<span class="emo">${q.b.e}</span>${q.b.n}`],pick1);
+    actions([['play','1秒に そろえる ▶',()=>{},true]]);
+  });
+}
+function pick1(i,btn){
+  const q=Q1(),fast=spd(q.a)>spd(q.b)?0:1,F=[q.a,q.b][fast],L=[q.a,q.b][1-fast];
+  if(i!==fast){
+    btn.disabled=true;
+    say(`むらさきの 長さを 見くらべよう。<br>1秒で 長く 進む ほうが 速いよ`,'try');return;
+  }
+  [...$('choices').children].forEach((b,j)=>{b.disabled=true;b.classList.toggle('good',j===fast);});
+  const pr=R.pred===fast?'予想 どおり！':'予想と ちがったね。';
+  say(`よくできました！ ${pr}<br><b>${F.n}</b>は 1秒に <b class="h">${fmt(spd(F))}m</b>、${L.n}は <b class="h">${fmt(spd(L))}m</b>`,'ok');
+  showSum(`<span class="small">${F.n}　<span class="m">${F.d}</span> ÷ <span class="t">${F.t}</span> ＝ <span class="h">${fmt(spd(F))}</span>（1秒に ${fmt(spd(F))}m）　／　${L.n}　<span class="m">${L.d}</span> ÷ <span class="t">${L.t}</span> ＝ <span class="h">${fmt(spd(L))}</span></span>
+    <span class="f"><span class="t">1秒</span>に そろえて、<span class="h">1秒に 進む 道のり</span>で 比べる</span>`);
+  actions([['sub','もう一度',s1start],['next','次の 問題 →',next1]]);
+}
+function next1(){S.idx.s1=(S.idx.s1+1)%P1.length;s1start();}
+
+function drawRace(){
+  const svg=$('pic');frame(svg,f=>f*17);
+  const q=Q1(),rs=[q.a,q.b];
+  const maxD=Math.ceil(Math.max(q.a.d,q.b.d)/10)*10+10;
+  const x0=FS*4.4,x1=W-FS*1.2,px=m=>x0+(x1-x0)*m/maxD;
+  /* 上から 時計・コース2本・ものさし を 画面の たてに ひろげて おく */
+  const gap=Math.max(FS*4.6,Math.min(H*0.3,FS*8));
+  const ys=[H*0.5-gap*0.62,H*0.5+gap*0.38];
+  let g='';
+  /* 時計 */
+  const T=Math.max(q.a.t,q.b.t);
+  g+=tx(W/2,Math.max(FS*0.95,ys[0]-gap*0.72),`<tspan fill="${CT}">${R.phase==='pred'||R.phase==='ready'?0:Math.min(T,Math.floor(R.clock+1e-6))}秒</tspan>`,CT,{k:1.25});
+  /* そろえる：同じ 1秒の ところに たて線 */
+  rs.forEach((r,k)=>{
+    const y=ys[k],v=spd(r);
+    /* コース */
+    g+=`<rect x="${x0}" y="${y-FS*0.9}" width="${x1-x0}" height="${FS*1.8}" rx="10" fill="#f1ead8"/>`;
+    g+=line(x0,y+FS*0.9,x1,y+FS*0.9,'stroke="#d9cba6" stroke-width="2"');
+    /* ゴールの 旗 */
+    const gx=px(r.d);
+    g+=line(gx,y-FS*1.4,gx,y+FS*0.9,`stroke="${CI}" stroke-width="3"`);
+    g+=`<path d="M${gx} ${y-FS*1.4} l${FS*0.9} ${FS*0.3} l${-FS*0.9} ${FS*0.3}z" fill="#d9748f"/>`;
+    /* 名前と 数（左） */
+    g+=`<text x="${x0-FS*2.2}" y="${y+FS*0.2}" font-size="${FS*1.6}" text-anchor="middle" dominant-baseline="central">${r.e}</text>`;
+    g+=tx(x0-FS*2.2,y+FS*1.6,r.n,CI,{k:.8});
+    g+=tx(gx,y-FS*2.05,`<tspan fill="${CM}">${r.d}m</tspan> <tspan fill="${CT}">${r.t}秒</tspan>`,CI,{k:.85});
+    /* あしあと（1秒ごと） */
+    const now=R.phase==='pred'||R.phase==='ready'?0:Math.min(R.clock,r.t);
+    for(let s=1;s<=Math.floor(now+1e-6);s++){
+      const x=px(v*s);
+      g+=`<circle cx="${x}" cy="${y+FS*0.9}" r="${FS*0.2}" fill="${CT}"/>`;
+      if(r.t<=14&&(s%1===0)) g+=tx(x,y+FS*1.55,s,CT,{k:.62});
+    }
+    /* 1秒に そろえる：はじめの 1秒の 道のりを むらさきで */
+    if(R.one){
+      const xa=px(0),xb=px(v),yy=y-FS*0.25;
+      g+=`<rect x="${xa}" y="${yy-FS*0.32}" width="${(xb-xa)*R.cmp}" height="${FS*0.64}" rx="6" fill="${CH}" opacity=".85"/>`;
+      if(R.cmp>=1) g+=tx(xb+8,yy,`1秒で ${fmt(v)}m`,CH,{anc:'start',k:.9});
+    }
+    /* 走る 動物 */
+    g+=emo(px(v*now),y+FS*0.6,r.e,FS*2);
+  });
+  /* ものさし */
+  const yr=ys[1]+FS*3.1;
+  g+=line(x0,yr,x1,yr,`stroke="${CM}" stroke-width="3"`);
+  for(let m=0;m<=maxD;m+=10){
+    g+=line(px(m),yr-8,px(m),yr+8,`stroke="${CM}" stroke-width="2.5"`);
+    g+=tx(px(m),yr+FS*0.8,m+(m===maxD?'m':''),CM,{k:.7});
+  }
+  for(let m=5;m<maxD;m+=10) g+=line(px(m),yr-5,px(m),yr+5,`stroke="${CM}" stroke-width="1.5"`);
+  svg.innerHTML=g;
+}
+
+/* =====================================================================
+   ステップ２〜４：数直線 2本（上＝道のり、下＝時間）
+   kind v＝速さを 求める（道のり ÷ 時間）
+        d＝道のりを 求める（速さ × 時間）
+        t＝時間を 求める（道のり ÷ 速さ）
+   同じ 時間ずつ 区切ると 道のりも 同じ 長さずつ 区切れる。その 1つ分（むらさき）が 速さ。
+   n＝区切りの 数（ステップ４は 60）
+   ===================================================================== */
+/* ステップ２：速さを 求める。数の じゅんは まぜる（時間が 先の 文も 入れる） */
+const P2=[
+  {kind:'v',e:'🚲',nm:'自転車',D:900,du:'m',T:3,tu:'分',txt:'自転車で <b class="m">900m</b> を <b class="t">3分</b> で 走りました。'},
+  {kind:'v',e:'🐆',nm:'チーター',D:150,du:'m',T:5,tu:'秒',txt:'チーターが <b class="t">5秒</b> で <b class="m">150m</b> 走りました。'},
+  {kind:'v',e:'🚗',nm:'車',D:150,du:'km',T:3,tu:'時間',txt:'車で <b class="m">150km</b> を <b class="t">3時間</b> で 走りました。'},
+  {kind:'v',e:'🚶',nm:'歩く',D:240,du:'m',T:4,tu:'分',txt:'<b class="t">4分</b> で <b class="m">240m</b> 歩きました。'},
+  {kind:'v',e:'🚄',nm:'新幹線',D:520,du:'km',T:2,tu:'時間',txt:'新幹線が <b class="m">520km</b> を <b class="t">2時間</b> で 進みました。'},
+  {kind:'v',e:'🏃',nm:'100m走',D:100,du:'m',T:8,tu:'秒',txt:'<b class="m">100m</b> を <b class="t">8秒</b> で 走りました。'}
+];
+/* ステップ３：道のり と 時間 を こうごに。1〜4問は 区切って 見てから、5〜8問は 見るのは ヒント */
+const P3=[
+  {kind:'d',e:'🚶',nm:'歩く',V:60,T:5,du:'m',tu:'分',txt:'<b class="h">分速 60m</b> で <b class="t">5分</b> 歩くと、何m 進む？'},
+  {kind:'t',e:'🚶',nm:'歩く',V:60,D:300,du:'m',tu:'分',txt:'<b class="h">分速 60m</b> で <b class="m">300m</b> 歩くと、何分 かかる？'},
+  {kind:'d',e:'🚗',nm:'車',V:40,T:3,du:'km',tu:'時間',txt:'<b class="t">3時間</b>、<b class="h">時速 40km</b> で 走ると、何km 進む？'},
+  {kind:'t',e:'🏃',nm:'走る',V:8,D:48,du:'m',tu:'秒',txt:'<b class="m">48m</b> を <b class="h">秒速 8m</b> で 走ると、何秒 かかる？'},
+  {kind:'d',e:'🐆',nm:'チーター',V:30,T:4,du:'m',tu:'秒',txt:'チーターが <b class="h">秒速 30m</b> で <b class="t">4秒</b> 走ると、何m 進む？',free:1},
+  {kind:'t',e:'🚃',nm:'電車',V:80,D:240,du:'km',tu:'時間',txt:'<b class="m">240km</b> を <b class="h">時速 80km</b> の 電車で 行くと、何時間 かかる？',free:1},
+  {kind:'d',e:'🚲',nm:'自転車',V:250,T:12,du:'m',tu:'分',txt:'<b class="h">分速 250m</b> の 自転車で <b class="t">12分</b> 走ると、何m 進む？',free:1},
+  {kind:'t',e:'🚄',nm:'新幹線',V:260,D:780,du:'km',tu:'時間',txt:'<b class="h">時速 260km</b> の 新幹線で <b class="m">780km</b> 進むと、何時間 かかる？',free:1}
+];
+/* ステップ４：時速・分速・秒速を なおす。1時間＝60分、1分＝60秒 の 数直線 */
+const P4=[
+  {kind:'v',e:'🚗',nm:'時速 → 分速',D:36000,du:'m',T:60,tu:'分',km:36,botEnd:'60分（1時間）',
+   txt:'<b class="h">時速 36km</b> は、分速 何m？',intro:'時速 36km は、<b class="t">1時間</b>に <b class="m">36km</b> 進む 速さ。<br><b class="t">1時間 ＝ 60分</b> だね'},
+  {kind:'v',e:'🚗',nm:'分速 → 秒速',D:600,du:'m',T:60,tu:'秒',botEnd:'60秒（1分）',
+   txt:'<b class="h">分速 600m</b> は、秒速 何m？',intro:'分速 600m は、<b class="t">1分</b>に <b class="m">600m</b> 進む 速さ。<br><b class="t">1分 ＝ 60秒</b> だね'},
+  {kind:'d',e:'🏃',nm:'秒速 → 分速',V:5,T:60,du:'m',tu:'秒',botEnd:'60秒（1分）',
+   txt:'<b class="h">秒速 5m</b> は、分速 何m？',intro:'秒速 5m は、<b class="t">1秒</b>に <b class="h">5m</b> 進む 速さ。<br><b class="t">1分 ＝ 60秒</b>。60秒で 何m 進むかな'},
+  {kind:'d',e:'🚲',nm:'分速 → 時速',V:300,T:60,du:'m',tu:'分',botEnd:'60分（1時間）',toKm:1,
+   txt:'<b class="h">分速 300m</b> は、時速 何km？',intro:'分速 300m は、<b class="t">1分</b>に <b class="h">300m</b> 進む 速さ。<br><b class="t">1時間 ＝ 60分</b>。60分で 何m 進むかな'},
+  {kind:'d',e:'🐆',nm:'秒速 → 分速',V:20,T:60,du:'m',tu:'秒',botEnd:'60秒（1分）',
+   txt:'<b class="h">秒速 20m</b> は、分速 何m？',intro:'秒速 20m は、<b class="t">1秒</b>に <b class="h">20m</b> 進む 速さ。<br>60秒で 何m 進むかな'},
+  {kind:'v',e:'🚃',nm:'時速 → 分速',D:72000,du:'m',T:60,tu:'分',km:72,botEnd:'60分（1時間）',
+   txt:'<b class="h">時速 72km</b> は、分速 何m？',intro:'時速 72km は、<b class="t">1時間</b>に <b class="m">72km</b> 進む 速さ。<br><b class="t">1時間 ＝ 60分</b> だね'}
+];
+const LIST={s2:P2,s3:P3,s4:P4};
+const Q=()=>LIST[MODE][S.idx[MODE]];
+/* 3つの 量を そろえる */
+function full(q){
+  const o=Object.assign({},q);
+  if(o.kind==='v') o.V=o.D/o.T;
+  if(o.kind==='d') o.D=o.V*o.T;
+  if(o.kind==='t') o.T=o.D/o.V;
+  o.vu=SOKU[o.tu];
+  return o;
+}
+/* 絵の ようす */
+const G={p:0,seg:false,solved:false,km:false,hint:false};
+const L={phase:'look',st:0,slots:[],sel:null,cards:[],nameDone:false};
+
+function lineStart(){
+  const q=full(Q()),list=LIST[MODE];
+  Object.assign(G,{p:0,seg:q.kind!=='v',solved:false,km:false,hint:false});
+  Object.assign(L,{phase:'look',st:0,slots:[],sel:null,cards:[],nameDone:false});
+  hideAll();stageTap=null;
+  prob(`<span class="no">問題 ${S.idx[MODE]+1} / ${list.length}</span><span>${q.txt}</span>`);
+  if(q.free){ask();return;}
+  lookStep();
+}
+/* 見る ところ（青い ボタン）の ならび */
+function lookSteps(q){
+  const cut=q.kind==='t'?`${q.V}${q.du}ずつ 区切る ▶`:(q.T===60?`${q.T}${q.tu}に 区切る ▶`:`1${q.tu}ずつ 区切る ▶`);
+  const s=[];
+  if(q.km) s.push({b:'km を m に なおす ▶',say:q.intro,f:'km'});
+  const first=q.intro&&!q.km?q.intro:(q.kind==='v'?'道のりと 時間を 数直線に かいたよ。<br>同じ 時間ずつ 区切って みよう'
+             :q.kind==='d'?`<b class="h">1${q.tu}に ${q.V}${q.du}</b> 進む 速さ。<br>${q.T}${q.tu} 進むと どうなるかな`
+             :`<b class="h">1${q.tu}に ${q.V}${q.du}</b> 進む 速さ。<br>${q.D}${q.du} を ${q.V}${q.du}ずつ 区切って みよう`);
+  s.push({b:cut,say:q.km?`<b class="m">${q.km}km ＝ ${q.D}m</b>。<br>1時間 ＝ 60分 だから、60分に 区切って みよう`:first,f:'cut'});
+  return s;
+}
+function lookStep(){
+  const q=full(Q()),steps=lookSteps(q),s=steps[L.st];
+  say(s.say);
+  actions([['play',s.b,advance]]);stageTap=advance;
+  draw();
+}
+function advance(){
+  if(L.phase!=='look'||S.busy)return;
+  const q=full(Q()),steps=lookSteps(q),s=steps[L.st];
+  stageTap=null;
+  actions([['play',s.b,()=>{},true]]);
+  if(s.f==='km'){
+    anim(500,()=>{G.km=true;draw();},()=>{L.st++;lookStep();});
+    return;
+  }
+  const n=q.T;
+  anim(Math.min(4200,Math.max(1800,n*420)),t=>{G.p=t;draw();},()=>{
+    L.st++;
+    if(L.st<steps.length) lookStep(); else ask();
+  },t=>t);
+}
+/* ヒント（5〜8問）：区切って 見る */
+function hintRun(){
+  if(S.busy||G.hint)return;
+  G.hint=true;G.p=0;
+  anim(Math.min(4200,Math.max(1800,full(Q()).T*420)),t=>{G.p=t;draw();},()=>{askButtons();},t=>t);
+}
+
+/* ===== 式 ===== */
+function eqTokens(q){ return MODE==='s2'?['lead','s','÷','s']:['s','o','s']; }
+function makeCards(q){
+  const c=[];
+  const numD={t:`${fmt(q.D)}<small>${q.du}</small>`,r:'D',cls:'cm'};
+  const numT={t:`${fmt(q.T)}<small>${q.tu}</small>`,r:'T',cls:'ct'};
+  const numV={t:`<small>${q.vu}</small>${fmt(q.V)}<small>${q.du}</small>`,r:'V',cls:'ch'};
+  if(q.kind==='v'){c.push(numD,numT);}
+  if(q.kind==='d'){c.push(numV,numT);}
+  if(q.kind==='t'){c.push(numD,numV);}
+  if(MODE!=='s2'){c.push({t:'×',r:'x',op:1,cls:'co'},{t:'÷',r:'/',op:1,cls:'co'});}
+  return c;
+}
+function ask(){
+  const q=full(Q());
+  L.phase='ask';L.cards=makeCards(q);
+  L.slots=eqTokens(q).filter(x=>x==='s'||x==='o').map(()=>null);L.sel=null;
+  if(q.kind==='v') G.seg=true;
+  const what=q.kind==='v'?`<b class="h">1${q.tu}あたり</b> 何${q.du} 進むかな？`
+            :q.kind==='d'?`${q.T}${q.tu}で 何${q.du} 進むかな？`:`${q.D}${q.du} 進むのに 何${q.tu} かかるかな？`;
+  say(what+'<br><small>カードを □ に 入れて 式を つくろう</small>');
+  buildEq();
+  $('shiki').classList.remove('hidden');
+  askButtons();
+  draw();
+}
+function askButtons(){
+  const q=full(Q());
+  const list=[['sub','カードを もどす',resetCards]];
+  if(q.free&&!G.hint) list.push(['play','数直線で 区切る',hintRun]);
+  list.push(['show','答え',check]);
+  actions(list);
+}
+function buildEq(){
+  const q=full(Q()),eq=$('eq');let si=0,h='';
+  eqTokens(q).forEach(tok=>{
+    if(tok==='lead') h+=`<span class="lead">速さ ＝</span>`;
+    else if(tok==='s'||tok==='o'){h+=`<div class="slotw"><div class="slot${tok==='o'?' opslot':''}" data-i="${si}" data-k="${tok}"></div><div class="what" id="what${si}"></div></div>`;si++;}
+    else h+=`<span class="op">${tok}</span>`;
+  });
+  const u=q.kind==='t'?q.tu:q.du;
+  h+=`<span class="op">＝</span><div class="slotw"><div class="resbox" id="res">？</div><div class="what" id="whatR"></div></div><span class="u">${u}</span>`;
+  eq.innerHTML=h;
+  eq.querySelectorAll('.slot').forEach(sl=>sl.addEventListener('click',()=>{
+    if(L.phase!=='ask'||Date.now()-justDropped<350)return;
+    const i=+sl.dataset.i;
+    if(L.sel!=null){place(L.sel,i);return;}
+    if(L.slots[i]!=null){L.slots[i]=null;drawCards();drawSlots();}   /* 入って いる ますを おすと もどる */
+  }));
+  drawCards();drawSlots();
+}
+function drawCards(){
+  const box=$('cards');box.innerHTML='';
+  L.cards.forEach((c,i)=>{
+    const b=document.createElement('button');
+    b.className='cardn '+c.cls+(L.slots.includes(i)?' gone':'')+(L.sel===i?' sel':'');
+    b.innerHTML=c.t;dragCard(b,i);box.appendChild(b);
+  });
+}
+function drawSlots(){
+  document.querySelectorAll('#eq .slot').forEach(sl=>{
+    const i=+sl.dataset.i,c=L.slots[i];
+    sl.innerHTML=c==null?'':L.cards[c].t;
+    sl.className='slot'+(sl.dataset.k==='o'?' opslot':'')+(c!=null?' fill':'')+(L.sel!=null&&c==null?' sel':'');
+  });
+}
+function place(ci,si){
+  if(L.phase!=='ask')return;
+  const sl=document.querySelector(`#eq .slot[data-i="${si}"]`),isOp=sl&&sl.dataset.k==='o';
+  if(!!L.cards[ci].op!==isOp){
+    say(isOp?'まん中の □ には <b>×</b> か <b>÷</b> の カードを 入れよう':'そこには 数の カードを 入れよう','try');
+    L.sel=null;drawCards();drawSlots();return;
+  }
+  const old=L.slots.indexOf(ci);if(old>=0)L.slots[old]=null;
+  L.slots[si]=ci;L.sel=null;drawCards();drawSlots();
+  if(L.slots.every(s=>s!=null)) say('できたら 金の「答え」を おそう');
+}
+function resetCards(){L.slots=L.slots.map(()=>null);L.sel=null;drawCards();drawSlots();}
+
+/* ===== カードの ドラッグ（面積・体積と 同じ しくみ。影は いつも 1まい・かならず 消す） ===== */
+let justDropped=0,drag=null;
+function killGhost(){document.querySelectorAll('.ghost').forEach(g=>g.remove());drag=null;}
+function nearSlot(x,y){
+  let best=null,bd=1e9;
+  document.querySelectorAll('#eq .slot').forEach(sl=>{
+    const r=sl.getBoundingClientRect();
+    const dx=Math.max(r.left-x,0,x-r.right),dy=Math.max(r.top-y,0,y-r.bottom),d=Math.hypot(dx,dy);
+    if(d<bd){bd=d;best=sl;}
+  });
+  return best&&bd<=Math.max(40,best.getBoundingClientRect().width*0.8)?best:null;
+}
+function dragCard(el,ci){
+  el.addEventListener('pointerdown',e=>{
+    if(L.phase!=='ask')return;
+    killGhost();
+    drag={ci,el,sx:e.clientX,sy:e.clientY,x:e.clientX,y:e.clientY,ghost:null};
+    try{el.setPointerCapture(e.pointerId);}catch(_){}
+  });
+}
+addEventListener('pointermove',e=>{
+  if(!drag)return;
+  drag.x=e.clientX;drag.y=e.clientY;
+  if(!drag.ghost&&Math.hypot(e.clientX-drag.sx,e.clientY-drag.sy)>8){
+    drag.ghost=drag.el.cloneNode(true);drag.ghost.classList.add('ghost');document.body.appendChild(drag.ghost);
+  }
+  if(drag.ghost){drag.ghost.style.left=e.clientX+'px';drag.ghost.style.top=e.clientY+'px';}
+},true);
+function finishDrag(x,y){
+  if(!drag)return;
+  const {ci,sx,sy}=drag,moved=Math.hypot(x-sx,y-sy)>8;
+  killGhost();
+  if(moved){
+    const sl=nearSlot(x,y);
+    if(sl){place(ci,+sl.dataset.i);justDropped=Date.now();}
+  }else{
+    /* タップ：えらんで から □ を おすと 入る */
+    L.sel=L.sel===ci?null:ci;drawCards();drawSlots();
+  }
+}
+addEventListener('pointerup',e=>finishDrag(e.clientX,e.clientY),true);
+addEventListener('mouseup',e=>finishDrag(e.clientX,e.clientY),true);
+addEventListener('pointerdown',()=>{if(drag)finishDrag(drag.x,drag.y);},true);
+addEventListener('pointercancel',killGhost,true);
+addEventListener('blur',killGhost);
+document.addEventListener('visibilitychange',killGhost);
+
+/* ===== 答え合わせ（×で 終わらせない。わけを 言って まちがえた カードだけ もどす） ===== */
+function check(){
+  if(L.phase!=='ask'||S.busy)return;
+  if(L.slots.some(s=>s==null)){say('まだ とちゅうだよ。□ を ぜんぶ うめよう','try');return;}
+  const q=full(Q());
+  const r=L.slots.map(s=>L.cards[s].r);
+  const back=idx=>{idx.forEach(i=>L.slots[i]=null);drawCards();drawSlots();};
+  let nums,op;
+  if(MODE==='s2'){nums=[r[0],r[1]];op='/';}
+  else{nums=[r[0],r[2]];op=r[1];}
+  const numIdx=MODE==='s2'?[0,1]:[0,2];
+  if(q.kind==='d'){
+    if(op!=='x'){say(`1${q.tu}で <b class="h">${q.V}${q.du}</b>。${q.T}${q.tu} 進むと、<b class="h">${q.V}${q.du}</b> が <b class="t">${q.T}こ分</b> だね`,'try');back([1]);return;}
+  }else{
+    if(op!=='/'){
+      say(q.kind==='v'?`<b class="m">${fmt(q.D)}${q.du}</b> を <b class="t">${q.T}つ</b>に 分けた 1つ分を 求めるよ`
+                      :`<b class="m">${q.D}${q.du}</b> の 中に <b class="h">${q.V}${q.du}</b> が いくつ分 あるかな`,'try');
+      back([1]);return;
+    }
+    if(nums[0]!=='D'){
+      say(`÷ の 前は <b class="m">道のり（${fmt(q.D)}${q.du}）</b>だよ。<br>`+(q.kind==='v'?`道のりを <b class="t">時間</b>で 分けるね`:`道のりを <b class="h">速さ</b>で 区切るね`),'try');
+      back(numIdx);return;
+    }
+  }
+  /* 正かい（かけ算は どちらの じゅんでも よい） */
+  L.phase='done';G.solved=true;G.seg=true;G.p=Math.max(G.p,0);
+  const ans=q.kind==='v'?q.V:q.kind==='d'?q.D:q.T;
+  $('res').textContent=fmt(ans);$('res').className='resbox good';
+  const nameOf={D:['道のり','gm','m'],T:['時間','gt','t'],V:['速さ','gh','h']};
+  document.querySelectorAll('#eq .slot').forEach((sl,i)=>{
+    const role=r[i];
+    if(role==='x'||role==='/'){sl.className='slot opslot go';return;}
+    const [w,c,wc]=nameOf[role];sl.className='slot '+c;
+    $('what'+i).textContent=w;$('what'+i).className='what '+wc;
+  });
+  const [wr,,wrc]=nameOf[q.kind==='v'?'V':q.kind==='d'?'D':'T'];
+  $('whatR').textContent=wr;$('whatR').className='what '+wrc;
+  $('cards').innerHTML='';
+  G.p=1;draw();
+  if(MODE==='s2'){nameAsk(q);return;}
+  finishLine(q);
+}
+/* ステップ２：秒速・分速・時速の どれ？ */
+function nameAsk(q){
+  L.phase='name';
+  const v=fmt(q.V)+q.du;
+  say(`よくできました！ <b class="t">1${q.tu}</b>に <b class="h">${v}</b> 進むね。<br>この 速さを 何と いう？<br><small>1秒あたり＝秒速　1分あたり＝分速　1時間あたり＝時速</small>`,'ok');
+  const ops=['秒','分','時間'];
+  choices(ops.map(u=>`${SOKU[u]} ${v}`),(i,btn)=>{
+    if(ops[i]!==q.tu){btn.disabled=true;say(`<b class="t">1${q.tu}</b>あたりに 進む 道のりだよ。<br><small>1秒あたり＝秒速　1分あたり＝分速　1時間あたり＝時速</small>`,'try');return;}
+    [...$('choices').children].forEach((b,j)=>{b.disabled=true;b.classList.toggle('good',j===i);});
+    finishLine(q);
+  });
+  actions([['sub','もう一度 見る',lineStart]]);
+}
+function finishLine(q){
+  const v=`${q.vu} ${fmt(q.V)}${q.du}`;
+  let msg,sum;
+  if(MODE==='s2'){
+    msg=`よくできました！ 速さは <b class="h">${v}</b>`;
+    sum=`<span class="f">速さ ＝ <span class="m">道のり</span> ÷ <span class="t">時間</span></span>
+         <span class="small">1${q.tu}あたりに 進む 道のり ＝ ${q.vu}</span>`;
+  }else if(MODE==='s3'){
+    const rev=q.kind==='d'&&L.cards[L.slots[0]].r==='T';
+    msg=q.kind==='d'?`よくできました！ <b class="m">${fmt(q.D)}${q.du}</b> 進む`:`よくできました！ <b class="t">${fmt(q.T)}${q.tu}</b> かかる`;
+    if(rev) msg+=`<br><small>公式では <span class="h">速さ</span> × <span class="t">時間</span> の 順に 書くよ</small>`;
+    sum=q.kind==='d'?`<span class="f"><span class="m">道のり</span> ＝ <span class="h">速さ</span> × <span class="t">時間</span></span>
+         <span class="small">1${q.tu}の ${q.V}${q.du} が ${q.T}こ分</span>`
+        :`<span class="f"><span class="t">時間</span> ＝ <span class="m">道のり</span> ÷ <span class="h">速さ</span></span>
+         <span class="small">${q.D}${q.du} の 中に ${q.V}${q.du} が ${fmt(q.T)}こ分</span>`;
+  }else{
+    if(q.kind==='v'){
+      msg=`よくできました！ 1${q.tu}に <b class="h">${fmt(q.V)}m</b> ＝ <b class="h">${v}</b>`;
+      if(S.idx.s4===5) msg+=`<br><small>5問目の 秒速 20m と 同じ 速さ だね！</small>`;
+      sum=`<span class="f">${q.tu==='分'?'時速 → 分速':'分速 → 秒速'}　÷ 60</span>
+           <span class="small">1${q.tu==='分'?'時間':'分'}で 進む 道のりを 60に 分けた 1つ分</span>`;
+    }else{
+      const big=q.tu==='秒'?'分':'時間',bv=q.toKm?`${fmt(q.D/1000)}km`:`${fmt(q.D)}m`;
+      msg=`よくできました！ 1${big}に <b class="m">${fmt(q.D)}m</b>`+(q.toKm?` ＝ <b class="m">${bv}</b>`:'')+`<br>${SOKU[big]} <b class="h">${bv}</b>`;
+      sum=`<span class="f">${q.tu==='秒'?'秒速 → 分速':'分速 → 時速'}　× 60</span>
+           <span class="small">1${q.tu}の 道のりの 60こ分</span>`+(q.toKm?`<span class="small">1000m ＝ 1km</span>`:'');
+    }
+  }
+  L.phase='done';
+  say(msg,'ok');showSum(sum);
+  actions([['sub','もう一度 見る',lineStart],['next','次の 問題 →',nextLine]]);
+}
+function nextLine(){const l=LIST[MODE];S.idx[MODE]=(S.idx[MODE]+1)%l.length;lineStart();}
+
+/* ===== 数直線の 絵 ===== */
+function drawLine(){
+  const q=full(Q()),n=q.T,many=n>12;
+  const svg=$('pic');frame(svg,f=>many?f*19:f*12.5);
+  const x0=FS*3.7+12,x1=W-FS*1.8,X=f=>x0+(x1-x0)*f;
+  const gp=many?FS*1.9:Math.max(FS*1.9,Math.min(H*0.13,FS*3)),mid=many?Math.min(H*0.4,H-FS*11.3):H*0.58,yA=mid-gp,yB=mid+gp,yRun=yA-(many?FS*2.8:Math.max(FS*2.8,Math.min(H*0.2,FS*4.5)));
+  let g='';
+  const cutsShown=Math.min(n,Math.floor(G.p*n+1e-6));
+  /* 区切り（上と 下を つなぐ 点線） */
+  for(let k=1;k<n;k++){
+    if(k>cutsShown) break;
+    const x=X(k/n);
+    g+=line(x,yA-10,x,yB+10,`stroke="#b9a67c" stroke-width="${many?1.2:2}" stroke-dasharray="${many?'3 5':'6 6'}"`);
+  }
+  /* 1つ分（むらさき）＝速さ */
+  if(G.seg){
+    const xb=X(1/n);
+    g+=`<rect x="${X(0)}" y="${yA-FS*0.34}" width="${xb-X(0)}" height="${FS*0.68}" rx="5" fill="${CH}" opacity=".85"/>`;
+    g+=`<rect x="${X(0)}" y="${yB-FS*0.34}" width="${xb-X(0)}" height="${FS*0.68}" rx="5" fill="${CT}" opacity=".35"/>`;
+    const vl=q.kind==='v'&&!G.solved?`？${q.du}`:`${fmt(q.V)}${q.du}`;
+    if(many){
+      /* 60に 区切ると 1つ分が せまくて 見えないので、下に 虫めがねの わくを 出して 大きく 見せる */
+      const K=3,ix0=X(0),ix1=Math.min(X(1),X(0)+FS*20),iw=(ix1-ix0)/(K+0.6);
+      const it=yB+FS*2.3,iA=it+FS*1.9,iB=iA+FS*2.2,ib=iB+FS*1.5;
+      g+=`<path d="M${X(0)} ${yB+8} L${ix0} ${it} M${X(K/n)} ${yB+8} L${ix0+iw*K} ${it}" stroke="#b9a67c" stroke-width="2" stroke-dasharray="4 5" fill="none"/>`;
+      g+=`<rect x="${ix0-FS*0.4}" y="${it}" width="${ix1-ix0+FS*0.8}" height="${ib-it}" rx="14" fill="#fff" stroke="#b9a67c" stroke-width="2.5"/>`;
+      g+=`<rect x="${ix0}" y="${iA-FS*0.34}" width="${iw}" height="${FS*0.68}" rx="5" fill="${CH}" opacity=".85"/>`;
+      g+=`<rect x="${ix0}" y="${iB-FS*0.34}" width="${iw}" height="${FS*0.68}" rx="5" fill="${CT}" opacity=".35"/>`;
+      g+=line(ix0,iA,ix1,iA,`stroke="${CM}" stroke-width="4"`)+line(ix0,iB,ix1,iB,`stroke="${CT}" stroke-width="4"`);
+      for(let k=0;k<=K;k++){
+        const x=ix0+iw*k;
+        g+=line(x,iA-10,x,iB+10,k?'stroke="#b9a67c" stroke-width="2" stroke-dasharray="6 6"':`stroke="${CI}" stroke-width="0"`);
+        g+=line(x,iA-10,x,iA+10,`stroke="${CM}" stroke-width="2.5"`)+line(x,iB-10,x,iB+10,`stroke="${CT}" stroke-width="2.5"`);
+        if(k) g+=tx(x,iB+FS*0.85,`${k}${q.tu}`,CT,{k:.8});
+      }
+      g+=tx(ix0,iB+FS*0.85,'0',CT,{k:.8});
+      g+=tx(ix0+iw/2,iA-FS*0.85,vl,CH,{k:.9});
+      g+=tx(ix1-FS*0.2,(iA+iB)/2,'…',CI,{anc:'end'});
+    }else{
+      g+=tx((X(0)+xb)/2,yA-FS*1.05,vl,CH,{k:.95});
+      g+=tx(xb,yB+FS*1.05,`1${q.tu}`,CT,{k:.95});   /* 1分 は めもりの ところ（2分・3分 と そろえる） */
+    }
+  }
+  /* 上の 数直線：道のり */
+  g+=line(X(0),yA,X(1),yA,`stroke="${CM}" stroke-width="5" stroke-linecap="round"`);
+  g+=line(X(0),yA-12,X(0),yA+12,`stroke="${CM}" stroke-width="3"`)+line(X(1),yA-12,X(1),yA+12,`stroke="${CM}" stroke-width="3"`);
+  g+=tx(x0-22,yA,'道のり',CM,{anc:'end'});
+  g+=tx(X(0),yA+FS*0.95,'0',CM,{k:.85});
+  let dEnd;
+  if(q.kind==='d'&&!G.solved) dEnd=`？${q.du}`;
+  else if(q.km&&!G.km) dEnd=`${q.km}km`;
+  else dEnd=`${fmt(q.D)}${q.du}`;
+  if(q.km&&G.km&&!G.solved) dEnd=`${q.km}km ＝ ${fmt(q.D)}m`;
+  g+=tx(X(1)+(dEnd.length>4?FS*0.3:0),yA-FS*1.05,dEnd,CM,{anc:(q.km&&G.km)||dEnd.length>4?'end':'middle',k:1});   /* 長い 字は はみ出さない ように 右そろえ */
+  /* 下の 数直線：時間 */
+  g+=line(X(0),yB,X(1),yB,`stroke="${CT}" stroke-width="5" stroke-linecap="round"`);
+  g+=line(X(0),yB-12,X(0),yB+12,`stroke="${CT}" stroke-width="3"`)+line(X(1),yB-12,X(1),yB+12,`stroke="${CT}" stroke-width="3"`);
+  g+=tx(x0-22,yB,'時間',CT,{anc:'end'});
+  g+=tx(X(0),yB+FS*0.95,'0',CT,{k:.85});
+  const tEnd=q.kind==='t'&&!G.solved?`？${q.tu}`:(q.botEnd||`${fmt(q.T)}${q.tu}`);
+  g+=tx(X(1)+(q.botEnd?FS*0.3:0),yB+FS*1.05,tEnd,CT,{anc:q.botEnd?'end':'middle'});
+  /* 区切りの めもり */
+  if(!many){
+    for(let k=1;k<n;k++){
+      if(k>cutsShown) break;
+      const x=X(k/n);
+      if(k>1||!G.seg){
+        /* 下：時間（t のときは 答えに なるので 出さない） */
+        if(q.kind!=='t'||G.solved) g+=tx(x,yB+FS*1.05,`${k}${n>6?'':q.tu}`,CT,{k:.8});
+        /* 上：道のり（答えた あとだけ） */
+        if(G.solved) g+=tx(x,yA-FS*1.05,fmt(q.V*k),CM,{k:.8});
+      }
+    }
+    /* いくつ分（まん中の 数） */
+    for(let k=1;k<=cutsShown;k++){
+      const x=(X((k-1)/n)+X(k/n))/2;
+      g+=`<circle cx="${x}" cy="${mid}" r="${FS*0.52}" fill="#fff" stroke="#b9a67c" stroke-width="2"/>`;
+      g+=tx(x,mid,k,CI,{k:.72});
+    }
+  }else if(cutsShown>=n){
+    g+=tx((X(0)+X(1))/2,mid,`${n}こに 区切ったよ`,CI,{k:.8});
+  }
+  /* 動く もの */
+  const px=X(G.p);
+  g+=line(X(0),yRun+FS*0.25,X(1),yRun+FS*0.25,'stroke="#e2d6bb" stroke-width="3"');
+  if(!many) for(let k=1;k<=cutsShown;k++) g+=`<circle cx="${X(k/n)}" cy="${yRun+FS*0.25}" r="${FS*0.18}" fill="${CH}"/>`;
+  g+=emo(px,yRun,q.e,FS*2.2);
+  svg.innerHTML=g;
+}
+
+/* ===== タブ ===== */
+document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{
+  if(S.busy)return;
+  MODE=b.dataset.m;
+  document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x===b));
+  if(MODE==='s1') s1start(); else lineStart();
+}));
+
+s1start();
+</script>
+</body>
+</html>
