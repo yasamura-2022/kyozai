@@ -154,12 +154,19 @@
     .m3 .dan{margin-bottom:auto}
     .m3 #actions{margin-bottom:auto}      /* だんの えらびは 上、のこりは まん中に よせる */
   }
-  .m3title{text-align:center;font-weight:800;color:var(--sakura-d);letter-spacing:.06em;
+  .m3title small{font-size:.62em;color:#8a7a5f}
+  .m3title{line-height:1.25;word-break:keep-all;text-align:center;font-weight:800;color:var(--sakura-d);letter-spacing:.06em;
     font-size:clamp(20px,calc(1vw + 2.2vh),34px)}
   .m3 .chips{gap:4px;flex-wrap:nowrap;width:100%}
   .chip.kushi{height:clamp(64px,calc(3vw + 10vh),150px);padding:4px 0 3px;display:flex;align-items:flex-end;justify-content:center}
   .chip.kushi svg{height:100%;width:auto;display:block}
   @media (orientation:portrait){ .chip.kushi{height:clamp(64px,9vh,110px)} }   /* たて長は 上の だんごに 場所を まわす */
+  /* ステップ４ */
+  .choices .btn.grp{flex:1;max-width:none;font-size:clamp(15px,calc(.6vw + 1.6vh),24px);padding:10px 4px;white-space:nowrap;
+    display:flex;align-items:center;justify-content:center;gap:.4em}
+  .choices .btn.grp svg{height:1.4em;width:auto}
+  .eq3.sum{padding-top:8px;font-size:clamp(18px,calc(.9vw + 2vh),30px);line-height:1.35}
+  .eq3.sum .r{color:#b8791f}.eq3.sum .c{color:#2f6fa8}
   .empty3{align-self:flex-start;margin-top:12%;padding:.4em 1em;border:3px dashed #d9c7a0;border-radius:14px;background:#fffdf7;
     color:#8a7a5f;font-weight:800;font-size:clamp(15px,calc(.7vw + 1.6vh),24px)}
   .dan.need{border:3px dashed var(--gold);background:#fffbe8;animation:needglow 1.4s ease-in-out infinite}
@@ -299,7 +306,7 @@
     <button class="tab on" data-m="s1"><span class="step">ステップ１</span>ちゅうもんを きく</button>
     <button class="tab" data-m="s2"><span class="step">ステップ２</span>しきから つくる</button>
     <button class="tab" data-m="s3"><span class="step">ステップ３</span>ふやして みる</button>
-    <button class="tab" disabled><span class="step">ステップ４</span>かぞえないで わかる<span class="soon">じゅんびちゅう</span></button>
+    <button class="tab" data-m="s4"><span class="step">ステップ４</span>かぞえないで わかる</button>
   </div>
 
   <!-- ============ ステップ１：ちゅうもんを きく ============ -->
@@ -492,6 +499,7 @@ function say(html,cls){const e=$('say');e.innerHTML='<span>'+html+'</span>';e.cl
 /* ===== がめん ===== */
 function render(){
   if(M==='s3'){render3();return;}
+  if(M==='s4'){render4();return;}
   const {k,n}=O();
   if(S.phase==='compare'){renderCompare();return;}
   /* はばは ちゅうもんの 本数より 少し ひろく とる（9本ぶん いつも とると だんごが 小さく なる） */
@@ -504,9 +512,11 @@ function render(){
 
 function newOrder(){
   if(M==='s3'){newDan();return;}
+  if(M==='s4'){newP4();return;}
   $('s1').classList.remove('m3');
   $('guest').classList.remove('hidden');$('noren').classList.remove('hidden');$('m3title').classList.add('hidden');
   $('dan').classList.add('hidden');$('choices').classList.add('hidden');$('choices').classList.remove('off');$('eq3').classList.add('hidden');
+  $('cards').classList.remove('hidden');$('what0').textContent='';$('what1').textContent='';
   S.run++;S.phase='build';S.k=0;S.n=1;S.prevK=0;S.prevN=1;S.slots=[null,null];S.sel=null;S.tries=0;S.no=[];
   S.hl=null;S.labels=null;S.cmpOk=false;
   const g=GUEST();
@@ -757,7 +767,7 @@ function newDan(){
   $('build').classList.add('hidden');$('shiki').classList.add('hidden');
   $('dan').classList.remove('hidden');$('choices').classList.remove('hidden');
   $('choices').classList.add('off');$('choices').innerHTML='<button class="choice">0</button>';
-  $('eq3').classList.remove('hidden');$('eq3').classList.add('off');$('eq3').innerHTML='<div class="l2"><span class="tipw">0<span class="tip">0</span></span></div>';
+  $('eq3').classList.remove('hidden','sum');$('cards').classList.remove('hidden');$('eq3').classList.add('off');$('eq3').innerHTML='<div class="l2"><span class="tipw">0<span class="tip">0</span></span></div>';
   /* ③を ひらいた ときは 台を 空に して、まず くしを えらばせる（2026-09-26 指摘＝
      「最初から 6こ ささった くしが 見えている？」。えらんで いないのに くしが あると、どこから 始まったか 分からない） */
   if(!S.chosen){
@@ -861,6 +871,127 @@ function choose3(v,b){
   if(S.n<9) say(`そう！ ${prev} ＋ ${k} ＝ ${right}。<br>${k} × ${S.n} ＝ ${right} が できた`,'ok');
   else say(`${k}の だんが できた！ どれも まえの こたえに ${k} を たして つくれたね。<br>わすれた くくも こう すれば つくれるよ`,'ok');
   act3();
+}
+
+/* ===== ステップ４：かぞえないで わかる
+   解説「長方形のように配列されたものの数は、数えることによってではなく乗法で求めることができる」
+   ＋ 内容の取扱い(4)の 交換法則。
+   1問の ながれ：よこ（または たて）に かこむ → □×□ に カードを おく → こたえ
+   → もう 一方の かこみ方でも 式を つくる → 「入れかえても こたえは おなじ」
+   問題は じゅんばんを きめて ある（ランダムに しない）。たても よこも 同じ 数の 問題は 入れない ===== */
+const P4=[
+  {name:'だんごの はこ',item:'dango',r:3,c:4},{name:'たまごの パック',item:'egg',r:2,c:5},
+  {name:'チョコレート',item:'choco',r:3,c:5},{name:'みかんの はこ',item:'mikan',r:4,c:5},
+  {name:'クッキーの はこ',item:'cookie',r:2,c:7},{name:'くつばこ',item:'shoe',r:3,c:6},
+  {name:'チョコレート',item:'choco',r:4,c:6},{name:'たまごの パック',item:'egg',r:3,c:8}
+];
+S.p4=0;
+const Q4=()=>P4[S.p4%P4.length];
+/* よこ＝1れつ（よこの ならび）が ひとまとまり → c × r ／ たて＝1れつ（たての ならび）が ひとまとまり → r × c */
+const g4=(dir)=>{const {r,c}=Q4();return dir==='yoko'?{k:c,n:r}:{k:r,n:c};};
+
+function item4(t,x,y){
+  switch(t){
+    case 'dango': return `<circle cx="${x}" cy="${y}" r="27" fill="#f4a7b9" stroke="#c77b8e" stroke-width="3"/><ellipse cx="${x-9}" cy="${y-10}" rx="8" ry="5" fill="#fff" opacity=".55"/>`;
+    case 'egg': return `<circle cx="${x}" cy="${y+6}" r="31" fill="#dcd6cc"/><ellipse cx="${x}" cy="${y}" rx="22" ry="28" fill="#fffaf0" stroke="#c9bda8" stroke-width="2.5"/>`;
+    case 'choco': return `<rect x="${x-34}" y="${y-34}" width="68" height="68" rx="6" fill="#8a5a3b" stroke="#5e3a24" stroke-width="3"/><rect x="${x-24}" y="${y-24}" width="48" height="48" rx="4" fill="#9c6a48"/>`;
+    case 'mikan': return `<circle cx="${x}" cy="${y+3}" r="30" fill="#f5a23a" stroke="#d17f1c" stroke-width="3"/><ellipse cx="${x+8}" cy="${y-26}" rx="10" ry="5" fill="#6aa04a" transform="rotate(-25 ${x+8} ${y-26})"/>`;
+    case 'cookie': return `<circle cx="${x}" cy="${y}" r="30" fill="#e2b26c" stroke="#b9853f" stroke-width="3"/><circle cx="${x-9}" cy="${y-8}" r="4" fill="#6b4226"/><circle cx="${x+10}" cy="${y-2}" r="4" fill="#6b4226"/><circle cx="${x-2}" cy="${y+12}" r="4" fill="#6b4226"/>`;
+    case 'shoe': return `<rect x="${x-38}" y="${y-38}" width="76" height="76" rx="4" fill="#f3e3c4" stroke="#b08a57" stroke-width="3"/>`+
+      `<path d="M${x-24} ${y+14} L${x-24} ${y-8} L${x-4} ${y-8} L${x+2} ${y+2} L${x+22} ${y+6} Q${x+28} ${y+14} ${x+22} ${y+16} Z" fill="#e56b5b" stroke="#a8433a" stroke-width="2.5"/>`;
+  }
+}
+function arrSVG(o={}){
+  const {r,c,item}=Q4(),cell=90,pad=26,W=c*cell+pad*2,H=r*cell+pad*2;
+  const box={dango:'#e8cfa6',egg:'#cfc8bc',choco:'#d9c2a3',mikan:'#e3c79a',cookie:'#ecd6b0',shoe:'#c99a5e'}[item];
+  let s=`<svg viewBox="-14 -14 ${W+28} ${H+28}" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">`;
+  s+=`<rect x="0" y="0" width="${W}" height="${H}" rx="18" fill="${box}" stroke="#9c7440" stroke-width="4"/>`;
+  for(let i=0;i<r;i++)for(let j=0;j<c;j++) s+=item4(item,pad+cell*j+cell/2,pad+cell*i+cell/2);
+  /* かこみ：1れつずつ 色の ついた わく。1つめの わくの よこに「4こ」、どの わくにも ばんごう */
+  if(o.dir){
+    const rows=o.dir==='yoko',N=rows?r:c,col=rows?'#e0a23a':'#2f6fa8';
+    for(let i=0;i<N;i++){
+      const x=rows?pad-8:pad+cell*i+4, y=rows?pad+cell*i+4:pad-8;
+      const w=rows?c*cell+16:cell-8, h=rows?cell-8:r*cell+16;
+      s+=`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${(rows?h:w)/2}" fill="${col}" fill-opacity=".14" stroke="${col}" stroke-width="5"/>`;
+      const bx=rows?x-2:x+w/2, by=rows?y+h/2:y-2;
+      s+=`<circle cx="${bx}" cy="${by}" r="15" fill="${col}"/><text x="${bx}" y="${by+7}" text-anchor="middle" font-size="20" font-weight="800" fill="#fff">${i+1}</text>`;
+    }
+  }
+  return s+'</svg>';
+}
+function render4(){ $('stage').innerHTML=arrSVG({dir:S.dir4}); }
+
+const ICON_YOKO=`<svg viewBox="0 0 60 36"><rect x="2" y="4" width="56" height="12" rx="6" fill="none" stroke="#fff" stroke-width="3"/><rect x="2" y="20" width="56" height="12" rx="6" fill="none" stroke="#fff" stroke-width="3"/></svg>`;
+const ICON_TATE=`<svg viewBox="0 0 36 36"><rect x="4" y="2" width="12" height="32" rx="6" fill="none" stroke="#fff" stroke-width="3"/><rect x="20" y="2" width="12" height="32" rx="6" fill="none" stroke="#fff" stroke-width="3"/></svg>`;
+
+function newP4(){
+  $('s1').classList.add('m3');
+  S.run++;S.phase='s4';S.dir4=null;S.done4=[];S.slots=[null,null];S.sel=null;
+  $('guest').classList.add('hidden');$('noren').classList.add('hidden');$('dan').classList.add('hidden');
+  $('build').classList.add('hidden');$('shiki').classList.add('hidden');
+  $('m3title').classList.remove('hidden');$('m3title').innerHTML=`<small>${Q4().name}</small><br>かぞえないで わかるかな`;   // 名前と 問いを 2行に 分ける（1行だと 変な ところで おれる）
+  $('eq3').classList.remove('hidden','sum');$('eq3').classList.add('off');$('eq3').innerHTML='<div class="l2">0</div>';
+  $('choices').classList.remove('hidden','off');
+  say('ぜんぶで なんこ？ かぞえないで しらべよう。<br>まず 1れつずつ かこもう');
+  render();grp4();
+}
+/* かこみ方を えらぶ ボタン（まだ やって いない ほうだけ 出す） */
+function grp4(){
+  const box=$('choices');box.innerHTML='';
+  [['yoko','よこに かこむ',ICON_YOKO],['tate','たてに かこむ',ICON_TATE]].forEach(([d,l,ic])=>{
+    if(S.done4.includes(d))return;
+    const b=document.createElement('button');b.className='btn play grp';b.innerHTML=ic+l;
+    b.onclick=()=>pick4(d);box.appendChild(b);
+  });
+  actions([]);
+}
+function pick4(dir){
+  S.dir4=dir;render();
+  const {k,n}=g4(dir),w=dir==='yoko'?'よこ':'たて';
+  say(`${w} 1れつに ${k}こ。それが ${n}れつ。<br>しきに かこう`);
+  /* ステップ１と 同じ カードで 式を つくる */
+  S.phase='shiki';
+  $('choices').classList.add('hidden');$('shiki').classList.remove('hidden');$('cards').classList.remove('hidden');
+  $('tasu').classList.add('hidden');$('res').textContent='？';$('what0').textContent='';$('what1').textContent='';
+  document.querySelectorAll('.slot').forEach(sl=>sl.classList.remove('good'));
+  S.slots=[null,null];S.sel=null;S.cards=[Math.min(k,n),Math.max(k,n)];
+  drawCards();drawSlots();
+  actions([['sub','カードを もどす',()=>{S.slots=[null,null];S.sel=null;drawCards();drawSlots();}],['show','こたえ',check4]]);
+}
+function check4(){
+  if(S.slots[0]==null||S.slots[1]==null){say('まだ とちゅうだよ。□ に カードを 入れてね','try');return;}
+  const {k,n}=g4(S.dir4),a=S.cards[S.slots[0]],b=S.cards[S.slots[1]],w=S.dir4==='yoko'?'よこ':'たて';
+  if(!(a===k&&b===n)){
+    /* ぎゃくでも ×に しない。かこんだ ひとまとまりが 先だと 言う */
+    say(`かこんだ ${w} 1れつは ${k}こ。<br>${k}こずつが ${n}れつ だから、さきに ${k} を かくよ`,'try');
+    S.slots=[null,null];drawCards();drawSlots();return;
+  }
+  S.phase='s4';S.done4.push(S.dir4);
+  document.querySelectorAll('.slot').forEach(sl=>sl.classList.add('good'));
+  $('what0').textContent=`${w} 1れつ`;$('what1').textContent='れつの かず';
+  $('res').textContent=k*n;$('cards').classList.add('hidden');
+  if(S.done4.length<2){
+    const other=S.dir4==='yoko'?'たて':'よこ';
+    say(`${k} × ${n} ＝ ${k*n}。かぞえないで わかったね！<br>こんどは ${other}に かこんで みよう`,'ok');
+    S.first4={k,n,dir:S.dir4};
+    actions([]);
+    const box=$('choices');box.innerHTML='';box.classList.remove('hidden');
+    const b=document.createElement('button');b.className='btn play grp';
+    b.innerHTML=(other==='たて'?ICON_TATE:ICON_YOKO)+`こんどは ${other}に かこむ ▶`;
+    b.onclick=()=>{$('shiki').classList.add('hidden');pick4(other==='たて'?'tate':'yoko');};
+    box.appendChild(b);
+  }else{
+    const f=S.first4,t=k*n;
+    $('shiki').classList.add('hidden');
+    /* 2つの 式を ならべて 見せる（よこ＝だいだい／たて＝青。かこみの わくと 同じ 色） */
+    const line=(q,dir)=>`<div class="${dir==='yoko'?'r':'c'}">${q.k} × ${q.n} ＝ ${t}　<small>（${dir==='yoko'?'よこ':'たて'}に かこむ）</small></div>`;
+    $('eq3').classList.remove('off');$('eq3').classList.add('sum');
+    $('eq3').innerHTML=line(f,f.dir)+line({k,n},S.dir4);
+    say(`よこに かこんでも たてに かこんでも ${t}こ。<br>かける数と かけられる数を 入れかえても こたえは おなじ`,'ok');
+    $('choices').classList.add('hidden');
+    actions([['next','つぎの もんだい →',()=>{S.p4++;newP4();}]]);
+  }
 }
 
 document.querySelectorAll('.tab[data-m]').forEach(t=>t.onclick=()=>{
