@@ -948,7 +948,7 @@ function draw4(){
     g+=txt((b[0]+t[0])/2+fs*0.9,(b[1]+t[1])/2+fs*1.4,'1m',{fs,a:'start'});
     if(thin){
       g+=txt(side/2,fs*2.8,'横に 100個',{fs,c:'#2f7f79'});
-      g+=txt((b[0]+t[0])/2+fs*0.9,(b[1]+t[1])/2+fs*2.7,'たてに 100列',{fs,a:'start',c:'#2f7f79'});
+      g+=txt((b[0]+t[0])/2+fs*0.9,(b[1]+t[1])/2+fs*2.7,'たてに 100個',{fs,a:'start',c:'#2f7f79'});
       /* 10cmごとの 目もり */
       const p=(i,j)=>[i*U+j*DX,j*DY];
       for(let q=1;q<N;q++){
@@ -1053,6 +1053,8 @@ function choices4(list,ok,onOK,wrongMsg){
       if(S4.solved)return;
       if(v!==ok){b.disabled=true;say4(wrongMsg,'try');return;}
       S4.solved=true;b.classList.add('good');ch.querySelectorAll('.choice').forEach(x=>x.disabled=x!==b);onOK();
+      /* 青い ボタンで 次へ 進む ときは 前の 3択を 消す（2026-09-26 指摘＝前の 3択が のこって いて、次の 問いの 答えが その 中に ないように 見えた） */
+      if($('actions4').querySelector('.btn.play')) noChoices();
     });
     ch.appendChild(b);
   });
@@ -1086,8 +1088,8 @@ function t_fill(){
   const tick=()=>{S4.rows++;S4.newK=0;draw4();if(S4.rows<10)setTimeout(tick,120);else{S4.busy=false;
     say4('1だん目に 何個 ならんだ？');
     choices4([20,100,1000],100,()=>{S4.layers=1;S4.rows=0;draw4();
-      say4('10 × 10 ＝ 100。1だん目は <span class="a">100個</span>。<br>これを 高さ 10cm まで 積もう','ok');
-      actions4([['play','10だん 積む ▶',t_stack]]);},'もう一回。たてに 10列、横に 10個 ならんで いるね');}};
+      say4('10 × 10 ＝ 100。1だん目は <span class="a">100個</span>。<br>これを 高さ 10cm まで 積んで みよう','ok');
+      actions4([['play','10だん 積む ▶',t_stack]]);},'もう一回。横に 10個、たてにも 10個 ならんで いるね');}};
   tick();
 }
 function t_stack(){
@@ -1116,8 +1118,8 @@ function m_slab(){
   anim(700,r=>{S4.slab=0.01*r;},()=>{
     say4('ゆかに 1cm<sup>3</sup>の 立方体を 1だん しきつめたよ。<br>1だんに 何個 ならぶ？');
     choices4([200,1000,10000],10000,()=>{
-      say4('100 × 100 ＝ <span class="a">10000個</span>。これを 100だん 積むと？','ok');
-      actions4([['play','100だん 積む ▶',m_stack]]);},'もう一回。横に 100個、たてに 100列 ならぶよ');
+      say4('100 × 100 ＝ <span class="a">10000個</span>。<br>これを 100だん 積んで みよう','ok');
+      actions4([['play','100だん 積む ▶',m_stack]]);},'もう一回。横に 100個、たてにも 100個 ならぶよ');
   });
 }
 function m_stack(){
@@ -1131,7 +1133,7 @@ function m_stack(){
 }
 function m_grid(){
   S4.grid=true;draw4();
-  say4('1Lますが たてに 10列、横に 10個、10だん。<br>1m<sup>3</sup> は 1Lます 何こ分？');
+  say4('1Lますが 横に 10個、たてに 10個、10だん。<br>1m<sup>3</sup> は 1Lます 何こ分？');
   choices4([100,1000,10000],1000,()=>{
     say4('10 × 10 × 10 ＝ 1000。<span class="a">1m<sup>3</sup> ＝ 1000L ＝ 1kL</span>','ok');
     actions4([['sub','もう一度',()=>part4(1)],['next','次へ →',()=>part4(2)]]);},'もう一回。1だんに 100こ、それが 10だん');
