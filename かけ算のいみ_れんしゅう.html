@@ -160,6 +160,10 @@
   .chip.kushi{height:clamp(64px,calc(3vw + 10vh),150px);padding:4px 0 3px;display:flex;align-items:flex-end;justify-content:center}
   .chip.kushi svg{height:100%;width:auto;display:block}
   @media (orientation:portrait){ .chip.kushi{height:clamp(64px,9vh,110px)} }   /* たて長は 上の だんごに 場所を まわす */
+  .empty3{align-self:flex-start;margin-top:12%;padding:.4em 1em;border:3px dashed #d9c7a0;border-radius:14px;background:#fffdf7;
+    color:#8a7a5f;font-weight:800;font-size:clamp(15px,calc(.7vw + 1.6vh),24px)}
+  .dan.need{border:3px dashed var(--gold);background:#fffbe8;animation:needglow 1.4s ease-in-out infinite}
+  @keyframes needglow{0%,100%{box-shadow:0 0 0 0 rgba(201,162,39,0)}50%{box-shadow:0 0 0 6px rgba(201,162,39,.25)}}
   .chip.kushi.on{background:#fff4c9;border-color:var(--gold);box-shadow:0 3px 0 #a5811a}
   .m3 .chip{min-width:0;flex:1 1 0;padding:0 2px;max-width:48px}
   .m3 .dan{flex-direction:column;gap:3px}
@@ -742,7 +746,7 @@ S.dan=2;
     let g=`<svg viewBox="0 0 20 100" preserveAspectRatio="xMidYMax meet"><line x1="10" y1="2" x2="10" y2="99" stroke="#caa06a" stroke-width="2.4" stroke-linecap="round"/>`;
     for(let i=0;i<d;i++){const c=i%3;g+=`<circle cx="10" cy="${7+i*10.3}" r="4.7" fill="${DCOL[c]}" stroke="${DSTR[c]}" stroke-width="1.2"/>`;}
     b.innerHTML=g+'</svg>';
-    b.onclick=()=>{S.dan=d;S.picked=true;newDan();};box.appendChild(b);
+    b.onclick=()=>{S.dan=d;S.picked=true;S.chosen=true;newDan();};box.appendChild(b);
   }
 })();
 function newDan(){
@@ -754,6 +758,18 @@ function newDan(){
   $('dan').classList.remove('hidden');$('choices').classList.remove('hidden');
   $('choices').classList.add('off');$('choices').innerHTML='<button class="choice">0</button>';
   $('eq3').classList.remove('hidden');$('eq3').classList.add('off');$('eq3').innerHTML='<div class="l2"><span class="tipw">0<span class="tip">0</span></span></div>';
+  /* ③を ひらいた ときは 台を 空に して、まず くしを えらばせる（2026-09-26 指摘＝
+     「最初から 6こ ささった くしが 見えている？」。えらんで いないのに くしが あると、どこから 始まったか 分からない） */
+  if(!S.chosen){
+    S.n=0;S.prevN=0;
+    document.querySelectorAll('#danChips .chip').forEach(c=>c.classList.remove('on'));
+    $('dan').classList.add('need');
+    $('m3title').textContent='くしを えらぼう';
+    $('choices').innerHTML='<button class="choice">0</button>';$('choices').classList.add('off');
+    say('くしの えを おして えらぼう。<br>えらんだ くしで くくを つくるよ');
+    render();actions([]);return;
+  }
+  $('dan').classList.remove('need');
   document.querySelectorAll('#danChips .chip').forEach(c=>c.classList.toggle('on',+c.dataset.d===S.dan));
   say(S.picked?`${S.k}こ ささった くしだね。<br>${S.k}の だんを つくろう`
               :`くしの 下に ${S.k}の だんが できて いくよ。<br>青い ボタンで くしを 1本ずつ たそう`);
@@ -761,6 +777,7 @@ function newDan(){
   render();act3();
 }
 function render3(){
+  if(S.n===0){$('stage').innerHTML='<div class="empty3">えらんだ くしが ここに ならぶよ</div>';return;}
   const k=S.k,labels=[],sub=[];
   for(let j=1;j<=S.n;j++){labels.push(S.pend&&j===S.n?'？':k*j);sub.push(`${k}×${j}`);}
   $('stage').innerHTML=dangoSVG(k,S.n,{cols:9,bottom:true,labels,sub,hl:S.hl,only:true,band:S.pend,
@@ -849,6 +866,7 @@ function choose3(v,b){
 document.querySelectorAll('.tab[data-m]').forEach(t=>t.onclick=()=>{
   if(t.disabled||t.dataset.m===M)return;
   M=t.dataset.m;
+  if(M==='s3')S.chosen=false;
   document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x===t));
   newOrder();
 });
