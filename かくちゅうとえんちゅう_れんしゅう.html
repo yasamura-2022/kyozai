@@ -284,11 +284,12 @@ function reg(n,R,rot){const a=[];for(let i=0;i<n;i++){const t=(rot||0)*D2R+2*Mat
 const rect=(a,b)=>[[-a/2,-b/2],[a/2,-b/2],[a/2,b/2],[-a/2,b/2]];
 const SH={
   tri:{name:'三角柱',base:'三角形',poly:reg(3,1.5,90),H:3.2},
-  trap:{name:'四角柱',base:'四角形',poly:[[-1.6,-1],[1.6,-1],[0.4,1],[-1.2,1]],H:2.8},
+  trap:{name:'四角柱',base:'四角形',poly:[[-1.7,-1],[1.7,-1],[0.8,1],[-0.8,1]],H:2.8},
   sq:{name:'四角柱',base:'四角形',poly:rect(2.4,2.4),H:3.1},
   box:{name:'四角柱',base:'四角形',poly:rect(3,2),H:2.2},
-  pent:{name:'五角柱',base:'五角形',poly:reg(5,1.5,2),H:2.9},
-  hex:{name:'六角柱',base:'六角形',poly:reg(6,1.4,90),H:2.6},
+  cube:{name:'四角柱',base:'正方形',poly:rect(2.2,2.2),H:2.2},
+  pent:{name:'五角柱',base:'五角形',poly:reg(5,1.5,90),H:2.9},
+  hex:{name:'六角柱',base:'六角形',poly:reg(6,1.4,0),H:2.6},
   cyl:{name:'円柱',base:'円',poly:reg(40,1.2,0),H:3,smooth:true},
 };
 
@@ -547,6 +548,7 @@ const L1=[
   {key:'pent',ch:['四角形','五角形','六角形'],ans:1,side:{ch:['円','五角形','長方形'],ans:2}},
   {key:'hex',ch:['四角形','五角形','六角形'],ans:2,side:{ch:['六角形','長方形','三角形'],ans:1}},
   {key:'box',box:true,side:{ch:['長方形','円','三角形'],ans:0}},
+  {key:'cube',cube:true,side:{ch:['長方形','正方形','三角形'],ans:1}},
   {key:'cyl',ch:['四角形','円','三角形'],ans:1,side:{ch:['長方形','円','曲がった 面'],ans:2}},
 ];
 const S1={i:0,phase:'base',t:0,ori:0,named:false};
@@ -604,8 +606,8 @@ function draw1(){
 function start1(){
   stopAnim();resetRot();S1.phase='base';S1.t=0;S1.ori=0;S1.named=false;
   const it=L1[S1.i];
-  prob(`<span class="no">${S1.i+1} / ${L1.length}</span><span>${it.box?'この 形は 直方体':'底面を 上に 動かすと？'}</span>`);
-  say(it.box?'この 底面を まっすぐ 上に 動かして みよう':'<span class="T">底面</span>を まっすぐ 上に 動かすと、どんな 形が できるかな？');
+  prob(`<span class="no">${S1.i+1} / ${L1.length}</span><span>${it.box?'この 形は 直方体':it.cube?'この 形は 立方体':'底面を 上に 動かすと？'}</span>`);
+  say(it.box||it.cube?'この 底面を まっすぐ 上に 動かして みよう':'<span class="T">底面</span>を まっすぐ 上に 動かすと、どんな 形が できるかな？');
   choices(null);show('sum',false);
   actions([{c:'play',t:'底面を まっすぐ 上に 動かす ▶',f:grow1}]);
   draw();
@@ -637,8 +639,22 @@ function after1(){
       say('よこの 面を 底面に しても、まっすぐ 動かすと 直方体が できたね');
       actions([{c:'play',t:'もう 1つの 面を 底面に する ▶',f:()=>{S1.ori=2;S1.t=0;grow1();}}]);return;
     }
-    say('直方体は どの 向かい合う 面を 底面に しても 四角柱。<b>立方体</b>も 四角柱の なかま','ok');
+    say('直方体は どの 向かい合う 面を 底面に しても 四角柱','ok');
     fin1();return;
+  }
+  if(it.cube){
+    say('動いた あとが <span class="A">側面</span>。上と 下の <span class="T">底面</span>は 同じ 形で 平行');
+    prob(`<span class="no">${S1.i+1} / ${L1.length}</span><span>立方体は 何角柱の なかま？</span>`);
+    actions([]);
+    choices(['三角柱','四角柱','五角柱'],(i,b)=>{
+      if(i===1){b.classList.add('good');[...$('choices').children].forEach(x=>x.disabled=true);
+        say('<span>底面が 正方形（四角形）だから、立方体も <b>四角柱</b>の なかま</span>','ok');
+        setTimeout(()=>ask1side(()=>{
+          say('<span>立方体は 底面も 側面も <b>正方形</b>。どの 面を 底面に しても 四角柱</span>','ok');fin1();
+        }),1100);}
+      else{b.disabled=true;say('もう一回。<span class="T">底面</span>（だいだい色）は 何角形かな？','try');}
+    });
+    return;
   }
   say('動いた あとが <span class="A">側面</span>。上と 下の 2つの <span class="T">底面</span>は 同じ 形で 平行');
   prob(`<span class="no">${S1.i+1} / ${L1.length}</span><span>底面は どんな 形？</span>`);
@@ -665,7 +681,7 @@ function ask1side(after){
   choices(sd.ch,(i,b)=>{
     if(i===sd.ans){b.classList.add('good');[...$('choices').children].forEach(x=>x.disabled=true);
       if(after){after();return;}
-      say(it.key==='cyl'?'<span>円柱の 側面は <b>曲がった 面</b>。すごい！</span>':'<span>角柱の 側面は <b>長方形</b>（正方形の ことも ある）。すごい！</span>','ok');fin1();}
+      say(it.key==='cyl'?'<span>円柱の 側面は <b>曲がった 面</b></span>':'<span>角柱の 側面は <b>長方形</b>（正方形の ことも ある）</span>','ok');fin1();}
     else{b.disabled=true;say('もう一回。青みどりの 面を よく 見てみよう','try');}
   });
 }
