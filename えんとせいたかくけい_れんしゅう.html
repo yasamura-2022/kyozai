@@ -891,9 +891,9 @@ function s4start(){
 const MI_SAY=[
   'まず、下の <b>青い ボタン</b>を おして、<br>円の 中に 正六角形を かこう',
   '<span class="a">円周</span>は 正六角形より 外に <b>ふくらんで</b> いる（<span class="a">色の ところ</span>）。<br>だから 正六角形の まわりは 円周より <b>短い</b>',
-  '正六角形の 1辺は 半径と 同じ。辺 6つ ＝ 半径 6つ分 ＝ <span class="d">直径 3つ分</span>。<br><span class="a">円周</span>は それより 長い。こんどは 円の 外に 正方形を かこう',
+  '正六角形の 辺 6本を ならべた。1辺は 半径と 同じ（点線の 正三角形）なので、<br>辺 2本で <span class="d">直径</span> 1つ分。まわり ＝ <span class="d">直径 3つ分</span>。こんどは 正方形を かこう',
   '正方形の 角は 円より 外に <b>出て</b> いる（<span style="color:#8a7a5f">色の ところ</span>）。<br>だから 正方形の まわりは <span class="a">円周</span>より <b>長い</b>',
-  '正方形の 1辺は 直径と 同じ。辺 4つ ＝ <span class="d">直径 4つ分</span>。<br><span class="a">円周</span>は <span class="d">直径</span>の 何倍 くらい？'
+  '正方形の 辺 4本を ならべた。1辺は <span class="d">直径</span>と 同じ。まわり ＝ <span class="d">直径 4つ分</span>。<br><span class="a">円周</span>は <span class="d">直径</span>の 何倍 くらい？'
 ];
 const MI_BTN=['正六角形を かく ▶','まわりを まっすぐに ならべる ▶','正方形を かく ▶','まわりを まっすぐに ならべる ▶'];
 function s4miStep(){
@@ -1015,14 +1015,12 @@ function draw4mi(){
   if(f(1)>0) g+=polyS(hx,`fill="#fffdf7" opacity="${f(1)}"`);
   g+=circ(C,R,`fill="none" stroke="${CA}" stroke-width="${W(5)}"`);
   if(f(1)>0){
-    if(st>=2) hx.forEach((v,j)=>g+=seg(v,hx[(j+1)%6],ln(CK,f(2)>0?2.5:4.5,f(2)>0?dash(5):'')));
-    else g+=polyPart(hx,f(1),ln(CK,4.5));
+    g+=polyPart(hx,f(1),ln(CK,4.5));   /* 辺を 運んでも 図の 辺は 実線の まま（虫めがねと そろえる） */
     /* 中心と ちょう点を むすぶ＝正三角形が 6つ（ステップ２）→ 1辺 ＝ 半径 */
-    if(f(1)>=1) hx.forEach(v=>g+=seg(C,v,ln(CK,1.8,dash(5))));
+    if(f(1)>=1) hx.forEach(v=>g+=seg(C,v,ln('#b9a67c',1.6,dash(5))));
   }
   if(f(3)>0){
-    if(st>=4) sq.forEach((v,j)=>g+=seg(v,sq[(j+1)%4],ln(CB,f(4)>0?2.5:4.5,f(4)>0?dash(5):'')));
-    else g+=polyPart(sq,f(3),ln(CB,4.5));
+    g+=polyPart(sq,f(3),ln(CB,4.5));
   }
   g+=seg([C[0]-R,C[1]],[C[0]+R,C[1]],ln(CD,5));
   g+=lab(C[0],C[1]+fw()*.75,'直径',CD,{k:.8});
@@ -1033,16 +1031,16 @@ function draw4mi(){
   /* ならべた まわり */
   /* 行：正六角形（その 下に 直径の テープ）／円周（その 下に 直径の テープ）／正方形（辺 そのものが 直径） */
   const head=(y,t,c)=>g+=lab(x0,y+.3+fw()*1.55,t,c,{k:.78,anc:'start'});
-  if(f(2)>0){head(yH,'正六角形の まわり',CK);g+=flyTape(sides(hx),yH,f(2),CK,CK,'半径',D,x0);}
+  if(f(2)>0){head(yH,'正六角形の まわり（辺 6本を ならべた）',CK);g+=flyTape(sides(hx),yH,f(2),CK,CK,'辺',D,x0);}
   if(st>=4){
-    head(yC,'円周',CA);
+    head(yC,f(5)>0?'円周（まっすぐに した）':'円周',CA);
     if(f(5)>0){
       const L=Math.PI*D*f(5);
       g+=seg([x0,yC],[x0+L,yC],ln(CA,9));
       g+=bar(x0,yC-.72,L,D,CD,'',{h:.62,bit:f(5)>=1?'少し':''});
     }else g+=lab(x0+D*3.5,yC,'？',CA,{k:1.2});
   }
-  if(f(4)>0){head(yS,'正方形の まわり',CB);g+=flyTape(sides(sq),yS,f(4),CB,'#6f5d3d','直径',D,x0,true);}
+  if(f(4)>0){head(yS,'正方形の まわり（辺 4本を ならべた）',CB);g+=flyTape(sides(sq),yS,f(4),CB,'#6f5d3d','辺',D,x0,true);}
   svg.innerHTML=g;
 }
 function s4tbl(){
