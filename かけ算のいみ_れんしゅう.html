@@ -138,10 +138,19 @@
     .kr{padding:.1em .3em;gap:.25em}
   }
 
-  /* ステップ３では ことばの わくを 3行ぶん とって おく（行数が かわる たびに 九九の 字が 大きく 小さく ならない ように） */
-  .m3 .say{min-height:calc(4.5em + 16px);display:flex;align-items:center;justify-content:center}
-  /* flex の 子は 1つだけに する（文を じかに 入れると <br> や <b> が ばらばらの 子に なって おかしく おりかえす） */
   @media (orientation:landscape){
+    #s1.m3{grid-template-columns:minmax(300px,.85fr) minmax(0,1.5fr);
+      grid-template-areas:"order stage" "order work"}
+  }
+  .m3 .chips{gap:4px;flex-wrap:nowrap;width:100%}
+  .m3 .chip{min-width:0;flex:1 1 0;padding:0 2px;max-width:48px}
+  .m3 .dan{flex-direction:column;gap:3px;border:0;border-bottom:2px dashed var(--line);border-radius:0;background:none;margin:0 8px}
+  /* おす ところは 1か所：「くしを 1本 たす ▶」と 3択が 同じ 場所で 入れかわる */
+  .choices .btn.add{flex:1;max-width:none;font-size:clamp(20px,calc(1vw + 2.2vh),32px);padding:10px 0}
+  /* ステップ３では ことばの わくを 3行ぶん とって おく（行数が かわる たびに 九九の 字が 大きく 小さく ならない ように） */
+  .m3 .say{min-height:calc(3em + 16px);display:flex;align-items:center;justify-content:center}
+  /* flex の 子は 1つだけに する（文を じかに 入れると <br> や <b> が ばらばらの 子に なって おかしく おりかえす） */
+  @media (orientation:landscape) and (max-height:700px){
     .kuku{grid-template-columns:1fr 1fr;grid-template-rows:auto repeat(5,auto);grid-auto-flow:column;column-gap:8px}
     .kuku .kt{grid-row:1;grid-column:1/-1}
     .kr{padding:.05em .3em}
@@ -278,6 +287,8 @@
         <div class="face" id="face"></div>
         <div class="bubble" id="bubble"></div>
       </div>
+      <!-- ステップ３：だんを えらぶ（先生が 使う。はじめから ぜんぶ えらべる） -->
+      <div class="dan hidden" id="dan"><span class="lbl">なんの だん？</span><div class="chips" id="danChips"></div></div>
       <!-- ステップ３：九九の ひょう（くしを ふやすと 1行ずつ できる） -->
       <div class="kuku hidden" id="kuku"></div>
     </div>
@@ -285,8 +296,6 @@
     <div id="stage"></div>
 
     <div id="work">
-      <!-- ステップ３：だんを えらぶ（はじめから ぜんぶ えらべる） -->
-      <div class="dan hidden" id="dan"><span class="lbl">なんの だん？</span><div class="chips" id="danChips"></div></div>
       <div class="say" id="say"></div>
       <!-- ステップ３：なんこ ふえる？ -->
       <div class="eq3 hidden" id="eq3"></div>
@@ -717,7 +726,7 @@ function newDan(){
   $('choices').classList.add('off');$('choices').innerHTML='<button class="choice">0</button>';
   $('eq3').classList.remove('hidden');$('eq3').classList.add('off');$('eq3').innerHTML='<div class="l1">0</div><div class="l2">0</div>';
   document.querySelectorAll('#danChips .chip').forEach(c=>c.classList.toggle('on',+c.dataset.d===S.dan));
-  say(`<b>${S.k}の だんを じぶんで つくろう。</b><br>${S.k}こ ささった くしを 1本ずつ たして いくよ`);
+  say(`<b>${S.k}の だんを じぶんで つくろう。</b><br>青い ボタンで くしを 1本ずつ たそう`);
   render();act3();
 }
 function render3(){
@@ -745,19 +754,26 @@ function drawKuku(){
 function fitKuku(){
   const el=$('kuku');if(el.classList.contains('hidden'))return;
   el.style.fontSize='';
-  let f=parseFloat(getComputedStyle(el).fontSize)*1.6;
+  let f=44;                          // 大きい ほうから ためして 入る 大きさで とめる
   el.style.fontSize=f+'px';
   while(f>10&&(el.scrollHeight>el.clientHeight+1||el.scrollWidth>el.clientWidth+1)){f-=1;el.style.fontSize=f+'px';}
 }
 function act3(){
   const back=['sub','◀ 1本 もどす',less3,S.n<=1||S.pend];
-  if(S.pend) actions([back]);
-  else if(S.n<9) actions([back,['play','くしを 1本 たす ▶',add3]]);
+  const box=$('choices');
+  if(!S.pend){
+    box.innerHTML='';
+    if(S.n<9){
+      const b=document.createElement('button');b.className='btn play add';b.textContent='くしを 1本 たす ▶';
+      b.onclick=add3;box.appendChild(b);box.classList.remove('off');
+    }else{box.innerHTML='<button class="choice">0</button>';box.classList.add('off');}
+  }
+  if(S.n<9) actions([back]);
   else actions([back,['next','つぎの だん →',()=>{S.dan=S.dan%9+1;newDan();}]]);
 }
 function less3(){
   if(S.n<=1||S.pend)return;
-  $('choices').classList.add('off');$('eq3').classList.add('off');
+  $('eq3').classList.add('off');
   S.n--;S.hl=null;render();
   say(`1本 もどしたよ。${S.k} × ${S.n} ＝ ${S.k*S.n}`);
   act3();
@@ -792,7 +808,6 @@ function choose3(v,b){
   }
   S.pend=false;render();
   $('eq3').querySelector('.qm').textContent=right;
-  $('choices').classList.add('off');
   if(S.n<9) say(`そう！ ${prev} ＋ ${k} ＝ ${right}。<br>${k} × ${S.n} ＝ ${right} が できた`,'ok');
   else say(`${k}の だんが できた！ どれも まえの こたえに ${k} を たして つくれたね。<br>わすれた くくも こう すれば つくれるよ`,'ok');
   act3();
