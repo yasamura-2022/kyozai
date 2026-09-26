@@ -704,12 +704,17 @@ function fin1(){
    答えた 数は 表に たまる。六角柱は 表を 見て 先に 考え、光らせて 確かめる。
    ===================================================================== */
 const L2=['tri','sq','pent','hex'];
-const S2={i:0,k:0,lit:{},T:[{},{},{},{}]};
-const SCR2=[
-  {show:'vTop',btn:'上の 底面の ちょう点 ▶'},{show:'vBot',btn:'下の 底面の ちょう点 ▶'},{ask:'v'},
-  {show:'eTop',btn:'上の 底面の 辺 ▶'},{show:'eBot',btn:'下の 底面の 辺 ▶'},{show:'eSide',btn:'横の 辺 ▶'},{ask:'e'},
-  {show:'fBase',btn:'底面 ▶'},{show:'fSide',btn:'側面 ▶'},{ask:'f'}
-];
+const S2={i:0,k:0,lit:{},badge:false,T:[{},{},{},{}]};
+/* 1つの 数に つき 聞くのは 1回。まとまりを いっしょに 光らせ、ヒントの ことばを そえて すぐ 聞く。
+   前は「上の 底面の ちょう点 ▶」「下の 底面の ちょう点 ▶」と 分けて 出して から 合計を 聞いて いたので、
+   上・下を 別に 聞かれたのに 答えは 合計で とまどった（2026-09-27 指摘）。
+   数の ふだ（3個 など）は まちがえた とき と 答えた あとだけ 出す（先に 出すと たすだけに なる） */
+const SCR2=[{ask:'v'},{ask:'e'},{ask:'f'}];
+const LIT2={v:{vTop:1,vBot:1},e:{eTop:1,eBot:1,eSide:1},f:{fBase:1,fSide:1}};
+const HINT2={v:'上の <span class="T">底面</span>の ちょう点と 下の <span class="T">底面</span>の ちょう点を 合わせて 考えよう',
+  e:'上の <span class="T">底面</span>の 辺・下の <span class="T">底面</span>の 辺・<span class="A">横の 辺</span>を 合わせて 考えよう',
+  f:'2つの <span class="T">底面</span>と まわりの <span class="A">側面</span>を 合わせて 考えよう'};
+const WORD2={v:'ちょう点',e:'辺',f:'面'};
 const SCR2P=[{ask:'v'},{ask:'e'},{ask:'f'},{check:true}];
 const Q2={v:'ちょう点は 全部で 何個？',e:'辺は 全部で 何本？',f:'面は 全部で いくつ？'};
 function ans2(w,n){return w==='v'?2*n:w==='e'?3*n:n+2;}
@@ -738,7 +743,7 @@ function draw2(){
   // まとまりの 数の ふだ
   let ty=1e9,by=-1e9,rx=-1e9,lx=1e9;Q.forEach(p=>{ty=Math.min(ty,p[1]);by=Math.max(by,p[1]);rx=Math.max(rx,p[0]);lx=Math.min(lx,p[0]);});
   const cx=(lx+rx)/2;
-  const tag=(x,y,t,c)=>{out+=pill(x,y,t,c,fs);};
+  const tag=(x,y,t,c)=>{if(S2.badge)out+=pill(x,y,t,c,fs);};
   if(L.vTop&&!L.eTop)tag(cx,ty-fs*1.3,`${n}個`,'#8f7417');
   if(L.vBot&&!L.eBot)tag(cx,by+fs*1.3,`${n}個`,'#8f7417');
   if(L.eTop&&!L.fBase)tag(cx,ty-fs*1.3,`${n}本`,STROKE.base);
@@ -759,7 +764,7 @@ function tbl2(){
   $('tbl').innerHTML=h;
 }
 function start2(){
-  stopAnim();S2.k=0;S2.lit={};
+  stopAnim();S2.k=0;S2.lit={};S2.badge=false;
   const key=L2[S2.i];
   if(S2.i===3){['v','e','f'].forEach(w=>delete S2.T[3][w]);}
   prob(`<span class="no">${S2.i+1} / 4</span><span><b>${SH[key].name}</b>${S2.i===3?'は 表を 見て 考えよう':'を 調べよう'}</span>`);
@@ -770,53 +775,38 @@ function step2(){
   const sc=scr2()[S2.k],key=L2[S2.i],n=SH[key].poly.length;
   choices(null);
   if(!sc){fin2();return;}
-  if(sc.show){
-    if(S2.k===0)say(`${SH[key].name}の ちょう点・辺・面の 数を 調べよう。まとまりごとに 光らせるよ`);
-    actions([{c:'play',t:sc.btn,f:()=>{S2.lit[sc.show]=true;S2.k++;
+  const w=sc.ask,A=ans2(w,n),pred=S2.i===3;
+  S2.lit=pred?{}:Object.assign({},LIT2[w]);S2.badge=false;
+  const opts=[2*n,3*n,n+2];const rot=(S2.i+({v:0,e:1,f:2})[w])%3;const ch=opts.slice(rot).concat(opts.slice(0,rot));
+  prob(`<span class="no">${S2.i+1} / 4</span><span>${SH[key].name}の ${Q2[w]}</span>`);
+  say(pred?(S2.k===0?'三角柱・四角柱・五角柱の 表を たてに 見て、<b>底面の 辺の 数</b>と くらべて みよう':'表を 見て 考えよう'):HINT2[w]);
+  actions([]);draw();
+  choices(ch.map(String),(i,b)=>{
+    if(ch[i]===A){
+      b.classList.add('good');[...$('choices').children].forEach(x=>x.disabled=true);
+      S2.T[S2.i][w]=A;tbl2();
+      if(!pred){S2.badge=true;draw();}
+      const why={v:`上に ${n}個、下に ${n}個。${n} × 2 ＝ ${A}`,e:`上に ${n}本、下に ${n}本、横に ${n}本。${n} × 3 ＝ ${A}`,f:`底面 2つと 側面 ${n}つ。${n} ＋ 2 ＝ ${A}`}[w];
+      say(`<span>${pred?'よく わかったね！':'よくできました！'} ${why}</span>`,'ok');
+      S2.k++;
       const nx=scr2()[S2.k];
-      const msg={vTop:`上の 底面に ${n}個`,vBot:`下の 底面にも ${n}個`,eTop:`上の 底面の まわりに ${n}本`,eBot:`下の 底面の まわりにも ${n}本`,eSide:`横に のびる 辺が ${n}本`,fBase:'底面は 上と 下で 2つ',fSide:`側面は ${n}つ`}[sc.show];
-      say(msg);
-      if(nx&&nx.ask){setTimeout(()=>{if(MODE==='s2')step2();},650);actions([]);}else step2();
-      draw();}}]);
-    return;
-  }
-  if(sc.ask){
-    const w=sc.ask,A=ans2(w,n);
-    const opts=[2*n,3*n,n+2];const rot=(S2.i+({v:0,e:1,f:2})[w])%3;const ch=opts.slice(rot).concat(opts.slice(0,rot));
-    prob(`<span class="no">${S2.i+1} / 4</span><span>${SH[key].name}の ${Q2[w]}</span>`);
-    if(S2.i===3)say(S2.k===0?'三角柱・四角柱・五角柱の 表を たてに 見て、<b>底面の 辺の 数</b>と くらべて みよう':'表を 見て 考えよう');
-    actions([]);
-    choices(ch.map(String),(i,b)=>{
-      if(ch[i]===A){
-        b.classList.add('good');[...$('choices').children].forEach(x=>x.disabled=true);
-        S2.T[S2.i][w]=A;tbl2();
-        const why={v:`上に ${n}個、下に ${n}個。${n} × 2 ＝ ${A}`,e:`上に ${n}本、下に ${n}本、横に ${n}本。${n} × 3 ＝ ${A}`,f:`底面 2つと 側面 ${n}つ。${n} ＋ 2 ＝ ${A}`}[w];
-        say(`<span>${S2.i===3?'よく わかったね！':'よくできました！'} ${why}</span>`,'ok');
-        S2.k++;
-        const nx=scr2()[S2.k];
-        if(nx&&nx.check){
-          actions([{c:'play',t:'光らせて 確かめる ▶',f:check2}]);
-        }else if(nx){
-          actions([{c:'play',t:nx.btn||(({v:'ちょう点',e:'辺',f:'面'})[nx.ask]+'の 数を 考える ▶'),f:()=>{step2();$('actions').firstChild&&$('actions').firstChild.click();}}]);
-        }else fin2();
-      }else{
-        b.disabled=true;
-        const hint={v:'上の 底面と 下の 底面の ちょう点を 合わせよう',e:'上・下・横の 辺を 合わせよう',f:'底面と 側面を 合わせよう'}[w];
-        say(S2.i===3?`もう一回。表の 四角柱や 五角柱の らんを 見て、底面の 辺の 数と くらべて みよう`:`もう一回。${hint}`,'try');
-      }
-    });
-  }
+      if(nx&&nx.check)actions([{c:'play',t:'光らせて 確かめる ▶',f:check2}]);
+      else if(nx)actions([{c:'play',t:`${WORD2[nx.ask]}の 数を ${pred?'考える':'調べる'} ▶`,f:step2}]);
+      else fin2();
+    }else{
+      b.disabled=true;
+      if(pred)say('もう一回。表の 四角柱や 五角柱の らんを 見て、底面の 辺の 数と くらべて みよう','try');
+      else{S2.badge=true;draw();say(`もう一回。光って いる まとまりの 数を 合わせよう`,'try');}
+    }
+  });
 }
 function check2(){
-  const n=6;actions([]);
-  const seq=['vTop','vBot','eTop','eBot','eSide','fBase','fSide'];let j=0;
-  S2.lit={};
+  actions([]);S2.badge=true;
+  const seq=['v','e','f'];let j=0;
   const tick=()=>{
     if(MODE!=='s2')return;
     if(j>=seq.length){fin2();return;}
-    if(seq[j]==='eTop'){S2.lit.vTop=false;S2.lit.vBot=false;}
-    if(seq[j]==='fBase'){S2.lit.eTop=false;S2.lit.eBot=false;S2.lit.eSide=false;}
-    S2.lit[seq[j]]=true;j++;draw();setTimeout(tick,700);
+    S2.lit=Object.assign({},LIT2[seq[j]]);j++;draw();setTimeout(tick,1300);
   };
   say('表の とおりに なって いるかな？');tick();
 }
