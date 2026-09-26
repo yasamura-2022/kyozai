@@ -689,7 +689,10 @@ function draw3(){
     const [a,c]=Q3().q[S3.qi],k=c/a,gap=V*2.4;
     const ox2=bw+gap;
     g+=box3(W,D,a,0,()=>CHUNK[0],-1);
-    g+=box3(W,D,c,ox2,S3.rev?(kk=>CHUNK[Math.floor(kk/a)%CHUNK.length]):(kk=>TONE[kk%2]),-1);
+    /* 答える 前は 右も 左と 同じ 1色（2026-09-26 指摘＝「？の 方の 立体の 色が 段ごとに 違うのは なぜ？」。
+       ステップ２の 1だんごとの 色分けが のこって いて、「1だんずつの かたまり」を 見せて いるように 読めた）。
+       色が かわるのは 答えた あと（まちがえた とき）の「左の 直方体 1つ分」ごとの 色分けだけ */
+    g+=box3(W,D,c,ox2,S3.rev?(kk=>CHUNK[Math.floor(kk/a)%CHUNK.length]):(()=>CHUNK[0]),-1);
     const lab=(x,h,v)=>txt(x+bw/2-D*DX/2,V*0.95,`高さ ${h}cm`,{fs,c:'#a8691f'})+txt(x+bw/2-D*DX/2,V*1.95,v,{fs});
     g+=lab(0,a,`${b*a}cm<tspan dy="-${fs*0.4}" font-size="${fs*0.6}">3</tspan>`);
     g+=lab(ox2,c,S3.solved?`${b*c}cm<tspan dy="-${fs*0.4}" font-size="${fs*0.6}">3</tspan>`:'？');
