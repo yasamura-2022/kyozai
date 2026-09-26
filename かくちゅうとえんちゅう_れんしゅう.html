@@ -252,15 +252,25 @@ function newell(P){
 }
 function centroid(P){let s=[0,0,0];P.forEach(p=>s=vadd(s,p));return vsc(s,1/P.length);}
 
-/* カメラ：yaw＝よこに 回す、pitch＝上から 見おろす 角度 */
-function makeCam(yaw,pitch,center,scale,cx,cy){
+/* カメラ：教科書の 見取図と 同じ かき方（前の 面は そのままの 形、奥行きは 右上へ ななめに 半分の 長さ）。
+   平行投影で 横から 回す かき方に すると、前の 下の 辺が 右下がりに なり「手前が 低く」見えた（2026-09-26 指摘）。
+   yaw・pitch は 指で 回した ぶんだけ（形の ほうを 回してから かく）。k＝奥行きの ちぢめ方（0 なら 正面から 見た 図） */
+const OBL_A=40*D2R,OBL_K=.5;
+let CURKEY='tri';
+function makeCam(yaw,pitch,center,scale,cx,cy,k){
+  if(k==null)k=OBL_K;
+  // 円柱だけは 少し 上から 見おろす（ななめに かくと 円が かたむいた だ円に なり、円柱が かたむいて 見える。
+  // 教科書の 円柱も 上下の だ円は 水平）
+  if(CURKEY==='cyl'){pitch+=22*(k/OBL_K);k=0;}
   const cy_=Math.cos(yaw*D2R),sy_=Math.sin(yaw*D2R),cp=Math.cos(pitch*D2R),sp=Math.sin(pitch*D2R);
-  const L=vnorm([-0.35,0.55,0.75]);
-  const rotn=n=>{const x1=n[0]*cy_-n[1]*sy_,y1=n[0]*sy_+n[1]*cy_;return [x1,y1*sp+n[2]*cp,-(y1*cp-n[2]*sp)];};
+  const kc=k*Math.cos(OBL_A),ks=k*Math.sin(OBL_A);
+  const V=vnorm([-kc,1,-ks]);                 // 見る 向き（奥へ）
+  const L=vnorm([-0.45,-0.8,0.6]);            // 光は 左前の 上から
+  const rot=p=>{const x1=p[0]*cy_-p[1]*sy_,y1=p[0]*sy_+p[1]*cy_;return [x1,y1*cp-p[2]*sp,p[2]*cp+y1*sp];};
   return {
-    P:p=>{const r=rotn(vsub(p,center));return [cx+r[0]*scale,cy-r[1]*scale,-r[2]];},   // [X,Y,深さ(大きいほど 奥)]
-    facing:n=>rotn(n)[2],                                                              // ＋なら こちらを 向く
-    shade:n=>{const r=rotn(n);return .8+.2*Math.max(0,vdot(r[2]>=0?r:vsc(r,-1),L));}
+    P:p=>{const r=rot(vsub(p,center));return [cx+(r[0]+kc*r[1])*scale,cy-(r[2]+ks*r[1])*scale,vdot(r,V)];},   // [X,Y,深さ(大きいほど 奥)]
+    facing:n=>-vdot(rot(n),V),                                                                               // ＋なら こちらを 向く
+    shade:n=>{let r=rot(n);if(vdot(r,V)>0)r=vsc(r,-1);return .8+.2*Math.max(0,vdot(r,L));}
   };
 }
 const RGB={base:[247,197,140],side:[168,219,213],plain:[243,236,220],inside:[253,248,236],dup:[244,182,200]};
@@ -271,12 +281,12 @@ function col(rgb,k){return `rgb(${rgb.map(c=>Math.round(Math.min(255,c*k))).join
 function reg(n,R,rot){const a=[];for(let i=0;i<n;i++){const t=(rot||0)*D2R+2*Math.PI*i/n;a.push([R*Math.cos(t),R*Math.sin(t)]);}return a;}
 const rect=(a,b)=>[[-a/2,-b/2],[a/2,-b/2],[a/2,b/2],[-a/2,b/2]];
 const SH={
-  tri:{name:'三角柱',base:'三角形',poly:reg(3,1.5,-90),H:3.2,yaw:-14},
-  trap:{name:'四角柱',base:'四角形',poly:[[-1.7,-1],[1.7,-1],[0.8,1],[-0.8,1]],H:2.8,yaw:-13},
-  sq:{name:'四角柱',base:'四角形',poly:rect(2.4,2.4),H:3.1,yaw:-26},
-  box:{name:'四角柱',base:'四角形',poly:rect(3,2),H:2.2,yaw:-32},
-  pent:{name:'五角柱',base:'五角形',poly:reg(5,1.5,-90),H:2.9,yaw:-32},
-  hex:{name:'六角柱',base:'六角形',poly:reg(6,1.4,0),H:2.6,yaw:-13},
+  tri:{name:'三角柱',base:'三角形',poly:reg(3,1.5,90),H:3.2},
+  trap:{name:'四角柱',base:'四角形',poly:[[-1.6,-1],[1.6,-1],[0.4,1],[-1.2,1]],H:2.8},
+  sq:{name:'四角柱',base:'四角形',poly:rect(2.4,2.4),H:3.1},
+  box:{name:'四角柱',base:'四角形',poly:rect(3,2),H:2.2},
+  pent:{name:'五角柱',base:'五角形',poly:reg(5,1.5,2),H:2.9},
+  hex:{name:'六角柱',base:'六角形',poly:reg(6,1.4,90),H:2.6},
   cyl:{name:'円柱',base:'円',poly:reg(40,1.2,0),H:3,smooth:true},
 };
 
@@ -440,12 +450,12 @@ function drawSolid(S,cam,o){
 }
 function fitSolid(key,yaw,pitch,extra){
   const r=radiusOf(key);
-  const sc=Math.min(W,H)*.44/r*(extra||1);
+  const sc=Math.min(W,H)*.40/r*(extra||1);
   return makeCam(yaw,pitch,[0,0,0],sc,W/2,H/2);
 }
 
 /* ===================== 指で 回す ===================== */
-const VIEW={yaw:-24,pitch:27};
+const VIEW={yaw:0,pitch:0};
 let ROT={on:false,yaw:0,pitch:0};
 let ptr=null;
 $('stage').addEventListener('pointerdown',e=>{
@@ -458,7 +468,7 @@ $('stage').addEventListener('pointermove',e=>{
   const dx=e.clientX-ptr.x,dy=e.clientY-ptr.y;
   if(!ptr.moved&&Math.hypot(dx,dy)>9)ptr.moved=true;
   if(ptr.moved&&canRotate()){
-    ROT.yaw-=dx*.55;ROT.pitch=Math.max(-50,Math.min(62,ROT.pitch+dy*.45));
+    ROT.yaw-=dx*.55;ROT.pitch=Math.max(-60,Math.min(60,ROT.pitch+dy*.45));
     ptr.x=e.clientX;ptr.y=e.clientY;ROT.on=true;draw();
   }
 });
@@ -481,10 +491,9 @@ function canRotate(){
   if(MODE==='s4'||MODE==='s5')return NETT>.98;
   return true;
 }
-let CURKEY='tri';
 const baseYaw=()=>{const s=SH[CURKEY];return s&&s.yaw!=null?s.yaw:VIEW.yaw;};
 function viewYaw(){return baseYaw()+ROT.yaw;}
-function viewPitch(){return Math.max(-50,Math.min(80,VIEW.pitch+ROT.pitch));}
+function viewPitch(){return Math.max(-60,Math.min(60,VIEW.pitch+ROT.pitch));}
 
 /* ===================== うごき ===================== */
 let ANIM=null;
@@ -540,7 +549,7 @@ const L1=[
 ];
 const S1={i:0,phase:'base',t:0,ori:0,named:false};
 const BOXO=[I3,[[0,0,1],[1,0,0],[0,1,0]],[[1,0,0],[0,0,1],[0,1,0]]];  // 直方体：z／x／y の 向きに のばす
-const BOXP=[{poly:rect(3,2),H:2.2,yaw:-32},{poly:rect(2,2.2),H:3},{poly:rect(3,2.2),H:2}];
+const BOXP=[{poly:rect(3,2),H:2.2},{poly:rect(2,2.2),H:3},{poly:rect(3,2.2),H:2}];
 function s1Solid(){
   const it=L1[S1.i],s=SH[it.key];
   if(it.box){const b=BOXP[S1.ori],hh=b.H*Math.max(.001,S1.t);return prism(b.poly,hh,{z0:-b.H/2,z1:-b.H/2+hh,O:BOXO[S1.ori]});}
@@ -960,16 +969,15 @@ const L4=[
   {key:'cyl',label:'円柱',qs:[{t:'roll'}]},
 ];
 let NET=null,NETT=1;
-const NETYAW=-30;
 const S4={i:0,q:-1,phase:'explore',sel:[],opened:false,roll:-1,res:null,picked:null};
 function netFit(net){
   const b=net.box,nw=b.u1-b.u0,nh=b.v1-b.v0;
-  return Math.min(W*.9/nw,H*.86/nh,Math.min(W,H)*.44/net.rad);
+  return Math.min(W*.9/nw,H*.86/nh,Math.min(W,H)*.40/net.rad);
 }
 function netCam(net,t,sc){
   const s=ease(clamp01(t/.55));      // 組み立て はじめから ななめに 回して、形が 立ち上がる ようすを 見せる
   const c=vlerp(net.cN,net.cS,ease(clamp01(t)));
-  return makeCam((NETYAW+ROT.yaw)*s,(VIEW.pitch+ROT.pitch)*s,c,sc,W/2,H/2);
+  return makeCam(ROT.yaw*s,ROT.pitch*s,c,sc,W/2,H/2,OBL_K*s);
 }
 const eName=(L,i,j)=>KANA.indexOf(L[i])<KANA.indexOf(L[j])?L[i]+L[j]:L[j]+L[i];
 function labels(net){
@@ -1006,13 +1014,29 @@ function drawNet(net,t,o){
     const fill=col(rgb,k);
     out+=`<polygon points="${pstr(P)}" fill="${fill}" stroke="${fill}" stroke-width="${net.smooth&&f.kind==='side'?1.4:.6}" stroke-linejoin="round"/>`;
     const sk=f.kind==='base'?STROKE.base:STROKE.side;
-    P.forEach((a,i)=>{if(f.noEdge.includes(i))return;const b=P[(i+1)%P.length];
+    const seam=net.smooth&&f.kind==='side'&&t>.97;   // 円柱の 紙の つなぎ目は 組み立てたら かかない
+    P.forEach((a,i)=>{if(f.noEdge.includes(i)||(seam&&(i===1||i===3)))return;const b=P[(i+1)%P.length];
       out+=`<line x1="${a[0].toFixed(1)}" y1="${a[1].toFixed(1)}" x2="${b[0].toFixed(1)}" y2="${b[1].toFixed(1)}" stroke="${sk}" stroke-width="2.2" stroke-linecap="round"/>`;});
     if(o.dup&&f.dup&&t>.97)out+=`<polygon points="${pstr(P)}" fill="none" stroke="#d9748f" stroke-width="5" stroke-dasharray="9 6"/>`;
   });
+  // 組み立て おわったら、うらに かくれた 辺を 点線で かく（見取図と 同じ）
+  if(t>.97){
+    const fr=net.faces.map((f,fi)=>cam.facing(Wd.nrm[fi])>1e-6);
+    const E=(fi,i)=>[Wd.pts[fi][i],Wd.pts[fi][(i+1)%Wd.pts[fi].length]];
+    const same=(e,g)=>(vlen(vsub(e[0],g[0]))<1e-3&&vlen(vsub(e[1],g[1]))<1e-3)||(vlen(vsub(e[0],g[1]))<1e-3&&vlen(vsub(e[1],g[0]))<1e-3);
+    const front=[];net.faces.forEach((f,fi)=>{if(fr[fi])f.flat.forEach((_,i)=>front.push(E(fi,i)));});
+    net.faces.forEach((f,fi)=>{if(fr[fi])return;
+      f.flat.forEach((_,i)=>{if(f.noEdge.includes(i)||(net.smooth&&f.kind==='side'&&(i===1||i===3)))return;const e=E(fi,i);if(front.some(g=>same(e,g)))return;
+        const a=Q[fi][i],b=Q[fi][(i+1)%Q[fi].length];
+        out+=`<line x1="${a[0].toFixed(1)}" y1="${a[1].toFixed(1)}" x2="${b[0].toFixed(1)}" y2="${b[1].toFixed(1)}" stroke="#5d5040" stroke-width="1.8" stroke-dasharray="7 6" opacity=".75"/>`;});});
+  }
   // 点の 場所（組み立てた ときも ついて いく）
   const ptPos=i=>{for(const fi of net.order){const j=net.faces[fi].pi.indexOf(i);if(j>=0)return Q[fi][j];}};
-  return {svg:out,cam,Q,ptPos,flat,sc};
+  // 組み立てた ときに その 辺・点を ふくむ 面が 1つでも こちらを 向いて いれば 見える。
+  // 見えない ものを 上から 太い 線で かくと、形の 上に 線だけ 浮いて 見える（2026-09-26 指摘）→ 点線で かく
+  const facesOf=pts=>net.faces.map((f,fi)=>fi).filter(fi=>pts.every(p=>net.faces[fi].pi.some(x=>net.same(x,p))));
+  const visOf=pts=>flat||facesOf(pts).some(fi=>cam.facing(Wd.nrm[fi])>1e-6);
+  return {svg:out,cam,Q,ptPos,flat,sc,visOf};
 }
 function draw4(){
   const it=L4[S4.i];CURKEY=it.key;
@@ -1021,7 +1045,7 @@ function draw4(){
   const q=S4.q>=0?it.qs[S4.q]:null,fs=FS();
   if(q&&q.t!=='roll'){
     const L=labels(NET);
-    const hl=(i,j,c,w)=>{const a=r.ptPos(i),b=r.ptPos(j);return `<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="${c}" stroke-width="${w}" stroke-linecap="round"/>`;};
+    const hl=(i,j,c,w)=>{const a=r.ptPos(i),b=r.ptPos(j),v=r.visOf([i,j]);return `<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="${c}" stroke-width="${v?w:w*.5}" stroke-linecap="round" ${v?'':'stroke-dasharray="8 7" opacity=".9"'}/>`;};
     // 問題の 辺・点（金）と えらんだ もの（青）
     if(q.t==='e'){
       out+=hl(q.A,q.B,'#e8b92e',9);
@@ -1047,7 +1071,9 @@ function draw4(){
     }else if(q.t==='p'){
       [q.A].concat(S4.sel,S4.res||[]).forEach((i,k)=>{const P=r.ptPos(i);
         const c=i===q.A?'#e8b92e':(S4.res&&S4.res.includes(i))?'#5a8a4c':'#2f6fa8';
-        out+=`<circle cx="${P[0]}" cy="${P[1]}" r="${rr*.8}" fill="${c}" fill-opacity=".85" stroke="#fff" stroke-width="2"/>`;});
+        const v=r.visOf([i]);
+        out+=v?`<circle cx="${P[0]}" cy="${P[1]}" r="${rr*.8}" fill="${c}" fill-opacity=".9" stroke="#fff" stroke-width="2"/>`
+              :`<circle cx="${P[0]}" cy="${P[1]}" r="${rr*.55}" fill="none" stroke="${c}" stroke-width="3" stroke-dasharray="4 3"/>`;});
     }
   }
   if(q&&q.t==='roll'&&r.flat){
