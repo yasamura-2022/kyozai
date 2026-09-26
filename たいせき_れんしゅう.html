@@ -320,6 +320,7 @@ $('unit').innerHTML=(()=>{
 /* ===== ことば・ボタン ===== */
 function say(h,cls){const e=$('say');e.className='say'+(cls?' '+cls:'');e.innerHTML=`<span>${h}</span>`;}
 function actions(list){
+  killGhost();   /* 場面が かわる ときは 影を のこさない */
   const a=$('actions');a.innerHTML='';
   list.forEach(([c,t,f,dis])=>{
     const b=document.createElement('button');b.className='btn '+c;b.innerHTML=t;b.disabled=!!dis;
@@ -414,35 +415,57 @@ function resetCards(){
   S.slots=S.slots.map(s=>s==='fix'?'fix':null);S.sel=null;drawCards();drawSlots();
 }
 let justDropped=0;
+/* カードの ドラッグ。
+   2026-09-26 指摘＝「4の カードが 四角に うまく 入らなかった ときに カードが ふえた」。
+   指を はなした しらせ（pointerup）が とどかないと、影の カードが 画面に のこり、
+   次に さわるたびに 1まいずつ ふえて いた。
+   → 影は いつも 1まいだけ（`drag`）。はなした・とぎれた・ボタンが はなれて いた、の どれでも かならず 消す（`killGhost`）。
+   → □ の 少し 外で はなしても、いちばん 近い □ に 入れる（`nearSlot`） */
+let drag=null;
+function killGhost(){
+  document.querySelectorAll('.ghost').forEach(g=>g.remove());
+  drag=null;
+}
+function nearSlot(x,y){
+  let best=null,bd=1e9;
+  document.querySelectorAll('.slot').forEach(sl=>{
+    if(S.slots[+sl.dataset.i]==='fix')return;
+    const r=sl.getBoundingClientRect();
+    const dx=Math.max(r.left-x,0,x-r.right),dy=Math.max(r.top-y,0,y-r.bottom),d=Math.hypot(dx,dy);
+    if(d<bd){bd=d;best=sl;}
+  });
+  return best&&bd<=Math.max(40,best.getBoundingClientRect().width*0.8)?best:null;
+}
 function dragCard(el,ci){
-  let sx=null,sy,ghost=null;
   el.addEventListener('pointerdown',e=>{
     if(!(S.phase==='A'||S.phase==='B'))return;
-    sx=e.clientX;sy=e.clientY;ghost=null;el.setPointerCapture(e.pointerId);
+    killGhost();
+    drag={ci,el,id:e.pointerId,sx:e.clientX,sy:e.clientY,ghost:null};
+    try{el.setPointerCapture(e.pointerId);}catch(_){}
   });
-  el.addEventListener('pointermove',e=>{
-    if(sx==null)return;
-    if(!ghost&&Math.hypot(e.clientX-sx,e.clientY-sy)>8){
-      ghost=el.cloneNode(true);ghost.classList.add('ghost');document.body.appendChild(ghost);
-    }
-    if(ghost){ghost.style.left=e.clientX+'px';ghost.style.top=e.clientY+'px';}
-  });
-  const end=e=>{
-    if(sx==null)return;
-    const moved=Math.hypot(e.clientX-sx,e.clientY-sy)>8;
-    sx=null;
-    document.querySelectorAll('.ghost').forEach(g=>g.remove());ghost=null;
-    if(moved){
-      const tg=document.elementFromPoint(e.clientX,e.clientY);
-      const sl=tg&&tg.closest&&tg.closest('.slot');
-      if(sl){place(ci,+sl.dataset.i);justDropped=Date.now();}
-    }else{
-      S.sel=S.sel===ci?null:ci;drawCards();drawSlots();
-    }
-  };
-  el.addEventListener('pointerup',end);
-  el.addEventListener('pointercancel',()=>{sx=null;document.querySelectorAll('.ghost').forEach(g=>g.remove());});
 }
+addEventListener('pointermove',e=>{
+  if(!drag||e.pointerId!==drag.id)return;
+  if(e.pointerType==='mouse'&&e.buttons===0){killGhost();return;}   /* はなした しらせが 来なかった */
+  if(!drag.ghost&&Math.hypot(e.clientX-drag.sx,e.clientY-drag.sy)>8){
+    drag.ghost=drag.el.cloneNode(true);drag.ghost.classList.add('ghost');document.body.appendChild(drag.ghost);
+  }
+  if(drag.ghost){drag.ghost.style.left=e.clientX+'px';drag.ghost.style.top=e.clientY+'px';}
+},true);
+addEventListener('pointerup',e=>{
+  if(!drag||e.pointerId!==drag.id)return;
+  const {ci,sx,sy}=drag,moved=Math.hypot(e.clientX-sx,e.clientY-sy)>8;
+  killGhost();
+  if(moved){
+    const sl=nearSlot(e.clientX,e.clientY);
+    if(sl){place(ci,+sl.dataset.i);justDropped=Date.now();}
+  }else{
+    S.sel=S.sel===ci?null:ci;drawCards();drawSlots();
+  }
+},true);
+addEventListener('pointercancel',killGhost,true);
+addEventListener('blur',killGhost);
+document.addEventListener('visibilitychange',killGhost);
 
 /* 答え合わせ①：たて と 横 なら どちらの じゅんでも よい。高さを 入れたら 「まだ 積んで いない」と 言って もどす（×に しない） */
 function checkA(){
