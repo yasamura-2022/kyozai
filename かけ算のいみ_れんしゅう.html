@@ -157,6 +157,10 @@
   .m3title{text-align:center;font-weight:800;color:var(--sakura-d);letter-spacing:.06em;
     font-size:clamp(20px,calc(1vw + 2.2vh),34px)}
   .m3 .chips{gap:4px;flex-wrap:nowrap;width:100%}
+  .chip.kushi{height:clamp(64px,calc(3vw + 10vh),150px);padding:4px 0 3px;display:flex;align-items:flex-end;justify-content:center}
+  .chip.kushi svg{height:100%;width:auto;display:block}
+  @media (orientation:portrait){ .chip.kushi{height:clamp(64px,9vh,110px)} }   /* たて長は 上の だんごに 場所を まわす */
+  .chip.kushi.on{background:#fff4c9;border-color:var(--gold);box-shadow:0 3px 0 #a5811a}
   .m3 .chip{min-width:0;flex:1 1 0;padding:0 2px;max-width:48px}
   .m3 .dan{flex-direction:column;gap:3px}
   /* おす ところは 1か所：「くしを 1本 たす ▶」と 3択が 同じ 場所で 入れかわる */
@@ -259,8 +263,9 @@
   @media (max-height:640px){
     /* ステップ３：九九の ひょうに 場所を まわす */
     .dan{padding:3px 6px;gap:4px}
-    .dan .lbl{display:none}
+    .dan .lbl{font-size:12px}   /* 問いなので けさない */
     .chip{min-height:34px;min-width:34px;font-size:16px}
+    .chip.kushi{height:clamp(64px,15vh,96px)}   /* だんごが 数えられる 大きさを のこす */
     .m3 .say{min-height:calc(4.5em + 10px);font-size:13px}
     .eq3{padding:calc(1.4em + 8px) 6px 3px;font-size:20px}   /* 上は ふきだしの ぶん
     .choice{padding:4px 0;font-size:22px}
@@ -309,7 +314,7 @@
 
     <div id="work">
       <!-- ステップ３：だんを えらぶ（先生が 使う。はじめから ぜんぶ えらべる）＋めあて -->
-      <div class="dan hidden" id="dan"><span class="lbl">なんの だん？</span><div class="chips" id="danChips"></div></div>
+      <div class="dan hidden" id="dan"><span class="lbl">なんこ ささった くしで つくる？</span><div class="chips" id="danChips"></div></div>
       <div class="m3title hidden" id="m3title"></div>
       <div class="say" id="say"></div>
       <!-- ステップ３：なんこ ふえる？ -->
@@ -730,8 +735,14 @@ S.dan=2;
 (function(){
   const box=$('danChips');
   for(let d=1;d<=9;d++){
-    const b=document.createElement('button');b.className='chip';b.textContent=d;b.dataset.d=d;
-    b.onclick=()=>{S.dan=d;newDan();};box.appendChild(b);
+    /* 数字では なく くしの 絵で えらぶ（だんごを 数えて「1本の 数＝だん」と 考える）。
+       どの くしも 同じ 大きさの だんごで かく＝多い くしほど 長い */
+    const b=document.createElement('button');b.className='chip kushi';b.dataset.d=d;
+    b.setAttribute('aria-label',d+'こ');
+    let g=`<svg viewBox="0 0 20 100" preserveAspectRatio="xMidYMax meet"><line x1="10" y1="2" x2="10" y2="99" stroke="#caa06a" stroke-width="2.4" stroke-linecap="round"/>`;
+    for(let i=0;i<d;i++){const c=i%3;g+=`<circle cx="10" cy="${7+i*10.3}" r="4.7" fill="${DCOL[c]}" stroke="${DSTR[c]}" stroke-width="1.2"/>`;}
+    b.innerHTML=g+'</svg>';
+    b.onclick=()=>{S.dan=d;S.picked=true;newDan();};box.appendChild(b);
   }
 })();
 function newDan(){
@@ -744,7 +755,9 @@ function newDan(){
   $('choices').classList.add('off');$('choices').innerHTML='<button class="choice">0</button>';
   $('eq3').classList.remove('hidden');$('eq3').classList.add('off');$('eq3').innerHTML='<div class="l2"><span class="tipw">0<span class="tip">0</span></span></div>';
   document.querySelectorAll('#danChips .chip').forEach(c=>c.classList.toggle('on',+c.dataset.d===S.dan));
-  say(`くしの 下に ${S.k}の だんが できて いくよ。<br>青い ボタンで くしを 1本ずつ たそう`);
+  say(S.picked?`${S.k}こ ささった くしだね。<br>${S.k}の だんを つくろう`
+              :`くしの 下に ${S.k}の だんが できて いくよ。<br>青い ボタンで くしを 1本ずつ たそう`);
+  S.picked=false;
   render();act3();
 }
 function render3(){
