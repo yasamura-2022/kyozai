@@ -941,16 +941,55 @@ function draw4(){
       g+=outline(N,N,N,'#7d9a97',true).split('<line').slice(0,4).join('<line');
       if(S4.slab>0) g+=slabSVG(N,N,Math.max(N*S4.slab,0.09),0,TONE[0]);
       g+=outline(N,N,N,'#5c7d7a',true).split('<line').slice(4).map(x=>'<line'+x).join('');
-      if(S4.slab>0&&S4.slab<0.02) g+=txt(side/2,-U*0.7,'高さ 1cm の 1だん',{fs:fs*0.8,c:'#2f7f79'});
+      if(S4.slab>0&&S4.slab<0.02) g+=magnifier(side,fs);
     }
-    const b=[side,0],t=[side+N*DX,N*DY];
-    g+=txt(side/2,fs*1.5,'1m',{fs});
+    const b=[side,0],t=[side+N*DX,N*DY],thin=S4.slab>0&&S4.slab<0.02&&!S4.grid;
+    g+=txt(side/2,fs*1.5,thin?'1m ＝ 100cm':'1m',{fs});
     g+=txt((b[0]+t[0])/2+fs*0.9,(b[1]+t[1])/2+fs*1.4,'1m',{fs,a:'start'});
+    if(thin){
+      g+=txt(side/2,fs*2.8,'横に 100個',{fs,c:'#2f7f79'});
+      g+=txt((b[0]+t[0])/2+fs*0.9,(b[1]+t[1])/2+fs*2.7,'たてに 100列',{fs,a:'start',c:'#2f7f79'});
+      /* 10cmごとの 目もり */
+      const p=(i,j)=>[i*U+j*DX,j*DY];
+      for(let q=1;q<N;q++){
+        const a1=p(q,0),a2=p(N,q);
+        g+=`<line x1="${a1[0]}" y1="${a1[1]}" x2="${a1[0]}" y2="${a1[1]+fs*0.35}" stroke="#2f7f79" stroke-width="2"/>`;
+        g+=`<line x1="${a2[0]}" y1="${a2[1]}" x2="${a2[0]+fs*0.35}" y2="${a2[1]}" stroke="#2f7f79" stroke-width="2"/>`;
+      }
+    }
     g+=txt(side+N*DX+fs*0.4,-side/2+N*DY,'1m',{fs,a:'start'});
-    vb=[-side*0.78,-side*1.35-fs*1.6,side*1.78+N*DX+fs*2.2,side*1.35+fs*3.6];
+    vb=[-side*0.78,-side*1.35-fs*1.6,side*1.78+N*DX+fs*(thin?5.6:2.2),side*1.35+fs*(thin?4.4:3.6)];
   }
   svg.setAttribute('viewBox',vb.join(' '));
   svg.innerHTML=g;S4.newK=-1;
+}
+/* 虫めがね：うすい 1だんの かどを 大きく して、1cm³ の 立方体が ならんで いる ことを 見せる。
+   2026-09-26 指摘＝「ここが 分かりにくい」。板を うすく ぬった だけでは 1cm³ が 見えず、
+   ①（1こずつ 見えた）と つながらなかった。問いの 文に 答えの 式（たて 100列 × 横 100個）まで 書いて いたのも やめた */
+function magnifier(side,fs){
+  const cx=side*0.52,cy=-side*0.6,r=side*0.34,u2=r*0.42,dx2=u2*0.46,dy2=-u2*0.33;
+  const ox=cx-r*0.72,oy=cy+r*0.3;           /* 小さい 立方体の かど（左手前）*/
+  const P=(i,j,k)=>[ox+i*u2+j*dx2,oy-k*u2+j*dy2];
+  let g=`<defs><clipPath id="mag"><circle cx="${cx}" cy="${cy}" r="${r}"/></clipPath></defs>`;
+  /* かどへの 引き出し線 */
+  const ang=Math.atan2(0-cy,0-cx),ex=cx+Math.cos(ang)*r,ey=cy+Math.sin(ang)*r;
+  g+=`<line x1="${ex}" y1="${ey}" x2="${U*0.25}" y2="${-U*0.15}" stroke="#5c7d7a" stroke-width="3"/>`;
+  g+=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="#fbfefd"/>`;
+  g+=`<g clip-path="url(#mag)">`;
+  const t=TONE[0];
+  for(let j=5;j>=0;j--)for(let i=0;i<8;i++){
+    const c=(a,b,e)=>P(i+a,j+b,e);
+    g+=`<polygon points="${ps([c(0,0,0),c(1,0,0),c(1,0,1),c(0,0,1)])}" fill="${t.f}" stroke="${t.s}" stroke-width="2"/>`+
+       `<polygon points="${ps([c(0,0,1),c(1,0,1),c(1,1,1),c(0,1,1)])}" fill="${t.t}" stroke="${t.s}" stroke-width="2"/>`+
+       `<polygon points="${ps([c(1,0,0),c(1,1,0),c(1,1,1),c(1,0,1)])}" fill="${t.r}" stroke="${t.s}" stroke-width="2"/>`;
+  }
+  g+=`</g><circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#5c7d7a" stroke-width="5"/>`;
+  /* 1こ目に「1cm」 */
+  const a0=P(0,0,0),a1=P(1,0,0);
+  g+=`<line x1="${a0[0]}" y1="${a0[1]+fs*0.45}" x2="${a1[0]}" y2="${a1[1]+fs*0.45}" stroke="#a8691f" stroke-width="3"/>`;
+  g+=txt((a0[0]+a1[0])/2,a0[1]+fs*1.25,'1cm',{fs:fs*0.85,c:'#a8691f'});
+  g+=txt(cx,cy-r-fs*0.5,'かどを 大きく すると',{fs:fs*0.8,c:'#5c7d7a'});
+  return g;
 }
 /* 1だん（k）を rowsHere 列ぶん。1000こ かくので 面を まとめない ぶん 手前だけ 見える ように かく */
 function box3part(W,D,k,rowsHere,tone,isNew){
@@ -1075,10 +1114,10 @@ function m_len(){
 function m_slab(){
   noChoices();actions4([]);
   anim(700,r=>{S4.slab=0.01*r;},()=>{
-    say4('1辺 1cmの 立方体を 1だん（高さ 1cm）しきつめたよ。<br>1だんに 何個？（たて 100列 × 横 100個）');
+    say4('ゆかに 1cm<sup>3</sup>の 立方体を 1だん しきつめたよ。<br>1だんに 何個 ならぶ？');
     choices4([200,1000,10000],10000,()=>{
       say4('100 × 100 ＝ <span class="a">10000個</span>。これを 100だん 積むと？','ok');
-      actions4([['play','100だん 積む ▶',m_stack]]);},'もう一回。100 × 100 を 計算しよう');
+      actions4([['play','100だん 積む ▶',m_stack]]);},'もう一回。横に 100個、たてに 100列 ならぶよ');
   });
 }
 function m_stack(){
