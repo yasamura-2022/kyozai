@@ -149,6 +149,14 @@
   .btn.sub{background:#a99a7c;box-shadow:0 4px 0 #85795f;flex:.6}
   .btn:disabled{opacity:.45;box-shadow:none}
 
+  /* ステップ５：式だけ（数直線を 出さない） */
+  .main.m5{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr);grid-template-areas:"work"}
+  .main.m5 .stage{display:none}
+  .main.m5 .work{width:100%;max-width:760px;justify-self:center;justify-content:center;min-height:0}
+  .main.m5 .prob{font-size:clamp(17px,calc(.8vw + 1.8vh),28px);padding:10px 14px}
+  .main.m5 .eq{font-size:clamp(24px,calc(1.2vw + 3vh),48px)}
+  .main.m5 .shiki{padding:14px 8px}
+
   @media (max-height:640px){
     header{display:none}
     .tab{padding:5px 4px}
@@ -173,6 +181,7 @@
     <button class="tab" data-m="s2"><span class="step">ステップ２</span>速さを 求める</button>
     <button class="tab" data-m="s3"><span class="step">ステップ３</span>道のりと 時間</button>
     <button class="tab" data-m="s4"><span class="step">ステップ４</span>時速・分速・秒速</button>
+    <button class="tab" data-m="s5"><span class="step">ステップ５</span>式で 考える</button>
   </div>
 
   <div class="main" id="main">
@@ -224,7 +233,7 @@ if(window.visualViewport) visualViewport.addEventListener('resize',setFH);
 
 const CM='#2f8f8a',CT='#c0661f',CH='#7a52b3',CI='#6f5d3d';
 const easeIO=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
-const S={busy:false,idx:{s1:0,s2:0,s3:0,s4:0}};
+const S={busy:false,idx:{s1:0,s2:0,s3:0,s4:0,s5:0}};
 function anim(ms,f,done,ease=easeIO){
   S.busy=true;const t0=performance.now();
   const step=now=>{const t=Math.min(1,(now-t0)/ms);f(ease(t));
@@ -287,7 +296,7 @@ $('stage').addEventListener('click',()=>{
   $('stage').classList.remove('tapped');void $('stage').offsetWidth;$('stage').classList.add('tapped');
   stageTap();
 });
-function draw(){ if(MODE==='s1') drawRace(); else drawLine(); }
+function draw(){ if(MODE==='s1') drawRace(); else if(MODE!=='s5') drawLine(); }
 
 /* =====================================================================
    ステップ１：走って 比べる
@@ -467,7 +476,19 @@ const P4=[
   {kind:'v',e:'🚃',nm:'時速 → 分速',D:72000,du:'m',T:60,tu:'分',km:72,botEnd:'60分（1時間）',
    txt:'<b class="h">時速 72km</b> は、分速 何m？',intro:'時速 72km は、<b class="t">1時間</b>に <b class="m">72km</b> 進む 速さ。<br><b class="t">1時間 ＝ 60分</b> だね'}
 ];
-const LIST={s2:P2,s3:P3,s4:P4};
+/* ステップ５：式だけで 考える（数直線は 出さない）。
+   速さ・道のり・時間 を まぜる＝「何を 求めるか」から 自分で きめる。数の じゅんも まぜる */
+const P5=[
+  {kind:'v',e:'🚗',D:120,du:'km',T:2,tu:'時間',txt:'車が <b class="t">2時間</b> で <b class="m">120km</b> 走りました。時速 何km？'},
+  {kind:'d',e:'🚲',V:200,T:6,du:'m',tu:'分',txt:'<b class="h">分速 200m</b> で <b class="t">6分</b> 走ると、何m 進む？'},
+  {kind:'t',e:'🏃',V:7,D:84,du:'m',tu:'秒',txt:'<b class="m">84m</b> を <b class="h">秒速 7m</b> で 走ると、何秒 かかる？'},
+  {kind:'v',e:'🚶',D:450,du:'m',T:9,tu:'分',txt:'<b class="m">450m</b> を <b class="t">9分</b> で 歩きました。分速 何m？'},
+  {kind:'t',e:'🚃',V:90,D:270,du:'km',tu:'時間',txt:'<b class="h">時速 90km</b> の 電車で <b class="m">270km</b> 進むと、何時間 かかる？'},
+  {kind:'d',e:'🐆',V:25,T:8,du:'m',tu:'秒',txt:'<b class="t">8秒</b>、<b class="h">秒速 25m</b> で 走ると、何m 進む？'},
+  {kind:'v',e:'🐕',D:72,du:'m',T:6,tu:'秒',txt:'いぬが <b class="m">72m</b> を <b class="t">6秒</b> で 走りました。秒速 何m？'},
+  {kind:'t',e:'🚶',V:80,D:200,du:'m',tu:'分',txt:'<b class="h">分速 80m</b> で <b class="m">200m</b> 歩くと、何分 かかる？'}
+];
+const LIST={s2:P2,s3:P3,s4:P4,s5:P5};
 const Q=()=>LIST[MODE][S.idx[MODE]];
 /* 3つの 量を そろえる */
 function full(q){
@@ -488,6 +509,7 @@ function lineStart(){
   Object.assign(L,{phase:'look',st:0,slots:[],sel:null,cards:[],nameDone:false});
   hideAll();stageTap=null;
   prob(`<span class="no">問題 ${S.idx[MODE]+1} / ${list.length}</span><span>${q.txt}</span>`);
+  if(MODE==='s5'){ask();return;}
   lookStep();
 }
 /* 見る ところ（青い ボタン）の ならび */
@@ -542,7 +564,11 @@ function ask(){
   if(q.kind==='v') G.seg=true;
   const what=q.kind==='v'?`<b class="h">1${q.tu}あたり</b> 何${q.du} 進むかな？`
             :q.kind==='d'?`${q.T}${q.tu}で 何${q.du} 進むかな？`:`${q.D}${q.du} 進むのに 何${q.tu} かかるかな？`;
-  say(what+'<br><small>カードを □ に 入れて 式を つくろう</small>');
+  if(MODE==='s5'){
+    /* 何を 求めるかだけ 言う（どの 式かは 言わない） */
+    const goal=q.kind==='v'?'<b class="h">速さ</b>':q.kind==='d'?'<b class="m">道のり</b>':'<b class="t">時間</b>';
+    say(`${goal}を 求める 問題だね。<br><small>カードを □ に 入れて 式を つくろう</small>`);
+  }else say(what+'<br><small>カードを □ に 入れて 式を つくろう</small>');
   buildEq();
   $('shiki').classList.remove('hidden');
   askButtons();
@@ -712,11 +738,14 @@ function finishLine(q){
     msg=`よくできました！ 速さは <b class="h">${v}</b>`;
     sum=`<span class="f">速さ ＝ <span class="m">道のり</span> ÷ <span class="t">時間</span></span>
          <span class="small">1${q.tu}あたりに 進む 道のり ＝ ${q.vu}</span>`;
-  }else if(MODE==='s3'){
+  }else if(MODE==='s3'||MODE==='s5'){
     const rev=q.kind==='d'&&L.cards[L.slots[0]].r==='T';
-    msg=q.kind==='d'?`よくできました！ <b class="m">${fmt(q.D)}${q.du}</b> 進む`:`よくできました！ <b class="t">${fmt(q.T)}${q.tu}</b> かかる`;
+    msg=q.kind==='v'?`よくできました！ 速さは <b class="h">${v}</b>`
+       :q.kind==='d'?`よくできました！ <b class="m">${fmt(q.D)}${q.du}</b> 進む`:`よくできました！ <b class="t">${fmt(q.T)}${q.tu}</b> かかる`;
     if(rev) msg+=`<br><small>公式では <span class="h">速さ</span> × <span class="t">時間</span> の 順に 書くよ</small>`;
-    sum=q.kind==='d'?`<span class="f"><span class="m">道のり</span> ＝ <span class="h">速さ</span> × <span class="t">時間</span></span>
+    sum=q.kind==='v'?`<span class="f">速さ ＝ <span class="m">道のり</span> ÷ <span class="t">時間</span></span>
+         <span class="small">1${q.tu}あたりに 進む 道のり</span>`
+        :q.kind==='d'?`<span class="f"><span class="m">道のり</span> ＝ <span class="h">速さ</span> × <span class="t">時間</span></span>
          <span class="small">1${q.tu}の ${q.V}${q.du} が ${q.T}こ分</span>`
         :`<span class="f"><span class="t">時間</span> ＝ <span class="m">道のり</span> ÷ <span class="h">速さ</span></span>
          <span class="small">${q.D}${q.du} の 中に ${q.V}${q.du} が ${fmt(q.T)}こ分</span>`;
@@ -735,7 +764,7 @@ function finishLine(q){
   }
   L.phase='done';
   say(msg,'ok');showSum(sum);
-  actions([['sub','もう一度 見る',lineStart],['next','次の 問題 →',nextLine]]);
+  actions([['sub',MODE==='s5'?'もう一度':'もう一度 見る',lineStart],['next','次の 問題 →',nextLine]]);
 }
 function nextLine(){const l=LIST[MODE];S.idx[MODE]=(S.idx[MODE]+1)%l.length;lineStart();}
 
@@ -834,6 +863,7 @@ document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{
   if(S.busy)return;
   MODE=b.dataset.m;
   document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x===b));
+  $('main').classList.toggle('m5',MODE==='s5');
   if(MODE==='s1') s1start(); else lineStart();
 }));
 
