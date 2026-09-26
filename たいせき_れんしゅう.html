@@ -440,29 +440,36 @@ function dragCard(el,ci){
   el.addEventListener('pointerdown',e=>{
     if(!(S.phase==='A'||S.phase==='B'))return;
     killGhost();
-    drag={ci,el,id:e.pointerId,sx:e.clientX,sy:e.clientY,ghost:null};
+    drag={ci,el,sx:e.clientX,sy:e.clientY,x:e.clientX,y:e.clientY,ghost:null};
     try{el.setPointerCapture(e.pointerId);}catch(_){}
   });
 }
+/* 「ボタンが 押されて いない 移動は やめる」は 入れない。
+   2026-09-26 指摘＝「5を 左に 入れようと しても 入らない」。トラックパッドの 3本指ドラッグなどは
+   ドラッグ中でも ボタンが 押されて いない あつかいに なり、とちゅうで 打ち切られて いた */
 addEventListener('pointermove',e=>{
-  if(!drag||e.pointerId!==drag.id)return;
-  if(e.pointerType==='mouse'&&e.buttons===0){killGhost();return;}   /* はなした しらせが 来なかった */
+  if(!drag)return;
+  drag.x=e.clientX;drag.y=e.clientY;
   if(!drag.ghost&&Math.hypot(e.clientX-drag.sx,e.clientY-drag.sy)>8){
     drag.ghost=drag.el.cloneNode(true);drag.ghost.classList.add('ghost');document.body.appendChild(drag.ghost);
   }
   if(drag.ghost){drag.ghost.style.left=e.clientX+'px';drag.ghost.style.top=e.clientY+'px';}
 },true);
-addEventListener('pointerup',e=>{
-  if(!drag||e.pointerId!==drag.id)return;
-  const {ci,sx,sy}=drag,moved=Math.hypot(e.clientX-sx,e.clientY-sy)>8;
+function finishDrag(x,y){
+  if(!drag)return;
+  const {ci,sx,sy}=drag,moved=Math.hypot(x-sx,y-sy)>8;
   killGhost();
   if(moved){
-    const sl=nearSlot(e.clientX,e.clientY);
+    const sl=nearSlot(x,y);
     if(sl){place(ci,+sl.dataset.i);justDropped=Date.now();}
   }else{
     S.sel=S.sel===ci?null:ci;drawCards();drawSlots();
   }
-},true);
+}
+addEventListener('pointerup',e=>finishDrag(e.clientX,e.clientY),true);
+addEventListener('mouseup',e=>finishDrag(e.clientX,e.clientY),true);          /* pointerup が 来なかった ときの 予備 */
+/* はなした しらせが どちらも 来ないまま 次に 押した ＝ そこで はなした ことに する */
+addEventListener('pointerdown',()=>{if(drag)finishDrag(drag.x,drag.y);},true);
 addEventListener('pointercancel',killGhost,true);
 addEventListener('blur',killGhost);
 document.addEventListener('visibilitychange',killGhost);
