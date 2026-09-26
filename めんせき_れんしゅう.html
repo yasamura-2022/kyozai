@@ -257,7 +257,7 @@ const PR={
 const NAME={para:'平行四辺形',tri:'三角形',trap:'台形',rhom:'ひし形'};
 
 const S={list:'s1',idx:{s1:0,s2:0,trap:0,rhom:0},st:0,t:1,phase:'look',busy:false,
-         slots:[],sel:null,cards:[],done:false,flash:false,count:0};
+         slots:[],sel:null,cards:[],done:false,flash:false};
 const Q=()=>PR[S.list][S.idx[S.list]];
 
 /* ===== 絵の 道具 ===== */
@@ -323,13 +323,9 @@ const DRAW={
     g+=poly(T,st>=1?MOVE:SHAPE.replace('stroke-width="3"','stroke-width="0"'));
     if(st===0) g+=poly([A,B,C,D],'fill="none" stroke="#6f5d3d" stroke-width="3" stroke-linejoin="round"');
     if(st>=2&&t>=1) g+=poly([F,[b+o,0],C,D],'fill="none" stroke="#3d5e5b" stroke-width="4.5" stroke-linejoin="round"');
-    /* 1cm²の ますを 数える（答えた あと） */
-    if(S.done&&S.count>0){
-      let k=0;
-      for(let y=h-1;y>=0;y--)for(let x=0;x<b;x++){k++;if(k>S.count)break;
-        g+=`<rect x="${X(o+x)+3}" y="${Y(y+1)+3}" width="${U-6}" height="${U-6}" rx="4" fill="#fff4c9" opacity=".75"/>`;
-        g+=lab(o+x+.5,y+.5,k,'#8f7417',{k:.62});}
-    }
+    /* 1cm²の ますに 数字を ふって 数える しかけは 入れない（2026-09-26 に 消した）。
+       この 単元の ねらいは「計算によって求める」。答えた あとに 数えて 見せると
+       「本当は 数えれば いい」に なる。しかも 切った ななめの 線と 数字が かさなって 見づらかった */
     /* 高さ（点線）と 直角 */
     g+=hDash(D,F)+rightMark(F,[1,0],[0,1],CT);
     if(st===1) g+=seg(D,F,'stroke="#c9a227" stroke-width="6" stroke-linecap="round" opacity=".55"');
@@ -495,7 +491,7 @@ function actions(list,id='actions'){
 }
 function start(){
   const q=Q();
-  Object.assign(S,{st:0,t:1,phase:'look',done:false,count:0,sel:null,slots:[]});
+  Object.assign(S,{st:0,t:1,phase:'look',done:false,sel:null,slots:[]});
   prob();
   $('shiki').classList.add('hidden');$('sum').classList.add('hidden');
   lookStep();
@@ -643,20 +639,17 @@ function check(){
     $('what'+i).className='what '+(cls==='gt'?'t':'a');
   });
   $('cards').innerHTML='';
-  const tail=q.type==='para'?`<br>1cm<sup>2</sup>の ますで 数えても ${A}こ`:'';
-  say(`よくできました！ 面積は ${A}cm<sup>2</sup>${tail}`,'ok');
+  /* かける 順は どちらでも 正かい。高さ × 底辺 と 置いた ときだけ 公式の 順を 一言 そえる */
+  const rev=(q.type==='para'||q.type==='tri')&&r[0]==='h';
+  say(`よくできました！ 面積は ${A}cm<sup>2</sup>`+(rev?'<br>公式では <span class="a">底辺</span> × <span class="t">高さ</span> の 順に 書くよ':''),'ok');
   showSum(q);
   actions([['sub','もう一度 見る',start],['next','次の 問題 →',next]]);
-  if(q.type==='para'){ /* ますを 1こずつ 数える */
-    S.count=0;const n=q.b*q.h;
-    const tick=()=>{if(!S.done||Q()!==q)return;S.count++;draw();if(S.count<n)setTimeout(tick,Math.max(30,900/n));};
-    tick();
-  }else draw();
+  draw();
 }
 function showSum(q){
   const e=$('sum');e.classList.remove('hidden');
   const F={
-    para:`<span class="small">長方形の 面積 ＝ <span class="a">横</span> × <span class="t">たて</span></span>
+    para:`<span class="small">長方形の 面積 ＝ <span class="t">たて</span> × <span class="a">横</span> ＝ <span class="t">高さ</span> × <span class="a">底辺</span></span>
           <span class="f">平行四辺形の 面積 ＝ <span class="a">底辺</span> × <span class="t">高さ</span></span>`,
     tri:`<span class="small">平行四辺形の 面積 ＝ <span class="a">底辺</span> × <span class="t">高さ</span>　その 半分</span>
          <span class="f">三角形の 面積 ＝ <span class="a">底辺</span> × <span class="t">高さ</span> ÷ 2</span>`,
