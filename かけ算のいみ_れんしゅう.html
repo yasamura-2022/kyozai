@@ -90,6 +90,10 @@
     border:7px solid transparent;border-right:10px solid #fff;border-left:0}
   .bubble .num{font-size:1.25em;color:var(--ink)}
   .bubble .re{display:block;color:var(--sakura-d);font-size:.82em}
+  /* ステップ２：おきゃくさんが わたす しきの かみ */
+  .ticket{display:inline-block;background:#fffbe8;border:3px solid var(--gold);border-radius:10px;
+    padding:.05em .5em;margin:.1em 0 .2em;font-size:1.7em;letter-spacing:.06em;line-height:1.2;
+    box-shadow:0 3px 0 #e2cf8f}
   .bubble mark{background:linear-gradient(transparent 55%,#ffe98a 55%);color:inherit}
 
   /* ===== だんごの だい ===== */
@@ -196,8 +200,8 @@
   <header><h1>おだんごやさんの <span class="em">かけ算</span></h1></header>
 
   <div class="tabs">
-    <button class="tab on"><span class="step">ステップ１</span>ちゅうもんを きく</button>
-    <button class="tab" disabled><span class="step">ステップ２</span>しきから つくる<span class="soon">じゅんびちゅう</span></button>
+    <button class="tab on" data-m="s1"><span class="step">ステップ１</span>ちゅうもんを きく</button>
+    <button class="tab" data-m="s2"><span class="step">ステップ２</span>しきから つくる</button>
     <button class="tab" disabled><span class="step">ステップ３</span>ふやして みる<span class="soon">じゅんびちゅう</span></button>
     <button class="tab" disabled><span class="step">ステップ４</span>かぞえないで わかる<span class="soon">じゅんびちゅう</span></button>
   </div>
@@ -276,17 +280,27 @@ const ORDERS=[
   {k:3,n:4,s:'b'},{k:2,n:7,s:'a'},{k:4,n:6,s:'b'},{k:5,n:4,s:'a'},
   {k:3,n:8,s:'b'},{k:4,n:2,s:'a'},{k:2,n:9,s:'b'},{k:5,n:3,s:'b'}
 ];
+/* ステップ２：しき → だんご。k＝×の まえ（1本の かず）、n＝×の うしろ（くしの かず）
+   ぎゃくに つくれる もの（どちらも 5以下）を まぜて おく＝くらべる 画面が 出る */
+const SHIKI=[
+  {k:4,n:3},{k:2,n:5},{k:5,n:2},{k:3,n:6},{k:2,n:3},{k:5,n:3},
+  {k:3,n:4},{k:4,n:7},{k:3,n:2},{k:5,n:6},{k:4,n:5},{k:2,n:8}
+];
+const LIST={s1:ORDERS,s2:SHIKI};
 const GUESTS=['kuma','usagi','neko','tanuki','panda'];
 const KMAX=5,NMAX=9;
 
-const S={p:0,phase:'build',k:0,n:1,prevK:0,prevN:1,slots:[null,null],sel:null,tries:0,no:[]};
+let M='s1';                 // いまの ステップ
+const S={pi:{s1:0,s2:0},run:0,phase:'build',k:0,n:1,prevK:0,prevN:1,slots:[null,null],sel:null,tries:0,no:[]};
 
 /* ===== え ===== */
 const DCOL=['#f4a7b9','#fbf5e6','#a9cf86'];
 const DSTR=['#c77b8e','#bba98a','#789b58'];
 function dangoSVG(k,n,o={}){
   const par=o.bottom?'xMidYMax':'xMidYMid';
-  const colW=84,cols=o.cols||NMAX,W=cols*colW,H=o.labels?448:410;
+  const colW=84,cols=o.cols||NMAX,W=cols*colW;
+  const bot=Math.max(398,62+(k-1)*56+27+72);        // くしの 下の はし（だんごが 多いと のばす）
+  const H=bot+12+(o.labels?38:0);
   const x0=(W-n*colW)/2;
   let s=`<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="${par} meet" xmlns="http://www.w3.org/2000/svg">`;
   for(let j=0;j<n;j++){
@@ -294,8 +308,8 @@ function dangoSVG(k,n,o={}){
     const newSk=o.anim&&j>=o.prevN;
     if(o.hl!=null&&j<=o.hl) s+=`<rect x="${cx-38}" y="10" width="76" height="${H-14}" rx="18" fill="${j===o.hl?'#ffe98a':'#fff2bf'}"/>`;
     s+=`<g class="${newSk?'sk-new':''}">`;
-    s+=`<line x1="${cx}" y1="22" x2="${cx}" y2="398" stroke="${'#caa06a'}" stroke-width="8" stroke-linecap="round"/>`;
-    s+=`<line x1="${cx}" y1="330" x2="${cx}" y2="398" stroke="#b1854d" stroke-width="8" stroke-linecap="round"/>`;
+    s+=`<line x1="${cx}" y1="22" x2="${cx}" y2="${bot}" stroke="#caa06a" stroke-width="8" stroke-linecap="round"/>`;
+    s+=`<line x1="${cx}" y1="${bot-68}" x2="${cx}" y2="${bot}" stroke="#b1854d" stroke-width="8" stroke-linecap="round"/>`;
     for(let i=0;i<k;i++){
       const cy=62+i*56,c=i%3;
       const newDg=o.anim&&!newSk&&i>=o.prevK;
@@ -305,7 +319,7 @@ function dangoSVG(k,n,o={}){
     }
     s+=`</g>`;
     if(o.labels&&o.labels[j]!=null)
-      s+=`<text x="${cx}" y="438" text-anchor="middle" font-size="34" font-weight="800" fill="#6b4f2a">${o.labels[j]}</text>`;
+      s+=`<text x="${cx}" y="${bot+40}" text-anchor="middle" font-size="34" font-weight="800" fill="#6b4f2a">${o.labels[j]}</text>`;
   }
   return s+'</svg>';
 }
@@ -341,7 +355,12 @@ function face(a,happy){
 }
 
 /* ===== ことば ===== */
-const O=()=>ORDERS[S.p%ORDERS.length];
+const O=()=>LIST[M][S.pi[M]%LIST[M].length];
+const GUEST=()=>GUESTS[(S.pi[M]+(M==='s2'?2:0))%GUESTS.length];
+function shikiText(re){
+  const {k,n}=O();
+  return (re?`<span class="re">${re}</span>`:'')+`<span class="ticket">${k} × ${n}</span><br>この しきの とおりに つくってね`;
+}
 function orderText(m){
   const {k,n,s}=O(), K=`<span class="num">${k}</span>`, N=`<span class="num">${n}</span>`;
   const kk=m==='k'?`<mark>1本に ${K}こずつ</mark>`:`1本に ${K}こずつ`;
@@ -373,13 +392,13 @@ function render(){
 }
 
 function newOrder(){
-  S.phase='build';S.k=0;S.n=1;S.prevK=0;S.prevN=1;S.slots=[null,null];S.sel=null;S.tries=0;S.no=[];
-  S.hl=null;S.labels=null;
-  const g=GUESTS[S.p%GUESTS.length];
+  S.run++;S.phase='build';S.k=0;S.n=1;S.prevK=0;S.prevN=1;S.slots=[null,null];S.sel=null;S.tries=0;S.no=[];
+  S.hl=null;S.labels=null;S.cmpOk=false;
+  const g=GUEST();
   $('face').innerHTML=face(g,false);$('face').classList.remove('hop');void $('face').offsetWidth;$('face').classList.add('hop');
-  $('bubble').innerHTML=orderText();
+  $('bubble').innerHTML=M==='s1'?orderText():shikiText();
   $('build').classList.remove('hidden');$('shiki').classList.add('hidden');
-  say('ちゅうもんを 聞いて、だんごを つくろう');
+  say(M==='s1'?'ちゅうもんを 聞いて、だんごを つくろう':'しきを 見て、だんごを つくろう');
   updVals();render();
   actions([['show','おきゃくさんに わたす',hand]]);
 }
@@ -406,9 +425,10 @@ $('labN').innerHTML=ICON_KUSHI+'くしの かず';
 function hand(){
   const {k,n}=O();
   if(S.k===0){say('まだ だんごが ささって いないよ','try');return;}
+  if(M==='s2'){handShiki();return;}
   const okK=S.k===k, okN=S.n===n;
   if(okK&&okN){
-    $('face').innerHTML=face(GUESTS[S.p%GUESTS.length],true);
+    $('face').innerHTML=face(GUEST(),true);
     $('bubble').innerHTML=`ありがとう！<span class="re">${orderText()}</span>`;
     toShiki();return;
   }
@@ -420,13 +440,34 @@ function hand(){
   say('もう一回 ちゅうもんを 聞いて なおそう','try');
 }
 
+/* ステップ２：しきの とおりに できたか */
+function handShiki(){
+  const {k,n}=O();
+  if(S.k===k&&S.n===n){
+    $('face').innerHTML=face(GUEST(),true);
+    $('bubble').innerHTML=shikiText('ありがとう！');
+    startCount();return;
+  }
+  if(S.k===n&&S.n===k){                 // ぎゃくに つくった → ×に しないで くらべる
+    S.phase='compare';S.cmpLeft=Math.random()<.5?'mine':'other';S.no=[];S.cmpOk=false;
+    say(`${k} × ${n} の だんごは どっち？`,'try');
+    $('build').classList.add('hidden');     // くらべて いる あいだは ＋−を かくす（おしても うごかないので）
+    actions([]);render();return;
+  }
+  S.tries++;
+  $('bubble').innerHTML=shikiText('ちょっと ちがうよ');
+  /* 2回目からは しきの 数が 何を あらわすかを 言う */
+  say(S.tries<2?'しきと だんごを くらべて みよう'
+      :`× の まえの <b>${k}</b> は 1本の だんごの かず、うしろの <b>${n}</b> は くしの かずだよ`,'try');
+}
+
 /* ===== しきに かく ===== */
 function toShiki(){
   S.phase='shiki';
   $('build').classList.add('hidden');$('shiki').classList.remove('hidden');
   $('tasu').classList.add('hidden');$('tasu').textContent='';
   $('res').textContent='？';$('what0').textContent='';$('what1').textContent='';
-  S.slots=[null,null];S.sel=null;
+  S.slots=[null,null];S.sel=null;$('cards').classList.remove('hidden');
   const {k,n}=O();
   S.cards=[Math.min(k,n),Math.max(k,n)];   // 小さい じゅんに ならべる（ならびで 答えが わからないように）
   drawCards();drawSlots();
@@ -506,16 +547,26 @@ function renderCompare(){
   const {k,n}=O(),cols=Math.max(k,n);
   const A={k:k,n:n,key:'right'}, B={k:n,n:k,key:'wrong'};
   const pics=S.cmpLeft==='mine'?[B,A]:[A,B];
+  /* ステップ２では しきが こたえなので、えらぶ まえは 絵の 下に しきを 出さない */
+  const shown=p=>M==='s1'||S.cmpOk||S.no.includes(p.key);
   $('stage').innerHTML=`<div class="cmp">`+pics.map(p=>
     `<div class="pic ${S.no.includes(p.key)?'no':''} ${S.cmpOk&&p.key==='right'?'ok':''}" data-key="${p.key}">`+
     dangoSVG(p.k,p.n,{cols})+
-    `<div class="cap">${p.k} × ${p.n}</div>`+
+    `<div class="cap">${shown(p)?`${p.k} × ${p.n}`:'&nbsp;'}</div>`+
     /* 「○こずつの くしが ○本」は えらんだ あとに 出す（先に 出すと 字を ちゅうもんと 見くらべるだけに なる） */
     `<div class="sub">${(S.cmpOk||S.no.includes(p.key))?`${p.k}こずつの くしが ${p.n}本`:'&nbsp;'}</div></div>`).join('')+`</div>`;
   document.querySelectorAll('.pic').forEach(el=>el.onclick=()=>{
     if(S.cmpOk)return;
     const key=el.dataset.key;
-    if(key==='right'){
+    if(key==='right'&&M==='s2'){
+      S.cmpOk=true;renderCompare();
+      $('face').innerHTML=face(GUEST(),true);$('bubble').innerHTML=shikiText('ありがとう！');
+      say(`そう！ ${k} × ${n} は ${k}こずつの くしが ${n}本。<br>どちらも ${k*n}こ。でも ばめんが ちがうね`,'ok');
+      actions([['play','だんごを かぞえる ▶',()=>{S.cmpOk=false;startCount();}]]);
+    }else if(M==='s2'){
+      if(!S.no.includes(key))S.no.push(key);renderCompare();
+      say(`それは ${n}こずつの くしが ${k}本。${n} × ${k} だね。<br>${k} × ${n} は「1本に ${k}こ」。もう一回`,'try');
+    }else if(key==='right'){
       S.cmpOk=true;renderCompare();
       say(`そう！ どちらも ${k*n}こ。でも ばめんが ちがうね。<br>1本の かず ${k} を さきに かいて ${k} × ${n}`,'ok');
       const ci0=S.cards.indexOf(k),ci1=S.cards.indexOf(n);
@@ -532,6 +583,12 @@ function renderCompare(){
 function startCount(){
   const {k,n}=O();
   S.phase='count';S.k=k;S.n=n;S.hl=-1;S.labels=[];
+  const run=++S.run;
+  if(M==='s2'){                         // しきは もう 決まって いるので、うめた 形で 出す
+    $('build').classList.add('hidden');$('shiki').classList.remove('hidden');
+    S.cards=[k,n];S.slots=[0,1];S.sel=null;drawCards();drawSlots();
+    $('cards').classList.add('hidden');$('res').textContent='？';
+  }
   document.querySelectorAll('.slot').forEach(sl=>sl.classList.add('good'));
   $('what0').textContent='1本の かず';$('what1').textContent='くしの かず';
   $('tasu').classList.remove('hidden');$('tasu').textContent='';
@@ -539,12 +596,12 @@ function startCount(){
   actions([]);
   let j=0;
   const step=()=>{
-    if(S.phase!=='count')return;
+    if(S.phase!=='count'||run!==S.run)return;
     S.hl=j;S.labels.push(k*(j+1));render();
     $('tasu').textContent=Array(j+1).fill(k).join(' ＋ ')+' ＝ '+k*(j+1);
     j++;
     if(j<n) setTimeout(step,560);
-    else setTimeout(finish,700);
+    else setTimeout(()=>{if(run===S.run)finish();},700);
   };
   render();setTimeout(step,300);
 }
@@ -552,9 +609,18 @@ function finish(){
   const {k,n}=O();
   S.phase='done';S.hl=null;render();
   $('res').textContent=k*n;
-  say(`よくできました！ ${k}こずつ ${n}本で ${k*n}こ。<br>たし算より かけ算の ほうが みじかく かけるね`,'ok');
-  actions([['next','つぎの おきゃくさん →',()=>{S.p++;newOrder();}]]);
+  say(M==='s1'
+    ? `よくできました！ ${k}こずつ ${n}本で ${k*n}こ。<br>たし算より かけ算の ほうが みじかく かけるね`
+    : `よくできました！ ${k} × ${n} は「${k}こずつ さした くしが ${n}本」。<br>だんごは ぜんぶで ${k*n}こ`,'ok');
+  actions([['next','つぎの おきゃくさん →',()=>{S.pi[M]++;newOrder();}]]);
 }
+
+document.querySelectorAll('.tab[data-m]').forEach(t=>t.onclick=()=>{
+  if(t.disabled||t.dataset.m===M)return;
+  M=t.dataset.m;
+  document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x===t));
+  newOrder();
+});
 
 newOrder();
 </script>
