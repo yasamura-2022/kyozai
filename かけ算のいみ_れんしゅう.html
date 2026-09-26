@@ -90,6 +90,52 @@
     border:7px solid transparent;border-right:10px solid #fff;border-left:0}
   .bubble .num{font-size:1.25em;color:var(--ink)}
   .bubble .re{display:block;color:var(--sakura-d);font-size:.82em}
+  /* ===== ステップ３ ===== */
+  .kuku{flex:1;min-height:0;display:grid;grid-template-columns:1fr;align-content:safe center;overflow:hidden;gap:2px;
+    padding:6px 12px 8px;font-weight:800;font-size:clamp(14px,calc(.6vw + 1.9vh),28px)}
+  .kuku .kt{text-align:center;color:var(--sakura-d);font-size:1.05em;margin-bottom:2px}
+  .kr{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:.4em;padding:.05em .5em;border-radius:10px;
+    font-variant-numeric:tabular-nums;white-space:nowrap}
+  .kr .ex{color:var(--ink)}
+  .kr .an{text-align:left}
+  .kr.yet{color:#cfc1a0}
+  .kr.yet .ex{color:#cfc1a0}
+  .kr.now{background:#ffe98a}
+  .kr .ph{visibility:hidden;font-style:normal}   /* まだの こたえも 場所だけ とる（うまる たびに はばが かわらない） */
+  .kr .up{font-size:.72em;color:#fff;background:var(--sakura);border-radius:999px;padding:.05em .55em;visibility:hidden}
+  .kr.done .up.on{visibility:visible}
+  .dan{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:6px 8px;
+    display:flex;align-items:center;gap:8px;justify-content:center;flex-wrap:wrap}
+  .dan .lbl{font-weight:800;color:#8a7a5f;font-size:clamp(12px,calc(.5vw + 1vh),16px);white-space:nowrap}
+  .chips{display:flex;gap:5px;flex-wrap:wrap;justify-content:center}
+  .chip{min-width:clamp(36px,calc(1.5vw + 2.6vh),50px);min-height:clamp(36px,calc(1.2vw + 3vh),50px);border-radius:12px;
+    border:2px solid var(--line);background:#fff;font-weight:800;color:var(--ink);font-size:clamp(16px,calc(.7vw + 1.6vh),22px)}
+  .chip.on{background:var(--sakura);border-color:var(--sakura-d);color:#fff;box-shadow:0 3px 0 var(--sakura-d)}
+  .choices{display:flex;gap:10px;justify-content:center}
+  .choice{flex:1;max-width:150px;border:3px solid var(--line);border-radius:16px;background:#fff;font-weight:800;color:var(--ink);
+    padding:8px 0;font-size:clamp(20px,calc(1vw + 2.4vh),34px);box-shadow:0 4px 0 #d8c79f}
+  .choice small{font-size:.55em}
+  .choice:active{transform:translateY(2px)}
+  .choice:disabled{opacity:.35;box-shadow:none}
+  /* えらびが 出て いない ときも 場所は とって おく（出る たびに 九九の 字の 大きさが かわらない ように） */
+  .choices.off{visibility:hidden}
+  .choices.off .choice{pointer-events:none}
+  @media (orientation:portrait){
+    /* たて長では 九九を 3れつに して ひくく する（だんごの 台を ひろく とる） */
+    .kuku{grid-template-columns:repeat(3,1fr);font-size:clamp(13px,calc(.9vw + 1.1vh),24px);column-gap:6px}
+    .kuku .kt{grid-column:1/-1}
+    .kr{padding:.1em .3em;gap:.25em}
+  }
+
+  /* ステップ３では ことばの わくを 3行ぶん とって おく（行数が かわる たびに 九九の 字が 大きく 小さく ならない ように） */
+  .m3 .say{min-height:calc(4.5em + 16px);display:flex;align-items:center;justify-content:center}
+  /* flex の 子は 1つだけに する（文を じかに 入れると <br> や <b> が ばらばらの 子に なって おかしく おりかえす） */
+  @media (orientation:landscape){
+    .kuku{grid-template-columns:1fr 1fr;grid-template-rows:auto repeat(5,auto);grid-auto-flow:column;column-gap:8px}
+    .kuku .kt{grid-row:1;grid-column:1/-1}
+    .kr{padding:.05em .3em}
+  }
+
   /* ステップ２：おきゃくさんが わたす しきの かみ */
   .ticket{display:inline-block;background:#fffbe8;border:3px solid var(--gold);border-radius:10px;
     padding:.05em .5em;margin:.1em 0 .2em;font-size:1.7em;letter-spacing:.06em;line-height:1.2;
@@ -202,24 +248,30 @@
   <div class="tabs">
     <button class="tab on" data-m="s1"><span class="step">ステップ１</span>ちゅうもんを きく</button>
     <button class="tab" data-m="s2"><span class="step">ステップ２</span>しきから つくる</button>
-    <button class="tab" disabled><span class="step">ステップ３</span>ふやして みる<span class="soon">じゅんびちゅう</span></button>
+    <button class="tab" data-m="s3"><span class="step">ステップ３</span>ふやして みる</button>
     <button class="tab" disabled><span class="step">ステップ４</span>かぞえないで わかる<span class="soon">じゅんびちゅう</span></button>
   </div>
 
   <!-- ============ ステップ１：ちゅうもんを きく ============ -->
   <div id="s1">
     <div id="order">
-      <div class="noren"><span>お</span><span>だ</span><span>ん</span><span>ご</span></div>
-      <div class="guest">
+      <div class="noren" id="noren"><span>お</span><span>だ</span><span>ん</span><span>ご</span></div>
+      <div class="guest" id="guest">
         <div class="face" id="face"></div>
         <div class="bubble" id="bubble"></div>
       </div>
+      <!-- ステップ３：九九の ひょう（くしを ふやすと 1行ずつ できる） -->
+      <div class="kuku hidden" id="kuku"></div>
     </div>
 
     <div id="stage"></div>
 
     <div id="work">
+      <!-- ステップ３：だんを えらぶ（はじめから ぜんぶ えらべる） -->
+      <div class="dan hidden" id="dan"><span class="lbl">なんの だん？</span><div class="chips" id="danChips"></div></div>
       <div class="say" id="say"></div>
+      <!-- ステップ３：なんこ ふえる？ -->
+      <div class="choices hidden" id="choices"></div>
 
       <!-- つくる -->
       <div class="steppers" id="build">
@@ -269,6 +321,7 @@ function setFH(){
 }
 setFH();
 addEventListener('resize',()=>{setFH();render();});
+addEventListener('resize',()=>setTimeout(()=>{if(M==='s3')fitKuku();},150));
 if(window.visualViewport) visualViewport.addEventListener('resize',setFH);
 
 /* ===== ちゅうもん（じゅんばんは きめて ある。ランダムに しない）
@@ -306,7 +359,7 @@ function dangoSVG(k,n,o={}){
   for(let j=0;j<n;j++){
     const cx=x0+colW*(j+.5);
     const newSk=o.anim&&j>=o.prevN;
-    if(o.hl!=null&&j<=o.hl) s+=`<rect x="${cx-38}" y="10" width="76" height="${H-14}" rx="18" fill="${j===o.hl?'#ffe98a':'#fff2bf'}"/>`;
+    if(o.hl!=null&&(o.only?j===o.hl:j<=o.hl)) s+=`<rect x="${cx-38}" y="10" width="76" height="${H-14}" rx="18" fill="${j===o.hl?'#ffe98a':'#fff2bf'}"/>`;
     s+=`<g class="${newSk?'sk-new':''}">`;
     s+=`<line x1="${cx}" y1="22" x2="${cx}" y2="${bot}" stroke="#caa06a" stroke-width="8" stroke-linecap="round"/>`;
     s+=`<line x1="${cx}" y1="${bot-68}" x2="${cx}" y2="${bot}" stroke="#b1854d" stroke-width="8" stroke-linecap="round"/>`;
@@ -377,10 +430,12 @@ function actions(list){
     b.className='btn '+cls;b.innerHTML=label;b.disabled=!!dis;b.onclick=fn;box.appendChild(b);
   });
 }
-function say(html,cls){const e=$('say');e.innerHTML=html;e.className='say'+(cls?' '+cls:'');}
+function say(html,cls){const e=$('say');e.innerHTML='<span>'+html+'</span>';e.className='say'+(cls?' '+cls:'');
+  if(M==='s3')requestAnimationFrame(fitKuku);}   // ことばの 行数が かわると 九九の わくの たかさも かわる
 
 /* ===== がめん ===== */
 function render(){
+  if(M==='s3'){render3();return;}
   const {k,n}=O();
   if(S.phase==='compare'){renderCompare();return;}
   /* はばは ちゅうもんの 本数より 少し ひろく とる（9本ぶん いつも とると だんごが 小さく なる） */
@@ -392,6 +447,10 @@ function render(){
 }
 
 function newOrder(){
+  if(M==='s3'){newDan();return;}
+  $('s1').classList.remove('m3');
+  $('guest').classList.remove('hidden');$('noren').classList.remove('hidden');$('kuku').classList.add('hidden');
+  $('dan').classList.add('hidden');$('choices').classList.add('hidden');$('choices').classList.remove('off');
   S.run++;S.phase='build';S.k=0;S.n=1;S.prevK=0;S.prevN=1;S.slots=[null,null];S.sel=null;S.tries=0;S.no=[];
   S.hl=null;S.labels=null;S.cmpOk=false;
   const g=GUEST();
@@ -613,6 +672,91 @@ function finish(){
     ? `よくできました！ ${k}こずつ ${n}本で ${k*n}こ。<br>たし算より かけ算の ほうが みじかく かけるね`
     : `よくできました！ ${k} × ${n} は「${k}こずつ さした くしが ${n}本」。<br>だんごは ぜんぶで ${k*n}こ`,'ok');
   actions([['next','つぎの おきゃくさん →',()=>{S.pi[M]++;newOrder();}]]);
+}
+
+/* ===== ステップ３：ふやして みる
+   かける数が 1 ふえると、こたえは かけられる数（1本の だんご）ぶん ふえる（内容の取扱い(4)）。
+   こたえ（積）は きかない。きくのは「なんこ ふえる？」だけ ===== */
+S.dan=2;
+(function(){
+  const box=$('danChips');
+  for(let d=1;d<=9;d++){
+    const b=document.createElement('button');b.className='chip';b.textContent=d;b.dataset.d=d;
+    b.onclick=()=>{S.dan=d;newDan();};box.appendChild(b);
+  }
+})();
+function newDan(){
+  $('s1').classList.add('m3');
+  S.run++;S.phase='s3';S.k=S.dan;S.n=1;S.prevK=S.k;S.prevN=0;S.hl=0;S.noC=[];
+  $('guest').classList.add('hidden');$('noren').classList.add('hidden');$('kuku').classList.remove('hidden');
+  $('build').classList.add('hidden');$('shiki').classList.add('hidden');
+  $('dan').classList.remove('hidden');$('choices').classList.remove('hidden');
+  $('choices').classList.add('off');$('choices').innerHTML='<button class="choice">0</button>';
+  document.querySelectorAll('#danChips .chip').forEach(c=>c.classList.toggle('on',+c.dataset.d===S.dan));
+  say(`${S.k}この くしを 1本ずつ ふやして いこう`);
+  render();act3();
+}
+function render3(){
+  const k=S.k,labels=[];for(let j=1;j<=S.n;j++)labels.push(k*j);
+  $('stage').innerHTML=dangoSVG(k,S.n,{cols:9,bottom:true,labels,hl:S.hl,only:true,
+    anim:true,prevK:k,prevN:S.prevN});
+  S.prevN=S.n;
+  drawKuku();
+}
+function drawKuku(){
+  const k=S.k;
+  let h=`<div class="kt">${k}の だん</div>`;
+  for(let i=1;i<=9;i++){
+    const st=i<=S.n?'done':'yet';
+    h+=`<div class="kr ${st} ${i===S.n?'now':''}"><span class="ex">${k} × ${i}</span>`+
+       `<span class="an">＝ ${i<=S.n?k*i:`<i class="ph">${k*i}</i>`}</span><span class="up ${i>=2?'on':''}">＋${k}</span></div>`;
+  }
+  $('kuku').innerHTML=h;
+  fitKuku();
+}
+/* 九九の ひょうの 字は わくに 入る いちばん 大きい 大きさに する（画面ごとに たかさが ちがう） */
+function fitKuku(){
+  const el=$('kuku');if(el.classList.contains('hidden'))return;
+  el.style.fontSize='';
+  let f=parseFloat(getComputedStyle(el).fontSize);
+  const max=f*1.6;
+  f=max;el.style.fontSize=f+'px';
+  while(f>10&&(el.scrollHeight>el.clientHeight+1||el.scrollWidth>el.clientWidth+1)){f-=1;el.style.fontSize=f+'px';}
+}
+function act3(){
+  const less=['sub','◀ 1本 へらす',less3,S.n<=1];
+  if(S.n<9) actions([less,['play','1本 ふやす ▶',ask3]]);
+  else actions([less,['next','つぎの だん →',()=>{S.dan=S.dan%9+1;newDan();}]]);
+}
+function less3(){
+  if(S.n<=1)return;
+  $('choices').classList.add('off');
+  S.n--;S.hl=S.n-1;render();
+  say(`くしを 1本 へらすと ${S.k}こ へるね。${S.k} × ${S.n} ＝ ${S.k*S.n}`);
+  act3();
+}
+function ask3(){
+  const k=S.k,n=S.n;
+  /* まちがいの えらびは「1こ」（かける数が 1 ふえたから）と「あたらしい かける数」 */
+  const set=[...new Set([k,1,n+1,k+1,2,k+2,3])].slice(0,3);   // こたえ k は かならず 入る
+  set.sort((a,b)=>a-b);
+  const box=$('choices');box.innerHTML='';box.classList.remove('off');
+  set.forEach(v=>{
+    const b=document.createElement('button');b.className='choice';b.innerHTML=`${v}<small>こ</small>`;
+    b.onclick=()=>choose3(v,b);box.appendChild(b);
+  });
+  say(`${k} × ${n} ＝ ${k*n}。くしを 1本 ふやすと、だんごは なんこ ふえる？`);
+  actions([['sub','◀ 1本 へらす',less3,n<=1]]);
+}
+function choose3(v,b){
+  const k=S.k;
+  if(v!==k){b.disabled=true;say('1本の くしには なんこ ささって いる？ もう一回','try');return;}
+  $('choices').classList.add('off');
+  const prev=k*S.n;
+  S.n++;S.hl=S.n-1;render();
+  if(S.n<9) say(`そう！ 1本に ${k}こ だから ${k} ふえる。<br>${prev} ＋ ${k} ＝ ${k*S.n}　${k} × ${S.n} ＝ ${k*S.n}`,'ok');
+  else say(`${k}の だんが できた！ かける数が 1 ふえると、こたえは ${k} ずつ ふえるね。<br>わすれた くくも、1つ まえの こたえに ${k} を たせば わかるよ`,'ok');
+  act3();
 }
 
 document.querySelectorAll('.tab[data-m]').forEach(t=>t.onclick=()=>{
