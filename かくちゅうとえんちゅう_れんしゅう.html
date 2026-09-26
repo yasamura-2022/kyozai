@@ -164,7 +164,7 @@
   <header><h1>角柱と円柱</h1></header>
 
   <div class="tabs">
-    <button class="tab on" data-m="s1"><span class="step">ステップ１</span>名前を つける</button>
+    <button class="tab on" data-m="s1"><span class="step">ステップ１</span>底面と 側面を 見る</button>
     <button class="tab" data-m="s2"><span class="step">ステップ２</span>数を 調べる</button>
     <button class="tab" data-m="s3"><span class="step">ステップ３</span>見取図を かく</button>
     <button class="tab" data-m="s4"><span class="step">ステップ４</span>開いて とじる</button>
@@ -603,17 +603,20 @@ function draw1(){
   }
   svg.innerHTML=out;
 }
+/* 前の 形に もどる（茶）。これが ないと「次の 形 →」で 進んだ あと 前の 形が 見られない（2026-09-27 指摘） */
+function later1(f,ms){const t=S1.tok;setTimeout(()=>{if(S1.tok===t&&MODE==='s1')f();},ms);}
+function acts1(list){actions([S1.i>0?{c:'sub',t:'◀ 前の 形',any:true,f:()=>{if(!guard())return;S1.i--;start1();}}:null].concat(list));}
 function start1(){
-  stopAnim();resetRot();S1.phase='base';S1.t=0;S1.ori=0;S1.named=false;
+  stopAnim();resetRot();S1.tok=(S1.tok||0)+1;S1.phase='base';S1.t=0;S1.ori=0;S1.named=false;
   const it=L1[S1.i];
   prob(`<span class="no">${S1.i+1} / ${L1.length}</span><span>${it.box?'この 形は 直方体':it.cube?'この 形は 立方体':'底面を 上に 動かすと？'}</span>`);
   say(it.box||it.cube?'この 底面を まっすぐ 上に 動かして みよう':'<span class="T">底面</span>を まっすぐ 上に 動かすと、どんな 形が できるかな？');
   choices(null);show('sum',false);
-  actions([{c:'play',t:'底面を まっすぐ 上に 動かす ▶',f:grow1}]);
+  acts1([{c:'play',t:'底面を まっすぐ 上に 動かす ▶',f:grow1}]);
   draw();
 }
 function grow1(){
-  S1.phase='anim';actions([]);
+  S1.phase='anim';acts1([]);
   animate(1700,t=>{S1.t=ease(t);draw();},()=>{S1.t=1;S1.phase='made';after1();});
 }
 function after1(){
@@ -625,19 +628,19 @@ function after1(){
       choices(['三角柱','四角柱','五角柱'],(i,b)=>{
         if(i===1){b.classList.add('good');[...$('choices').children].forEach(x=>x.disabled=true);
           say('<span>底面が 四角形だから、直方体は <b>四角柱</b>の なかま</span>','ok');
-          setTimeout(()=>ask1side(()=>{
+          later1(()=>ask1side(()=>{
             prob(`<span class="no">${S1.i+1} / ${L1.length}</span><span>ほかの 面を 底面に しても 四角柱？</span>`);
             say('<span>角柱の 側面は <b>長方形</b>。ほかの 面を 底面に しても いいかな？</span>','ok');
-            actions([{c:'play',t:'ほかの 面を 底面に する ▶',f:()=>{S1.ori=1;S1.t=0;choices(null);grow1();}}]);
+            acts1([{c:'play',t:'ほかの 面を 底面に する ▶',f:()=>{S1.ori=1;S1.t=0;choices(null);grow1();}}]);
           }),1100);}
         else{b.disabled=true;say('もう一回。<span class="T">底面</span>（だいだい色）は 何角形かな？','try');}
       });
-      actions([]);
+      acts1([]);
       return;
     }
     if(S1.ori===1){
       say('よこの 面を 底面に しても、まっすぐ 動かすと 直方体が できたね');
-      actions([{c:'play',t:'もう 1つの 面を 底面に する ▶',f:()=>{S1.ori=2;S1.t=0;grow1();}}]);return;
+      acts1([{c:'play',t:'もう 1つの 面を 底面に する ▶',f:()=>{S1.ori=2;S1.t=0;grow1();}}]);return;
     }
     say('直方体は どの 向かい合う 面を 底面に しても 四角柱','ok');
     fin1();return;
@@ -645,11 +648,11 @@ function after1(){
   if(it.cube){
     say('動いた あとが <span class="A">側面</span>。上と 下の <span class="T">底面</span>は 同じ 形で 平行');
     prob(`<span class="no">${S1.i+1} / ${L1.length}</span><span>立方体は 何角柱の なかま？</span>`);
-    actions([]);
+    acts1([]);
     choices(['三角柱','四角柱','五角柱'],(i,b)=>{
       if(i===1){b.classList.add('good');[...$('choices').children].forEach(x=>x.disabled=true);
         say('<span>底面が 正方形（四角形）だから、立方体も <b>四角柱</b>の なかま</span>','ok');
-        setTimeout(()=>ask1side(()=>{
+        later1(()=>ask1side(()=>{
           say('<span>立方体は 底面も 側面も <b>正方形</b>。どの 面を 底面に しても 四角柱</span>','ok');fin1();
         }),1100);}
       else{b.disabled=true;say('もう一回。<span class="T">底面</span>（だいだい色）は 何角形かな？','try');}
@@ -658,7 +661,7 @@ function after1(){
   }
   say('動いた あとが <span class="A">側面</span>。上と 下の 2つの <span class="T">底面</span>は 同じ 形で 平行');
   prob(`<span class="no">${S1.i+1} / ${L1.length}</span><span>底面は どんな 形？</span>`);
-  actions([]);
+  acts1([]);
   choices(it.ch,(i,b)=>{
     if(i===it.ans){
       b.classList.add('good');[...$('choices').children].forEach(x=>x.disabled=true);
@@ -666,7 +669,7 @@ function after1(){
       prob(`<span class="no">${S1.i+1} / ${L1.length}</span><span>底面が ${SH[it.key].base} → <b style="font-size:1.25em">${nm}</b></span>`);
       if(it.side){
         say(`<span>底面が ${SH[it.key].base}だから <b>${nm}</b>と いうよ</span>`,'ok');
-        setTimeout(()=>ask1side(),1100);
+        later1(()=>ask1side(),1100);
       }else{
         say(`<span>底面が ${SH[it.key].base}だから <b>${nm}</b>と いうよ。よくできました！</span>`,'ok');
         fin1();
@@ -692,7 +695,7 @@ function fin1(){
     $('sum').innerHTML='<div><b>角柱</b>：底面が 三角形・四角形・五角形…、側面は 長方形か 正方形</div><div><b>円柱</b>：底面が 円、側面は 曲がった 面</div>';
     choices(null);
   }
-  actions([{c:'next',t:last?'はじめから →':'次の 形 →',f:()=>{if(!guard())return;S1.i=(S1.i+1)%L1.length;start1();}}]);
+  acts1([{c:'next',t:last?'はじめから →':'次の 形 →',f:()=>{if(!guard())return;S1.i=(S1.i+1)%L1.length;start1();}}]);
 }
 
 /* =====================================================================
