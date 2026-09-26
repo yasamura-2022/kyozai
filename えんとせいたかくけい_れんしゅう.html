@@ -1,0 +1,1233 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>円と正多角形</title>
+<style>
+  :root{
+    --ink:#2b2118;
+    --paper:#fdf6e3;
+    --card:#fffdf7;
+    --line:#e7d9b8;
+    --gold:#c9a227;
+    --gold-d:#8f7417;
+    --ok:#5a8a4c;
+    --flash:#ffe14d;
+    --blue:#2f6fa8;          /* 同じ 問題の 中で 進む */
+    --acc:#2f8f8a;           /* この アプリの 色＝辺・円周 */
+    --acc-s:#e2f3f1;
+    --kaku:#c0661f;          /* 角 */
+    --kaku-s:#fbeedb;
+    --kei:#7a5bb5;           /* 半径・直径 */
+    --kei-s:#efe8fa;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:'Hiragino Maru Gothic ProN','BIZ UDPGothic','Yu Gothic',sans-serif;
+    background:
+      radial-gradient(circle at 12% 8%,#dff2ef 0,transparent 38%),
+      radial-gradient(circle at 88% 92%,#efe8fa 0,transparent 45%),
+      var(--paper);
+    color:var(--ink);
+    position:fixed;inset:0;width:100%;
+    height:var(--fh,100dvh);
+    padding:6px 8px 10px;
+    overflow:hidden;overscroll-behavior:none;touch-action:manipulation;
+    display:flex;flex-direction:column;align-items:center;
+    -webkit-user-select:none;user-select:none;
+  }
+  button{font-family:inherit;touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;cursor:pointer}
+  .app{width:100%;max-width:1100px;height:100%;display:flex;flex-direction:column;gap:6px;min-height:0}
+  .hidden{display:none !important}
+
+  header{text-align:center;flex-shrink:0}
+  h1{font-size:clamp(18px,calc(1.2vw + 1.5vh),28px);letter-spacing:.08em;color:var(--acc)}
+
+  /* ===== タブ ===== */
+  .tabs{display:flex;gap:6px;flex-shrink:0}
+  .tab{flex:1;border:2px solid var(--line);border-radius:14px;background:var(--card);
+    padding:7px 3px;color:#8a7a5f;font-weight:800;
+    font-size:clamp(12px,calc(.85vw + .65vh),17px);display:flex;flex-direction:column;align-items:center;gap:1px;
+    line-height:1.15;word-break:keep-all}
+  .tab .step{font-size:11px;font-weight:700;opacity:.7}
+  .tab.on{color:var(--ink);border-color:var(--gold);box-shadow:0 3px 0 #a5811a}
+  .tab.on .step{color:var(--gold);opacity:1}
+
+  /* ===== ならび：よこ長＝左に 絵、右に はたらく ところ／たて長＝上に 絵 ===== */
+  .main{flex:1;min-height:0;display:grid;gap:8px;
+    grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) auto;grid-template-areas:"stage" "work"}
+  @media (orientation:landscape){
+    .main{grid-template-columns:minmax(0,1.35fr) minmax(340px,1fr);grid-template-rows:minmax(0,1fr);grid-template-areas:"stage work"}
+    .work{justify-content:center}
+  }
+  /* ステップ４・５は 絵が よこに 長い（まっすぐに した 円周）ので 絵の はばを 広く とる */
+  @media (orientation:landscape){ .main.wide{grid-template-columns:minmax(0,1.85fr) minmax(320px,1fr)} }
+  .stage{grid-area:stage;min-height:0;border-radius:18px;border:3px solid #b9d9d5;
+    background:linear-gradient(#fbfefd,#eef7f5);position:relative;overflow:hidden;padding:4px 6px 6px;
+    display:flex;flex-direction:column;
+    contain:size}      /* 絵の 大きさで 行を おし広げない */
+  .stage > svg{flex:1;min-height:0;width:100%;display:block}
+  .stage.tapped{animation:tapped .25s}
+  @keyframes tapped{50%{background:#fff6cf}}
+  .work{grid-area:work;display:flex;flex-direction:column;gap:7px;min-height:0}
+  @media (orientation:portrait){ .work{min-height:clamp(300px,44vh,560px)} }
+
+  /* 色の しるし（絵の 上）＝どの 色が 何を 表すか。どの ステップでも 出す */
+  .legend{display:flex;flex-wrap:wrap;gap:4px 14px;justify-content:center;flex-shrink:0;
+    font-weight:800;color:#5d5040;font-size:clamp(12px,calc(.45vw + 1vh),16px);line-height:1.3}
+  .legend span{display:flex;align-items:center;gap:5px;white-space:nowrap}
+  .legend i{display:inline-block;width:24px;height:5px;border-radius:3px}
+  .legend i.dash{height:0;border-top:3px dashed #b9a67c;background:none}
+  .legend i.arc{width:18px;height:10px;border:3.5px solid var(--kaku);border-bottom:none;border-radius:18px 18px 0 0;background:none}
+  .legend .tk{letter-spacing:-2px;color:var(--acc)}
+
+  .parts{display:flex;gap:6px;flex-shrink:0}
+  .part{flex:1;border:2px solid var(--line);border-radius:12px;background:var(--card);padding:6px 2px;font-weight:800;color:#8a7a5f;
+    font-size:clamp(13px,calc(.45vw + 1.2vh),18px);line-height:1.2;word-break:keep-all}
+  .part.on{background:var(--acc-s);border-color:var(--acc);color:var(--acc)}
+
+  .prob{display:flex;align-items:center;gap:10px;background:var(--card);border:2px solid var(--line);border-radius:14px;padding:6px 12px;
+    font-weight:800;font-size:clamp(14px,calc(.6vw + 1.3vh),21px);word-break:keep-all;flex-wrap:wrap;justify-content:center;flex-shrink:0}
+  .prob .no{color:#8a7a5f;font-size:.8em}
+  .prob .goal{color:var(--gold-d)}
+  .say{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:7px 12px;
+    font-weight:800;color:#5d5040;line-height:1.5;text-align:center;word-break:keep-all;
+    min-height:calc(3em + 18px);display:flex;align-items:center;justify-content:center;flex-shrink:0;
+    font-size:clamp(14px,calc(.65vw + 1.2vh),20px)}
+  .say.ok{color:var(--ok);border-color:var(--ok);background:#f2f9ee}
+  .say.try{color:#b3566f;border-color:#d9748f;background:#fbe3ea}
+  .a{color:var(--acc)} .k{color:var(--kaku)} .d{color:var(--kei)}
+  .hint{display:inline-block;margin-top:3px;background:#fff4c9;border:2px solid var(--gold);border-radius:10px;padding:0 .5em;
+    color:var(--ink);font-size:1.15em;font-variant-numeric:tabular-nums;white-space:nowrap}
+
+  /* ===== ステップ１：しらべる 表 ===== */
+  .check{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:6px;display:flex;flex-direction:column;gap:5px;
+    font-weight:800;font-size:clamp(14px,calc(.6vw + 1.25vh),20px)}
+  .check .row{display:flex;align-items:center;justify-content:space-between;gap:8px;border-radius:10px;padding:5px 8px;border:2px solid transparent}
+  .check .row.now{border-color:var(--blue);background:#eaf1f8}
+  .check .row .r{min-width:6.5em;text-align:center;border-radius:8px;padding:2px 6px;background:#f3ecdc;color:#a99a7c;white-space:nowrap}
+  .check .row .r.yes{background:#eaf5e4;color:var(--ok)}
+  .check .row .r.no{background:#fbeedb;color:var(--kaku)}
+  .check .row.res{justify-content:center;background:#fff4c9;border-color:var(--gold);font-size:1.08em}
+
+  /* ===== ステップ３：プログラム ===== */
+  .prog{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:7px 8px;display:flex;flex-direction:column;gap:6px;
+    font-weight:800;font-size:clamp(15px,calc(.6vw + 1.35vh),22px)}
+  .blk{border-radius:12px;background:#eef6f5;border:3px solid var(--acc);padding:5px 8px;display:flex;flex-direction:column;gap:5px}
+  .blk .top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .blk .in{margin-left:16px;border-left:5px solid var(--acc);padding-left:10px;display:flex;flex-direction:column;gap:4px}
+  .blk .cmd{background:#fff;border-radius:8px;padding:3px 8px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .stp{display:flex;align-items:center;gap:4px}
+  .stp button{width:clamp(34px,calc(1vw + 3vh),46px);height:clamp(34px,calc(1vw + 3vh),46px);border-radius:10px;border:2px solid #9a8763;background:#fff;
+    font-size:1.2em;font-weight:800;color:var(--ink)}
+  .stp b{min-width:1.6em;text-align:center;font-size:1.3em;font-variant-numeric:tabular-nums}
+  .aslot{min-width:2.6em;text-align:center;border:3px dashed #cbb98f;border-radius:10px;padding:0 .2em;background:#fff;font-size:1.2em;color:var(--kaku)}
+  .aslot.fill{border-style:solid;border-color:var(--kaku);background:var(--kaku-s)}
+  .angs{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+  .ang{border:2px solid var(--kaku);border-radius:10px;background:#fff;color:var(--kaku);font-weight:800;padding:6px 0;
+    font-size:clamp(14px,calc(.5vw + 1.3vh),20px);box-shadow:0 3px 0 #e3c5a6}
+  .ang.on{background:var(--kaku);color:#fff;box-shadow:0 3px 0 #8a4515}
+
+  /* ===== ステップ４：表 ===== */
+  .tbl{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:5px;
+    font-weight:800;font-size:clamp(14px,calc(.55vw + 1.3vh),21px);font-variant-numeric:tabular-nums}
+  .tbl table{width:100%;border-collapse:separate;border-spacing:3px}
+  .tbl th,.tbl td{border-radius:8px;padding:3px 4px;text-align:center;white-space:nowrap}
+  .tbl th{background:#f3ecdc;color:#5d5040;font-size:.9em}
+  .tbl td{background:#fff;border:2px solid #efe4c9}
+  .tbl td.em{color:#c9bfa5}
+  .tbl .gold{background:#fff4c9 !important;border-color:var(--gold) !important}
+
+  /* ===== ステップ５：式と カード ===== */
+  .shiki{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:7px;
+    display:flex;flex-direction:column;align-items:center;gap:7px}
+  .eq{display:flex;align-items:flex-start;justify-content:center;gap:5px;font-weight:800;flex-wrap:nowrap;
+    font-size:clamp(22px,calc(1.1vw + 2.6vh),42px);line-height:1;font-variant-numeric:tabular-nums}
+  .eq .op{padding-top:.28em;white-space:nowrap}
+  .eq .u{padding-top:.42em;font-size:.6em;white-space:nowrap}
+  .slotw{display:flex;flex-direction:column;align-items:center;gap:4px}
+  .slot,.resbox{min-width:2.2em;height:1.5em;padding:0 .14em;border:3px dashed #cbb98f;border-radius:12px;background:#fff;
+    display:flex;align-items:center;justify-content:center}
+  .slot.sel{border-color:var(--blue);background:#eaf1f8}
+  .slot.fill{border-style:solid;border-color:#9a8763}
+  .slot.gd{border:3px solid var(--kei);background:var(--kei-s);color:var(--kei)}
+  .slot.ga{border:3px solid var(--acc);background:var(--acc-s);color:var(--acc)}
+  .slot.gp{border:3px solid #9a8763;background:#f6f0e2}
+  .resbox{border-color:transparent;background:transparent;color:#8a7a5f}
+  .resbox.good{border:3px solid var(--gold);background:#fff4c9;color:var(--ink)}
+  .what{font-size:clamp(11px,calc(.5vw + .95vh),16px);color:#8a7a5f;white-space:nowrap;min-height:1.2em}
+  .what.a{color:var(--acc)} .what.d{color:var(--kei)}
+  .cards{display:flex;gap:12px;justify-content:center;min-height:clamp(48px,calc(2vw + 4.4vh),72px)}
+  .cardn{min-width:clamp(62px,calc(2.6vw + 5.4vh),92px);height:clamp(48px,calc(2vw + 4.4vh),72px);border-radius:14px;padding:0 8px;
+    background:#fff;border:3px solid var(--acc);box-shadow:0 4px 0 #1f6763;
+    font-weight:800;font-size:clamp(22px,calc(1.1vw + 2.5vh),38px);color:var(--ink);touch-action:none;white-space:nowrap}
+  .cardn small{font-size:.5em}
+  .cardn.sel{background:var(--flash);transform:translateY(-3px)}
+  .cardn.gone{visibility:hidden}
+  .ghost{position:fixed;z-index:50;pointer-events:none;opacity:.9;transform:translate(-50%,-50%) scale(1.08)}
+
+  /* まとめ */
+  .sum{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:7px 10px;text-align:center;
+    font-weight:800;font-variant-numeric:tabular-nums;display:flex;flex-direction:column;align-items:center;gap:3px;flex-shrink:0;
+    font-size:clamp(14px,calc(.65vw + 1.35vh),22px);line-height:1.35;word-break:keep-all}
+  .sum .f{font-size:1.12em}
+  .sum .small{font-size:.82em;color:#8a7a5f}
+  .sum .gd{background:#fff4c9;border:2px solid var(--gold);border-radius:8px;padding:0 .25em}
+
+  .choices{display:flex;gap:8px;justify-content:center;flex-shrink:0}
+  .choice{flex:1;max-width:170px;border:3px solid var(--line);border-radius:16px;background:#fff;font-weight:800;color:var(--ink);
+    padding:8px 2px;font-size:clamp(22px,calc(1vw + 2.5vh),34px);box-shadow:0 4px 0 #d8c79f;word-break:keep-all;line-height:1.25}
+  .choice.txt{max-width:none;font-size:clamp(14px,calc(.5vw + 1.3vh),20px);padding:8px 4px}
+  .choice:active{transform:translateY(2px)}
+  .choice:disabled{opacity:.35;box-shadow:none}
+  .choice.good{border-color:var(--ok);background:#eaf5e4}
+  .choices.off{visibility:hidden}
+
+  /* ボタン：青＝同じ 問題の 中で 進む／金＝答え合わせ／みどり＝次の 問題／茶＝もどす */
+  .actions{display:flex;gap:8px;flex-shrink:0;margin-top:auto;min-height:54px}
+  .btn{flex:1;border:none;border-radius:14px;padding:12px 4px;font-weight:800;color:#fff;
+    font-size:clamp(15px,calc(.7vw + 1.55vh),23px);transition:transform .08s;word-break:keep-all}
+  .btn:active{transform:translateY(2px)}
+  .btn.play{background:var(--blue);box-shadow:0 4px 0 #214f7a}
+  .btn.show{background:var(--gold);box-shadow:0 4px 0 #a5811a}
+  .btn.next{background:var(--ok);box-shadow:0 4px 0 #446838}
+  .btn.sub{background:#a99a7c;box-shadow:0 4px 0 #85795f;flex:.6}
+  .btn:disabled{opacity:.45;box-shadow:none}
+
+  @media (max-height:700px){
+    header{display:none}
+    .tab{padding:5px 3px}
+    .tab .step{display:none}
+    .work{gap:5px}
+    .prob{padding:4px 10px}
+    .part{padding:4px 2px}
+    .say{padding:4px 10px;min-height:calc(3em + 8px);font-size:14px}
+    .check{padding:4px;gap:3px}
+    .check .row{padding:3px 8px}
+    .prog{padding:5px 6px;gap:4px}
+    .blk{padding:4px 6px;gap:3px}
+    .ang{padding:4px 0}
+    .shiki{padding:5px;gap:5px}
+    .choice{padding:4px 2px;font-size:24px}
+    .choice.txt{font-size:14px;padding:5px 4px}
+    .btn{padding:9px 4px}
+    .actions{min-height:44px}
+    .sum{padding:4px 8px}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header><h1>円と正多角形</h1></header>
+
+  <div class="tabs">
+    <button class="tab on" data-m="s1"><span class="step">ステップ１</span>見分ける</button>
+    <button class="tab" data-m="s2"><span class="step">ステップ２</span>円で かく</button>
+    <button class="tab" data-m="s3"><span class="step">ステップ３</span>くりかえして かく</button>
+    <button class="tab" data-m="s4"><span class="step">ステップ４</span>円周を 調べる</button>
+    <button class="tab" data-m="s5"><span class="step">ステップ５</span>円周を 求める</button>
+  </div>
+
+  <div class="main" id="main">
+    <div class="stage" id="stage">
+      <div class="legend" id="legend"></div>
+      <svg id="pic"></svg>
+    </div>
+    <div class="work">
+      <div class="parts hidden" id="parts"></div>
+      <div class="prob" id="prob"></div>
+      <div class="say" id="say"></div>
+      <div id="box" class="hidden"></div>
+      <div class="choices off" id="choices"></div>
+      <div class="sum hidden" id="sum"></div>
+      <div class="actions" id="actions"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =====================================================================
+   円と正多角形（算数5年 B(1) ウ 正多角形・エ 円周率）
+   解説（算数編 p.251-252）：
+   ・「辺の長さが全て等しく，角の大きさが全て等しい多角形を，正多角形という」
+       → ステップ１ 見分ける。辺と 角を 1つずつ 調べる（ひし形＝辺だけ、長方形＝角だけ 等しい を まぜる）
+   ・「円に内接する正八角形の頂点と円の中心とを結んでできる八つの三角形は，二等辺三角形であり，全て合同」
+     「六つの合同な正三角形を…並べると，正六角形」「円周をその円の半径の長さで区切っていく…正六角形」
+       → ステップ２ 円で かく（中心の 角を 360 ÷ n に 分ける／半径で 区切る）
+   ・指導計画の作成と内容の取扱い 2(2)「正多角形の作図を行う学習に関連して，正確な繰り返し作業…
+     一部を変えることでいろいろな正多角形を同様に考える」＝プログラミング
+       → ステップ３ くりかえして かく（進む → 回る を くりかえす）
+   ・「円に内接する正六角形と円に外接する正方形を利用すれば…見通しをもつ」
+     「幾つかの円について，直径の長さと円周の長さを測定するなどして帰納的に考える」
+       → ステップ４ 円周を 調べる（見通す／ころがす → 表）
+   ・「直径の長さから円周の長さを，また，逆に円周の長さから直径の長さを計算によって求める」
+     内容の取扱い(3)「円周率は 3.14 を用いる」
+       → ステップ５ 円周を 求める（カードで 式を つくる。答えの 数は 入力させない）
+   入れて いない もの：円の 面積（6年）／角柱と円柱（B(2)。べつの アプリ）
+   ===================================================================== */
+const $=id=>document.getElementById(id);
+const svg=$('pic');
+let MODE='s1',BUSY=false,TAP=null;
+
+function setFH(){
+  const v=(window.visualViewport&&window.visualViewport.height)||window.innerHeight;
+  document.documentElement.style.setProperty('--fh',v+'px');
+}
+setFH();
+addEventListener('resize',()=>{setFH();draw();});
+if(window.visualViewport) visualViewport.addEventListener('resize',setFH);
+
+/* ===== 絵の 道具（せかいの 単位は cm、y は 上むき） ===== */
+const U=40;
+let FR=[0,1,0,1],FS=18,SC=1;
+function frame(x0,x1,y0,y1){
+  FR=[x0,x1,y0,y1];
+  const w=(x1-x0)*U,h=(y1-y0)*U;
+  svg.setAttribute('viewBox',`0 0 ${w.toFixed(1)} ${h.toFixed(1)}`);
+  const r=svg.getBoundingClientRect();
+  SC=Math.min(r.width/w,r.height/h)||1;
+  FS=Math.max(U*0.36,18/SC);          /* 字は 画面で 18px 以上（k で 小さく しても 13px 以上） */
+}
+const X=x=>((x-FR[0])*U).toFixed(1), Y=y=>((FR[3]-y)*U).toFixed(1);
+const W=px=>(px/SC).toFixed(2);        /* 画面の px → 絵の 単位（線の 太さ） */
+const tw=px=>px/SC/U;                  /* 画面の px → cm */
+const fw=()=>FS/U;                     /* 字の 大きさ（cm） */
+const rad=d=>d*Math.PI/180, cosd=d=>Math.cos(rad(d)), sind=d=>Math.sin(rad(d));
+const P2=p=>X(p[0])+','+Y(p[1]);
+const polyS=(pts,a)=>`<polygon points="${pts.map(P2).join(' ')}" ${a}/>`;
+const seg=(p,q,a)=>`<line x1="${X(p[0])}" y1="${Y(p[1])}" x2="${X(q[0])}" y2="${Y(q[1])}" ${a}/>`;
+const ln=(col,px,extra='')=>`stroke="${col}" stroke-width="${W(px)}" stroke-linecap="round" stroke-linejoin="round" fill="none" ${extra}`;
+const dash=px=>`stroke-dasharray="${W(px)} ${W(px*.8)}"`;
+const dot=(p,px,col)=>`<circle cx="${X(p[0])}" cy="${Y(p[1])}" r="${W(px)}" fill="${col}"/>`;
+const circ=(c,r,a)=>`<circle cx="${X(c[0])}" cy="${Y(c[1])}" r="${(r*U).toFixed(1)}" ${a}/>`;
+const lerp=(p,q,t)=>[p[0]+(q[0]-p[0])*t,p[1]+(q[1]-p[1])*t];
+const mid=(p,q)=>lerp(p,q,.5);
+const at=(c,r,deg)=>[c[0]+r*cosd(deg),c[1]+r*sind(deg)];
+function lab(x,y,s,col,o={}){
+  const fs=FS*(o.k||1);
+  return `<text x="${X(x)}" y="${Y(y)}" dy="0.36em" font-size="${fs.toFixed(1)}" fill="${col}" font-weight="800" text-anchor="${o.anc||'middle'}"
+    paint-order="stroke" stroke="#fff" stroke-width="${(fs*0.3).toFixed(1)}" stroke-linejoin="round">${s}</text>`;
+}
+/* 弧：c を 中心に、from 度から 反時計回りに span 度 */
+function arc(c,r,from,span,a){
+  const p=at(c,r,from),q=at(c,r,from+span),big=span>180?1:0;
+  if(span>=359.9) return circ(c,r,a);
+  return `<path d="M${P2(p)} A${(r*U).toFixed(1)} ${(r*U).toFixed(1)} 0 ${big} 0 ${P2(q)}" ${a}/>`;
+}
+/* 同じ 長さの しるし（辺に よこぎる 短い 線を k 本） */
+function ticks(p,q,k,col){
+  const m=mid(p,q),L=Math.hypot(q[0]-p[0],q[1]-p[1]),u=[(q[0]-p[0])/L,(q[1]-p[1])/L],n=[-u[1],u[0]];
+  const h=tw(9),g=tw(7);let s='';
+  for(let i=0;i<k;i++){
+    const o=(i-(k-1)/2)*g,c=[m[0]+u[0]*o,m[1]+u[1]*o];
+    s+=seg([c[0]-n[0]*h,c[1]-n[1]*h],[c[0]+n[0]*h,c[1]+n[1]*h],ln(col,3));
+  }
+  return s;
+}
+const easeIO=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+function anim(ms,f,done,ease=easeIO){
+  BUSY=true;const t0=performance.now();
+  const step=now=>{const t=Math.min(1,(now-t0)/ms);f(ease(t));
+    if(t<1)requestAnimationFrame(step);else{BUSY=false;done&&done();}};
+  requestAnimationFrame(step);
+}
+const KAN=['','一','二','三','四','五','六','七','八','九','十'];
+const fmt=v100=>{const s=(v100/100).toFixed(2);return s.replace(/\.?0+$/,'');};
+
+/* ===== 画面の 部品 ===== */
+function legend(items){
+  $('legend').innerHTML=items.map(([k,c,t])=>{
+    const m=k==='line'?`<i style="background:${c}"></i>`:k==='dash'?`<i class="dash" style="border-color:${c}"></i>`:
+            k==='arc'?`<i class="arc" style="border-color:${c}"></i>`:k==='fill'?`<i style="background:${c};height:14px;border:2px dashed #d9ccb0"></i>`:k==='tick'?`<b class="tk">┼┼</b>`:'';
+    return `<span>${m}${t}</span>`;
+  }).join('');
+}
+function prob(h){$('prob').innerHTML=h;}
+function say(h,cls){const e=$('say');e.className='say'+(cls?' '+cls:'');e.innerHTML=`<span>${h}</span>`;}
+function box(h){const b=$('box');if(h==null){b.className='hidden';b.innerHTML='';return;}b.className='';b.innerHTML=h;}
+function sum(h){const e=$('sum');if(h==null){e.classList.add('hidden');return;}e.classList.remove('hidden');e.innerHTML=h;}
+/* 3択：list が null のときは 場所だけ とって おく（絵の 大きさが 動かない ように） */
+function choices(list,onPick,hide){
+  const c=$('choices');c.innerHTML='';
+  c.className='choices'+(hide?' hidden':'')+(list?'':' off');
+  const long=(list||[]).some(t=>String(t).replace(/<[^>]+>/g,'').length>3);
+  (list||['　']).forEach((t,i)=>{
+    const b=document.createElement('button');
+    b.className='choice'+(long?' txt':'');b.innerHTML=t;
+    if(list) b.addEventListener('click',()=>{if(!BUSY)onPick(i,b);});
+    c.appendChild(b);
+  });
+}
+function parts(list,cur,onPick){
+  const p=$('parts');
+  if(!list){p.classList.add('hidden');p.innerHTML='';return;}
+  p.classList.remove('hidden');p.innerHTML='';
+  list.forEach(([k,t])=>{
+    const b=document.createElement('button');b.className='part'+(k===cur?' on':'');b.innerHTML=t;
+    b.addEventListener('click',()=>{if(!BUSY)onPick(k);});p.appendChild(b);
+  });
+}
+function actions(list){
+  killGhost();
+  const a=$('actions');a.innerHTML='';TAP=null;
+  list.forEach(([c,t,f,dis])=>{
+    const b=document.createElement('button');b.className='btn '+c;b.innerHTML=t;b.disabled=!!dis;
+    b.addEventListener('click',()=>{if(!BUSY)f();});a.appendChild(b);
+    if(c==='play'&&!dis&&!TAP) TAP=f;
+  });
+}
+/* 絵を おしても 青い ボタンと 同じに 進む（宣伝しない にげ道） */
+$('stage').addEventListener('click',()=>{
+  if(!TAP||BUSY)return;
+  const s=$('stage');s.classList.remove('tapped');void s.offsetWidth;s.classList.add('tapped');TAP();
+});
+function draw(){const st=STEPS[MODE];if(st&&st.draw)st.draw();}
+
+/* 色（絵の 中） */
+const CA='#2f8f8a',CK='#c0661f',CD='#7a5bb5',CB='#6f5d3d',CG='#b9a67c',FILL='#fdf1d8';
+
+/* =====================================================================
+   ステップ１：見分ける
+   辺 → 角 の 順に 1つずつ 調べる。答えは 画面が まとめる（両方 等しい → 正多角形）。
+   調べて いる ほうだけ 絵に 出す（辺の ときは 角を 出さない）＝見る ところを しぼる。
+   同じ 長さ・同じ 大きさには 同じ しるし（線の 本数・弧の 数）。数を 読まなくても 見分けられる。
+   ===================================================================== */
+const rep=(a,k)=>Array.from({length:k},()=>a).flat();
+const P1=[
+  {nm:'正六角形',seq:rep([[3,60]],6)},
+  {nm:'ひし形',  seq:rep([[4,60],[4,120]],2)},
+  {nm:'正方形',  seq:rep([[4,90]],4)},
+  {nm:'長方形',  seq:rep([[6,90],[4,90]],2)},
+  {nm:'正五角形',seq:rep([[4,72]],5)},
+  {nm:'六角形',  seq:rep([[3,80],[3,40]],3)},    /* 辺は 全部 等しい／角が ちがう */
+  {nm:'六角形',  seq:rep([[4,60],[2,60]],3)},    /* 角は 全部 等しい／辺が ちがう */
+  {nm:'正八角形',seq:rep([[3,45]],8)}
+];
+function buildSeq(seq){
+  let p=[0,0],h=0;const pts=[];
+  seq.forEach(([L,t])=>{pts.push(p);p=[p[0]+L*cosd(h),p[1]+L*sind(h)];h+=t;});
+  return pts;
+}
+const S1={i:0,ph:'hen',ans:{},};
+function shape1(){
+  const q=P1[S1.i],pts=buildSeq(q.seq),n=pts.length;
+  const len=q.seq.map(s=>s[0]);
+  const ang=q.seq.map((s,i)=>180-q.seq[(i-1+n)%n][1]);   /* ちょう点 i の 角 */
+  const uniq=a=>[...new Set(a)].sort((x,y)=>x-y);
+  return {q,pts,n,len,ang,uL:uniq(len),uA:uniq(ang)};
+}
+const S1step={
+  enter(){
+    parts(null);sum(null);
+    legend([['line',CA,'辺'],['arc',CK,'角'],['tick','','同じ しるし ＝ 同じ 長さ・大きさ']]);
+    choices(null,null);
+    s1start();
+  },
+  draw(){
+    const {q,pts,n,len,ang,uL,uA}=shape1();
+    const xs=pts.map(p=>p[0]),ys=pts.map(p=>p[1]);
+    const w=Math.max(...xs)-Math.min(...xs),h=Math.max(...ys)-Math.min(...ys),m=Math.max(1.5,.24*Math.max(w,h));
+    frame(Math.min(...xs)-m,Math.max(...xs)+m,Math.min(...ys)-m,Math.max(...ys)+m);
+    const ph=S1.ph,showH=ph==='hen'||ph==='done',showK=ph==='kaku'||ph==='done';
+    let g=polyS(pts,`fill="${FILL}" stroke="none"`);
+    /* 角 */
+    if(showK) pts.forEach((V,i)=>{
+      const P=pts[(i+1)%n],from=Math.atan2(P[1]-V[1],P[0]-V[0])*180/Math.PI,k=uA.indexOf(ang[i])+1;
+      for(let j=0;j<k;j++) g+=arc(V,tw(24)+j*tw(6),from,ang[i],ln(CK,3));
+      const bis=from+ang[i]/2,lp=at(V,tw(34)+(k-1)*tw(6)+fw()*.95,bis);
+      g+=lab(lp[0],lp[1],ang[i]+'°',CK,{k:.8});
+    });
+    /* 辺 */
+    pts.forEach((p,i)=>{
+      const qq=pts[(i+1)%n];
+      g+=seg(p,qq,ln(showH?CA:CB,showH?5:3));
+    });
+    if(showH) pts.forEach((p,i)=>{
+      const qq=pts[(i+1)%n],k=uL.indexOf(len[i])+1,m2=mid(p,qq);
+      g+=ticks(p,qq,k,'#fff').replace(/stroke-width="[^"]+"/g,`stroke-width="${W(7)}"`)+ticks(p,qq,k,CA);
+      const d=[qq[0]-p[0],qq[1]-p[1]],L=Math.hypot(...d),nrm=[d[1]/L,-d[0]/L];   /* そとむき */
+      const lp=[m2[0]+nrm[0]*(tw(14)+fw()*.75),m2[1]+nrm[1]*(tw(14)+fw()*.75)];
+      g+=lab(lp[0],lp[1],len[i]+'cm',CA,{k:.85});
+    });
+    pts.forEach(p=>g+=dot(p,3.5,CB));
+    if(ph==='done'){
+      const cx=xs.reduce((a,b)=>a+b)/n,cy=ys.reduce((a,b)=>a+b)/n;
+      g+=lab(cx,cy,q.nm,'#5d5040',{k:1.05});
+    }
+    svg.innerHTML=g;
+  }
+};
+function s1start(){
+  S1.ph='hen';S1.ans={};sum(null);
+  prob(`<span class="no">問題 ${S1.i+1} / ${P1.length}</span><span class="goal">正多角形かな？ 辺と 角を 調べよう</span>`);
+  s1ask();
+}
+function s1box(){
+  const r=(k)=>S1.ans[k]==null?`<span class="r">？</span>`:
+     S1.ans[k]?`<span class="r yes">全部 等しい</span>`:`<span class="r no">ちがうのが ある</span>`;
+  const done=S1.ph==='done',reg=S1.ans.hen&&S1.ans.kaku;
+  box(`<div class="check">
+    <div class="row${S1.ph==='hen'?' now':''}"><span><b class="a">辺の 長さ</b>は？</span>${r('hen')}</div>
+    <div class="row${S1.ph==='kaku'?' now':''}"><span><b class="k">角の 大きさ</b>は？</span>${r('kaku')}</div>
+    <div class="row res">${done?(reg?'両方 等しい → <b>正多角形</b>':'正多角形では ない'):'両方 等しいと 正多角形'}</div>
+  </div>`);
+}
+function s1ask(){
+  s1box();
+  say(S1.ph==='hen'?'<span class="a">辺の 長さ</span>を 見よう。<br>全部 等しい？'
+                   :'こんどは <span class="k">角の 大きさ</span>を 見よう。<br>全部 等しい？');
+  choices(['全部 等しい','ちがうのが ある'],s1pick);
+  actions([]);
+  draw();
+}
+function s1pick(i,btn){
+  const {uL,uA,len,ang}=shape1(),k=S1.ph;
+  const truth=k==='hen'?uL.length===1:uA.length===1,said=i===0;
+  if(said!==truth){
+    btn.disabled=true;
+    const u=k==='hen'?uL.map(v=>v+'cm'):uA.map(v=>v+'°'),what=k==='hen'?'<span class="a">しるし</span>':'<span class="k">角の しるし</span>';
+    say(truth?`${what}を 見て みよう。<br>全部 ${u[0]} だね`
+             :`${what}を 見て みよう。<br>${u.join(' と ')} が あるね`,'try');
+    return;
+  }
+  S1.ans[k]=truth;
+  if(k==='hen'){S1.ph='kaku';s1ask();return;}
+  S1.ph='done';
+  const {q}=shape1(),reg=S1.ans.hen&&S1.ans.kaku;
+  s1box();
+  choices(null,null,true);
+  prob(`<span class="no">問題 ${S1.i+1} / ${P1.length}</span><span>この 形は <b class="goal">${q.nm}</b></span>`);
+  let m;
+  if(reg) m=`よくできました！ 辺も 角も 全部 等しい。<br><b>${q.nm}</b>は 正多角形`;
+  else if(S1.ans.hen) m=`よくできました！ 辺は 全部 等しいけど、<br><span class="k">角</span>が ちがう。正多角形では ない`;
+  else if(S1.ans.kaku) m=`よくできました！ 角は 全部 等しいけど、<br><span class="a">辺</span>が ちがう。正多角形では ない`;
+  else m='よくできました！ 辺も 角も ちがうのが ある。<br>正多角形では ない';
+  say(m,'ok');
+  sum(`<span class="small">正多角形</span><span>＝ <span class="a">辺の 長さ</span>が 全部 等しく、<span class="k">角の 大きさ</span>も 全部 等しい 多角形</span>`);
+  actions([['sub','もう一度',()=>{sum(null);s1start();}],['next','次の 問題 →',()=>{sum(null);S1.i=(S1.i+1)%P1.length;s1start();}]]);
+  draw();
+}
+
+/* =====================================================================
+   ステップ２：円で かく
+   (a) 中心の まわりの 360° を n等分 → 半径を ひく → 円と まじわる 点を つなぐ → できた 三角形は？
+   (b) 半径で 区切る（コンパス）→ 6回で 1周 → 正六角形
+   聞く ときは いつも 画面に 出て いる ものに ついて 聞く（見せてから 聞く）
+   ===================================================================== */
+const S2={part:'8',ph:'q',kR:0,kE:0,k:0,sw:0,wrong:0};
+const R2=4;
+const PART2=[['8','正八角形'],['6','正六角形'],['5','正五角形'],['c','半径で 区切る']];
+const DEG2={8:[40,45,60],6:[45,60,72],5:[60,72,90]};
+const v2=(n,j)=>at([0,0],R2,-90+180/n+360*j/n);
+const S2step={
+  enter(){
+    choices(null,null);sum(null);
+    s2start();
+  },
+  draw(){
+    const sz=R2+Math.max(1.6,fw()*2.4);
+    frame(-sz,sz,-R2-1.4,R2+1.3);
+    const O=[0,0];
+    let g=circ(O,R2,`fill="#fffdf7" ${ln(CB,3).replace('fill="none"','')}`);
+    if(S2.part==='c'){svg.innerHTML=g+draw2c();return;}
+    const n=+S2.part,V=j=>v2(n,j),ph=S2.ph;
+    /* 三角形の 色（できたあと） */
+    if(ph==='tri'||ph==='done')
+      for(let j=0;j<n;j++) g+=polyS([O,V(j),V(j+1)],`fill="${j%2?'#e9e0f7':'#ffe9a8'}" opacity=".85"`);
+    /* 360° */
+    if(ph==='q'){
+      g+=arc(O,1.3,0,360,ln(CK,3.5,dash(8)));
+      g+=lab(0,1.3+fw()*.9,'360°',CK,{k:1});
+    }
+    /* 半径 */
+    const nr=Math.min(n,S2.kR);
+    for(let j=0;j<Math.ceil(nr);j++){
+      const f=Math.min(1,nr-j);
+      g+=seg(O,lerp(O,V(j),f),ln(CD,3.5));
+    }
+    /* 中心の 角 */
+    for(let j=0;j<Math.floor(nr);j++){
+      if(j+1>nr&&!(j===n-1&&nr>=n))continue;
+      const from=-90+180/n+360*j/n,span=360/n;
+      if(j<n-1||nr>=n){
+        g+=arc(O,1.25,from,span,ln(CK,3));
+        const lp=at(O,1.25+fw()*.95,from+span/2);
+        g+=lab(lp[0],lp[1],span+'°',CK,{k:.72});
+      }
+    }
+    /* 辺 */
+    for(let j=0;j<Math.ceil(Math.min(n,S2.kE));j++){
+      const f=Math.min(1,S2.kE-j);
+      g+=seg(V(j),lerp(V(j),V(j+1),f),ln(CA,5));
+    }
+    /* 半径の しるし（同じ 長さ）、辺の しるし */
+    if(ph==='tri'||ph==='done'){
+      for(let j=0;j<n;j++) g+=ticks(O,V(j),1,CD);
+      const a0=-90+180/n,lp=at(mid(O,V(0)),fw()*1.1,a0-90);g+=lab(lp[0],lp[1],'半径',CD,{k:.8});
+      if(ph==='done') for(let j=0;j<n;j++) g+=ticks(V(j),V(j+1),n===6?1:2,n===6?CD:CA);
+    }
+    for(let j=0;j<Math.floor(S2.kR)&&j<n;j++) g+=dot(V(j),4,CB);
+    g+=dot(O,4.5,CB);
+    if(ph==='q') g+=lab(0,-fw()*.95,'中心',CB,{k:.72});
+    svg.innerHTML=g;
+  }
+};
+function s2start(){
+  Object.assign(S2,{ph:'q',kR:0,kE:0,k:0,sw:0,wrong:0});
+  sum(null);choices(null,null);
+  parts(PART2,S2.part,k=>{S2.part=k;s2start();});
+  if(S2.part==='c'){s2cstart();return;}
+  legend([['line',CD,'半径'],['arc',CK,'中心の 角'],['line',CA,'辺']]);
+  const n=+S2.part;
+  prob(`<span class="goal">円を 使って ${PART2.find(p=>p[0]===S2.part)[1]}を かこう</span>`);
+  say(`中心の まわりの 角（360°）を <b>${n}つ</b>に 等しく 分けよう。<br>1つ分は 何度？`);
+  choices(DEG2[n].map(v=>v+'°'),s2pickDeg);
+  actions([]);
+  draw();
+}
+function s2pickDeg(i,btn){
+  const n=+S2.part,v=DEG2[n][i];
+  if(v!==360/n){
+    btn.disabled=true;S2.wrong++;
+    say(`もう一回。<br><span class="hint">360 ÷ ${n} ＝ ？</span>`,'try');return;
+  }
+  btn.classList.add('good');
+  S2.ph='radii';
+  say(`よくできました！ 360 ÷ ${n} ＝ ${v}<br>${v}° ずつ 半径を ひこう`,'ok');
+  choices(null,null);
+  actions([['play','半径を ひく ▶',s2radii]]);
+  draw();
+}
+function s2radii(){
+  const n=+S2.part;actions([['play','半径を ひく ▶',()=>{},true]]);
+  anim(n*260,t=>{S2.kR=n*t;draw();},()=>{
+    S2.ph='edges';
+    say('半径と 円が まじわる 点が できたね。<br>となりの 点を つなごう');
+    actions([['play','点を つなぐ ▶',s2edges]]);draw();
+  },t=>t);
+}
+function s2edges(){
+  const n=+S2.part;actions([['play','点を つなぐ ▶',()=>{},true]]);
+  anim(n*260,t=>{S2.kE=n*t;draw();},()=>{
+    S2.ph='tri';
+    say(`${KAN[n]}角形が できた！ 中に 三角形が ${n}つ。<br>この 三角形は 何 三角形？ <span class="d">半径の しるし</span>を 見よう`);
+    choices(['二等辺三角形','正三角形','直角三角形'],s2pickTri);
+    actions([]);draw();
+  },t=>t);
+}
+function s2pickTri(i,btn){
+  const n=+S2.part,ok=n===6?1:0;
+  if(i!==ok){
+    btn.disabled=true;
+    const m=i===2?'直角に なって いる 角は ないね。<br><span class="d">しるしが 同じ 辺</span>は どれかな？'
+           :i===1?`中心の 角は ${360/n}°。3つの 角が 全部 60° では ないね。<br>等しいのは <span class="d">半径</span>の 2つの 辺`
+                 :'2つの 辺は <span class="d">半径</span>で 等しいね。<br>中心の 角が 60° だと、のこりの 2つの 角も 60°';
+    say(m,'try');return;
+  }
+  btn.classList.add('good');
+  S2.ph='done';choices(null,null,true);
+  if(n===6){
+    say('よくできました！ 正三角形が 6つ。<br>だから 正六角形の <span class="a">1辺</span> ＝ <span class="d">半径</span>','ok');
+    sum(`<span class="small">中心の 角 360 ÷ 6 ＝ 60°</span><span>正三角形が 6つ → <span class="a">辺</span>も 角も 全部 等しい → <b>正六角形</b></span>`);
+  }else{
+    say(`よくできました！ <span class="d">半径</span>は 全部 同じ 長さ。<br>${n}つの 二等辺三角形は 全部 合同`,'ok');
+    sum(`<span class="small">中心の 角 360 ÷ ${n} ＝ ${360/n}°</span><span>合同な 二等辺三角形が ${n}つ → <span class="a">辺</span>も 角も 全部 等しい → <b>正${KAN[n]}角形</b></span>`);
+  }
+  actions([['sub','もう一度',s2start],['next','次の 問題 →',s2next]]);
+  draw();
+}
+function s2next(){
+  const i=PART2.findIndex(p=>p[0]===S2.part);S2.part=PART2[(i+1)%PART2.length][0];s2start();
+}
+/* ----- (b) 半径で 区切る ----- */
+const cP=j=>at([0,0],R2,180+60*j);
+function s2cstart(){
+  legend([['line',CD,'半径'],['arc',CK,'コンパスの しるし'],['line',CA,'辺']]);
+  prob('<span class="goal">円の まわりを 半径の 長さで 区切ろう</span>');
+  say('コンパスを <span class="d">半径</span>の 長さに 開いて、<br>①から 円の まわりに しるしを つけて いこう');
+  choices(null,null);
+  actions([['play','区切る ▶',s2cmark]]);
+  draw();
+}
+function s2cmark(){
+  if(S2.k>=6)return;
+  actions([['play','区切る ▶',()=>{},true]]);
+  anim(650,t=>{S2.sw=t;draw();},()=>{
+    S2.k++;S2.sw=0;
+    if(S2.k<6){say(`${S2.k}回 区切った。<br>つぎの しるしに コンパスの はりを さして つづけよう`);actions([['play','区切る ▶',s2cmark]]);}
+    else{
+      say('6回で <b>①の 点に もどった！</b><br>しるしを 順に つなごう');
+      actions([['play','点を つなぐ ▶',s2cedges]]);
+    }
+    draw();
+  });
+}
+function s2cedges(){
+  actions([['play','点を つなぐ ▶',()=>{},true]]);
+  anim(1500,t=>{S2.kE=6*t;draw();},()=>{
+    S2.ph='ask';
+    say('どんな 形が できた？');
+    choices(['正五角形','正六角形','正八角形'],s2cpick);
+    actions([]);draw();
+  },t=>t);
+}
+function s2cpick(i,btn){
+  if(i!==1){btn.disabled=true;say('辺の 数を 数えて みよう','try');return;}
+  btn.classList.add('good');S2.ph='done';choices(null,null,true);
+  say('よくできました！ 中心と つなぐと 正三角形が 6つ。<br><span class="a">1辺</span> ＝ <span class="d">半径</span> だから 半径で 区切れる','ok');
+  sum('<span class="small">円の まわりを 半径の 長さで 区切ると</span><span class="f"><b>正六角形</b> が かける</span>');
+  actions([['sub','もう一度',s2start],['next','次の 問題 →',s2next]]);
+  draw();
+}
+function draw2c(){
+  const O=[0,0];let g='';
+  const k=S2.k,done=S2.ph==='done';
+  if(done) for(let j=0;j<6;j++) g+=polyS([O,cP(j),cP(j+1)],`fill="${j%2?'#e9e0f7':'#ffe9a8'}" opacity=".85"`);
+  /* 半径（①まで） */
+  g+=seg(O,cP(0),ln(CD,3.5));
+  if(!done){const lp=mid(O,cP(0));g+=lab(lp[0],lp[1]+fw()*.8,'半径',CD,{k:.85});}
+  if(done) for(let j=0;j<6;j++){g+=seg(O,cP(j),ln(CD,2.5,dash(6)));g+=ticks(O,cP(j),1,CD);g+=ticks(cP(j),cP(j+1),1,CD);}
+  /* しるし（弧） */
+  for(let j=1;j<=k;j++){
+    const c=cP(j-1),dir=180+60*(j-1)+120;   /* 針 c から 点 j への 向き */
+    g+=arc(c,R2,dir-9,18,ln(CK,3.5));
+  }
+  /* 辺 */
+  for(let j=0;j<Math.ceil(Math.min(6,S2.kE));j++){
+    const f=Math.min(1,S2.kE-j);g+=seg(cP(j),lerp(cP(j),cP(j+1),f),ln(CA,5));
+  }
+  for(let j=0;j<=Math.min(k,5);j++){
+    g+=dot(cP(j),4.5,CB);
+    const lp=at(O,R2+fw()*1.05,180+60*j);
+    g+=lab(lp[0],lp[1],'①②③④⑤⑥'[j],j===0&&k===6?CK:CB,{k:.85});
+  }
+  /* コンパス */
+  if(k<6&&!done&&S2.ph!=='ask'){
+    const c=cP(k),dir=180+60*k+120,cur=dir-9+18*S2.sw;
+    if(S2.sw>0) g+=arc(c,R2,dir-9,18*S2.sw,ln(CK,3.5));
+    const pen=at(c,R2,cur),m=mid(c,pen),out=Math.atan2(m[1],m[0])*180/Math.PI,apex=at(m,1.8,out);
+    g+=seg(c,apex,ln('#5d6b78',6))+seg(pen,apex,ln('#5d6b78',6));
+    g+=dot(apex,6,'#5d6b78')+dot(pen,4,CK)+dot(c,3,'#2b2118');
+  }
+  g+=dot(O,4.5,CB);if(!done)g+=lab(0,-fw()*.95,'中心',CB,{k:.72});
+  return g;
+}
+
+/* =====================================================================
+   ステップ３：くりかえして かく（プログラミング）
+   「〔3cm 進む → 左に □° 回る〕を □回 くりかえす」を つくって ロボットを 動かす。
+   ロボットが 回る 角は 形の 外がわ（まっすぐ 進む 向きと の あいだ）。
+   それを 点線（まっすぐの 向き）と だいだいの 弧で 見せる＝中の 角と まちがえた ときに 目で わかる。
+   ===================================================================== */
+const P3=[3,4,6,5,8];
+const ANG3=[45,60,72,90,108,120,135];
+const S3={pi:0,n:3,a:null,ph:'edit',prog:0,path:null,runN:0,runA:0,fails:0,res:null};
+const L3=3;
+function tpath(n,a){
+  let p=[0,0],h=0;const pts=[p];
+  for(let i=0;i<n;i++){p=[p[0]+L3*cosd(h),p[1]+L3*sind(h)];pts.push(p);h+=a;}
+  return pts;
+}
+const S3step={
+  enter(){
+    parts(null);sum(null);choices(null,null,true);
+    legend([['fill','#f4efe2','お手本'],['line',CA,'進んだ 線'],['arc',CK,'回った 角'],['dash',CG,'まっすぐの 向き']]);
+    s3start();
+  },
+  draw(){
+    const N=P3[S3.pi],tgt=tpath(N,360/N);
+    let all=tgt.slice();
+    if(S3.path) all=all.concat(S3.path);
+    const xs=all.map(p=>p[0]),ys=all.map(p=>p[1]);
+    const m=1.9;
+    frame(Math.min(...xs)-m,Math.max(...xs)+m,Math.min(...ys)-m,Math.max(...ys)+m);
+    let g='';
+    /* お手本（うすい 点線） */
+    g+=polyS(tgt.slice(0,N),`fill="#f4efe2" ${ln('#d9ccb0',2.5,dash(7)).replace('fill="none"','')}`);
+    /* 走った ところ */
+    let rp=[0,0],rh=0;
+    if(S3.path){
+      const n=S3.runN,a=S3.runA,pr=S3.prog;     /* pr: 0..2n（進む 1、回る 1） */
+      const pts=S3.path;
+      for(let i=0;i<n;i++){
+        const mv=Math.min(1,Math.max(0,pr-2*i)),tn=Math.min(1,Math.max(0,pr-2*i-1));
+        if(mv<=0)break;
+        const h=a*i,A=pts[i],B=pts[i+1],E=lerp(A,B,mv);
+        g+=seg(A,E,ln(CA,5));
+        rp=E;rh=h;
+        if(tn>0){
+          const ext=[B[0]+1.2*cosd(h),B[1]+1.2*sind(h)];
+          g+=seg(B,ext,ln(CG,2.5,dash(6)));
+          g+=arc(B,.8,h,a*tn,ln(CK,3.5));
+          if(tn>=1&&(n<=8||i<8)){const lp=at(B,.8+fw()*.95,h+a/2);g+=lab(lp[0],lp[1],a+'°',CK,{k:.72});}
+          rh=h+a*tn;
+        }
+      }
+      /* できたら 中の 角を 1つ 見せる */
+      if(S3.ph==='done'){
+        const B=pts[1],ia=180-a;
+        g+=arc(B,.62,a,ia,`fill="none" stroke="${CA}" stroke-width="${W(3)}"`);
+        const lp=at(B,.62+fw()*1.1,a+ia/2);g+=lab(lp[0],lp[1],ia+'°',CA,{k:.72});
+      }
+    }
+    g+=dot([0,0],5,'#2b2118')+lab(-fw()*.5,0,'スタート','#5d5040',{k:.72,anc:'end'});
+    /* ロボット */
+    const s=tw(15),hd=rh,P=rp;
+    const tip=at(P,s*1.4,hd),l=at(P,s,hd+140),r=at(P,s,hd-140);
+    g+=polyS([tip,l,P,r],`fill="#c9a227" stroke="#5d4a10" stroke-width="${W(2.5)}" stroke-linejoin="round"`);
+    svg.innerHTML=g;
+  }
+};
+function s3start(){
+  const N=P3[S3.pi];
+  Object.assign(S3,{n:3,a:null,ph:'edit',prog:0,path:null,fails:0});
+  prob(`<span class="no">問題 ${S3.pi+1} / ${P3.length}</span><span class="goal">ロボットで 正${KAN[N]}角形を かこう</span>`);
+  say('回数と 回る 角を えらんで、<br>金の ボタンで 動かそう');
+  s3box();
+  s3act();
+  draw();
+}
+function s3box(){
+  box(`<div class="prog">
+    <div class="blk">
+      <div class="top"><span class="stp"><button id="nm">−</button><b id="nv">${S3.n}</b><button id="np">＋</button></span><span>回 くりかえす</span></div>
+      <div class="in">
+        <div class="cmd">${L3}cm 進む</div>
+        <div class="cmd">左に <span class="aslot${S3.a!=null?' fill':''}" id="av">${S3.a!=null?S3.a:'？'}</span>° 回る</div>
+      </div>
+    </div>
+    <div class="angs">${ANG3.map(v=>`<button class="ang${S3.a===v?' on':''}" data-v="${v}">${v}°</button>`).join('')}</div>
+  </div>`);
+  const edit=()=>{if(S3.ph==='done'||BUSY)return false;if(S3.path){S3.path=null;S3.prog=0;draw();}return true;};
+  $('nm').onclick=()=>{if(edit()&&S3.n>3){S3.n--;$('nv').textContent=S3.n;}};
+  $('np').onclick=()=>{if(edit()&&S3.n<10){S3.n++;$('nv').textContent=S3.n;}};
+  document.querySelectorAll('.ang').forEach(b=>b.onclick=()=>{
+    if(!edit())return;S3.a=+b.dataset.v;
+    document.querySelectorAll('.ang').forEach(x=>x.classList.toggle('on',x===b));
+    const av=$('av');av.textContent=S3.a;av.className='aslot fill';
+  });
+}
+function s3act(){
+  actions([['show','動かして たしかめる',s3run]]);
+}
+function s3run(){
+  if(S3.a==null){say('回る 角を えらんで いないよ。<br>下の だいだいの ボタンから えらぼう','try');return;}
+  S3.runN=S3.n;S3.runA=S3.a;S3.path=tpath(S3.n,S3.a);S3.prog=0;
+  actions([['show','動かして たしかめる',()=>{},true]]);
+  say('うごいて いるよ…');
+  draw();
+  anim(S3.n*2*380,t=>{S3.prog=t*2*S3.runN;draw();},s3judge,t=>t);
+}
+function s3judge(){
+  const N=P3[S3.pi],n=S3.runN,a=S3.runA,tot=n*a,end=S3.path[n],closed=Math.hypot(end[0],end[1])<1e-6;
+  const hint=`<br><span class="hint">360 ÷ ${N} ＝ ？</span>`;
+  if(closed&&tot===360&&n===N){
+    S3.ph='done';
+    say(`よくできました！ 正${KAN[N]}角形が かけた。<br>回った 角を 全部 たすと 1回転（360°）`,'ok');
+    sum(`<span class="f"><span class="k">${a}°</span> × ${n}回 ＝ 360°</span><span class="small">中の 角は 180 − ${a} ＝ <span class="a">${180-a}°</span></span>`);
+    actions([['sub','もう一度',()=>{sum(null);s3start();}],['next','次の 問題 →',()=>{sum(null);S3.pi=(S3.pi+1)%P3.length;s3start();}]]);
+    draw();return;
+  }
+  S3.fails++;
+  let m;
+  if(a===180-360/N) m=`${a}° は 正${KAN[N]}角形の <b>中の 角</b>だね。<br>ロボットが 回るのは <span class="k">外がわの 角</span>（点線から）`;
+  else if(closed&&tot===360) m=`もとに もどったけど、<b>正${KAN[n]}角形</b>に なったよ。<br>正${KAN[N]}角形は 辺が ${N}本`;
+  else if(closed) m=`もとに もどったけど、同じ 線を 何回も 通ったね。<br>回った 角の 合計 ${a} × ${n} ＝ ${tot}°`;
+  else m=`もとの 場所に もどらなかったね。<br>回った 角の 合計 ${a} × ${n} ＝ ${tot}°（1回転は 360°）`;
+  say(m+(S3.fails>=2?hint:''),'try');
+  s3act();
+}
+
+/* =====================================================================
+   ステップ４：円周を 調べる
+   (a) 見通す：内がわの 正六角形（まわり＝直径×3）と 外がわの 正方形（まわり＝直径×4）で はさむ。
+       まわりの 長さを まっすぐに して、直径の テープ いくつ分かで ならべる
+   (b) ころがす：直径 2・3・4cm の 円を 1回転 ころがす → 表 → 円周 ÷ 直径 は いつも 約3.14
+   ===================================================================== */
+const S4={part:'mi',st:0,ph:'look',ci:0,roll:0,rec:[]};
+const D4=[2,3,4];
+const PI100=d=>Math.round(Math.PI*d*100);    /* はかった 円周（0.01cm まで） */
+const S4step={
+  enter(){
+    choices(null,null);sum(null);
+    legend([['line',CD,'直径'],['line',CA,'円周（円の まわり）']]);
+    s4start();
+  },
+  draw(){S4.part==='mi'?draw4mi():draw4ko();}
+};
+function s4start(){
+  parts([['mi','見通す'],['ko','ころがす']],S4.part,k=>{S4.part=k;s4start();});
+  sum(null);
+  if(S4.part==='mi'){
+    Object.assign(S4,{st:0,ph:'look',anim:0});
+    box(null);
+    prob('<span class="goal">円周は 直径の 何倍 くらい？</span>');
+    say('円の <span class="a">まわりの 長さ</span>（円周）を、<br>正六角形と 正方形で はさんで みよう');
+    choices(null,null);
+    actions([['play','内がわに 正六角形を かく ▶',s4mi]]);
+  }else{
+    Object.assign(S4,{ci:0,roll:0,ph:'look',rec:[]});
+    prob('<span class="goal">円を ころがして 円周を はかろう</span>');
+    s4tbl();
+    s4koAsk();
+  }
+  draw();
+}
+function s4mi(){
+  actions([['play','…',()=>{},true]]);
+  anim(900,t=>{S4.anim=t;S4.st=S4.st<1?1:S4.st;draw();},()=>{
+    S4.anim=1;
+    if(S4.st===1&&S4.ph==='look'){
+      say('正六角形の 1辺 ＝ 半径。<br>まわり ＝ 半径 × 6 ＝ <span class="d">直径</span> × 3');
+      actions([['play','外がわに 正方形を かく ▶',()=>{
+        actions([['play','…',()=>{},true]]);
+        S4.st=2;anim(900,t=>{S4.anim=t;draw();},()=>{
+          S4.anim=1;S4.ph='ask';
+          say('正方形の 1辺 ＝ 直径。まわり ＝ <span class="d">直径</span> × 4<br>円周は どこに 入る？');
+          choices(['直径の 3倍より 短い','3倍より 長く、4倍より 短い','直径の 4倍より 長い'],s4miPick);
+          actions([]);draw();
+        });
+      }]]);
+    }
+    draw();
+  });
+}
+function s4miPick(i,btn){
+  if(i!==1){btn.disabled=true;say('円は 正六角形の 外がわ、正方形の 内がわに あるね。<br>まわりの 長さも その あいだ','try');return;}
+  btn.classList.add('good');S4.ph='done';choices(null,null,true);
+  S4.anim=0;
+  anim(900,t=>{S4.anim=t;draw();},()=>{S4.anim=1;draw();});
+  say('よくできました！ 円周は 直径の 3倍と 4倍の あいだ。<br>くわしく 何倍かは ころがして 調べよう','ok');
+  sum('<span class="f"><span class="d">直径</span> × 3 ＜ <span class="a">円周</span> ＜ <span class="d">直径</span> × 4</span>');
+  actions([['sub','もう一度',s4start],['next','ころがして 調べる →',()=>{S4.part='ko';s4start();}]]);
+}
+function bar(x,y,len,D,col,lbl,o={}){
+  /* 直径の テープ：D ごとに 色を かえて ならべる */
+  let g='',x0=x,i=0;const h=o.h||.62;
+  while(len>1e-6){
+    const w=Math.min(D,len);
+    g+=`<rect x="${X(x0)}" y="${Y(y+h/2)}" width="${(w*U).toFixed(1)}" height="${(h*U).toFixed(1)}" fill="${i%2?'#a58ad6':CD}" stroke="#fff" stroke-width="${W(2)}"/>`;
+    if(w>=D-1e-6&&D*U*SC>60) g+=`<text x="${X(x0+w/2)}" y="${Y(y)}" dy="0.36em" font-size="${(FS*.72).toFixed(1)}" fill="#fff" font-weight="800" text-anchor="middle">直径</text>`;
+    else if(w<D-1e-6&&o.bit) g+=lab(x0+w+fw()*.25,y,o.bit,CD,{k:.72,anc:'start'});
+    x0+=w;len-=w;i++;
+  }
+  return g;
+}
+function draw4mi(){
+  const R=2,D=4,x0=.2,C=[x0+R,6.5];
+  frame(-.5,17.2,-1.3,8.9);
+  let g='';
+  const a=S4.st>=1?(S4.st===1?S4.anim??1:1):0,b=S4.st>=2?(S4.st===2&&S4.ph!=='done'?S4.anim??1:1):0;
+  /* 目もり（直径 1つ分 ごと）。円の 直径の はしから まっすぐ 下へ */
+  for(let k=0;k<=4;k++) g+=seg([x0+k*D,-.3],[x0+k*D,k<=1?C[1]:4.3],ln('#c9bfa5',1.5,dash(4)));
+  for(let k=1;k<=4;k++) g+=lab(x0+k*D,-.8,'直径の '+k+'倍','#8a7a5f',{k:.74});
+  /* 正方形（外） */
+  if(S4.st>=2) g+=polyS([[C[0]-R,C[1]-R],[C[0]+R,C[1]-R],[C[0]+R,C[1]+R],[C[0]-R,C[1]+R]],`fill="none" stroke="${CB}" stroke-width="${W(3.5)}" opacity="${b}"`);
+  g+=circ(C,R,`fill="#fffdf7" stroke="${CA}" stroke-width="${W(5)}"`);
+  if(S4.st>=1){
+    const hx=[0,1,2,3,4,5].map(j=>at(C,R,60*j));
+    g+=polyS(hx,`fill="none" stroke="${CK}" stroke-width="${W(3.5)}" opacity="${a}"`);
+  }
+  g+=seg([C[0]-R,C[1]],[C[0]+R,C[1]],ln(CD,5));
+  g+=lab(C[0],C[1]+fw()*.75,'直径',CD,{k:.8});
+  g+=dot(C,3.5,CB);
+  /* まっすぐに した まわりの 長さ */
+  const rows=[[3.5,'正六角形の まわり',CK],[2,'円周',CA],[.5,'正方形の まわり',CB]];
+  rows.forEach(([y,t,c],ri)=>{
+    const show=ri===0?S4.st>=1:ri===2?S4.st>=2:S4.ph==='done';
+    g+=lab(x0,y+.31+fw()*.55,t,c,{k:.72,anc:'start'});
+    if(ri===1&&!show){g+=lab(x0+D*3.5,y,'？',CA,{k:1.1});return;}
+    if(!show)return;
+    const f=ri===0?a:ri===2?b:(S4.anim??1),full=ri===0?3*D:ri===2?4*D:Math.PI*D;
+    g+=bar(x0,y,full*f,D,c,'',{bit:ri===1&&f>=1?'少し':''});
+    g+=seg([x0,y-.31],[x0+full*f,y-.31],ln(c,4));
+  });
+  svg.innerHTML=g;
+}
+function s4tbl(){
+  const rows=D4.map((d,i)=>{
+    const r=S4.rec[i];
+    return `<tr><td>${d}cm</td><td class="${r?'':'em'}">${r?fmt(r)+'cm':'？'}</td><td class="${r?'':'em'} ${S4.ph==='ask'||S4.ph==='done'?'gold':''}">${r?(r/100/d).toFixed(2):'？'}</td></tr>`;
+  }).join('');
+  box(`<div class="tbl"><table><tr><th class="d">直径</th><th class="a">円周</th><th>円周 ÷ 直径</th></tr>${rows}</table></div>`);
+}
+function s4koAsk(){
+  const d=D4[S4.ci];
+  S4.roll=0;
+  say(`直径 ${d}cm の 円。<br>●の ところから 1回転 ころがそう`);
+  choices(null,null);
+  actions([['play','1回転 ころがす ▶',s4roll]]);
+}
+function s4roll(){
+  const d=D4[S4.ci];
+  actions([['play','1回転 ころがす ▶',()=>{},true]]);
+  anim(2200,t=>{S4.roll=t;draw();},()=>{
+    S4.rec[S4.ci]=PI100(d);
+    s4tbl();
+    say(`<span class="a">円周</span>は 約 ${fmt(PI100(d))}cm。<br><span class="d">直径</span> 3つ分と 少し`);
+    if(S4.ci<D4.length-1) actions([['play','ほかの 円を ころがす ▶',()=>{S4.ci++;s4koAsk();draw();}]]);
+    else{
+      S4.ph='ask';s4tbl();
+      say('表の <b>円周 ÷ 直径</b> を 見よう。<br>気づいた ことは？');
+      choices(['直径が 大きいほど 大きい','どの 円も 約 3.14','どの 円も 約 4'],s4koPick);
+      actions([]);
+    }
+    draw();
+  },t=>t);
+}
+function s4koPick(i,btn){
+  if(i!==1){btn.disabled=true;say('金の わくの 数を 上から 読んで みよう','try');return;}
+  btn.classList.add('good');S4.ph='done';choices(null,null,true);s4tbl();
+  say('よくできました！ どんな 大きさの 円でも<br>円周 ÷ 直径 は 同じ。これを <b>円周率</b> と いう','ok');
+  sum('<span class="f"><span class="a">円周</span> ÷ <span class="d">直径</span> ＝ <span class="gd">円周率（3.14）</span></span><span class="small">円周率は 3.14159… と ずっと つづく。算数では 3.14 を 使う</span>');
+  actions([['sub','もう一度',s4start],['next','円周を 求める →',()=>go('s5')]]);
+}
+function draw4ko(){
+  const d=D4[S4.ci],R=d/2,L=Math.PI*d,t=S4.roll;
+  frame(-1.2,15.6,-2.6,5);
+  let g='';
+  /* 地面と 目もり */
+  g+=seg([-1.2,0],[15.6,0],ln(CB,3));
+  for(let x=0;x<=15;x++){
+    g+=seg([x,0],[x,x%5===0?-.35:-.2],ln(CB,x%5===0?2.5:1.5));
+    if(x%5===0) g+=lab(x,-.75,x+'cm','#8a7a5f',{k:.74});
+  }
+  const th=t*2*Math.PI,cx=R*th,C=[cx,R];
+  /* ころがった あと（円周の 長さ） */
+  if(t>0) g+=seg([0,0],[cx,0],ln(CA,7));
+  /* 直径の テープ（ころがし おわってから） */
+  if(t>=1) g+=bar(0,-1.55,L,d,CD,'',{bit:'少し',h:.5});
+  g+=circ(C,R,`fill="#fffdf7" stroke="${CA}" stroke-width="${W(5)}"`);
+  if(t>=1) g+=lab(cx-R-.25,.3+fw()*.6,'円周 約 '+fmt(PI100(d))+'cm',CA,{k:.85,anc:'end'});
+  /* 直径の 線（いっしょに 回る） */
+  const a1=-90-th*180/Math.PI;
+  g+=seg(at(C,R,a1+90),at(C,R,a1-90),ln(CD,3.5));
+  const mk=at(C,R,a1);
+  g+=dot(mk,7,'#c9a227')+dot(mk,3,'#5d4a10');
+  g+=dot([0,0],5,'#2b2118');
+  if(t===0) g+=lab(0,-.75-fw()*1.1,'ここから','#5d5040',{k:.72});
+  g+=lab(cx,R+R+fw()*.8,'直径 '+d+'cm',CD,{k:.8});
+  svg.innerHTML=g;
+}
+
+/* =====================================================================
+   ステップ５：円周を 求める（カードで 式を つくる。答えの 数は 画面が 出す）
+   ・半径しか わからない ときは、先に 反対がわまで のばして 直径を 見せる
+   ・円周から 直径を 求める ときは、円周を まっすぐに して「直径 3.14こ分」を 見せる
+   ・半径の カードを まぜる＝どの 長さを 使うか 自分で えらぶ
+   ===================================================================== */
+const P5=[
+  {g:'d',d:600},
+  {g:'r',d:800},
+  {g:'d',d:1000,r:true},
+  {g:'c',d:1000},
+  {g:'r',d:500},
+  {g:'c',d:600}
+];
+const S5={i:0,ph:'look',t:0,un:0,slots:[],sel:null,cards:[],done:false};
+const Q5=()=>P5[S5.i];
+const S5step={
+  enter(){
+    parts(null);sum(null);choices(null,null,true);
+    legend([['line',CD,'直径・半径'],['line',CA,'円周']]);
+    s5start();
+  },
+  draw(){
+    const q=Q5(),R=2.2,C=[R,R+1.4],Lb=Math.PI*2*R;
+    frame(-.6,Lb+1.6,-1.6,2*R+2.4);
+    let g=circ(C,R,`fill="#fffdf7" stroke="${q.g==='c'?CA:CB}" stroke-width="${W(q.g==='c'?6:3)}"`);
+    const A=[C[0]-R,C[1]],B=[C[0]+R,C[1]];
+    const txt=s=>s;
+    if(q.g==='d'){
+      g+=seg(A,B,ln(CD,4.5));
+      g+=lab(C[0],C[1]+fw()*.8,txt('直径 '+fmt(q.d)+'cm'),CD,{k:.85});
+      if(q.r){g+=seg(C,[C[0],C[1]-R],ln(CD,3,dash(6)));g+=lab(C[0]+fw()*.3,C[1]-R*.5,'半径 '+fmt(q.d/2)+'cm',CD,{k:.75,anc:'start'});}
+    }
+    if(q.g==='r'){
+      g+=seg(C,B,ln(CD,4.5));
+      if(S5.t>0) g+=seg(C,lerp(C,A,S5.t),ln(CD,4.5,dash(7)));
+      g+=lab(C[0]+R/2,C[1]+fw()*.8,'半径 '+fmt(q.d/2)+'cm',CD,{k:.8});
+      if(S5.t>=1) g+=lab(C[0],C[1]-fw()*.9,'直径 '+fmt(q.d/2)+' × 2 ＝ '+fmt(q.d)+'cm',CD,{k:.72});
+    }
+    if(q.g==='c'){
+      g+=seg(A,B,ln(CD,3,dash(7)));
+      g+=lab(C[0],C[1]+fw()*.8,S5.ph==='done'?'直径 '+fmt(q.d)+'cm':'直径 ？',CD,{k:.85});
+      g+=lab(C[0]+R+fw()*.4,C[1]+R*.8,'円周 '+fmt(Math.round(q.d*314/100))+'cm',CA,{k:.85,anc:'start'});
+    }
+    g+=dot(C,3.5,CB);
+    /* まっすぐに した 円周 */
+    if(S5.un>0){
+      const L=Lb*S5.un,y=0;
+      /* 円の 直径の はしから まっすぐ 下へ＝テープの 1つ分が 直径 */
+      g+=seg(A,[A[0],y-.5],ln('#c9bfa5',1.5,dash(4)))+seg(B,[B[0],y-.5],ln('#c9bfa5',1.5,dash(4)));
+      g+=seg([0,y+.45],[L,y+.45],ln(CA,6));
+      g+=bar(0,y-.2,L,2*R,CD,'',{bit:S5.un>=1?'少し':'',h:.55});
+      if(S5.un>=1){
+        g+=lab(L,y+.45+fw()*.75,'円周',CA,{k:.75,anc:'end'});
+        g+=lab(0,y-.85,'直径 3.14こ分',CD,{k:.75,anc:'start'});
+      }
+    }
+    svg.innerHTML=g;
+  }
+};
+function s5start(){
+  const q=Q5();
+  Object.assign(S5,{ph:'look',t:0,un:0,slots:[],sel:null,done:false});
+  sum(null);box(null);
+  const goal=q.g==='c'?'円周から 直径を 求めよう':'円周の 長さを 求めよう';
+  prob(`<span class="no">問題 ${S5.i+1} / ${P5.length}</span><span class="goal">${goal}</span>`);
+  if(q.g==='r'){
+    say(`わかって いるのは <span class="d">半径</span>。<br>反対がわまで のばすと…`);
+    actions([['play','直径に する ▶',()=>{actions([['play','直径に する ▶',()=>{},true]]);anim(900,t=>{S5.t=t;draw();},s5ask);}]]);
+  }else if(q.g==='c'){
+    say('<span class="a">円周</span>が わかって いる。<br>円周を まっすぐに すると…');
+    actions([['play','円周を まっすぐに する ▶',()=>{actions([['play','…',()=>{},true]]);anim(1300,t=>{S5.un=t;draw();},s5ask);}]]);
+  }else s5ask();
+  draw();
+}
+function s5ask(){
+  const q=Q5(),c100=Math.round(q.d*314/100);
+  S5.ph='ask';
+  let c;
+  if(q.g==='d') c=[{v:q.d,r:'d'},{v:314,r:'pi'}].concat(q.r?[{v:q.d/2,r:'r'}]:[]);
+  if(q.g==='r') c=[{v:q.d/2,r:'r'},{v:q.d,r:'d'},{v:314,r:'pi'}];
+  if(q.g==='c') c=[{v:c100,r:'c'},{v:314,r:'pi'}];
+  S5.cards=c.sort((a,b)=>a.v-b.v);
+  S5.rev=q.g==='c';
+  S5.slots=[null,null];S5.sel=null;
+  say((q.g==='c'?'<span class="a">円周</span> ＝ <span class="d">直径</span> × 3.14 だったね。<br>直径を 求める 式を つくろう'
+                 :'<span class="a">円周</span> ＝ <span class="d">直径</span> × 3.14<br>式を つくろう')+'<br><small>カードを □ に 入れてね</small>');
+  box(`<div class="shiki"><div class="eq" id="eq"></div><div class="cards" id="cards"></div></div>`);
+  buildEq();
+  actions([['sub','カードを もどす',resetCards],['show','答え',check5]]);
+  draw();
+}
+function buildEq(){
+  const eq=$('eq');
+  eq.innerHTML=`<div class="slotw"><div class="slot" data-i="0"></div><div class="what" id="what0"></div></div>
+    <span class="op">${S5.rev?'÷':'×'}</span>
+    <div class="slotw"><div class="slot" data-i="1"></div><div class="what" id="what1"></div></div>
+    <span class="op">＝</span><div class="slotw"><div class="resbox" id="res">？</div><div class="what" id="what2"></div></div><span class="u">cm</span>`;
+  eq.querySelectorAll('.slot').forEach(sl=>sl.addEventListener('click',()=>{
+    if(S5.ph!=='ask'||Date.now()-justDropped<350)return;
+    const i=+sl.dataset.i;
+    if(S5.sel!=null){place(S5.sel,i);return;}
+    if(S5.slots[i]!=null){S5.slots[i]=null;drawCards();drawSlots();}   /* 入って いる ますを おすと もどる */
+  }));
+  drawCards();drawSlots();
+}
+const cardTxt=c=>c.r==='pi'?'3.14':`${fmt(c.v)}<small>cm</small>`;
+function drawCards(){
+  const b=$('cards');if(!b)return;b.innerHTML='';
+  S5.cards.forEach((c,i)=>{
+    const e=document.createElement('button');
+    e.className='cardn'+(S5.slots.includes(i)?' gone':'')+(S5.sel===i?' sel':'');
+    e.innerHTML=cardTxt(c);dragCard(e,i);b.appendChild(e);
+  });
+}
+function drawSlots(){
+  document.querySelectorAll('#eq .slot').forEach(sl=>{
+    const i=+sl.dataset.i,c=S5.slots[i];
+    sl.innerHTML=c==null?'':(S5.cards[c].r==='pi'?'3.14':fmt(S5.cards[c].v));
+    sl.className='slot'+(c!=null?' fill':'')+(S5.sel!=null&&c==null?' sel':'');
+  });
+}
+function place(ci,si){
+  if(S5.ph!=='ask')return;
+  const old=S5.slots.indexOf(ci);if(old>=0)S5.slots[old]=null;
+  S5.slots[si]=ci;S5.sel=null;drawCards();drawSlots();
+  if(S5.slots.every(s=>s!=null)) say('できたら 金の「答え」を おそう');
+}
+function resetCards(){S5.slots=[null,null];S5.sel=null;drawCards();drawSlots();}
+
+/* ===== カードの ドラッグ（面積・体積アプリと 同じ しくみ。影は いつも 1まい・かならず 消す） ===== */
+let justDropped=0,drag=null;
+function killGhost(){document.querySelectorAll('.ghost').forEach(g=>g.remove());drag=null;}
+function nearSlot(x,y){
+  let best=null,bd=1e9;
+  document.querySelectorAll('#eq .slot').forEach(sl=>{
+    const r=sl.getBoundingClientRect();
+    const dx=Math.max(r.left-x,0,x-r.right),dy=Math.max(r.top-y,0,y-r.bottom),d=Math.hypot(dx,dy);
+    if(d<bd){bd=d;best=sl;}
+  });
+  return best&&bd<=Math.max(40,best.getBoundingClientRect().width*0.8)?best:null;
+}
+function dragCard(el,ci){
+  el.addEventListener('pointerdown',e=>{
+    if(S5.ph!=='ask')return;
+    killGhost();
+    drag={ci,el,sx:e.clientX,sy:e.clientY,x:e.clientX,y:e.clientY,ghost:null};
+    try{el.setPointerCapture(e.pointerId);}catch(_){}
+  });
+}
+addEventListener('pointermove',e=>{
+  if(!drag)return;
+  drag.x=e.clientX;drag.y=e.clientY;
+  if(!drag.ghost&&Math.hypot(e.clientX-drag.sx,e.clientY-drag.sy)>8){
+    drag.ghost=drag.el.cloneNode(true);drag.ghost.classList.add('ghost');document.body.appendChild(drag.ghost);
+  }
+  if(drag.ghost){drag.ghost.style.left=e.clientX+'px';drag.ghost.style.top=e.clientY+'px';}
+},true);
+function finishDrag(x,y){
+  if(!drag)return;
+  const {ci,sx,sy}=drag,moved=Math.hypot(x-sx,y-sy)>8;
+  killGhost();
+  if(moved){const sl=nearSlot(x,y);if(sl){place(ci,+sl.dataset.i);justDropped=Date.now();}}
+  else{S5.sel=S5.sel===ci?null:ci;drawCards();drawSlots();}
+}
+addEventListener('pointerup',e=>finishDrag(e.clientX,e.clientY),true);
+addEventListener('mouseup',e=>finishDrag(e.clientX,e.clientY),true);
+addEventListener('pointerdown',()=>{if(drag)finishDrag(drag.x,drag.y);},true);
+addEventListener('pointercancel',killGhost,true);
+addEventListener('blur',killGhost);
+document.addEventListener('visibilitychange',killGhost);
+
+/* ===== 答え合わせ（×で 終わらせない。わけを 言って まちがえた カードだけ もどす） ===== */
+function check5(){
+  if(S5.ph!=='ask')return;
+  if(S5.slots.some(s=>s==null)){say('まだ とちゅうだよ。□ を ぜんぶ うめよう','try');return;}
+  const q=Q5(),r=S5.slots.map(s=>S5.cards[s].r);
+  const back=idx=>{idx.forEach(i=>S5.slots[i]=null);drawCards();drawSlots();};
+  const ri=r.indexOf('r');
+  if(ri>=0){
+    say(`${fmt(q.d/2)}cm は <span class="d">半径</span>だよ。<br>円周 ＝ <span class="d">直径</span> × 3.14`,'try');back([ri]);return;
+  }
+  if(S5.rev&&r[0]!=='c'){
+    say('÷ の まえは <span class="a">円周</span>の 長さ。<br><span class="a">円周</span> ÷ 3.14 ＝ <span class="d">直径</span>','try');back([0,1]);return;
+  }
+  S5.ph='done';
+  const ans=S5.rev?Math.round(Math.round(q.d*314/100)*100/314):Math.round(q.d*314/100);
+  $('res').textContent=fmt(ans);$('res').className='resbox good';
+  document.querySelectorAll('#eq .slot').forEach((sl,i)=>{
+    const role=r[i];
+    sl.className='slot '+(role==='d'?'gd':role==='c'?'ga':'gp');
+    $('what'+i).textContent={d:'直径',c:'円周',pi:'円周率'}[role];
+    $('what'+i).className='what '+(role==='d'?'d':role==='c'?'a':'');
+  });
+  $('what2').textContent=S5.rev?'直径':'円周';$('what2').className='what '+(S5.rev?'d':'a');
+  $('cards').innerHTML='';
+  const rev=!S5.rev&&r[0]==='pi';
+  say(`よくできました！ ${S5.rev?'直径':'円周'}は ${fmt(ans)}cm`+(rev?'<br>ふつうは <span class="d">直径</span> × 3.14 の 順に 書くよ':''),'ok');
+  sum(S5.rev?`<span class="small"><span class="a">円周</span> ＝ <span class="d">直径</span> × 3.14 だから</span><span class="f"><span class="d">直径</span> ＝ <span class="a">円周</span> ÷ 3.14</span>`
+            :(q.g==='r'?`<span class="small"><span class="d">直径</span> ＝ <span class="d">半径</span> × 2</span>`:'')+`<span class="f"><span class="a">円周</span> ＝ <span class="d">直径</span> × 3.14</span>`);
+  actions([['sub','もう一度',s5start],['next','次の 問題 →',()=>{S5.i=(S5.i+1)%P5.length;s5start();}]]);
+  if(!S5.rev) anim(1300,t=>{S5.un=t;draw();});
+  draw();
+}
+
+/* ===== タブ ===== */
+const STEPS={s1:S1step,s2:S2step,s3:S3step,s4:S4step,s5:S5step};
+function go(m){
+  MODE=m;
+  document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x.dataset.m===m));
+  box(null);sum(null);parts(null);
+  $('main').classList.toggle('wide',m==='s4'||m==='s5');
+  STEPS[m].enter();
+}
+document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{if(!BUSY)go(b.dataset.m);}));
+go('s1');
+</script>
+</body>
+</html>
