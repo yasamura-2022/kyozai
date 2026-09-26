@@ -603,9 +603,9 @@ function draw1(){
   }
   svg.innerHTML=out;
 }
-/* 前の 形に もどる（茶）。これが ないと「次の 形 →」で 進んだ あと 前の 形が 見られない（2026-09-27 指摘） */
-function later1(f,ms){const t=S1.tok;setTimeout(()=>{if(S1.tok===t&&MODE==='s1')f();},ms);}
-function acts1(list){actions([S1.i>0?{c:'sub',t:'◀ 前の 形',any:true,f:()=>{if(!guard())return;S1.i--;start1();}}:null].concat(list));}
+/* ステップ１は 進むだけ。「一つ 前に もどる」ボタンは いらない（2026-09-27）。
+   もどす なら、それまでに 出た 形を おして 見直せる 形に する */
+function acts1(list){actions(list);}
 function start1(){
   stopAnim();resetRot();S1.tok=(S1.tok||0)+1;S1.phase='base';S1.t=0;S1.ori=0;S1.named=false;
   const it=L1[S1.i];
