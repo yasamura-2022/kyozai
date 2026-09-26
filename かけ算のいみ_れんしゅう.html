@@ -144,13 +144,21 @@
     .kr{padding:.1em .3em;gap:.25em}
   }
 
+  /* ステップ３：ひょうは 出さない（くしの 下の「3×4／12」が ひょうの かわり）。見る ところを だんご 1か所に する */
+  #s1.m3{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) auto;grid-template-areas:"stage" "work"}
+  .m3 #order{display:none}
   @media (orientation:landscape){
-    #s1.m3{grid-template-columns:minmax(300px,.85fr) minmax(0,1.5fr);
-      grid-template-areas:"order stage" "order work"}
+    #s1.m3{grid-template-columns:minmax(0,1.55fr) minmax(320px,1fr);grid-template-rows:minmax(0,1fr);
+      grid-template-areas:"stage work"}
+    .m3 #work{justify-content:center}
+    .m3 .dan{margin-bottom:auto}
+    .m3 #actions{margin-bottom:auto}      /* だんの えらびは 上、のこりは まん中に よせる */
   }
+  .m3title{text-align:center;font-weight:800;color:var(--sakura-d);letter-spacing:.06em;
+    font-size:clamp(20px,calc(1vw + 2.2vh),34px)}
   .m3 .chips{gap:4px;flex-wrap:nowrap;width:100%}
   .m3 .chip{min-width:0;flex:1 1 0;padding:0 2px;max-width:48px}
-  .m3 .dan{flex-direction:column;gap:3px;border:0;border-bottom:2px dashed var(--line);border-radius:0;background:none;margin:0 8px}
+  .m3 .dan{flex-direction:column;gap:3px}
   /* おす ところは 1か所：「くしを 1本 たす ▶」と 3択が 同じ 場所で 入れかわる */
   .choices .btn.add{flex:1;max-width:none;font-size:clamp(20px,calc(1vw + 2.2vh),32px);padding:10px 0}
   /* ステップ３では ことばの わくを 3行ぶん とって おく（行数が かわる たびに 九九の 字が 大きく 小さく ならない ように） */
@@ -293,8 +301,6 @@
         <div class="face" id="face"></div>
         <div class="bubble" id="bubble"></div>
       </div>
-      <!-- ステップ３：だんを えらぶ（先生が 使う。はじめから ぜんぶ えらべる） -->
-      <div class="dan hidden" id="dan"><span class="lbl">なんの だん？</span><div class="chips" id="danChips"></div></div>
       <!-- ステップ３：九九の ひょう（くしを ふやすと 1行ずつ できる） -->
       <div class="kuku hidden" id="kuku"></div>
     </div>
@@ -302,6 +308,9 @@
     <div id="stage"></div>
 
     <div id="work">
+      <!-- ステップ３：だんを えらぶ（先生が 使う。はじめから ぜんぶ えらべる）＋めあて -->
+      <div class="dan hidden" id="dan"><span class="lbl">なんの だん？</span><div class="chips" id="danChips"></div></div>
+      <div class="m3title hidden" id="m3title"></div>
       <div class="say" id="say"></div>
       <!-- ステップ３：なんこ ふえる？ -->
       <div class="eq3 hidden" id="eq3"></div>
@@ -387,7 +396,7 @@ function dangoSVG(k,n,o={}){
   const par=o.bottom?'xMidYMax':'xMidYMid';
   const colW=84,cols=o.cols||NMAX,W=cols*colW;
   const bot=Math.max(398,62+(k-1)*56+27+72);        // くしの 下の はし（だんごが 多いと のばす）
-  const H=bot+12+(o.labels?38:0);
+  const H=bot+12+(o.labels?38:0)+(o.sub?48:0);
   const x0=(W-n*colW)/2;
   let s=`<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="${par} meet" xmlns="http://www.w3.org/2000/svg">`;
   for(let j=0;j<n;j++){
@@ -407,8 +416,10 @@ function dangoSVG(k,n,o={}){
          `<ellipse cx="${cx-9}" cy="${cy-10}" rx="8" ry="5" fill="#fff" opacity=".55"/></g>`;
     }
     s+=`</g>`;
+    if(o.sub&&o.sub[j]!=null)
+      s+=`<text x="${cx}" y="${bot+40}" text-anchor="middle" font-size="31" font-weight="800" fill="#8a7a5f">${o.sub[j]}</text>`;
     if(o.labels&&o.labels[j]!=null)
-      s+=`<text x="${cx}" y="${bot+40}" text-anchor="middle" font-size="34" font-weight="800" fill="#6b4f2a">${o.labels[j]}</text>`;
+      s+=`<text x="${cx}" y="${bot+42+(o.sub?46:0)}" text-anchor="middle" font-size="38" font-weight="800" fill="#6b4f2a">${o.labels[j]}</text>`;
   }
   return s+'</svg>';
 }
@@ -485,7 +496,7 @@ function render(){
 function newOrder(){
   if(M==='s3'){newDan();return;}
   $('s1').classList.remove('m3');
-  $('guest').classList.remove('hidden');$('noren').classList.remove('hidden');$('kuku').classList.add('hidden');
+  $('guest').classList.remove('hidden');$('noren').classList.remove('hidden');$('m3title').classList.add('hidden');
   $('dan').classList.add('hidden');$('choices').classList.add('hidden');$('choices').classList.remove('off');$('eq3').classList.add('hidden');
   S.run++;S.phase='build';S.k=0;S.n=1;S.prevK=0;S.prevN=1;S.slots=[null,null];S.sel=null;S.tries=0;S.no=[];
   S.hl=null;S.labels=null;S.cmpOk=false;
@@ -726,22 +737,22 @@ S.dan=2;
 function newDan(){
   $('s1').classList.add('m3');
   S.run++;S.phase='s3';S.k=S.dan;S.n=1;S.prevK=S.k;S.prevN=0;S.hl=null;S.pend=false;
-  $('guest').classList.add('hidden');$('noren').classList.add('hidden');$('kuku').classList.remove('hidden');
+  $('guest').classList.add('hidden');$('noren').classList.add('hidden');
+  $('m3title').classList.remove('hidden');$('m3title').textContent=`${S.dan}の だんを つくろう`;
   $('build').classList.add('hidden');$('shiki').classList.add('hidden');
   $('dan').classList.remove('hidden');$('choices').classList.remove('hidden');
   $('choices').classList.add('off');$('choices').innerHTML='<button class="choice">0</button>';
   $('eq3').classList.remove('hidden');$('eq3').classList.add('off');$('eq3').innerHTML='<div class="l2"><span class="tipw">0<span class="tip">0</span></span></div>';
   document.querySelectorAll('#danChips .chip').forEach(c=>c.classList.toggle('on',+c.dataset.d===S.dan));
-  say(`<b>${S.k}の だんを じぶんで つくろう。</b><br>青い ボタンで くしを 1本ずつ たそう`);
+  say(`くしの 下に ${S.k}の だんが できて いくよ。<br>青い ボタンで くしを 1本ずつ たそう`);
   render();act3();
 }
 function render3(){
-  const k=S.k,labels=[];
-  for(let j=1;j<=S.n;j++)labels.push(S.pend&&j===S.n?'？':k*j);
-  $('stage').innerHTML=dangoSVG(k,S.n,{cols:9,bottom:true,labels,hl:S.hl,only:true,band:S.pend,
+  const k=S.k,labels=[],sub=[];
+  for(let j=1;j<=S.n;j++){labels.push(S.pend&&j===S.n?'？':k*j);sub.push(`${k}×${j}`);}
+  $('stage').innerHTML=dangoSVG(k,S.n,{cols:9,bottom:true,labels,sub,hl:S.hl,only:true,band:S.pend,
     anim:true,prevK:k,prevN:S.prevN});
   S.prevN=S.n;
-  drawKuku();
 }
 function drawKuku(){
   const k=S.k;
