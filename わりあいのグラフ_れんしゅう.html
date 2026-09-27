@@ -565,10 +565,15 @@ function tapPie(x,y){
 }
 function hit2(v,kind){
   const q=Q2(),k=kind==='band'?R2.bk:R2.pk,it=q.d[k],want=cum(q,k),prev=k?cum(q,k-1):0;
-  /* 1% が 画面で せまい ときは 2% まで ずれを 見のがす（指で おすので） */
+  /* 指で おすので、ずれは 画面で 約22px（iPad で 約4mm）まで 見のがす。
+     1% の はばから 何% に なるかを 出す（3〜5%）。区切りどうしは 12% 以上 はなれて いるので、
+     となりと 取りちがえたり「自分の % の ところを おす」まちがいを 見のがしたり は しない。
+     当たったら 区切りは 正しい 場所に ぴたっと 合わせて 引く（2026-09-27 先生と 決めた） */
   const g=geo2(),r=$('stage').getBoundingClientRect(),sc=Math.min(r.width/W,r.height/H);
   const per=kind==='band'?g.w/100*sc:g.Rp*Math.PI*2/100*sc;
-  if(Math.abs(v-want)<=(per<6?2:1)){
+  const next=k+1<q.d.length-1?cum(q,k+1):100;
+  const tol=Math.min(Math.max(3,Math.ceil(22/per)),5,Math.floor((want-prev)/2),Math.floor((next-want)/2));
+  if(Math.abs(v-want)<=tol){
     R2.miss=null;
     if(kind==='band')R2.bk++;else R2.pk++;
     const kk=kind==='band'?R2.bk:R2.pk;
@@ -587,12 +592,12 @@ function hit2(v,kind){
       return;
     }
     const nx=q.d[kk];
-    say(`よくできました！ 次は <b class="ku">${nx.n}</b>（<b class="wa">${nx.p}%</b>）。<br>区切りを おそう`,'ok');
+    say(`よくできました！ <b class="wa">${want}%</b> の ところだね。<br>次は <b class="ku">${nx.n}</b>（<b class="wa">${nx.p}%</b>）の 区切りを おそう`,'ok');
     return;
   }
   R2.miss=v;draw();
-  if(k>0&&v<=prev) say(`${v}% の ところは、もう 区切った ところだよ。<br><b>${prev}%</b> の 区切りから ${it.p}% 先の ところ`,'try');
-  else say(`${it.n}は ${prev}% の 区切りから <b class="wa">${it.p}%</b> 分。<br>目もりを 数えて おそう`,'try');
+  if(k>0&&v<=prev) say(`おしたのは ${v}%。そこは もう 区切った ところだよ。<br><b>${prev}%</b> の 区切りから ${it.p}% 先の ところ`,'try');
+  else say(`おしたのは ${v}%。${it.n}は ${prev}% の 区切りから <b class="wa">${it.p}%</b> 分。<br>目もりを 数えて おそう`,'try');
 }
 function pie2(){
   stageTap=null;R2.phase='pie';R2.pk=0;R2.miss=null;table2();
@@ -612,7 +617,7 @@ function draw2(){
   if(R2.phase==='band'&&R2.miss!=null){
     const x=g.x0+g.w*R2.miss/100;
     s+=line(x,g.yb-8,x,g.yb+g.h+8,`stroke="#b3566f" stroke-width="3" stroke-dasharray="5 4"`);
-    s+=tx(x,g.yb-FS*0.55,R2.miss+'%','#b3566f',{k:.65});
+    s+=tx(x,g.yb-FS*0.6,R2.miss+'%','#b3566f',{k:.75});
   }
   if(R2.phase==='pie'){
     s+=tx(g.cx-g.Rp-FS*1.2,g.cy-g.Rp,'円グラフ',CI,{anc:'end',k:.7});
@@ -620,6 +625,7 @@ function draw2(){
     if(R2.miss!=null){
       const a=ang(R2.miss);
       s+=line(g.cx,g.cy,g.cx+(g.Rp+10)*Math.cos(a),g.cy+(g.Rp+10)*Math.sin(a),`stroke="#b3566f" stroke-width="3" stroke-dasharray="5 4"`);
+      s+=tx(g.cx+(g.Rp+FS*1.9)*Math.cos(a),g.cy+(g.Rp+FS*1.9)*Math.sin(a),R2.miss+'%','#b3566f',{k:.7});
     }
   }
   svg.innerHTML=s;
