@@ -79,6 +79,8 @@
     font-weight:800;color:#5d5040;line-height:1.5;text-align:center;word-break:keep-all;
     min-height:calc(3em + 20px);display:flex;align-items:center;justify-content:center;
     font-size:clamp(14px,calc(.7vw + 1.25vh),21px)}
+  /* ステップ１〜３の ことばは 一回り 大きく（2026-09-27 指示）。４・５は 数の ボタンが あるので そのまま */
+  body:is([data-m="s1"],[data-m="s2"],[data-m="s3"]) .say{font-size:clamp(17px,calc(.9vw + 1.65vh),27px)}
   .say.ok{color:var(--ok);border-color:var(--ok);background:#f2f9ee}
   .say.try{color:#b3566f;border-color:#d9748f;background:#fbe3ea}
   .ca{color:var(--a)} .cr{color:var(--amari)} .cb{color:var(--b)} .cg{color:var(--gold-d)}
@@ -135,6 +137,7 @@
     .work{gap:5px}
     .prob{padding:4px 10px;font-size:clamp(15px,calc(.7vw + 1.7vh),23px)}
     .say{padding:5px 10px;min-height:calc(3em + 10px);font-size:14px}
+    body:is([data-m="s1"],[data-m="s2"],[data-m="s3"]) .say{font-size:17px}
     .choice{padding:4px 2px}
     .btn{padding:10px 4px}
     .actions{min-height:46px}
@@ -760,11 +763,12 @@ function why5(){
 const START={s1:s1start,s2:s2start,s3:s3start,s4:s4start,s5:s5start};
 document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{
   if(S.busy)return;
-  MODE=b.dataset.m;
+  MODE=b.dataset.m;document.body.dataset.m=MODE;
   document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x===b));
   START[MODE]();
 }));
 
+document.body.dataset.m=MODE;
 s1start();
 </script>
 </body>
