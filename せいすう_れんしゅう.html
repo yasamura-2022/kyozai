@@ -638,7 +638,7 @@ function load4(){
 }
 function sum4(){
   const n=G4.n,f=[...G4.found].sort((x,y)=>x-y),rest=divs(n).length-f.length;
-  sum(`<div><span class="ca">${n} の 約数</span>　${f.length?f.join('、'):'―'}${rest?`　<span class="small">あと ${rest}こ</span>`:''}</div>`+
+  sum(`<div><span class="ca">${n} の 約数</span>　${f.length?f.join('、'):'―'}${rest?`　<span class="small">まだ 見つけて いない 約数が あと ${rest}つ</span>`:''}</div>`+
       (S.idx.s4===0?`<div class="small">${n} を わりきる 数を ${n} の 約数 と いう</div>`:''));
 }
 function try4(w){
@@ -717,7 +717,7 @@ function load5(){
 }
 function sum5(){
   const f=[...G5.found].sort((x,y)=>x-y),rest=divs(gcd(G5.a,G5.b)).length-f.length;
-  sum(`<div>しきつめられた　${f.length?f.map(v=>v+'cm').join('、'):'―'}${rest?`　<span class="small">あと ${rest}こ</span>`:''}</div>`);
+  sum(`<div>しきつめられた　${f.length?f.map(v=>v+'cm').join('、'):'―'}${rest?`　<span class="small">しきつめられる 大きさが あと ${rest}つ</span>`:''}</div>`);
 }
 function try5(sz){
   const {a,b}=G5;G5.sz=sz;G5.k=0;
