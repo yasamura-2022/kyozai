@@ -565,14 +565,14 @@ function tapPie(x,y){
 }
 function hit2(v,kind){
   const q=Q2(),k=kind==='band'?R2.bk:R2.pk,it=q.d[k],want=cum(q,k),prev=k?cum(q,k-1):0;
-  /* 指で おすので、ずれは 画面で 約22px（iPad で 約4mm）まで 見のがす。
-     1% の はばから 何% に なるかを 出す（3〜5%）。区切りどうしは 12% 以上 はなれて いるので、
+  /* 指で おすので、ずれは 画面で 約14px（iPad で 約2.7mm）まで 見のがす。
+     1% の はばから 何% に なるかを 出す（2〜3%）。2026-09-27 に 約22px（3〜5%）から「もう少し 厳しく」で 変えた。区切りどうしは 12% 以上 はなれて いるので、
      となりと 取りちがえたり「自分の % の ところを おす」まちがいを 見のがしたり は しない。
      当たったら 区切りは 正しい 場所に ぴたっと 合わせて 引く（2026-09-27 先生と 決めた） */
   const g=geo2(),r=$('stage').getBoundingClientRect(),sc=Math.min(r.width/W,r.height/H);
   const per=kind==='band'?g.w/100*sc:g.Rp*Math.PI*2/100*sc;
   const next=k+1<q.d.length-1?cum(q,k+1):100;
-  const tol=Math.min(Math.max(3,Math.ceil(22/per)),5,Math.floor((want-prev)/2),Math.floor((next-want)/2));
+  const tol=Math.min(Math.max(2,Math.round(14/per)),3,Math.floor((want-prev)/2),Math.floor((next-want)/2));
   if(Math.abs(v-want)<=tol){
     R2.miss=null;
     if(kind==='band')R2.bk++;else R2.pk++;
