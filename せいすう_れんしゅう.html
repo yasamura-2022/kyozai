@@ -81,6 +81,9 @@
     font-size:clamp(14px,calc(.7vw + 1.25vh),21px)}
   /* ステップ１〜３の ことばは 一回り 大きく（2026-09-27 指示）。４・５は 数の ボタンが あるので そのまま */
   body:is([data-m="s1"],[data-m="s2"],[data-m="s3"]) .say{font-size:clamp(17px,calc(.9vw + 1.65vh),27px)}
+  /* ステップ４・５：わくの 大きさは もとの まま（もとの 字で 3行ぶん）、字だけ 大きく（2026-09-27 指示） */
+  body:is([data-m="s4"],[data-m="s5"]) .say{font-size:clamp(16px,calc(.8vw + 1.44vh),24px);line-height:1.3;
+    min-height:calc(3 * clamp(14px,calc(.7vw + 1.25vh),21px) + 20px)}
   .say.ok{color:var(--ok);border-color:var(--ok);background:#f2f9ee}
   .say.try{color:#b3566f;border-color:#d9748f;background:#fbe3ea}
   .ca{color:var(--a)} .cr{color:var(--amari)} .cb{color:var(--b)} .cg{color:var(--gold-d)}
@@ -138,6 +141,7 @@
     .prob{padding:4px 10px;font-size:clamp(15px,calc(.7vw + 1.7vh),23px)}
     .say{padding:5px 10px;min-height:calc(3em + 10px);font-size:14px}
     body:is([data-m="s1"],[data-m="s2"],[data-m="s3"]) .say{font-size:17px}
+    body:is([data-m="s4"],[data-m="s5"]) .say{font-size:16px;min-height:56px}
     .choice{padding:4px 2px}
     .btn{padding:10px 4px}
     .actions{min-height:46px}
@@ -625,16 +629,17 @@ function draw4(){
 }
 function s4start(){S.idx.s4=0;load4();}
 function load4(){
-  const n=P4[S.idx.s4];G4={n,w:null,t:1,from:null,found:new Set(),first:true};hideAll();draw4();
+  const n=P4[S.idx.s4];G4={n,w:null,t:1,from:null,found:new Set()};hideAll();draw4();
   head(P4,`<b>${n}</b> の 約数を さがそう`);
-  if(S.idx.s4===0) say(`${n} こを 同じ 数ずつ 組に する。あまりが 出ないのは 何こずつ の とき？ 下の 数を おして ためそう`);
-  else say(`${n} こを 何こずつ に すると あまりが 出ない？ 下の 数を おして ためそう`);
-  nums(n,'何こずつ 組に する？',try4);
+  if(S.idx.s4===0) say(`${n} こを 同じ 数ずつ 組に する。あまりが 出ないのは 何こずつ？`);
+  else say(`${n} こを 何こずつ に すると あまりが 出ない？`);
+  nums(n,'何こずつ 組に する？ おして ためそう',try4);
   actions([]);sum4();
 }
 function sum4(){
   const n=G4.n,f=[...G4.found].sort((x,y)=>x-y),rest=divs(n).length-f.length;
-  sum(`<div><span class="ca">${n} の 約数</span>　${f.length?f.join('、'):'―'}${rest?`　<span class="small">あと ${rest}こ</span>`:''}</div>`);
+  sum(`<div><span class="ca">${n} の 約数</span>　${f.length?f.join('、'):'―'}${rest?`　<span class="small">あと ${rest}こ</span>`:''}</div>`+
+      (S.idx.s4===0?`<div class="small">${n} を わりきる 数を ${n} の 約数 と いう</div>`:''));
 }
 function try4(w){
   const n=G4.n,L=layout4(n,G4.w),F={pos:L.pos,c:L.c};
@@ -643,11 +648,11 @@ function try4(w){
     G4.t=1;draw4();
     const q=Math.floor(n/w),r=n%w;
     if(r){numMark(w,'no');say(`${n} ÷ ${w} ＝ ${q} あまり ${r}。あまりが 出たね`);return;}
-    const was=G4.found.size;G4.found.add(w);numMark(w,'ok');sum4();
+    G4.found.add(w);numMark(w,'ok');sum4();
     if(G4.found.size===divs(n).length){done4();return;}
-    let h=`${n} ÷ ${w} ＝ ${q}　あまり なし。<span class="ca">${w}</span> は ${n} の 約数`;
-    if(S.idx.s4===0&&was===0&&G4.first){h+=`<br><span class="small">（${n} を わりきる 数を ${n} の 約数 と いうよ）</span>`;G4.first=false;}
-    else if(!G4.found.has(q)) h+=`<br>${q}組 できたね。${q}こずつ でも ためそう`;
+    /* わくの 高さを 変えない ように 2行まで（2026-09-27）。約数の 名前の 説明は 下の まとめへ */
+    let h=`${n} ÷ ${w} ＝ ${q}。<span class="ca">${w}</span> は ${n} の 約数`;
+    if(!G4.found.has(q)) h+=`<br>${q}こずつ でも ためそう`;
     say(h,'ok');
   });
 }
@@ -706,8 +711,8 @@ function s5start(){S.idx.s5=0;load5();}
 function load5(){
   const p=P5[S.idx.s5];G5={a:p.a,b:p.b,sz:null,k:0,found:new Set()};hideAll();draw5();
   head(P5,`たて ${p.a}cm よこ ${p.b}cm の 長方形`);
-  say('同じ 大きさの 正方形を すきまなく しきつめたい。1辺 何cm なら ぴったり？ 下の 数を おして ためそう');
-  nums(Math.min(p.a,p.b),'正方形の 1辺は 何cm？',try5);
+  say('正方形を すきまなく しきつめたい。1辺 何cm なら ぴったり？');
+  nums(Math.min(p.a,p.b),'正方形の 1辺は 何cm？ おして ためそう',try5);
   actions([]);sum5();
 }
 function sum5(){
@@ -737,8 +742,8 @@ function commonList(){
 }
 function done5(){
   const {a,b}=G5,g=gcd(a,b);numsOff();
-  if(S.idx.s5===0) say(`すごい！ ${a} の 約数でも ${b} の 約数でも ある 数を <span class="cg">公約数</span>、いちばん 大きい ${g} を <span class="cg">最大公約数</span> と いうよ`,'ok');
-  else say(`すごい！ ぜんぶ 見つけた。いちばん 大きい 正方形は 1辺 <span class="cg">${g}cm</span>（最大公約数）`,'ok');
+  if(S.idx.s5===0) say(`すごい！ ${a} の 約数でも ${b} の 約数でも ある 数を <span class="cg">公約数</span> と いうよ`,'ok');
+  else say(`すごい！ いちばん 大きい 正方形は 1辺 <span class="cg">${g}cm</span>`,'ok');
   sum(commonList());
   blue('しきつめられない わけ ▶',why5);
 }
@@ -754,7 +759,7 @@ function why5(){
     if(o===1){btn.disabled=true;say(tate?`${b} ÷ ${sz} ＝ ${b/sz}　よこは わりきれるよ`:`${a} ÷ ${sz} ＝ ${a/sz}　たては わりきれるよ`,'try');return;}
     if(o===2){btn.disabled=true;say(`${g}cm の 正方形は しきつめられたね。大きさの せいでは ないよ`,'try');return;}
     goodChoice(0);
-    say(`すごい！ ${sz} は ${tate?b:a} の 約数だけど、${tate?a:b} の 約数では ない。どちらの 約数でも ある 数（公約数）なら しきつめられる`,'ok');
+    say(`すごい！ ${sz} は ${tate?b:a} の 約数だけど、${tate?a:b} の 約数では ない`,'ok');
     nextBtn(P5,load5);
   },S.idx.s5%3,true);
 }
