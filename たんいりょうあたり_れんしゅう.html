@@ -88,7 +88,7 @@
   .tbl.big td,.tbl.big th{padding:6px 6px}
 
   .prob{display:flex;align-items:center;gap:10px;background:var(--card);border:2px solid var(--line);border-radius:14px;padding:6px 12px;
-    font-weight:800;font-size:clamp(14px,calc(.6vw + 1.3vh),21px);word-break:keep-all;flex-wrap:wrap;justify-content:center;line-height:1.45}
+    font-weight:800;font-size:clamp(16px,calc(.7vw + 1.5vh),24px);word-break:keep-all;flex-wrap:wrap;justify-content:center;line-height:1.45}
   .prob .no{color:#8a7a5f;font-size:.82em}
   .say{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:8px 12px;
     font-weight:800;color:#5d5040;line-height:1.5;text-align:center;word-break:keep-all;
@@ -216,12 +216,12 @@
      「運動場の面積と…人数とを組み合わせなければ決められない」
    ・「その一方を揃えてほかの量で比較する」「人数を２倍，３倍…にしたとき，面積も２倍，３倍…すれば
      混み具合が変わらない」「10㎡の部屋に７人…15㎡の部屋に 10 人…30㎡に揃えると 21 人と 20 人」
-     → ステップ１（へやを ならべて そろえる）
+     → ステップ１（部屋を ならべて そろえる）
    ・「三つ以上のものを比べたり，いつでも比べられるようにしたりするためには，単位量当たりの大きさを
-     用いて比べるとより能率的」→ ステップ２（3つの へやを 1m²あたりで 比べる）
+     用いて比べるとより能率的」→ ステップ２（3つの 部屋を 1m²あたりで 比べる）
    ・「人口の疎密を比べるのに１㎢当たりの人口，すなわち人口密度」→ ステップ３
    ・「米の収量を比較するのに，１a当たりの収量で比べたり」→ ステップ４（ねだん・米・ガソリン）
-   ・「平均の考えなども前提にしている」→ へやの 人・町の 人は まんべんなく いると する（絵で そう かく）
+   ・「平均の考えなども前提にしている」→ 部屋の 人・町の 人は まんべんなく いると する（絵で そう かく）
    【速さ・割合と 分けて ある】
    ・速さ（同じ C(2)）は はやさ_れんしゅう.html。ここには 入れない
    ・割合（C(3)＝同じ 種類の 2つの 量）の「もとにする量／くらべる量」「関係図」「倍」は 使わない。
@@ -316,9 +316,9 @@ function draw(){
    ステップ１：こみぐあいを 比べる
    ① 数を 見て 予想（まるつけ しない）→ ② 比べる
    1問＝面積が 同じ／2問＝人数が 同じ → そのまま 比べられる
-   3問＝解説の 例（10m² 7人 と 15m² 10人）→ へやを ならべて 30m² に そろえる
+   3問＝解説の 例（10m² 7人 と 15m² 10人）→ 部屋を ならべて 30m² に そろえる
    4問＝人数を 12人に そろえる
-   同じ へやを ならべるので、人の 場所も そのまま くりかえす（こみぐあいが 変わらない ことが 見える）
+   同じ 部屋を ならべるので、人の 場所も そのまま くりかえす（こみぐあいが 変わらない ことが 見える）
    ===================================================================== */
 const P1=[
   {type:'a',A:{w:5,h:2,p:8},B:{w:5,h:2,p:6}},
@@ -335,13 +335,13 @@ function s1start(){
   const q=Q1();
   Object.assign(R,{phase:'pred',pred:null,hl:null,cp:0});
   hideAll();table(null);picShow(true);stageTap=null;
-  prob(`<span class="no">問題 ${S.idx.s1+1} / ${P1.length}</span><span>どちらの へやが こんで いる？</span>`);
-  say(`Aの へやは ${roomTxt(q.A)}、Bの へやは ${roomTxt(q.B)}。<br>どちらが こんで いるかな？ 予想しよう`);
-  choices(['Aの へや','Bの へや'],i=>{
+  prob(`<span class="no">問題 ${S.idx.s1+1} / ${P1.length}</span><span>どちらの 部屋が こんで いる？</span>`);
+  say(`Aの 部屋は ${roomTxt(q.A)}、Bの 部屋は ${roomTxt(q.B)}。<br>どちらが こんで いるかな？ 予想しよう`);
+  choices(['Aの 部屋','Bの 部屋'],i=>{
     if(R.phase!=='pred')return;
     R.pred=i;R.phase='ready';
     [...$('choices').children].forEach((b,j)=>{b.classList.toggle('pick',j===i);b.disabled=j!==i;});
-    say(`予想は ${'AB'[i]}の へや。<br>比べて みよう`);
+    say(`予想は ${'AB'[i]}の 部屋。<br>比べて みよう`);
     actions([['play','比べる ▶',cmp1]]);stageTap=cmp1;
   });
   actions([['play','比べる ▶',()=>{},true]]);
@@ -355,12 +355,12 @@ function cmp1(){
   stageTap=null;choices(null);
   if(q.type==='a'){
     R.hl='a';R.phase='end';draw();
-    say(`どちらも <b class="a">${area(q.A)}m²</b>。人数は ${nm}が <b class="k">${F.p}人</b>、もう一方は <b class="k">${L.p}人</b>。<br>${pr} <b>${nm}の へや</b>の ほうが こんで いる`,'ok');
+    say(`どちらも <b class="a">${area(q.A)}m²</b>。人数は ${nm}が <b class="k">${F.p}人</b>、もう一方は <b class="k">${L.p}人</b>。<br>${pr} <b>${nm}の 部屋</b>の ほうが こんで いる`,'ok');
     showSum(`<span class="f">面積が 同じ → <span class="k">人数</span>が 多い ほうが こんで いる</span>`);
     actions([['sub','もう一度',s1start],['next','次の 問題 →',next1]]);
   }else if(q.type==='p'){
     R.hl='p';R.phase='end';draw();
-    say(`どちらも <b class="k">${q.A.p}人</b>。面積は ${nm}が <b class="a">${area(F)}m²</b>、もう一方は <b class="a">${area(L)}m²</b>。<br>${pr} せまい <b>${nm}の へや</b>の ほうが こんで いる`,'ok');
+    say(`どちらも <b class="k">${q.A.p}人</b>。面積は ${nm}が <b class="a">${area(F)}m²</b>、もう一方は <b class="a">${area(L)}m²</b>。<br>${pr} せまい <b>${nm}の 部屋</b>の ほうが こんで いる`,'ok');
     showSum(`<span class="f">人数が 同じ → <span class="a">面積</span>が せまい ほうが こんで いる</span>`);
     actions([['sub','もう一度',s1start],['next','次の 問題 →',next1]]);
   }else{
@@ -371,17 +371,17 @@ function cmp1(){
     actions([['play',lab,align1]]);stageTap=align1;
   }
 }
-/* 同じ へやを ならべて そろえる */
+/* 同じ 部屋を ならべて そろえる */
 function align1(){
   if(R.phase!=='both')return;
   const q=Q1();R.phase='align';stageTap=null;
-  actions([['play','へやを ならべて いるよ…',()=>{},true]]);
+  actions([['play','部屋を ならべて いるよ…',()=>{},true]]);
   anim(1800,t=>{R.cp=t;draw();},()=>{
     R.phase='ask';R.hl=q.by;draw();
     const A=q.A,B=q.B;
     const aTxt=`<b class="a">${area(A)*A.m}m²</b> に <b class="k">${A.p*A.m}人</b>`,bTxt=`<b class="a">${area(B)*B.m}m²</b> に <b class="k">${B.p*B.m}人</b>`;
-    say(`同じ へやを ならべても、こみぐあいは 変わらないね。<br>A は ${aTxt}、B は ${bTxt}。こんで いるのは？`);
-    choices(['Aの へや','Bの へや'],pick1);
+    say(`同じ 部屋を ならべても、こみぐあいは 変わらないね。<br>A は ${aTxt}、B は ${bTxt}。こんで いるのは？`);
+    choices(['Aの 部屋','Bの 部屋'],pick1);
     actions([['play',q.by==='a'?'面積を そろえる ▶':'人数を そろえる ▶',()=>{},true]]);
   },t=>t);
 }
@@ -395,7 +395,7 @@ function pick1(i,btn){
   const pr=R.pred===c?'予想 どおり！':'予想と ちがったね。';
   R.phase='end';
   const few=q.A.p<q.B.p?'A':'B';
-  say(`よくできました！ ${pr}<br><b>${nm}の へや</b>の ほうが こんで いる`+(nm===few?`（人数は ${nm}の ほうが 少なかったのに！）`:''),'ok');
+  say(`よくできました！ ${pr}<br><b>${nm}の 部屋</b>の ほうが こんで いる`+(nm===few?`（人数は ${nm}の ほうが 少なかったのに！）`:''),'ok');
   const last=S.idx.s1===P1.length-1;
   showSum((q.by==='a'?`<span class="f"><span class="a">面積</span>を そろえる → <span class="k">人数</span>が 多い ほうが こむ</span>`
                       :`<span class="f"><span class="k">人数</span>を そろえる → <span class="a">面積</span>が せまい ほうが こむ</span>`)
@@ -405,7 +405,7 @@ function pick1(i,btn){
 }
 function next1(){S.idx.s1=(S.idx.s1+1)%P1.length;s1start();}
 
-/* へやの 中の 人の 場所：まんべんなく ならべる（平均の 考え）。少しだけ ずらして 人らしく */
+/* 部屋の 中の 人の 場所：まんべんなく ならべる（平均の 考え）。少しだけ ずらして 人らしく */
 function kidPts(p,w,h){
   const nc=Math.max(1,Math.round(Math.sqrt(p*w/h))),nr=Math.ceil(p/nc),pts=[];
   for(let r=0;r<nr;r++){
@@ -431,7 +431,7 @@ function drawRooms(){
     const shown=q.type==='x'?1+R.cp*(m-1):1;
     const full=q.type==='x'&&R.cp>=1;
     /* 名前と 数 */
-    g+=tx(cx[k],y0-FS*2.9,`${'AB'[k]}の へや`,CI,{k:1.05});
+    g+=tx(cx[k],y0-FS*2.9,`${'AB'[k]}の 部屋`,CI,{k:1.05});
     const aV=full?area(r)*m:area(r),pV=full?r.p*m:r.p;
     const hlA=R.hl==='a',hlP=R.hl==='p';
     const ya=y0-FS*1.45;
@@ -439,7 +439,7 @@ function drawRooms(){
     if(hlP) g+=`<rect x="${cx[k]+FS*0.3}" y="${ya-FS*0.72}" width="${FS*3.3}" height="${FS*1.44}" rx="10" fill="#fff4c9" stroke="${GOLD}" stroke-width="3"/>`;
     g+=tx(cx[k]-FS*1.95,ya,`${aV}m²`,CA,{k:1});
     g+=tx(cx[k]+FS*1.95,ya,`${pV}人`,CK,{k:1});
-    /* へや（くりかえし） */
+    /* 部屋（くりかえし） */
     for(let c=0;c<m;c++){
       const al=c===0?1:Math.max(0,Math.min(1,shown-c));
       if(al<=0)continue;
@@ -453,7 +453,7 @@ function drawRooms(){
       g+=`</g>`;
       if(c>0&&al>0.5) g+=line(gx-8,ry,gx+rw+8,ry,`stroke="${CH}" stroke-width="4" stroke-dasharray="10 7"`);
     }
-    if(full) g+=tx(gx+rw/2,y0+rh*m+FS*0.7,`同じ へやが ${m}つ分`,CH,{k:.8});
+    if(full) g+=tx(gx+rw/2,y0+rh*m+FS*0.7,`同じ 部屋が ${m}つ分`,CH,{k:.8});
     else if(q.type!=='x'||R.cp===0) g+=tx(gx+rw/2,y0+rh+FS*0.62,'1ます＝1m²',CA,{k:.75});
   });
   svg.innerHTML=g;
@@ -467,7 +467,7 @@ function drawRooms(){
         n＝いくつ分を 求める（K ÷ 1あたり）
    下を 1ずつ 区切ると 上も 同じ 大きさずつ 区切れる。その 1つ分（むらさき）が 1あたりの 大きさ
    ===================================================================== */
-/* ステップ２：3つの へや。1問目＝1m²あたりの 人数、2問目＝同じ へやを 1人あたりの 面積で */
+/* ステップ２：3つの 部屋。1問目＝1m²あたりの 人数、2問目＝同じ 部屋を 1人あたりの 面積で */
 const ROOMS=[{n:'A',a:10,p:16},{n:'B',a:8,p:10},{n:'C',a:6,p:12}];
 const P2=[
   {goal:'p',rows:ROOMS},
@@ -518,7 +518,7 @@ function lineQ(){
     const r=b.rows[ROW];
     o=b.goal==='p'?{kind:'u',K:r.p,N:r.a,ku:'人',nu:'m²',kn:'人数',nn:'面積',un:'1m²あたりの 人数',e:''}
                   :{kind:'u',K:r.a,N:r.p,ku:'m²',nu:'人',kn:'面積',nn:'人数',un:'1人あたりの 面積',e:''};
-    o.who=r.n+'の へや';
+    o.who=r.n+'の 部屋';
   }else if(MODE==='s3'){
     o={kind:'u',K:b.pop,N:b.km,ku:'人',nu:'km²',kn:'人口',nn:'面積',un:MITSU};
   }else if(MODE==='s4'){
@@ -540,7 +540,7 @@ function lineStart(){
   ROW=0;for(const k in DONE)delete DONE[k];
   if(MODE==='s2'&&b.goal==='a') ROOMS.forEach(r=>DONE['p'+r.n]=r.p/r.a);   /* 1問目で 求めた 列は のこす */
   hideAll();stageTap=null;
-  const head=MODE==='s2'?(b.goal==='p'?`3つの へや。<b class="h">1m²あたりの 人数</b>で 比べよう`:`同じ 3つの へやを、<b class="h">1人あたりの 面積</b>で 比べよう`)
+  const head=MODE==='s2'?(b.goal==='p'?`3つの 部屋。<b class="h">1m²あたりの 人数</b>で 比べよう`:`同じ 3つの 部屋を、<b class="h">1人あたりの 面積</b>で 比べよう`)
             :MODE==='s3'?(b.cmp?`4つの 市町村。いちばん こみあって いるのは？`:b.txt+`<b class="h">${MITSU}</b>は？`)
             :MODE==='s4'?b.txt+`<b class="h">${b.un}</b>で 比べよう`:b.txt;
   prob(`<span class="no">問題 ${S.idx[MODE]+1} / ${list.length}</span><span>${head}</span>`);
@@ -752,22 +752,22 @@ function check(){
 }
 function nextLine(){const l=LIST[MODE];S.idx[MODE]=(S.idx[MODE]+1)%l.length;lineStart();}
 
-/* ===== ステップ２：1つの へやが おわったら 次の へや → 3つ そろったら 比べる ===== */
+/* ===== ステップ２：1つの 部屋が おわったら 次の 部屋 → 3つ そろったら 比べる ===== */
 function afterRow2(q){
   const b=PB();draw();drawTable();
   if(ROW<b.rows.length-1){
     say(`よくできました！ <b>${q.who}</b>は ${q.un} <b class="h">${fmt(q.U)}${q.ku}</b>`,'ok');
     const nx=b.rows[ROW+1].n;
     const go=()=>{ROW++;rowStart();};
-    actions([['play',`${nx}の へやを しらべる ▶`,go]]);stageTap=go;
+    actions([['play',`${nx}の 部屋を しらべる ▶`,go]]);stageTap=go;
     return;
   }
   L.phase='cmp';
   const U=b.rows.map(r=>DONE[b.goal+r.n]);
   const best=b.goal==='p'?U.indexOf(Math.max(...U)):U.indexOf(Math.min(...U));
-  say(`<b>${q.who}</b>は <b class="h">${fmt(q.U)}${q.ku}</b>。3つ そろったよ。<br><b>いちばん こんで いる へやは？</b>`);
+  say(`<b>${q.who}</b>は <b class="h">${fmt(q.U)}${q.ku}</b>。3つ そろったよ。<br><b>いちばん こんで いる 部屋は？</b>`);
   $('shiki').classList.add('hidden');
-  choices(b.rows.map(r=>`${r.n}の へや`),(i,btn)=>{
+  choices(b.rows.map(r=>`${r.n}の 部屋`),(i,btn)=>{
     if(i!==best){
       btn.disabled=true;
       say(b.goal==='p'?`1m²あたりの 人数が <b>多い</b> ほど、せまい ところに 人が たくさん いるよ`
@@ -775,8 +775,8 @@ function afterRow2(q){
     }
     lockChoices(best);
     const nm=b.rows[best].n;
-    say(b.goal==='p'?`よくできました！ 1m²あたりの 人数が いちばん 多い <b>${nm}の へや</b>`
-                    :`よくできました！ 1人あたりの 面積が いちばん せまい <b>${nm}の へや</b>。<br>1m²あたりの 人数で 比べたときと 同じだね`,'ok');
+    say(b.goal==='p'?`よくできました！ 1m²あたりの 人数が いちばん 多い <b>${nm}の 部屋</b>`
+                    :`よくできました！ 1人あたりの 面積が いちばん せまい <b>${nm}の 部屋</b>。<br>1m²あたりの 人数で 比べたときと 同じだね`,'ok');
     showSum(b.goal==='p'?`<span class="f"><span class="h">1m²あたりの 人数</span> ＝ <span class="k">人数</span> ÷ <span class="a">面積</span></span>
                            <span class="small">多い ほど こんで いる。3つでも すぐ 比べられるね</span>`
                         :`<span class="f"><span class="h">1人あたりの 面積</span> ＝ <span class="k">面積</span> ÷ <span class="a">人数</span></span>
@@ -785,7 +785,7 @@ function afterRow2(q){
     drawTable(best);
   });
   $('choices').classList.add('need');
-  actions([['sub','もう一度',lineStart],['next','↑ へやを えらぼう',()=>{},true]]);
+  actions([['sub','もう一度',lineStart],['next','↑ 部屋を えらぼう',()=>{},true]]);
 }
 /* ===== ステップ４：Aの あと、Bは 画面が 同じ 式で 計算する → 比べる ===== */
 function afterRowA4(q){
