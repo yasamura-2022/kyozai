@@ -107,6 +107,8 @@
   .choice.good{border-color:var(--ok);background:#eaf5e4}
   .choice.good:disabled{opacity:1;box-shadow:none}
   .choices.off{visibility:hidden}
+  /* 答えを えらぶ ところを 金の 点線で しめす（ボタンが ないと「進めない」と 見えた。2026-09-27） */
+  .choices.need{outline:3px dashed var(--gold);outline-offset:4px;border-radius:18px}
   .choices.col .choice{font-size:clamp(15px,calc(.7vw + 1.6vh),23px);padding:6px 8px}
 
   /* ためす 数の ボタン（ステップ４・５） */
@@ -259,8 +261,10 @@ function actions(list){
 }
 /* shift＝正解の 位置を 問題ごとに ずらす。onPick には もとの 番号が 来る */
 function choices(list,onPick,shift=0,col=false){
-  const box=$('choices');box.innerHTML='';box.classList.toggle('off',!list);box.classList.toggle('col',!!col);
+  const box=$('choices');box.innerHTML='';box.classList.toggle('off',!list);box.classList.toggle('col',!!col);box.classList.toggle('need',!!list);
   if(!list)return;
+  /* えらぶ あいだ、下の ボタンの 場所は「↑ 答えを えらぼう」（押せない）。前の 問題の ボタンも ここで 消える */
+  actions([['next','↑ 答えを えらぼう',()=>{},true]]);
   const n=list.length;
   for(let d=0;d<n;d++){
     const o=(d+shift)%n;
@@ -268,7 +272,7 @@ function choices(list,onPick,shift=0,col=false){
     b.addEventListener('click',()=>{if(!S.busy)onPick(o,b);});box.appendChild(b);
   }
 }
-function goodChoice(i){[...$('choices').children].forEach(b=>{b.disabled=true;b.classList.toggle('good',+b.dataset.o===i);});}
+function goodChoice(i){$('choices').classList.remove('need');[...$('choices').children].forEach(b=>{b.disabled=true;b.classList.toggle('good',+b.dataset.o===i);});}
 function sum(h){const e=$('sum');e.classList.toggle('hidden',!h);e.innerHTML=h||'';}
 function hideAll(){sum('');choices(null);$('numsw').classList.add('hidden');}
 /* 絵を おしても 青い ボタンと 同じに すすむ（宣伝しない にげ道） */
@@ -752,7 +756,7 @@ function why5(){
   const p=P5[S.idx.s5],{a,b}=G5,sz=p.s;
   /* 青ボタンは 消す（のこすと また 押して 同じ 画面に もどり「進まない」と 見える。2026-09-27） */
   G5.sz=sz;G5.k=1;draw5();$('numsw').classList.add('hidden');actions([]);
-  say(`${sz}cm の 正方形は しきつめられない。なぜ？`);
+  say(`${sz}cm では しきつめられない。<br>なぜ？ 下から えらぼう`);
   const tate=a%sz!==0;
   const right=tate?`たての ${a}cm が ${sz} で わりきれない`:`よこの ${b}cm が ${sz} で わりきれない`;
   const other=tate?`よこの ${b}cm が ${sz} で わりきれない`:`たての ${a}cm が ${sz} で わりきれない`;
