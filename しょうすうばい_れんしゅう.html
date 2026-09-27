@@ -234,7 +234,7 @@
    ・「Ｂ × ｐを『Ｂを基準にする大きさ（1）とみたときに，割合ｐに当たる大きさを求める計算』と捉え直す」
    ・「Ｂ×ｐ＝Ａ…この関係から…割合ｐを求める場合（ｐ＝Ａ÷Ｂ）と，基準にする大きさＢを求める場合（Ｂ＝Ａ÷ｐ）とがある」
    ・第4学年で「12cm は８cm の 1.5 倍」＝小数の倍を 学んで いる。5年は 割合が 小数で 表される 場合
-   → ステップ１＝何倍（ｐ＝Ａ÷Ｂ）をテープで 測って 見せる（1つ分 → 10等分した 0.1）
+   → ステップ１＝何倍（ｐ＝Ａ÷Ｂ）。アの リボンを 1 と みる 数直線を テープの 下に しく（5年 p.48 の 数直線テープ図）
      ステップ２＝くらべる量（Ｂ×ｐ）／ステップ３＝もとにする量（Ａ÷ｐ）／ステップ４＝まぜる
      ステップ５＝3要素2段階（啓林館 5年 p.68「全体 → 広場 → しばふ」。0.6倍の 0.8倍 ＝ 0.48倍）
    【図】啓林館の 系統表の とおり、関係図（3年から 一貫）＋ 数直線テープ図（5年 p.48）。
@@ -682,8 +682,6 @@ function drawFig(){
   };
   g+=tape(yA,1,CMO,SMO,vStr(q,'a'),q.A);
   g+=tape(yB,q.p,CKU,SKU,vStr(q,'b'),q.B);
-  /* ステップ１：もとにする量の テープで 測る（1つ分 → 10等分した 0.1） */
-  if(MODE==='s1'&&t>0.98) g+=measure(q,px,yA,yB,th);
   if(t>0.98&&(MODE!=='s1'||M1.st>=3)){
     /* 割合の 数直線 */
     g+=line(px(1),yA+th/2,px(1),yL,`stroke="${CMO}" stroke-width="2.5" stroke-dasharray="6 5"`);
@@ -706,16 +704,13 @@ function drawFig(){
 
 /* =====================================================================
    ステップ１：テープで 何倍
-   アの リボン（もとにする量）で イの リボンを 測る。
-   ① 1つ分ずつ あてる → ② アを 10等分した 0.1 で のこりを 測る → ③ 数直線に 表す → 式（くらべる量 ÷ もとにする量）
+   アの リボン（もとにする量）を 1 と みる 数直線を しいて、イの リボンが どこに あたるかを 見る → 式（くらべる量 ÷ もとにする量）。
+   2026-09-27：前は「1つ分を あてる → 10等分した 0.1 で のこりを 測る」を はさんで いたが、
+   先生の 指摘＝「複雑で 分かりにくい。12 は 20 の 何倍か と いう ことですよね？」で やめた。もどさないこと
    ===================================================================== */
 const M1={st:0,t:1};
 function s1steps(q){
-  const whole=Math.floor(q.p+1e-9),frac=Math.round((q.p-whole)*10);
-  const s=[{f:1,b:`${q.A}で 測る ▶`}];
-  if(frac) s.push({f:2,b:whole?`のこりを ${q.A.replace('の リボン','')}の 0.1で 測る ▶`:`${q.A.replace('の リボン','')}の 0.1で 測る ▶`});
-  s.push({f:3,b:'数直線に 表す ▶'});
-  return s;
+  return [{f:3,b:`${q.A}を 1と みる ▶`}];
 }
 function s1start(){
   const q=full(Q());
@@ -725,7 +720,7 @@ function s1start(){
   hideAll();stageTap=null;
   $('zu').classList.remove('hidden');$('zu').classList.remove('chain');renderZu();
   prob(`<span class="no">問題 ${S.idx.s1+1} / ${P1.length}</span><span><b class="ku">${q.B}</b>は、<b class="mo">${q.A}</b>の 何倍？</span>`);
-  say(`<b class="mo">${q.A}</b> を もとにして（<b class="wa">1</b> と みて）、<br><b class="ku">${q.B}</b> の 長さを 測って みよう`);
+  say(`<b class="mo">${q.A}</b> を <b class="wa">1</b> と みたとき、<br><b class="ku">${q.B}</b> は いくつに あたるかな？`);
   s1btn();draw();
 }
 function s1btn(){
@@ -735,56 +730,15 @@ function s1btn(){
 }
 function s1go(){
   if(S.busy||L.phase!=='look')return;
-  const q=full(Q()),s=s1steps(q)[M1.i],whole=Math.floor(q.p+1e-9),frac=Math.round((q.p-whole)*10);
+  const q=full(Q()),s=s1steps(q)[M1.i];
   if(!s)return;
   stageTap=null;actions([['play',s.b,()=>{},true]]);
   M1.st=s.f;
-  anim(s.f===3?600:s.f===2?Math.max(1500,frac*550):1200,t=>{M1.t=t;draw();},()=>{
+  anim(700,t=>{M1.t=t;draw();},()=>{
     M1.i++;
-    const u=q.a/10,rest=fmt(q.b-whole*q.a);
-    if(s.f===1) say(whole===0?`<b class="ku">${q.B}（${fmt(q.b)}m）</b> は <b class="mo">${q.A}</b> より 短いね。<br>1つ分に たりないから、<b class="mo">${q.A}</b> を 10等分した <b class="wa">0.1（${fmt(u)}m）</b>で 測ろう`
-      :frac?`<b class="mo">${q.A}</b> の <b class="mo">${whole}つ分</b> と、<b class="ku">のこり ${rest}m</b>。<br>のこりは ${q.A}より 短いから、${q.A}を 10等分した <b class="wa">0.1（${fmt(u)}m）</b>で 測ろう`
-      :`<b class="mo">${q.A}</b> の ちょうど <b class="mo">${whole}つ分</b>`);
-    if(s.f===2) say(`${whole?'のこり':q.B} <b class="ku">${rest}m</b> の 中に、<b class="wa">${fmt(u)}m（0.1）</b> が <b class="wa">${frac}こ</b> 入った。<br><small>${rest} ÷ ${fmt(u)} ＝ ${frac}　→　0.1 が ${frac}こ で ${fmt(frac/10)}</small>`);
-    if(s.f===3) say(`<b class="ku">${q.B}</b> は <b class="mo">${q.A}</b> の 何倍かな？<br>式で たしかめよう`);
+    say(`<b class="mo">${q.A}（${fmt(q.a)}m）</b> が <b class="wa">1</b>。<br><b class="ku">${q.B}（${fmt(q.b)}m）</b> は ${fmt(q.a)}m の 何倍かな？ 式で 求めよう`);
     s1btn();
   },t=>t);
-}
-/* テープの 上に「1つ分」と「0.1」の 目もりを かく */
-function measure(q,px,yA,yB,th){
-  const whole=Math.floor(q.p+1e-9),frac=Math.round((q.p-whole)*10),u=q.a/10;
-  let g='';
-  if(M1.st>=1){
-    const n=M1.st===1?whole*M1.t:whole;
-    for(let i=0;i<whole;i++){
-      const k=Math.max(0,Math.min(1,n-i));if(k<=0)break;
-      const xa=px(i),xb=px(i)+(px(i+1)-px(i))*k;
-      g+=`<rect x="${xa}" y="${yB-th/2-5}" width="${xb-xa}" height="${th+10}" rx="6" fill="none" stroke="${CMO}" stroke-width="3.5" stroke-dasharray="9 5"/>`;
-      if(k>=1) g+=tx((xa+xb)/2,yB+th/2+FS*0.7,`${i+1}つ分`,CMO,{k:.75});
-    }
-    /* のこりの 長さを テープの 上に（1つ分に たりない ところ） */
-    if(frac&&(M1.st>1||M1.t>=1)){
-      const xa=px(whole),xb=px(q.p),yt=yB-th/2-FS*0.35;
-      g+=`<path d="M${xa+3},${yt+6} L${xa+3},${yt} L${xb-3},${yt} L${xb-3},${yt+6}" fill="none" stroke="${CKU}" stroke-width="2.5"/>`;
-      g+=tx((xa+xb)/2,yt-FS*0.55,whole?`のこり ${fmt(q.b-whole*q.a)}m`:`${fmt(q.b)}m`,CKU,{k:.75});
-    }
-  }
-  if(M1.st>=2&&frac){
-    /* アを 10等分。1こ分（0.1＝2m）に 色を つけて、のこりの ところへ 1こずつ 運ぶ */
-    for(let j=1;j<10;j++){const x=px(j/10);g+=line(x,yA-th/2,x,yA+th/2,`stroke="${CMO}" stroke-width="1.6" opacity=".7"`);}
-    g+=`<rect x="${px(0)+2}" y="${yA-th/2+3}" width="${px(0.1)-px(0)-4}" height="${th-6}" rx="3" fill="${CWA}" opacity=".45"/>`;
-    g+=tx(px(0),yA-th/2-FS*0.6,`0.1 ＝ ${fmt(u)}m`,CWA,{k:.8,anc:'start'});
-    const m=M1.st===2?frac*M1.t:frac;
-    for(let j=0;j<frac;j++){
-      if(j>=m)break;
-      const k=Math.min(1,m-j);
-      const tx0=px(0),ty0=yA,tx1=px(whole+j/10),ty1=yB;
-      const x=tx0+(tx1-tx0)*k,y=ty0+(ty1-ty0)*k,cw=px(0.1)-px(0);
-      g+=`<rect x="${x+2}" y="${y-th/2+3}" width="${cw-4}" height="${th-6}" rx="3" fill="${CWA}" opacity="${k<1?.7:.32}" stroke="${k<1?CWA:'none'}" stroke-width="2"/>`;
-    }
-    if(M1.st>2||M1.t>=1) g+=tx((px(whole)+px(q.p))/2,yB+th/2+FS*0.7,`${fmt(u)}m（0.1）が ${frac}こ`,CWA,{k:.75});
-  }
-  return g;
 }
 /* =====================================================================
    ステップ５：2回の 倍（3要素2段階）
