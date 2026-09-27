@@ -477,29 +477,30 @@ function s1check(r,back){
   $('cards').innerHTML='';
   SL[SL.length-1]=`<span><span class="t">${q.L}m</span> で <span class="m">${A}円</span> → 1m は ${A} ÷ ${q.L}</span>`;
   sumShow();
-  say(`式は <b>${A} ÷ ${q.L}</b>。<br>でも 小数で わって いいのかな？ かけ算で 確かめよう`);
+  say(`式は <b>${A} ÷ ${q.L}</b><br>でも 小数で わって いいのかな？ かけ算で 確かめよう`);
   blue('確かめる ▶',s1real);
 }
 function s1real(){
   const q=Q1(),A=mul(q.p,q.L),w=Math.floor(q.L),h=R3(q.L-w);
-  SL=[`<span class="f"><span class="h">1mの ねだん</span> × <span class="t">長さ</span> ＝ <span class="m">代金</span></span>`,
-      `<span class="f"><span class="h">？</span> × <span class="t">${q.L}</span> ＝ <span class="m">${A}</span></span>`];
+  /* 2m・3m の 行（1m は q.p円）は 消さない。？ を 考える 手がかり */
+  SL.push(`<span class="f"><span class="h">？</span> × <span class="t">${q.L}</span> ＝ <span class="m">${A}</span></span>`);
   sumShow();
-  say(`かけ算で 学習した 式に すると <b>？ × ${q.L} ＝ ${A}</b>。<br>？ に 入る 数は？`);
+  say(`かけ算の 式に すると <b>？ × ${q.L} ＝ ${A}</b><br>同じ ${q.it}だから、？ に 入る 数は？`);
   actions([]);stageTap=null;
   const ops=[q.p,A,mul(A,q.L)];
   choices(ops.map(v=>`${v}円`),(i,b)=>{
-    if(i===1){b.disabled=true;say(`${A}円は ${q.L}m の 代金。<br>1m は ${q.L}m より 短いから、もっと 安い`,'try');return;}
-    if(i===2){b.disabled=true;say(`${A} × ${q.L} では ないよ。<br>？ に ${q.L} を かけると ${A} に なる 数`,'try');return;}
+    if(i===1){b.disabled=true;say(`${A}円は ${q.L}m の 代金。<br>上の 2m・3m の ときの 1m の ねだんを 見よう`,'try');return;}
+    if(i===2){b.disabled=true;say(`${A} × ${q.L} では ないよ。<br>上の 2m・3m の ときの 1m の ねだんを 見よう`,'try');return;}
     goodChoice(0);
     G.bars=[];for(let k=0;k<w;k++) G.bars.push({a:k,b:k+1,t:`${q.p}円`,col:CH});
     if(h>0) G.bars.push({a:w,b:q.L,t:`${mul(q.p,h)}円`,col:'#e0b64a',tc:CG});
     G.up=[{m:q.L,t:`${A}円`,row:2}];draw();
     $('res').textContent=q.p;$('res').className='resbox good';
     const parts=[];for(let k=0;k<w;k++)parts.push(q.p);if(h>0)parts.push(mul(q.p,h));
-    say(`よくできました！ <b>${q.p} × ${q.L} ＝ ${parts.join(' ＋ ')} ＝ ${A}</b><br>2m・3m の ときと 同じ ${q.p}円。<b>${A} ÷ ${q.L}</b> で いいね`,'ok');
-    SL=[`<span class="f"><span class="h">1mの ねだん</span> ＝ <span class="m">代金</span> ÷ <span class="t">長さ</span></span>`,
-        `<span class="small">長さが 2m でも ${q.L}m でも 同じ 式。<br>？ × ${q.L} ＝ ${A} の ？ を 求める のが ${A} ÷ ${q.L}</span>`];
+    say(`よくできました！ <b>${q.p} × ${q.L} ＝ ${parts.join(' ＋ ')} ＝ ${A}</b><br>${q.L}m でも 1m は ${q.p}円`,'ok');
+    SL=[`<span class="f">${A} ÷ ${q.L} ＝ ${q.p}</span>`,
+        `<span><span class="h">1mの ねだん</span> ＝ <span class="m">代金</span> ÷ <span class="t">長さ</span></span>`,
+        `<span class="small">長さが 2m でも ${q.L}m でも 同じ 式<br>？ × ${q.L} ＝ ${A} の ？ を 求める のが ${A} ÷ ${q.L}</span>`];
     sumShow();choices(null);
     actions([['sub','もう一度',s1start],['next','次の 問題 →',()=>{S.idx.s1=(S.idx.s1+1)%P1.length;s1start();}]]);
   },S.idx.s1+1);
@@ -525,7 +526,7 @@ function s2start(){
   G.lo=[{m:q.L,t:`${q.L}m`,pos:'gap',col:CG}];
   L.phase='look';hideAll();
   head(P2,`${q.it}を <b class="t">${q.L}m</b> 買うと <b class="m">${A}円</b>でした。1m は 何円？`);
-  say(`式は <b>${A} ÷ ${q.L}</b>。<br>まず 0.1m の ねだんを 考えよう`);
+  say(`式は <b>${A} ÷ ${q.L}</b><br>まず 0.1m の ねだんを 考えよう`);
   blue('0.1mずつ 区切る ▶',()=>countTenth(q,A,after2));
   draw();
 }
@@ -547,18 +548,20 @@ function countTenth(q,A,next){
     },MODE==='s2'?S.idx.s2:S.idx.s3+1);
   });
 }
+/* 0.1m の ねだんも 1m の ねだんも、答えの 数では なく「どの 式で 求めるか」を えらぶ。
+   184 ÷ 23 の ような 2けたで わる 暗算を させない（2026-09-27 指摘＝「この 場面では 暗算しか ない？」）。計算は 画面が する */
 function tenthPrice(q,A,n,next){
   const x=dv(A,n);
   G.bars=[{a:0,b:0.1,t:'？円',col:CH,op:1,anc:1}];draw();
-  say(`0.1m の <b>${n}こ分</b> が <b class="m">${A}円</b>。<br><b class="t">0.1m</b> は 何円？`);
-  const ops=[x,dv(A,10),A+n];
-  choices(ops.map(v=>`${v}円`),(i,b)=>{
-    if(i===1){b.disabled=true;say(`10で わるのでは なく、<b>${n}こに 分ける</b>よ<br>${A} ÷ ${n}`,'try');return;}
-    if(i===2){b.disabled=true;say(`たすのでは なく、<b>${n}こに 分ける</b>よ<br>${A} ÷ ${n}`,'try');return;}
+  say(`0.1m の <b>${n}こ分</b> が <b class="m">${A}円</b><br><b class="t">0.1m</b> の ねだんを 求める 式は？`);
+  const ops=[`${A} ÷ ${n}`,`${A} ÷ 10`,`${A} × ${n}`];
+  choices(ops,(i,b)=>{
+    if(i===1){b.disabled=true;say(`10こでは なく、<b>${n}こ</b>に 分けるよ`,'try');return;}
+    if(i===2){b.disabled=true;say(`0.1m は ${q.L}m より 安いね<br>かけると 大きく なって しまう`,'try');return;}
     goodChoice(0);
     G.bars[0].t=`${x}円`;draw();
     SL.push(`<span><span class="t">0.1m</span> → ${A} ÷ ${n} ＝ ${x}円</span>`);sumShow();
-    say(`よくできました！ 0.1m は <b>${x}円</b>。<br>1m は 0.1m の いくつ分かな`,'ok');
+    say(`よくできました！ <b>${A} ÷ ${n} ＝ ${x}</b><br>0.1m は ${x}円。1m は 0.1m の いくつ分かな`,'ok');
     blue('1mに する ▶',()=>toOne(q,A,x,next));
   },(MODE==='s2'?S.idx.s2:S.idx.s3)+2);
 }
@@ -567,12 +570,12 @@ function toOne(q,A,x,next){
   G.split={a:0,b:1,n:10,prog:0};
   G.bars=[{a:0,b:1,col:CH,op:.3},{a:0,b:0.1,t:`${x}円`,col:CH,op:1,anc:1}];
   anim(900,t=>{G.split.prog=t;draw();},()=>{
-    say(`1m は 0.1m の <b>10こ分</b>。<br><b class="h">1m</b> は 何円？`);
+    say(`1m は 0.1m の <b>10こ分</b><br><b class="h">1m</b> の ねだんを 求める 式は？`);
     actions([]);
-    const ops=[mul(x,10),R3(x+10),x];
-    choices(ops.map(v=>`${v}円`),(i,b)=>{
-      if(i===1){b.disabled=true;say(`10を たすのでは なく、0.1m の <b>10こ分</b>`,'try');return;}
-      if(i===2){b.disabled=true;say(`${x}円は 0.1m の ねだん。<br>1m は その <b>10こ分</b>`,'try');return;}
+    const ops=[`${x} × 10`,`${x} ÷ 10`,`${x} ＋ 10`];
+    choices(ops,(i,b)=>{
+      if(i===1){b.disabled=true;say(`1m は 0.1m より 高いね<br>0.1m の <b>10こ分</b>`,'try');return;}
+      if(i===2){b.disabled=true;say(`10を たすのでは なく、0.1m の <b>10こ分</b>`,'try');return;}
       goodChoice(0);
       one().t=`${mul(x,10)}円`;G.bars[0].op=.55;draw();
       SL.push(`<span><span class="h">1m</span> → ${x} × 10 ＝ ${mul(x,10)}円</span>`);
@@ -639,7 +642,7 @@ function s3start(){
 function s3ghost(){
   const q=Q3(),A=mul(q.p,q.L);choices(null);
   G.ghost=true;G.bars=[{a:0,b:1,col:CH,op:.3}];draw();
-  say(`1m（点線）は <b class="t">${q.L}m</b> より 長いね。<br>式は <b>${A} ÷ ${q.L}</b>。0.1m の ねだんから 考えよう`);
+  say(`1m（点線）は <b class="t">${q.L}m</b> より 長いね。<br>式は <b>${A} ÷ ${q.L}</b>　0.1m の ねだんから 考えよう`);
   blue('0.1mずつ 区切る ▶',()=>countTenth(q,A,after3));
 }
 function after3(q,A,x){
@@ -658,7 +661,7 @@ function s3judge(q){
   G.up=[{m:q.d,t:`${q.A}円`},{m:1,t:'？円',col:CH,one:1,row:Math.abs(q.d-1)<0.7?2:1}];
   G.bars=[{a:0,b:1,col:CH,op:.3}];
   G.lo=[{m:q.d,t:`${q.d}m`,pos:'gap',col:CG}];
-  head(P3,`計算しないで 考えよう。<b>${q.A} ÷ ${q.d}</b> の 答えは？`);
+  head(P3,`計算しないで 考えよう<br><b>${q.A} ÷ ${q.d}</b> の 答えは？`);
   say(`<b class="t">${q.d}m</b> で <b class="m">${q.A}円</b>の リボン。1m は 何円？<br>下の 数直線で、1m は ${q.d}m の 右？ 左？`);
   actions([]);stageTap=null;
   const ans=dv(q.A,q.d),want=q.d<1?0:q.d>1?1:2;
@@ -696,7 +699,7 @@ const P4=[
   {T:4.5,d:0.6}
 ];
 const Q4=()=>P4[S.idx.s4];
-const C4={cut:0,sample:true,rem:null,remT:'？m'};
+const C4={cut:0,sample:true,num:false,left:false,rem:false};
 const cutN=q=>Math.floor(Math.round(q.T*10)/Math.round(q.d*10));
 const cutR=q=>(Math.round(q.T*10)%Math.round(q.d*10))/10;
 function drawCut(){
@@ -714,8 +717,11 @@ function drawCut(){
   for(let k=0;k<C4.cut;k++){
     const a=X(k*q.d),b=X((k+1)*q.d);
     g+=`<rect x="${a}" y="${yR}" width="${b-a}" height="${rh}" fill="${k%2?'#d9c8f2':'#b89be0'}" stroke="${CH}" stroke-width="2"/>`;
-    g+=`<circle cx="${(a+b)/2}" cy="${yC}" r="${FS*0.58}" fill="#fff" stroke="${CH}" stroke-width="2.5"/>`;
-    g+=tx((a+b)/2,yC,k+1,CH,{k:.72});
+    /* 番号は「何本？」に 答えてから つける（先に つけると 数字を 読むだけに なる） */
+    if(C4.num){
+      g+=`<circle cx="${(a+b)/2}" cy="${yC}" r="${FS*0.58}" fill="#fff" stroke="${CH}" stroke-width="2.5"/>`;
+      g+=tx((a+b)/2,yC,k+1,CH,{k:.72});
+    }
     g+=tx((a+b)/2,yR+rh/2,`${q.d}m`,'#3d2a5c',{k:.55,bg:k%2?'#d9c8f2':'#b89be0'});
     g+=line(b,yR-8,b,yR+rh+8,`stroke="${CI}" stroke-width="3"`);
   }
@@ -725,12 +731,14 @@ function drawCut(){
     g+=tx((X(0)+X(q.d))/2,yC,`1本 ${q.d}m`,CH,{k:.8});
   }
   /* あまり */
-  if(C4.rem&&r>0){
+  if(C4.left&&r>0){
     const a=X(n*q.d),b=X(q.T);
     g+=`<rect x="${a}" y="${yR}" width="${b-a}" height="${rh}" fill="#fff0b8" stroke="${CG}" stroke-width="3"/>`;
-    const cx=Math.min(x1-FS*2.2,(a+b)/2);
-    g+=line((a+b)/2,yR-4,cx,yRem+FS*0.45,`stroke="${CG}" stroke-width="2"`);
-    g+=tx(cx,yRem,`あまり ${C4.remT}`,CG,{k:.78});
+    if(C4.rem){
+      const cx=Math.min(x1-FS*2.2,(a+b)/2);
+      g+=line((a+b)/2,yR-4,cx,yRem+FS*0.45,`stroke="${CG}" stroke-width="2"`);
+      g+=tx(cx,yRem,`あまり ${fmt(r)}m`,CG,{k:.78});
+    }
   }
   g+=`<rect x="${X(0)}" y="${yR}" width="${X(q.T)-X(0)}" height="${rh}" rx="4" fill="none" stroke="${CT}" stroke-width="2.5"/>`;
   /* ものさし（0.1m ごとに 小さな 目もり） */
@@ -746,13 +754,16 @@ function drawCut(){
   g+=tx((X(0)+X(q.T))/2,yT+FS*0.75,`リボン ${q.T}m`,CI,{k:.8});
   svg.innerHTML=g;FS=FS0;
 }
+/* 流れ：切って 見せる → 何本 とれた？（3択。あまりの きれはしを 1本と 数える まちがいを 拾う）
+   → 番号と あまりの 長さを 画面が 出す → 式を カードで → 答え（○ あまり ○）と たしかめは 画面が 出す
+   （2026-09-27 指摘＝「あまりの 計算より 何本 取れるかを 答える 方が いい」。あまりの 長さは 聞かない） */
 function s4start(){
   const q=Q4();
-  Object.assign(C4,{cut:0,sample:true,rem:null,remT:'？m'});
+  Object.assign(C4,{cut:0,sample:true,num:false,left:false,rem:false});
   hideAll();L.phase='look';
   head(P4,q.dfirst?`リボンを <b class="h">${q.d}m</b>ずつ 切ります。リボンは <b class="t">${q.T}m</b> あります。何本 とれるかな？`
                   :`<b class="t">${q.T}m</b>の リボンを <b class="h">${q.d}m</b>ずつ 切ります。何本 とれるかな？`);
-  say(`点線が 1本の 大きさ。<br>${q.d}m ずつ 切って みよう`);
+  say(`点線が 1本の 大きさ<br>${q.d}m ずつ 切って みよう`);
   blue(`${q.d}mずつ 切る ▶`,s4cut);
   draw();
 }
@@ -760,55 +771,46 @@ function s4cut(){
   const q=Q4(),n=cutN(q),r=cutR(q);
   wait(`${q.d}mずつ 切る ▶`);
   anim(Math.min(3600,n*480),t=>{C4.cut=Math.min(n,Math.floor(t*n+1e-6));draw();},()=>{
-    C4.cut=n;C4.rem=r>0;draw();
-    say(r>0?`<b>${n}本</b> とれて、少し あまった。<br>何本 とれるかを 求める 式を つくろう`
-           :`ちょうど <b>${n}本</b> とれた！<br>何本 とれるかを 求める 式を つくろう`);
-    const cT={t:`${q.T}<small>m</small>`,r:'T',cls:'ct'},cD={t:`${q.d}<small>m</small>`,r:'D',cls:'ch'};
-    L.cards=[...(q.dfirst?[cD,cT]:[cT,cD]),{t:'×',r:'x',op:1,cls:'co'},{t:'÷',r:'/',op:1,cls:'co'}];
-    startEq('');
+    C4.cut=n;C4.left=true;draw();
+    say(`<b class="h">${q.d}m</b> の リボンは 何本 とれた？`);
+    actions([]);stageTap=null;
+    const ops=[n,n+1,q.T];
+    choices(ops.map(v=>`${fmt(v)}本`),(i,b)=>{
+      if(i===1){b.disabled=true;say(r>0?`のこりの きれはしは ${q.d}m より みじかい<br>1本には ならないね`:`むらさきの リボンを 1本ずつ 数えよう`,'try');return;}
+      if(i===2){b.disabled=true;say(`${q.T} は リボンの 長さ<br>むらさきの リボンを 1本ずつ 数えよう`,'try');return;}
+      goodChoice(0);
+      C4.num=true;C4.rem=r>0;draw();
+      say((r>0?`よくできました！ <b>${n}本</b> とれて、<b>${fmt(r)}m</b> あまる`:`よくできました！ ちょうど <b>${n}本</b>`)+
+          `<br>何本 とれるかを 求める 式を つくろう`,'ok');
+      choices(null);
+      const cT={t:`${q.T}<small>m</small>`,r:'T',cls:'ct'},cD={t:`${q.d}<small>m</small>`,r:'D',cls:'ch'};
+      L.cards=[...(q.dfirst?[cD,cT]:[cT,cD]),{t:'×',r:'x',op:1,cls:'co'},{t:'÷',r:'/',op:1,cls:'co'}];
+      startEq('');
+    },S.idx.s4+1);
   });
 }
 function s4check(r,back){
   const q=Q4(),n=cutN(q),rm=cutR(q);
-  if(r[1]!=='/'){say(`${q.d}m が いくつ分 とれるかを 求めるよ。<br>3年で ならった「○こずつ 分ける」と 同じ`,'try');back([1]);return;}
+  if(r[1]!=='/'){say(`${q.d}m が いくつ分 とれるかを 求めるよ<br>3年で ならった「○こずつ 分ける」と 同じ`,'try');back([1]);return;}
   if(r[0]!=='T'){say(`÷ の 前は 切る 前の 長さ（<b class="t">${q.T}m</b>）`,'try');back([0,2]);return;}
   L.phase='done';
   colorSlots(r,{T:['ぜんぶの 長さ','gt','t'],D:['1本の 長さ','gh','h']});
   $('cards').innerHTML='';
-  actions([['sub','もう一度',s4start]]);
+  $('res').className='resbox good';
   if(rm>0){
-    $('res').innerHTML=`${n}<small> あまり ？</small>`;$('res').className='resbox good';
-    say(`<b>${n}本</b> とれた。<br>あまりは 何m？ 下の 目もりを 見よう`);
-    const ops=[rm,R3(rm*10),R3(rm/10)];
-    choices(ops.map(v=>`${fmt(v)}m`),(i,b)=>{
-      if(i===1){b.disabled=true;say(`あまりは 1m より みじかいね。<br>小さい 目もり 1つが 0.1m`,'try');return;}
-      if(i===2){b.disabled=true;say(`小さい 目もり 1つが <b>0.1m</b>。<br>あまりは 0.1m の いくつ分？`,'try');return;}
-      goodChoice(0);choices(null);
-      C4.remT=`${fmt(rm)}m`;draw();
-      $('res').innerHTML=`${n}<small> あまり </small>${fmt(rm)}`;
-      say(`よくできました！ <b>${n}本</b> とれて、<b>${fmt(rm)}m</b> あまる`,'ok');
-      SL=[`<span class="f">${q.T} ÷ ${q.d} ＝ ${n} あまり ${fmt(rm)}</span>`,
-          `<span>たしかめ　${q.d} × ${n} ＋ ${fmt(rm)} ＝ ${q.T}</span>`,
-          `<span class="small">あまりの ${fmt(rm)}m は、1本の 長さ ${q.d}m より 小さい</span>`];
-      sumShow();
-      actions([['sub','もう一度',s4start],['next','次の 問題 →',next4]]);
-    },S.idx.s4);
+    $('res').innerHTML=`${n}<small> あまり </small>${fmt(rm)}`;
+    say(`よくできました！<br><b>${q.T} ÷ ${q.d} ＝ ${n} あまり ${fmt(rm)}</b>`,'ok');
+    SL=[`<span>${n}本 とれて、${fmt(rm)}m あまる</span>`,
+        `<span>たしかめ　${q.d} × ${n} ＋ ${fmt(rm)} ＝ ${q.T}</span>`,
+        `<span class="small">あまりの ${fmt(rm)}m は、1本の 長さ ${q.d}m より 小さい</span>`];
   }else{
-    $('res').textContent=n;$('res').className='resbox good';
-    say(`<b>${n}本</b> とれた。<br><b class="t">${q.T}m</b> は <b class="h">${q.d}m</b> の 何倍？`);
-    const ops=[n,R3(q.T-q.d),q.d];
-    choices(ops.map(v=>`${fmt(v)}倍`),(i,b)=>{
-      if(i===1){b.disabled=true;say(`ひくのでは ないよ。<br>${q.d}m の いくつ分か を 見よう`,'try');return;}
-      if(i===2){b.disabled=true;say(`${q.d} は 1本の 長さ。<br>${q.d}m が いくつ分 あるかな`,'try');return;}
-      goodChoice(0);choices(null);
-      say(`よくできました！ ${q.d}m の ${n}本分 だから <b>${n}倍</b>`,'ok');
-      SL=[`<span class="f">${q.T} ÷ ${q.d} ＝ ${n}</span>`,
-          `<span>何本 とれるか も、何倍か も 同じ わり算</span>`,
-          `<span class="small">たしかめ　${q.d} × ${n} ＝ ${q.T}</span>`];
-      sumShow();
-      actions([['sub','もう一度',s4start],['next','次の 問題 →',next4]]);
-    },S.idx.s4+2);
+    $('res').textContent=n;
+    say(`よくできました！<br><b>${q.T} ÷ ${q.d} ＝ ${n}</b>`,'ok');
+    SL=[`<span>${n}本 とれる。${q.T}m は ${q.d}m の ${n}倍 とも いえる</span>`,
+        `<span class="small">何本 とれるか も、何倍か も 同じ わり算<br>たしかめ　${q.d} × ${n} ＝ ${q.T}</span>`];
   }
+  sumShow();
+  actions([['sub','もう一度',s4start],['next','次の 問題 →',next4]]);
 }
 function next4(){S.idx.s4=(S.idx.s4+1)%P4.length;s4start();}
 
@@ -891,11 +893,11 @@ function s5check(r,back){
   const q=Q5();
   const want=q.un==='A'?'x':'/';
   if(r[1]!==want){
-    say(`かけ算の 形に すると <b>${mulForm(q)}</b>。<br>${want==='x'?'？ は かけ算で 求められる':'？ を 求めるのは わり算'}`,'try');
+    say(`かけ算の 形に すると <b>${mulForm(q)}</b><br>${want==='x'?'？ は かけ算で 求められる':'？ を 求めるのは わり算'}`,'try');
     hintOn();back([1]);return;
   }
   if(want==='/'&&r[0]!=='A'){
-    say(`かけ算の 形に すると <b>${mulForm(q)}</b>。<br>÷ の 前は ＝ の 右の <b>${q.A}${q.au}</b>`,'try');
+    say(`かけ算の 形に すると <b>${mulForm(q)}</b><br>÷ の 前は ＝ の 右の <b>${q.A}${q.au}</b>`,'try');
     hintOn();back([0,2]);return;
   }
   L.phase='size';
@@ -904,7 +906,7 @@ function s5check(r,back){
   $('cards').innerHTML='';
   const first=want==='x'?q.B:q.A,second=want==='x'?q.p:(q.un==='B'?q.p:q.B);
   const big=want==='x'?q.p>1:second<1;
-  say(`式は <b>${want==='x'?`${q.B} × ${q.p}`:`${q.A} ÷ ${second}`}</b>。<br>答えの 数は <b>${first}</b>より 大きい？ 小さい？`);
+  say(`式は <b>${want==='x'?`${q.B} × ${q.p}`:`${q.A} ÷ ${second}`}</b><br>答えの 数は <b>${first}</b>より 大きい？ 小さい？`);
   actions([['sub','もう一度',s5start]]);
   choices([`${first}より 大きい`,`${first}より 小さい`],(i,b)=>{
     if((i===0)!==big){b.disabled=true;
