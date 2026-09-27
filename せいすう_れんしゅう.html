@@ -745,7 +745,8 @@ function done5(){
   if(S.idx.s5===0) say(`すごい！ ${a} の 約数でも ${b} の 約数でも ある 数を <span class="cg">公約数</span> と いうよ`,'ok');
   else say(`すごい！ いちばん 大きい 正方形は 1辺 <span class="cg">${g}cm</span>`,'ok');
   sum(commonList());
-  blue('しきつめられない わけ ▶',why5);
+  /* ボタンの ことばで 次に する ことを 言う（「しきつめられない わけ」だと、ここに わけが 書いて あるのかと 読まれた。2026-09-27） */
+  blue(`${P5[S.idx.s5].s}cm で しきつめて みる ▶`,why5);
 }
 function why5(){
   const p=P5[S.idx.s5],{a,b}=G5,sz=p.s;
