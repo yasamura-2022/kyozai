@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>割合のグラフ</title>
+<style>
+  :root{
+    --ink:#2b2118;
+    --paper:#fdf6e3;
+    --card:#fffdf7;
+    --line:#e7d9b8;
+    --gold:#c9a227;
+    --gold-d:#8f7417;
+    --ok:#5a8a4c;
+    --flash:#ffe14d;
+    --blue:#2f6fa8;          /* 同じ 問題の 中で 進む */
+    --moto:#7a5ea8;          /* もとにする量（全体） */
+    --kura:#c0661f;          /* くらべる量（部分） */
+    --wari:#2f8f8a;          /* 割合 */
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:'Hiragino Maru Gothic ProN','BIZ UDPGothic','Yu Gothic',sans-serif;
+    background:
+      radial-gradient(circle at 12% 8%,#ece5f5 0,transparent 38%),
+      radial-gradient(circle at 88% 92%,#fbe6cf 0,transparent 45%),
+      var(--paper);
+    color:var(--ink);
+    position:fixed;inset:0;width:100%;
+    height:var(--fh,100dvh);
+    padding:6px 8px 10px;
+    overflow:hidden;overscroll-behavior:none;touch-action:manipulation;
+    display:flex;flex-direction:column;align-items:center;
+    -webkit-user-select:none;user-select:none;
+  }
+  button{font-family:inherit;touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;cursor:pointer}
+  .app{width:100%;max-width:1100px;height:100%;display:flex;flex-direction:column;gap:6px;min-height:0}
+  .hidden{display:none !important}
+
+  header{text-align:center;flex-shrink:0}
+  h1{font-size:clamp(18px,calc(1.2vw + 1.5vh),28px);letter-spacing:.08em;color:var(--wari)}
+
+  .tabs{display:flex;gap:6px;flex-shrink:0}
+  .tab{flex:1;border:2px solid var(--line);border-radius:14px;background:var(--card);
+    padding:7px 4px;color:#8a7a5f;font-weight:800;
+    font-size:clamp(12px,calc(.85vw + .7vh),17px);display:flex;flex-direction:column;align-items:center;gap:1px;
+    line-height:1.15;word-break:keep-all}
+  .tab .step{font-size:11px;font-weight:700;opacity:.7}
+  .tab.on{color:var(--ink);border-color:var(--gold);box-shadow:0 3px 0 #a5811a}
+  .tab.on .step{color:var(--gold);opacity:1}
+
+  .main{flex:1;min-height:0;display:grid;gap:8px;
+    grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) auto;grid-template-areas:"stage" "work"}
+  @media (orientation:landscape){
+    .main{grid-template-columns:minmax(0,1.3fr) minmax(350px,1fr);grid-template-rows:minmax(0,1fr);grid-template-areas:"stage work"}
+    .work{justify-content:center}
+  }
+  .stage{grid-area:stage;min-height:0;border-radius:18px;border:3px solid #cfe3e1;
+    background:linear-gradient(#fcfefe,#f1f7f6);position:relative;overflow:hidden;padding:6px;
+    contain:size}
+  .stage > svg{width:100%;height:100%;display:block}
+  .stage.tapped{animation:tapped .25s}
+  @keyframes tapped{50%{background:#fff6cf}}
+  .stage.tapme{cursor:crosshair}
+  .work{grid-area:work;display:flex;flex-direction:column;gap:7px;min-height:0}
+  @media (orientation:portrait){ .work{min-height:clamp(300px,44vh,560px)} }
+
+  .prob{display:flex;align-items:center;gap:10px;background:var(--card);border:2px solid var(--line);border-radius:14px;padding:6px 12px;
+    font-weight:800;font-size:clamp(14px,calc(.6vw + 1.3vh),21px);word-break:keep-all;flex-wrap:wrap;justify-content:center;line-height:1.5}
+  .prob .no{color:#8a7a5f;font-size:.8em}
+  .say{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:7px 12px;
+    font-weight:800;color:#5d5040;line-height:1.5;text-align:center;word-break:keep-all;
+    min-height:calc(3em + 18px);display:flex;align-items:center;justify-content:center;
+    font-size:clamp(14px,calc(.65vw + 1.2vh),20px)}
+  .say.ok{color:var(--ok);border-color:var(--ok);background:#f2f9ee}
+  .say.try{color:#b3566f;border-color:#d9748f;background:#fbe3ea}
+  .mo{color:var(--moto)} .ku{color:var(--kura)} .wa{color:var(--wari)}
+
+  /* 表（ステップ２） */
+  .tbl{width:100%;border-collapse:separate;border-spacing:0;background:var(--card);border:2px solid var(--line);border-radius:14px;overflow:hidden;
+    font-weight:800;font-variant-numeric:tabular-nums;font-size:clamp(14px,calc(.6vw + 1.3vh),21px)}
+  .tbl th{background:#f4ecd8;color:#6f5d3d;font-size:.82em;padding:3px 6px}
+  .tbl td{padding:2px 8px;border-top:1px solid #efe4c9;text-align:center}
+  .tbl td:first-child{text-align:left}
+  .tbl .sw{display:inline-block;width:.8em;height:.8em;border-radius:3px;margin-right:.3em;vertical-align:-.05em;border:1px solid #8a6d4f}
+  .tbl tr.now td{background:#fff4c9}
+  .tbl td.q{color:#b9a67f}
+  .tbl td.pc{color:var(--wari)}
+  .tbl tr.tot td{border-top:2px solid #d9c9a3;color:#6f5d3d}
+
+  /* しき */
+  .shiki{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:7px;
+    display:flex;flex-direction:column;align-items:center;gap:7px}
+  .eq{display:flex;align-items:flex-start;justify-content:center;gap:5px;font-weight:800;flex-wrap:nowrap;
+    font-size:clamp(20px,calc(1vw + 2.3vh),36px);line-height:1;font-variant-numeric:tabular-nums}
+  .eq .op{padding-top:.28em;white-space:nowrap}
+  .eq .u{padding-top:.42em;font-size:.6em;white-space:nowrap}
+  .slotw{display:flex;flex-direction:column;align-items:center;gap:4px}
+  .eslot,.resbox{min-width:1.9em;height:1.5em;padding:0 .15em;border:3px dashed #cbb98f;border-radius:12px;background:#fff;
+    display:flex;align-items:center;justify-content:center;white-space:nowrap}
+  .eslot.opslot{min-width:1.3em}
+  .eslot.sel{border-color:var(--blue);background:#eaf1f8}
+  .eslot.fill{border-style:solid;border-color:#9a8763}
+  .resbox{border-color:transparent;background:transparent;color:#8a7a5f}
+  .resbox.good{border:3px solid var(--gold);background:#fff4c9;color:var(--ink)}
+  .eslot small,.resbox small{font-size:.5em}
+  .what{font-size:clamp(11px,calc(.5vw + .9vh),15px);white-space:nowrap;min-height:1.2em}
+  .cards{display:flex;gap:9px;justify-content:center;flex-wrap:wrap;min-height:clamp(46px,calc(2vw + 4.4vh),66px)}
+  .cardn{min-width:clamp(54px,calc(2.4vw + 4.8vh),80px);height:clamp(44px,calc(2vw + 4.2vh),64px);border-radius:14px;padding:0 9px;
+    background:#fff;border:3px solid #9a8763;box-shadow:0 4px 0 #85795f;
+    font-weight:800;font-size:clamp(19px,calc(1vw + 2.2vh),32px);color:var(--ink);touch-action:none;white-space:nowrap}
+  .cardn small{font-size:.55em}
+  .cardn.cmo{border-color:var(--moto);box-shadow:0 4px 0 #58427d;color:var(--moto)}
+  .cardn.cku{border-color:var(--kura);box-shadow:0 4px 0 #8c4a14;color:var(--kura)}
+  .cardn.cwa{border-color:var(--wari);box-shadow:0 4px 0 #1f6763;color:var(--wari)}
+  .cardn.co{min-width:clamp(46px,calc(2vw + 4.2vh),64px);font-size:clamp(23px,calc(1.2vw + 2.7vh),38px)}
+  .cardn.sel{background:var(--flash);transform:translateY(-3px)}
+  .cardn.gone{visibility:hidden}
+  .ghost{position:fixed;z-index:50;pointer-events:none;opacity:.9;transform:translate(-50%,-50%) scale(1.08)}
+
+  .sum{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:7px 10px;text-align:center;
+    font-weight:800;font-variant-numeric:tabular-nums;display:flex;flex-direction:column;align-items:center;gap:3px;
+    font-size:clamp(14px,calc(.65vw + 1.4vh),22px);line-height:1.4;word-break:keep-all}
+  .sum .small{font-size:.8em;color:#8a7a5f}
+
+  .choices{display:flex;gap:10px;justify-content:center}
+  .choices.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .choice{flex:1;max-width:220px;border:3px solid var(--line);border-radius:16px;background:#fff;font-weight:800;color:var(--ink);
+    padding:8px 4px;font-size:clamp(17px,calc(.8vw + 2vh),28px);box-shadow:0 4px 0 #d8c79f;word-break:keep-all;line-height:1.2}
+  .choices.grid .choice{max-width:none;display:flex;align-items:center;justify-content:center;gap:8px;font-size:clamp(15px,calc(.7vw + 1.7vh),24px);padding:6px 4px}
+  .choice svg{width:2.4em;height:1.7em;flex-shrink:0}
+  .choice:active{transform:translateY(2px)}
+  .choice:disabled{opacity:.35;box-shadow:none}
+  .choice.good{border-color:var(--ok);background:#eaf5e4}
+  .choice.good:disabled,.choice.pick:disabled{opacity:1;box-shadow:none}
+  .choice.pick{border-color:var(--blue);background:#eaf1f8}
+  .choices.off{display:none}
+  .choices.need{outline:3px dashed var(--gold);outline-offset:4px;border-radius:18px}
+
+  .actions{display:flex;gap:8px;flex-shrink:0;margin-top:auto;min-height:54px}
+  .btn{flex:1;border:none;border-radius:14px;padding:13px 4px;font-weight:800;color:#fff;
+    font-size:clamp(15px,calc(.7vw + 1.6vh),23px);transition:transform .08s;word-break:keep-all}
+  .btn:active{transform:translateY(2px)}
+  .btn.play{background:var(--blue);box-shadow:0 4px 0 #214f7a}
+  .btn.show{background:var(--gold);box-shadow:0 4px 0 #a5811a}
+  .btn.next{background:var(--ok);box-shadow:0 4px 0 #446838}
+  .btn.sub{background:#a99a7c;box-shadow:0 4px 0 #85795f;flex:.6}
+  .btn:disabled{opacity:.45;box-shadow:none}
+
+  @media (max-height:640px){
+    header{display:none}
+    .tab{padding:5px 4px}
+    .tab .step{display:none}
+    .work{gap:5px}
+    .prob{padding:3px 10px}
+    .say{padding:4px 10px;min-height:calc(3em + 8px);font-size:14px}
+    .shiki{padding:4px;gap:5px}
+    .choice{padding:4px 2px}
+    .btn{padding:10px 4px}
+    .actions{min-height:46px}
+    .sum{padding:4px 8px}
+    .tbl{font-size:14px}
+    .tbl td{padding:1px 6px}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header><h1>割合の グラフ</h1></header>
+
+  <div class="tabs">
+    <button class="tab on" data-m="s1"><span class="step">ステップ１</span>グラフを 読む</button>
+    <button class="tab" data-m="s2"><span class="step">ステップ２</span>グラフを かく</button>
+    <button class="tab" data-m="s3"><span class="step">ステップ３</span>帯グラフを 比べる</button>
+    <button class="tab" data-m="s4"><span class="step">ステップ４</span>グラフを 選ぶ</button>
+  </div>
+
+  <div class="main" id="main">
+    <div class="stage" id="stage"><svg id="pic"></svg></div>
+    <div class="work">
+      <div class="prob" id="prob"></div>
+      <div id="tblbox" class="hidden"></div>
+      <div class="say" id="say"></div>
+      <div class="choices off" id="choices"></div>
+      <div class="shiki hidden" id="shiki">
+        <div class="eq" id="eq"></div>
+        <div class="cards" id="cards"></div>
+      </div>
+      <div class="sum hidden" id="sum"></div>
+      <div class="actions" id="actions"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =====================================================================
+   割合のグラフ（算数5年 D(1) 円グラフや帯グラフ。啓林館「割合のグラフ」）
+   解説（算数編 p.271-274＝~/Downloads/算数.pdf の 277〜280ページ目）：
+   ・「円グラフも帯グラフも，事象にある数量の関係を割合で捉え，基準量と比較量との関係をグラフとして表したもの」
+     「円グラフは…１/２や１/４といった割合を捉えやすい」「10 等分又は 100 等分の目盛りの入った用紙」
+     → ステップ１＝読む（帯を まるめると 円に なる）／ステップ２＝かく（100等分の 目もりに 区切りを 打つ）
+   ・内容の取扱い(5)「複数の帯グラフを比べることにも触れる」
+     「各帯グラフの合計が異なっている場合…割合が小さくなっていても実際のデータとしては大きいなど，
+      見た目では比較ができない場合があるため注意が必要」（全国学調 H25 算数B5 の 例）→ ステップ３
+   ・イ(ｱ)「問題を解決するために適切なグラフを選択して判断」「割合でみていたものを量で見直す」→ ステップ３・４
+   ・統計的な 問題解決（問題—計画—データ—分析—結論）は 学級で 調べる 活動が 主役なので アプリには 入れない
+   【答え】数の 答えは 入力させない。読む・区切りを おす・カードで 式を つくる・えらぶ だけ。
+   ===================================================================== */
+const $=id=>document.getElementById(id);
+let MODE='s1';
+function setFH(){
+  const v=(window.visualViewport&&window.visualViewport.height)||window.innerHeight;
+  document.documentElement.style.setProperty('--fh',v+'px');
+}
+setFH();
+addEventListener('resize',()=>{setFH();draw();});
+if(window.visualViewport) visualViewport.addEventListener('resize',setFH);
+
+const CMO='#7a5ea8',CKU='#c0661f',CWA='#2f8f8a',CI='#6f5d3d';
+/* 項目の 色（その他は 灰色） */
+const CAT=['#f4b39a','#f5d77e','#a9d59c','#9fc8e8','#d9c7ea','#d6ccb8'];
+const CST='#8a6d4f';
+const easeIO=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+const S={busy:false,gen:0,idx:{s1:0,s2:0,s3:0,s4:0}};
+function anim(ms,f,done,ease=easeIO){
+  S.busy=true;const t0=performance.now(),gen=S.gen;
+  const step=now=>{if(gen!==S.gen)return;const t=Math.min(1,(now-t0)/ms);f(ease(t));
+    if(t<1)requestAnimationFrame(step);else{S.busy=false;done&&done();}};
+  requestAnimationFrame(step);
+}
+const fmt=x=>String(Math.round(x*1000)/1000);
+const catCol=(d,i)=>d[i].o?CAT[5]:CAT[i%5];
+
+/* ===== 絵の わく ===== */
+const W=1000;let H=560,FS=26;
+function frame(svg,need){
+  const r=$('stage').getBoundingClientRect();
+  const w=Math.max(r.width-12,100),h=Math.max(r.height-12,100);
+  H=Math.max(380,Math.min(1100,W*h/w));
+  const sc=Math.min(w/W,h/H)||1;
+  FS=Math.max(24,18/sc);
+  if(need&&need(FS)>H) H=need(FS);
+  svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+}
+function tx(x,y,s,col,o={}){
+  const fs=FS*(o.k||1);
+  return `<text x="${x}" y="${y}" font-size="${fs}" fill="${col}" font-weight="800" text-anchor="${o.anc||'middle'}"
+    dominant-baseline="central" paint-order="stroke" stroke="${o.bg||'#fff'}" stroke-width="${fs*0.3}" stroke-linejoin="round">${s}</text>`;
+}
+const line=(x1,y1,x2,y2,a)=>`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" ${a}/>`;
+const tw=s=>[...String(s).replace(/<[^>]+>/g,'')].reduce((a,c)=>a+(c.charCodeAt(0)<256?0.56:1),0);
+
+function say(h,cls){const e=$('say');e.className='say'+(cls?' '+cls:'');e.innerHTML=`<span>${h}</span>`;}
+function prob(h){$('prob').innerHTML=h;}
+function actions(list){
+  killGhost();
+  const a=$('actions');a.innerHTML='';
+  list.forEach(([c,t,f,dis])=>{
+    const b=document.createElement('button');b.className='btn '+c;b.innerHTML=t;b.disabled=!!dis;
+    b.addEventListener('click',()=>{if(!S.busy)f();});a.appendChild(b);
+  });
+}
+function choices(list,onPick,grid){
+  const box=$('choices');box.innerHTML='';box.classList.remove('need');box.classList.toggle('off',!list);box.classList.toggle('grid',!!grid);
+  if(!list)return;
+  list.forEach((c,i)=>{
+    const b=document.createElement('button');b.className='choice';b.innerHTML=c;
+    b.addEventListener('click',()=>{if(!S.busy)onPick(i,b);});box.appendChild(b);
+  });
+  box.classList.add('need');
+}
+function markChoice(i){[...$('choices').children].forEach((b,j)=>{b.disabled=true;b.classList.toggle('good',j===i);});$('choices').classList.remove('need');}
+function hideAll(){
+  S.gen++;S.busy=false;
+  $('shiki').classList.add('hidden');$('sum').classList.add('hidden');$('tblbox').classList.add('hidden');choices(null);
+  $('stage').classList.remove('tapme');
+}
+function showSum(h){const e=$('sum');e.classList.remove('hidden');e.innerHTML=h;}
+let stageTap=null,stagePt=null;
+/* 絵を おす：青い ボタンと 同じ（stageTap）か、区切りを 打つ（stagePt） */
+$('stage').addEventListener('click',e=>{
+  if(S.busy)return;
+  if(stagePt){
+    const svg=$('pic'),pt=svg.createSVGPoint();pt.x=e.clientX;pt.y=e.clientY;
+    const p=pt.matrixTransform(svg.getScreenCTM().inverse());stagePt(p.x,p.y);return;
+  }
+  if(!stageTap)return;
+  $('stage').classList.remove('tapped');void $('stage').offsetWidth;$('stage').classList.add('tapped');
+  stageTap();
+});
+
+/* ===== 帯グラフ・円グラフを かく 部品 ===== */
+/* d＝[{n,p}]（p は %）。upto＝何こ目まで ぬるか。labels＝中に 名前と % を 書くか */
+function bandSVG(x0,y,w,h,d,o={}){
+  let g='',acc=0;
+  const upto=o.upto==null?d.length:o.upto;
+  g+=`<rect x="${x0}" y="${y}" width="${w}" height="${h}" fill="#fff" stroke="${CST}" stroke-width="2.5"/>`;
+  d.forEach((it,i)=>{
+    const xa=x0+w*acc/100,xb=x0+w*(acc+it.p)/100;acc+=it.p;
+    if(i>=upto)return;
+    g+=`<rect x="${xa}" y="${y}" width="${xb-xa}" height="${h}" fill="${catCol(d,i)}" stroke="${CST}" stroke-width="2"/>`;
+    if(o.labels!==false){
+      const cw=xb-xa,lab=it.n,pl=it.p+'%';
+      if(cw>tw(lab)*FS*0.8+6){
+        g+=tx((xa+xb)/2,y+h*(o.pct===false?0.5:0.34),lab,CI,{k:.8,bg:catCol(d,i)});
+        if(o.pct!==false) g+=tx((xa+xb)/2,y+h*0.72,pl,CI,{k:.8,bg:catCol(d,i)});
+      }else if(cw>tw(pl)*FS*0.6){
+        if(o.pct!==false) g+=tx((xa+xb)/2,y+h*0.72,pl,CI,{k:.6,bg:catCol(d,i)});
+        g+=tx((xa+xb)/2,y+h*0.32,lab.length>3?lab.slice(0,2)+'…':lab,CI,{k:.55,bg:catCol(d,i)});
+      }
+    }
+  });
+  if(o.scale!==false){
+    const ys=y+h;
+    for(let v=0;v<=100;v++){
+      const big=v%10===0,x=x0+w*v/100;
+      if(!big&&w/100<3.5)continue;
+      g+=line(x,ys,x,ys+(big?12:v%5===0?8:5),`stroke="${CI}" stroke-width="${big?2:1}"`);
+      if(big) g+=tx(x,ys+FS*0.95,v,'#8a7a5f',{k:.7});
+    }
+    g+=tx(x0+w+FS*0.9,ys+FS*0.95,'(%)','#8a7a5f',{k:.55});
+  }
+  return g;
+}
+function sector(cx,cy,ro,ri,a0,a1){
+  const big=a1-a0>Math.PI?1:0;
+  const P=(r,a)=>`${cx+r*Math.cos(a)},${cy+r*Math.sin(a)}`;
+  if(a1-a0>=Math.PI*2-1e-6){
+    return ri>0.5?`M${P(ro,a0)}A${ro},${ro} 0 1 1 ${P(ro,a0+Math.PI)}A${ro},${ro} 0 1 1 ${P(ro,a0)}M${P(ri,a0)}A${ri},${ri} 0 1 0 ${P(ri,a0+Math.PI)}A${ri},${ri} 0 1 0 ${P(ri,a0)}Z`
+                :`M${P(ro,a0)}A${ro},${ro} 0 1 1 ${P(ro,a0+Math.PI)}A${ro},${ro} 0 1 1 ${P(ro,a0)}Z`;
+  }
+  if(ri<0.5) return `M${cx},${cy}L${P(ro,a0)}A${ro},${ro} 0 ${big} 1 ${P(ro,a1)}Z`;
+  return `M${P(ro,a0)}A${ro},${ro} 0 ${big} 1 ${P(ro,a1)}L${P(ri,a1)}A${ri},${ri} 0 ${big} 0 ${P(ri,a0)}Z`;
+}
+const ang=v=>-Math.PI/2+Math.PI*2*v/100;   /* 円グラフは まうえ から 右回り */
+function pieSVG(cx,cy,R,d,o={}){
+  let g='',acc=0;
+  const upto=o.upto==null?d.length:o.upto;
+  g+=`<circle cx="${cx}" cy="${cy}" r="${R}" fill="#fff" stroke="${CST}" stroke-width="2.5"/>`;
+  d.forEach((it,i)=>{
+    const a0=ang(acc),a1=ang(acc+it.p);acc+=it.p;
+    if(i>=upto)return;
+    g+=`<path d="${sector(cx,cy,R,0,a0,a1)}" fill="${catCol(d,i)}" stroke="${CST}" stroke-width="2"/>`;
+    if(o.labels!==false){
+      const am=(a0+a1)/2,rr=R*(it.p<9?0.74:0.6),x=cx+rr*Math.cos(am),y=cy+rr*Math.sin(am);
+      if(o.pct===false){if(it.p>=7)g+=tx(x,y,it.n,CI,{k:it.p>=9?.66:.52,bg:catCol(d,i)});}
+      else if(it.p>=9){g+=tx(x,y-FS*0.36,it.n,CI,{k:.66,bg:catCol(d,i)});g+=tx(x,y+FS*0.4,it.p+'%',CI,{k:.66,bg:catCol(d,i)});}
+      else g+=tx(x,y,it.p+'%',CI,{k:.55,bg:catCol(d,i)});
+    }
+  });
+  if(o.ticks!==false){
+    for(let v=0;v<100;v++){
+      const big=v%10===0,a=ang(v);
+      if(!big&&R*Math.PI*2/100<3.5)continue;
+      const r1=R,r2=R+(big?13:v%5===0?9:5);
+      g+=line(cx+r1*Math.cos(a),cy+r1*Math.sin(a),cx+r2*Math.cos(a),cy+r2*Math.sin(a),`stroke="${CI}" stroke-width="${big?2:1}"`);
+      if(big&&o.nums!==false) g+=tx(cx+(R+FS*0.95)*Math.cos(a),cy+(R+FS*0.95)*Math.sin(a),v,'#8a7a5f',{k:.55});
+    }
+  }
+  return g;
+}
+
+/* =====================================================================
+   ステップ１：グラフを 読む
+   帯グラフで 2問（1つ目の 項目／とちゅうの 項目＝2つの 目もりの ひき算）
+   → 帯を まるめて 円グラフに する（同じ 100% を 区切った もの）→ 円グラフで 1問（半分・4分の1 が 見やすい）
+   ===================================================================== */
+const P1=[
+  {t:'5年生 100人の すきな 給食',d:[{n:'カレー',p:32},{n:'あげパン',p:24},{n:'ラーメン',p:18},{n:'からあげ',p:14},{n:'その他',p:12,o:1}],
+   q:[{s:'カレーは 全体の 何%？',ch:['32%','30%','35%'],a:0,h:'目もりは 1% ずつ。10% ごとに 数が 書いて あるよ'},
+      {s:'ラーメンは 全体の 何%？',ch:['74%','18%','56%'],a:1,h:'ラーメンは 56% から 74% まで。74 − 56 で 求めよう'}],
+   pq:{s:'全体の 4分の1（25%）に いちばん 近いのは？',ch:['カレー','ラーメン','あげパン'],a:2,h:'円を 4つに 分けた 1つ分（まうえ から 右よこ まで）と くらべよう'}},
+  {t:'ある 町の 土地の 使われ方',d:[{n:'田畑',p:46},{n:'森林',p:26},{n:'家や 店',p:16},{n:'道路',p:7},{n:'その他',p:5,o:1}],
+   q:[{s:'森林は 全体の 何%？',ch:['72%','26%','46%'],a:1,h:'森林は 46% から 72% まで。72 − 46 で 求めよう'},
+      {s:'道路は 全体の 何%？',ch:['88%','95%','7%'],a:2,h:'道路は 88% から 95% まで。95 − 88 で 求めよう'}],
+   pq:{s:'全体の 半分（50%）に いちばん 近いのは？',ch:['田畑','森林','家や 店'],a:0,h:'円を 半分に 分けた 線（まうえ から ました）と くらべよう'}}
+];
+const R1={qi:0,phase:'band',roll:0,rot:0,fill:0,done:false};
+const Q1=()=>P1[S.idx.s1];
+function s1start(){
+  const q=Q1();
+  Object.assign(R1,{qi:0,phase:'band',roll:0,rot:0,fill:0,done:false});
+  hideAll();stageTap=null;stagePt=null;
+  prob(`<span class="no">問題 ${S.idx.s1+1} / ${P1.length}</span><span>${q.t}</span>`);
+  ask1();draw();
+  actions([['sub','もう一度',s1start],['next','次の 問題 →',()=>{},true]]);
+}
+function ask1(){
+  const q=Q1(),it=R1.phase==='pie'?q.pq:q.q[R1.qi];
+  say(`${R1.phase==='pie'?'円グラフ':'帯グラフ'}を 読もう。<br><b>${it.s}</b>`);
+  choices(it.ch,(i,b)=>{
+    if(i!==it.a){b.disabled=true;say(it.h,'try');return;}
+    markChoice(it.a);
+    if(R1.phase==='band'&&R1.qi<q.q.length-1){
+      say(`よくできました！ ${it.ch[it.a]}`,'ok');
+      actions([['play','次の しつもん ▶',()=>{R1.qi++;ask1();actions([['sub','もう一度',s1start],['next','次の 問題 →',()=>{},true]]);}]]);
+    }else if(R1.phase==='band'){
+      say(`よくできました！ ${it.ch[it.a]}<br>この 帯を まるめて みよう`,'ok');
+      actions([['play','まるめて 円グラフに する ▶',roll1]]);stageTap=roll1;
+    }else{
+      R1.done=true;draw();
+      say(`よくできました！ <b>${it.ch[it.a]}</b>`,'ok');
+      showSum(`帯グラフも 円グラフも、<b class="mo">全体</b>を <b class="wa">100%</b> と して、<b class="ku">部分</b>の 割合で 区切った グラフ
+        <span class="small">円グラフは 半分（50%）や 4分の1（25%）が 見やすい</span>`);
+      actions([['sub','もう一度',s1start],['next','次の 問題 →',()=>{S.idx.s1=(S.idx.s1+1)%P1.length;s1start();}]]);
+    }
+  });
+}
+function roll1(){
+  if(R1.phase!=='band')return;
+  stageTap=null;choices(null);R1.phase='roll';
+  actions([['play','まるめて いるよ…',()=>{},true]]);
+  say('帯の はしと はしを くっつけると…');
+  anim(1700,t=>{R1.roll=t;draw();},()=>anim(700,t=>{R1.rot=t;draw();},()=>anim(800,t=>{R1.fill=t;draw();},()=>{
+    R1.phase='pie';draw();ask1();
+    actions([['sub','もう一度',s1start],['next','次の 問題 →',()=>{},true]]);
+  })));
+}
+function draw1(){
+  const svg=$('pic');frame(svg,f=>f*16);
+  const q=Q1(),d=q.d;
+  const x0=FS*1.6,w=W-FS*3.6,h=FS*3;
+  const Rf=Math.min(H*0.34,W*0.3);
+  const yb=Math.max(FS*1.2,(H-(h/2+Rf*2+FS*2.5))/2);
+  let g='';
+  if(R1.phase==='band'){
+    g+=bandSVG(x0,yb,w,h,d,{pct:false});
+  }else{
+    /* 帯を まげて 円に する：θ＝2π×roll、中心線の 半径 r＝帯の 長さ÷θ */
+    const t=Math.max(R1.roll,0.02),th=Math.PI*2*t,r=w/th;
+    const xc=x0+w/2,yc0=yb+h/2+r;
+    const r1=w/(Math.PI*2);
+    /* 最後に 中心を 絵の まん中へ、半径を Rf へ */
+    const f=R1.fill;
+    const cyEnd=yb+h/2+Rf+FS*0.6;
+    const cx=xc,cy=R1.roll<1?yc0:(yb+h/2+r1)*(1-f)+cyEnd*f;
+    const ro=R1.roll<1?r+h/2:(r1+h/2)*(1-f)+Rf*f;
+    const ri=R1.roll<1?r-h/2:(r1-h/2)*(1-f);
+    const a0=-Math.PI/2-th/2+R1.rot*Math.PI;
+    let acc=0;
+    d.forEach((it,i)=>{
+      const s0=a0+th*acc/100,s1=a0+th*(acc+it.p)/100;acc+=it.p;
+      g+=`<path d="${sector(cx,cy,ro,ri,s0,s1)}" fill="${catCol(d,i)}" stroke="${CST}" stroke-width="2"/>`;
+    });
+    if(R1.phase==='pie'){
+      g='';
+      g+=pieSVG(cx,cy,Rf,d,{pct:R1.done});
+      if(q.pq.a!=null&&R1.phase==='pie'){
+        /* 目やすの 線（半分・4分の1） */
+        const half=q.pq.s.includes('半分');
+        g+=line(cx,cy,cx+Rf*Math.cos(ang(0)),cy+Rf*Math.sin(ang(0)),`stroke="${CWA}" stroke-width="3" stroke-dasharray="7 5"`);
+        g+=line(cx,cy,cx+Rf*Math.cos(ang(half?50:25)),cy+Rf*Math.sin(ang(half?50:25)),`stroke="${CWA}" stroke-width="3" stroke-dasharray="7 5"`);
+      }
+    }
+  }
+  svg.innerHTML=g;
+}
+
+/* =====================================================================
+   ステップ２：グラフを かく
+   ① 1つ目の 割合を 式で（部分 ÷ 全体）→ ② ほかも 計算（合計 100% を たしかめる）
+   → ③ 帯グラフに 区切りを 打つ → ④ 円グラフに 区切りを 打つ
+   区切りは「前の 区切り ＋ その 割合」の ところ。自分の % の ところを おす まちがいが 多い
+   項目は 大きい じゅん、その他は さいご
+   ===================================================================== */
+const P2=[
+  {t:'1か月に かりた 本（200さつ）',u:'さつ',tot:200,d:[{n:'物語',v:70},{n:'図かん',v:46},{n:'伝記',v:34},{n:'科学',v:24},{n:'その他',v:26,o:1}]},
+  {t:'すきな スポーツ（36人）',u:'人',tot:36,d:[{n:'サッカー',v:12},{n:'ドッジボール',v:10},{n:'水泳',v:7},{n:'野球',v:5},{n:'その他',v:2,o:1}]}
+];
+P2.forEach(q=>q.d.forEach(it=>it.p=Math.round(it.v/q.tot*100+1e-9)));
+const R2={phase:'calc',filled:1,bk:0,pk:0,miss:null,shown:0};
+const Q2=()=>P2[S.idx.s2];
+function s2start(){
+  const q=Q2();
+  Object.assign(R2,{phase:'calc',filled:0,bk:0,pk:0,miss:null,shown:0});
+  hideAll();stageTap=null;stagePt=null;
+  prob(`<span class="no">問題 ${S.idx.s2+1} / ${P2.length}</span><span>${q.t} を 帯グラフと 円グラフに かこう</span>`);
+  table2();
+  const a=q.d[0];
+  say(`まず <b class="ku">${a.n}</b> の 割合を 求めよう。<br><small>カードを □ に 入れて 式を つくろう</small>`);
+  L.phase='ask';L.sel=null;L.slots=[null,null,null];
+  L.cards=[{t:`${a.v}<small>${q.u}</small>`,r:'b',cls:'cku'},{t:`${q.tot}<small>${q.u}</small>`,r:'a',cls:'cmo'},{t:'×',r:'x',op:1,cls:'co'},{t:'÷',r:'/',op:1,cls:'co'}];
+  buildEq('');$('shiki').classList.remove('hidden');
+  actions([['sub','カードを もどす',resetCards],['show','答え',check2]]);
+  draw();
+}
+function table2(){
+  const q=Q2(),box=$('tblbox');box.classList.remove('hidden');
+  let h=`<table class="tbl"><tr><th>しゅるい</th><th>${q.u==='人'?'人数':'さつ数'}</th><th>割合（%）</th></tr>`;
+  q.d.forEach((it,i)=>{
+    const now=(R2.phase==='band'&&i===R2.bk)||(R2.phase==='pie'&&i===R2.pk)||(R2.phase==='calc'&&i===0);
+    h+=`<tr class="${now?'now':''}"><td><span class="sw" style="background:${catCol(q.d,i)}"></span>${it.n}</td><td>${it.v}</td>`+
+       `<td class="${i<R2.filled?'pc':'q'}">${i<R2.filled?it.p:'？'}</td></tr>`;
+  });
+  const done=R2.filled>=q.d.length;
+  h+=`<tr class="tot"><td>合計</td><td>${q.tot}</td><td>${done?q.d.reduce((s,it)=>s+it.p,0):''}</td></tr></table>`;
+  box.innerHTML=h;
+}
+function check2(){
+  if(L.phase!=='ask'||S.busy)return;
+  if(L.slots.some(s=>s==null)){say('まだ とちゅうだよ。□ を ぜんぶ うめよう','try');return;}
+  const q=Q2(),a=q.d[0];
+  const r=L.slots.map(s=>L.cards[s].r),op=r[1];
+  const back=idx=>{idx.forEach(i=>L.slots[i]=null);drawCards();drawSlots();};
+  if(op!=='/'){say(`割合は <span class="ku">部分</span> ÷ <span class="mo">全体</span> だね`,'try');back([1]);return;}
+  if(r[0]!=='b'){say(`÷ の 前は <b class="ku">${a.n}（${a.v}${q.u}）</b>だよ。<br><b class="mo">全体（${q.tot}${q.u}）</b>を もとにする量に する`,'try');back([0,2]);return;}
+  L.phase='done';
+  const raw=a.v/q.tot,exact=Math.abs(raw*100-Math.round(raw*100))<1e-9;
+  $('res').innerHTML=exact?fmt(raw):fmt(Math.floor(raw*1000)/1000)+'…';$('res').className='resbox good';
+  $('cards').innerHTML='';
+  R2.filled=1;table2();
+  say(exact?`よくできました！ <b class="wa">${fmt(raw)} → ${a.p}%</b>`
+    :`よくできました！ ${fmt(Math.floor(raw*1000)/1000)}… は、小数第三位を 四しゃ五入して ${fmt(a.p/100)}。<br><b class="wa">${a.p}%</b>`,'ok');
+  actions([['play','ほかの 割合も 計算する ▶',fill2]]);stageTap=fill2;
+}
+function fill2(){
+  if(R2.phase!=='calc')return;
+  const q=Q2();stageTap=null;$('shiki').classList.add('hidden');
+  actions([['play','計算して いるよ…',()=>{},true]]);
+  const n=q.d.length;
+  anim(1400,t=>{const f=1+Math.floor(t*(n-1)+1e-9);if(f!==R2.filled){R2.filled=f;table2();}},()=>{
+    R2.filled=n;table2();
+    const sum=q.d.reduce((s,it)=>s+it.p,0);
+    say(`合計が <b class="wa">${sum}%</b> に なるか たしかめたよ。<br>${q.d.some(it=>Math.abs(it.v/q.tot*100-it.p)>1e-9)?'<small>四しゃ五入 した ときは、合計が 100 に なるか かならず たしかめる</small>':''}`);
+    actions([['play','帯グラフを かく ▶',band2]]);stageTap=band2;
+  },t=>t);
+}
+function band2(){
+  const q=Q2();stageTap=null;
+  R2.phase='band';R2.bk=0;R2.miss=null;table2();
+  askBand();
+}
+function cum(q,k){return q.d.slice(0,k+1).reduce((s,it)=>s+it.p,0);}
+function askBand(){
+  const q=Q2(),k=R2.bk,it=q.d[k];
+  const prev=k?cum(q,k-1):0;
+  say(k===0?`<b class="ku">${it.n}</b> は <b class="wa">${it.p}%</b>。<br>帯グラフの ${it.p}% の ところを おして 区切ろう`
+           :`次は <b class="ku">${it.n}</b>（<b class="wa">${it.p}%</b>）。<br>区切りを おそう`);
+  $('stage').classList.add('tapme');
+  stagePt=(x,y)=>tapBand(x,y);
+  actions([['sub','もう一度',s2start]]);
+  draw();
+}
+function geo2(){
+  const x0=FS*1.6,w=W-FS*3.6,h=FS*3,yb=FS*1.4;
+  const Rp=Math.min((H-yb-h-FS*5)/2-FS,W*0.28);
+  const cx=W/2,cy=yb+h+FS*2.4+Rp+FS*1.2;
+  return {x0,w,h,yb,Rp,cx,cy};
+}
+function tapBand(x,y){
+  const q=Q2(),g=geo2();
+  if(y<g.yb-FS*1.5||y>g.yb+g.h+FS*1.8||x<g.x0-20||x>g.x0+g.w+20)return;
+  const v=Math.round((x-g.x0)/g.w*100);
+  hit2(v,'band');
+}
+function tapPie(x,y){
+  const q=Q2(),g=geo2();
+  const dx=x-g.cx,dy=y-g.cy,r=Math.hypot(dx,dy);
+  if(r<g.Rp*0.35||r>g.Rp+FS*2)return;
+  let a=Math.atan2(dy,dx)+Math.PI/2;if(a<0)a+=Math.PI*2;
+  const v=Math.round(a/(Math.PI*2)*100)%100;
+  hit2(v,'pie');
+}
+function hit2(v,kind){
+  const q=Q2(),k=kind==='band'?R2.bk:R2.pk,it=q.d[k],want=cum(q,k),prev=k?cum(q,k-1):0;
+  /* 1% が 画面で せまい ときは 2% まで ずれを 見のがす（指で おすので） */
+  const g=geo2(),r=$('stage').getBoundingClientRect(),sc=Math.min(r.width/W,r.height/H);
+  const per=kind==='band'?g.w/100*sc:g.Rp*Math.PI*2/100*sc;
+  if(Math.abs(v-want)<=(per<6?2:1)){
+    R2.miss=null;
+    if(kind==='band')R2.bk++;else R2.pk++;
+    const kk=kind==='band'?R2.bk:R2.pk;
+    table2();draw();
+    if(kk>=q.d.length-1){      /* のこりの 1つ（その他）は 自動で */
+      if(kind==='band')R2.bk=q.d.length;else R2.pk=q.d.length;
+      table2();draw();stagePt=null;$('stage').classList.remove('tapme');
+      if(kind==='band'){
+        say(`よくできました！ のこりが <b class="ku">その他</b>（${q.d[q.d.length-1].p}%）。<br>帯グラフが できたね`,'ok');
+        actions([['play','円グラフも かく ▶',pie2]]);stageTap=pie2;
+      }else{
+        say(`よくできました！ 円グラフも できたね`,'ok');
+        showSum(`区切りは <b>前の 区切り ＋ その 割合</b> の ところ<span class="small">大きい じゅんに 区切って、その他は さいご</span>`);
+        actions([['sub','もう一度',s2start],['next','次の 問題 →',()=>{S.idx.s2=(S.idx.s2+1)%P2.length;s2start();}]]);
+      }
+      return;
+    }
+    const nx=q.d[kk];
+    say(`よくできました！ 次は <b class="ku">${nx.n}</b>（<b class="wa">${nx.p}%</b>）。<br>区切りを おそう`,'ok');
+    return;
+  }
+  R2.miss=v;draw();
+  if(k>0&&v<=prev) say(`${v}% の ところは、もう 区切った ところだよ。<br><b>${prev}%</b> の 区切りから ${it.p}% 先の ところ`,'try');
+  else say(`${it.n}は ${prev}% の 区切りから <b class="wa">${it.p}%</b> 分。<br>目もりを 数えて おそう`,'try');
+}
+function pie2(){
+  stageTap=null;R2.phase='pie';R2.pk=0;R2.miss=null;table2();
+  const q=Q2(),it=q.d[0];
+  say(`円グラフは <b>まうえ</b> から <b>右回り</b>。<br><b class="ku">${it.n}</b>（<b class="wa">${it.p}%</b>）の 区切りを おそう`);
+  $('stage').classList.add('tapme');stagePt=(x,y)=>tapPie(x,y);
+  actions([['sub','もう一度',s2start]]);
+  draw();
+}
+function draw2(){
+  const svg=$('pic');frame(svg,f=>f*17);
+  const q=Q2(),g=geo2();
+  let s='';
+  const d=q.d.map(it=>({n:it.n,p:it.p,o:it.o}));
+  s+=tx(g.x0,g.yb-FS*0.6,'帯グラフ',CI,{anc:'start',k:.7});
+  s+=bandSVG(g.x0,g.yb,g.w,g.h,d,{upto:R2.phase==='band'?R2.bk:(R2.phase==='pie'?d.length:0)});
+  if(R2.phase==='band'&&R2.miss!=null){
+    const x=g.x0+g.w*R2.miss/100;
+    s+=line(x,g.yb-8,x,g.yb+g.h+8,`stroke="#b3566f" stroke-width="3" stroke-dasharray="5 4"`);
+    s+=tx(x,g.yb-FS*0.55,R2.miss+'%','#b3566f',{k:.65});
+  }
+  if(R2.phase==='pie'){
+    s+=tx(g.cx-g.Rp-FS*1.2,g.cy-g.Rp,'円グラフ',CI,{anc:'end',k:.7});
+    s+=pieSVG(g.cx,g.cy,g.Rp,d,{upto:R2.pk});
+    if(R2.miss!=null){
+      const a=ang(R2.miss);
+      s+=line(g.cx,g.cy,g.cx+(g.Rp+10)*Math.cos(a),g.cy+(g.Rp+10)*Math.sin(a),`stroke="#b3566f" stroke-width="3" stroke-dasharray="5 4"`);
+    }
+  }
+  svg.innerHTML=s;
+}
+
+/* =====================================================================
+   ステップ３：帯グラフを 比べる（解説の「見た目では比較ができない場合がある」）
+   ① 予想（まるつけ しない）→ ② 量を 式で（全体 × 割合）→ ③ 全体の 大きさに あわせて 帯の 長さを かえる → ④ 答える
+   ===================================================================== */
+const P3=[
+  {t:'図書室で かりた 本',u:'さつ',f:'物語',fl:'物語',sumT:'割合が 小さく なっても、全体が ふえれば 量は ふえる ことが ある',
+   y:[{n:'4年前',tot:400,d:[{n:'物語',p:50},{n:'図かん',p:20},{n:'その他',p:30,o:1}]},
+      {n:'ことし',tot:800,d:[{n:'物語',p:30},{n:'図かん',p:25},{n:'その他',p:45,o:1}]}],
+   q:'物語の さつ数は、4年前と くらべて どう なった？',ch:['へった','ふえた','変わらない'],a:1},
+  {t:'インターネットで 予約して かりた 本',u:'さつ',f:'予約',fl:'予約して かりた 本',sumT:'割合が 同じ（60%）でも、全体が へれば 量は へる',
+   y:[{n:'去年',tot:500,d:[{n:'予約',p:60},{n:'その他',p:40,o:1}]},
+      {n:'ことし',tot:400,d:[{n:'予約',p:60},{n:'その他',p:40,o:1}]}],
+   q:'予約して かりた さつ数は、去年と くらべて どう なった？',ch:['へった','ふえた','変わらない'],a:0},
+  {t:'かぜを ひいた 人',u:'人',f:'ひいた',fl:'かぜを ひいた 人',sumT:'割合が 大きくても、全体が 少なければ 人数は 少ない ことが ある',
+   y:[{n:'3年生',tot:90,d:[{n:'ひいた',p:20},{n:'ひいて いない',p:80,o:1}]},
+      {n:'5年生',tot:60,d:[{n:'ひいた',p:25},{n:'ひいて いない',p:75,o:1}]}],
+   q:'かぜを ひいた 人数が 多いのは どちら？',ch:['3年生','5年生','同じ'],a:0}
+];
+const R3={phase:'pred',pred:null,sc:0};
+const Q3=()=>P3[S.idx.s3];
+const amt=(y,f)=>y.tot*y.d.find(it=>it.n===f).p/100;
+function s3start(){
+  const q=Q3();
+  Object.assign(R3,{phase:'pred',pred:null,sc:0});
+  hideAll();stageTap=null;stagePt=null;
+  prob(`<span class="no">問題 ${S.idx.s3+1} / ${P3.length}</span><span>${q.t}</span>`);
+  say(`帯グラフを 見て 予想しよう。<br><b>${q.q}</b>`);
+  choices(q.ch,(i)=>{
+    if(R3.phase!=='pred')return;
+    R3.pred=i;R3.phase='calc';
+    [...$('choices').children].forEach((b,j)=>{b.classList.toggle('pick',j===i);b.disabled=j!==i;});
+    $('choices').classList.remove('need');
+    const y0=q.y[0],y1=q.y[1];
+    say(`帯グラフの 長さが 同じでも、<b class="mo">全体の ${q.u==='人'?'人数':'さつ数'}</b>が ちがうね（${y0.tot}${q.u}と ${y1.tot}${q.u}）。<br>${y1.n}の <b class="ku">${q.fl}</b>は 何${q.u}？`);
+    L.phase='ask';L.sel=null;L.slots=[null,null,null];
+    const p=y1.d.find(it=>it.n===q.f).p/100;
+    L.cards=[{t:`${y1.tot}<small>${q.u}</small>`,r:'a',cls:'cmo'},{t:fmt(p),r:'p',cls:'cwa'},{t:'×',r:'x',op:1,cls:'co'},{t:'÷',r:'/',op:1,cls:'co'}];
+    buildEq(q.u);$('shiki').classList.remove('hidden');
+    actions([['sub','カードを もどす',resetCards],['show','答え',check3]]);
+  });
+  actions([['show','答え',()=>{},true]]);
+  draw();
+}
+function check3(){
+  if(L.phase!=='ask'||S.busy)return;
+  if(L.slots.some(s=>s==null)){say('まだ とちゅうだよ。□ を ぜんぶ うめよう','try');return;}
+  const q=Q3(),y0=q.y[0],y1=q.y[1];
+  const r=L.slots.map(s=>L.cards[s].r),op=r[1];
+  if(op!=='x'){say(`<b class="mo">全体（${y1.tot}${q.u}）</b>の <b class="wa">${fmt(y1.d.find(it=>it.n===q.f).p/100)}倍</b>だね。<br><span class="ku">くらべる量</span> ＝ <span class="mo">もとにする量</span> × <span class="wa">割合</span>`,'try');L.slots[1]=null;drawCards();drawSlots();return;}
+  L.phase='done';
+  $('res').textContent=fmt(amt(y1,q.f));$('res').className='resbox good';$('cards').innerHTML='';
+  R3.phase='scale';
+  say(`${y1.n}の ${q.fl}は <b class="ku">${fmt(amt(y1,q.f))}${q.u}</b>。${y0.n}は ${y0.tot} × ${fmt(y0.d.find(it=>it.n===q.f).p/100)} ＝ <b class="ku">${fmt(amt(y0,q.f))}${q.u}</b>。<br>帯の 長さを 全体の 大きさに あわせて みよう`,'ok');
+  draw();
+  actions([['play','全体の 大きさで かく ▶',scale3]]);stageTap=scale3;
+}
+function scale3(){
+  if(R3.phase!=='scale')return;
+  stageTap=null;$('shiki').classList.add('hidden');
+  actions([['play','かいて いるよ…',()=>{},true]]);
+  anim(1200,t=>{R3.sc=t;draw();},()=>{
+    const q=Q3();R3.phase='ans';
+    say(`<b class="ku">${q.fl}</b>の ところの 長さを くらべよう。<br><b>${q.q}</b>`);
+    choices(q.ch,(i,b)=>{
+      if(i!==q.a){b.disabled=true;say(`${q.fl}の ところの 長さ（${q.u==='人'?'人数':'さつ数'}）を くらべよう。割合では なく 量を 見るよ`,'try');return;}
+      markChoice(q.a);
+      const y0=q.y[0],y1=q.y[1],p0=y0.d.find(it=>it.n===q.f).p,p1=y1.d.find(it=>it.n===q.f).p;
+      const pr=R3.pred===q.a?'予想 どおり！':'予想と ちがったね。';
+      say(`よくできました！ ${pr}<br>${y0.n} ${fmt(amt(y0,q.f))}${q.u}、${y1.n} ${fmt(amt(y1,q.f))}${q.u}`,'ok');
+      showSum(`${q.sumT}<span class="small">帯グラフを 比べる ときは、全体の 大きさも 見よう</span>`);
+      actions([['sub','もう一度',s3start],['next','次の 問題 →',()=>{S.idx.s3=(S.idx.s3+1)%P3.length;s3start();}]]);
+    });
+    actions([['sub','もう一度',s3start]]);
+  });
+}
+function draw3(){
+  const svg=$('pic');frame(svg,f=>f*12);
+  const q=Q3();
+  const x0=FS*4.4,wmax=W-x0-FS*1.8,h=FS*3.2;
+  const maxT=Math.max(...q.y.map(y=>y.tot));
+  const gap=Math.max(h+FS*3.4,Math.min(H*0.36,h*2.8));
+  const top=Math.max(FS*1.4,(H-gap-h-FS*1.6)/2);
+  let g='';
+  q.y.forEach((y,k)=>{
+    const w=wmax*((1-R3.sc)*0.92+R3.sc*y.tot/maxT*0.92);
+    const yy=top+k*gap;
+    g+=tx(x0-FS*0.4,yy+h/2-FS*0.35,y.n,CI,{anc:'end',k:.78});
+    g+=tx(x0-FS*0.4,yy+h/2+FS*0.45,`${y.tot}${q.u}`,CMO,{anc:'end',k:.62});
+    g+=bandSVG(x0,yy,w,h,y.d,{scale:R3.sc<0.01});
+    if(R3.phase==='ans'||R3.sc>0.99){
+      const it=y.d.find(it=>it.n===q.f),xa=x0,xb=x0+w*it.p/100;
+      g+=`<rect x="${xa}" y="${yy-5}" width="${xb-xa}" height="${h+10}" fill="none" stroke="${CKU}" stroke-width="4" rx="4"/>`;
+      g+=tx((xa+xb)/2,yy+h+FS*0.8,`${fmt(amt(y,q.f))}${q.u}`,CKU,{k:.8});
+    }
+  });
+  svg.innerHTML=g;
+}
+
+/* =====================================================================
+   ステップ４：グラフを 選ぶ（目的に 合う グラフ）
+   ===================================================================== */
+const GT=['ぼうグラフ','折れ線グラフ','円グラフ','帯グラフ'];
+function icon(k){
+  const s='stroke="#6f5d3d" stroke-width="2"';
+  if(k===0) return `<svg viewBox="0 0 48 34"><line x1="4" y1="31" x2="46" y2="31" ${s}/><rect x="8" y="12" width="7" height="19" fill="#9fc8e8" ${s}/><rect x="20" y="6" width="7" height="25" fill="#9fc8e8" ${s}/><rect x="32" y="17" width="7" height="14" fill="#9fc8e8" ${s}/></svg>`;
+  if(k===1) return `<svg viewBox="0 0 48 34"><line x1="4" y1="31" x2="46" y2="31" ${s}/><polyline points="7,26 16,18 25,20 34,9 43,6" fill="none" stroke="#c0661f" stroke-width="3"/></svg>`;
+  if(k===2) return `<svg viewBox="0 0 48 34"><circle cx="24" cy="17" r="14" fill="#f5d77e" ${s}/><path d="M24,17 L24,3 A14,14 0 0 1 37.3,21.3 Z" fill="#f4b39a" ${s}/><path d="M24,17 L37.3,21.3 A14,14 0 0 1 16,28.5 Z" fill="#a9d59c" ${s}/></svg>`;
+  return `<svg viewBox="0 0 48 34"><rect x="3" y="11" width="42" height="12" fill="#fff" ${s}/><rect x="3" y="11" width="18" height="12" fill="#f4b39a" ${s}/><rect x="21" y="11" width="13" height="12" fill="#f5d77e" ${s}/><rect x="34" y="11" width="11" height="12" fill="#a9d59c" ${s}/></svg>`;
+}
+const P4=[
+  {s:'1年間の 気温の 変わり方を 表したい',a:[1],why:'時間とともに 変わる ようすは 折れ線グラフ',
+   ex:{k:1,v:[5,6,10,15,20,23,27,28,24,18,12,7],lab:'月'}},
+  {s:'すきな 教科ごとの 人数を 比べたい',a:[0],why:'数の 大きさを 比べるには ぼうグラフ',
+   ex:{k:0,v:[12,9,7,5],n:['算数','体育','図工','国語']}},
+  {s:'町の 土地の 使われ方の 割合を 表したい',a:[2,3],why:'全体の 中の 部分の 割合は 円グラフか 帯グラフ',
+   ex:{k:2,d:[{n:'田畑',p:46},{n:'森林',p:26},{n:'家や 店',p:16},{n:'道路',p:7},{n:'その他',p:5,o:1}]}},
+  {s:'学年ごとに、かぜを ひいた 人の 割合を 比べたい',a:[3],why:'いくつかの 割合を ならべて 比べるには、帯グラフを たてに ならべる',
+   not:{2:'円グラフを 6こ ならべると 比べにくいね。帯を たてに ならべると、区切りが そろって 比べやすい'},
+   ex:{k:3,rows:[['1年',12],['2年',18],['3年',25],['4年',15],['5年',20],['6年',10]]}},
+  {s:'ヘチマの 高さの のびを、1週間ごとに 記録したい',a:[1],why:'時間とともに 変わる ようすは 折れ線グラフ',
+   ex:{k:1,v:[10,25,48,80,120,150],lab:'週'}},
+  {s:'1日の 時間の 使い方の 割合を 表したい',a:[2,3],why:'全体（24時間）の 中の 部分の 割合は 円グラフか 帯グラフ',
+   ex:{k:2,d:[{n:'ねる',p:38},{n:'学校',p:30},{n:'家で',p:21},{n:'食事',p:8},{n:'その他',p:3,o:1}]}}
+];
+const R4={done:false};
+const Q4=()=>P4[S.idx.s4];
+function s4start(){
+  const q=Q4();R4.done=false;
+  hideAll();stageTap=null;stagePt=null;
+  prob(`<span class="no">問題 ${S.idx.s4+1} / ${P4.length}</span><span>${q.s}</span>`);
+  say('どの グラフに すると よいかな？');
+  choices(GT.map((n,k)=>icon(k)+`<span>${n}</span>`),(i,b)=>{
+    if(R4.done)return;
+    if(!q.a.includes(i)){
+      b.disabled=true;
+      say((q.not&&q.not[i])||(i===0?'ぼうグラフは 数の 大きさを 比べる グラフ':i===1?'折れ線グラフは 変わり方を 表す グラフ':'円グラフ・帯グラフは 割合を 表す グラフ'),'try');
+      return;
+    }
+    R4.done=true;
+    [...$('choices').children].forEach((bb,j)=>{bb.disabled=true;bb.classList.toggle('good',q.a.includes(j));});
+    $('choices').classList.remove('need');
+    say(`よくできました！<br>${q.why}`,'ok');
+    draw();
+    actions([['next','次の 問題 →',()=>{S.idx.s4=(S.idx.s4+1)%P4.length;s4start();}]]);
+  },true);
+  actions([['next','次の 問題 →',()=>{},true]]);
+  draw();
+}
+function draw4(){
+  const svg=$('pic');frame(svg,f=>f*12);
+  const q=Q4();
+  let g='';
+  if(!R4.done){
+    g+=tx(W/2,H/2,'えらぶと グラフの れいが 出るよ','#a99a7c',{k:.9});
+    svg.innerHTML=g;return;
+  }
+  const e=q.ex,x0=FS*2.4,x1=W-FS*1.2,y0=FS*1.6,y1=H-FS*2.2;
+  if(e.k===1){
+    const mx=Math.max(...e.v)*1.15,n=e.v.length,px=i=>x0+(x1-x0)*(i+0.5)/n,py=v=>y1-(y1-y0)*v/mx;
+    g+=line(x0,y1,x1,y1,`stroke="${CI}" stroke-width="2.5"`)+line(x0,y0,x0,y1,`stroke="${CI}" stroke-width="2.5"`);
+    g+=`<polyline points="${e.v.map((v,i)=>px(i)+','+py(v)).join(' ')}" fill="none" stroke="${CKU}" stroke-width="5"/>`;
+    e.v.forEach((v,i)=>{g+=`<circle cx="${px(i)}" cy="${py(v)}" r="7" fill="${CKU}"/>`;g+=tx(px(i),y1+FS*0.8,(i+1),'#8a7a5f',{k:.6});});
+    g+=tx(x1,y1+FS*1.6,`（${e.lab}）`,'#8a7a5f',{anc:'end',k:.6});
+  }else if(e.k===0){
+    const mx=Math.max(...e.v)*1.15,n=e.v.length,bw=(x1-x0)/n*0.55,px=i=>x0+(x1-x0)*(i+0.5)/n,py=v=>y1-(y1-y0)*v/mx;
+    g+=line(x0,y1,x1,y1,`stroke="${CI}" stroke-width="2.5"`)+line(x0,y0,x0,y1,`stroke="${CI}" stroke-width="2.5"`);
+    e.v.forEach((v,i)=>{g+=`<rect x="${px(i)-bw/2}" y="${py(v)}" width="${bw}" height="${y1-py(v)}" fill="#9fc8e8" stroke="${CST}" stroke-width="2"/>`;
+      g+=tx(px(i),y1+FS*0.8,e.n[i],CI,{k:.7});g+=tx(px(i),py(v)-FS*0.6,v+'人',CI,{k:.65});});
+  }else if(e.k===2){
+    const R=Math.min((H-FS*4)/2,W*0.3);
+    g+=pieSVG(W/2,H/2,R,e.d,{nums:false});
+  }else{
+    const n=e.rows.length,rh=Math.min(FS*1.9,(y1-y0)/n*0.7),gap=(y1-y0)/n,xs=x0+FS*2.2,wb=x1-xs-FS*0.6;
+    e.rows.forEach(([nm,p],i)=>{
+      const y=y0+i*gap+(gap-rh)/2;
+      g+=tx(xs-FS*0.4,y+rh/2,nm,CI,{anc:'end',k:.7});
+      g+=bandSVG(xs,y,wb,rh,[{n:'ひいた',p},{n:'ひいて いない',p:100-p,o:1}],{scale:i===n-1,labels:false});
+      g+=tx(xs+wb*p/100+6,y+rh/2,p+'%',CKU,{anc:'start',k:.62,bg:'#d6ccb8'});
+    });
+  }
+  svg.innerHTML=g;
+}
+
+/* ===== 式（ステップ２・３）とカード。面積・体積・速さと 同じ しくみ ===== */
+const L={phase:'look',slots:[],sel:null,cards:[]};
+function buildEq(u){
+  const eq=$('eq');let h='';
+  ['s','o','s'].forEach((k,i)=>{h+=`<div class="slotw"><div class="eslot slot${k==='o'?' opslot':''}" data-i="${i}" data-k="${k}"></div></div>`;});
+  h+=`<span class="op">＝</span><div class="slotw"><div class="resbox" id="res">？</div></div><span class="u">${u||''}</span>`;
+  eq.innerHTML=h;
+  eq.querySelectorAll('.eslot').forEach(sl=>sl.addEventListener('click',()=>{
+    if(L.phase!=='ask'||Date.now()-justDropped<350)return;
+    const i=+sl.dataset.i;
+    if(L.sel!=null){place(L.sel,i);return;}
+    if(L.slots[i]!=null){L.slots[i]=null;drawCards();drawSlots();}
+  }));
+  drawCards();drawSlots();
+}
+function drawCards(){
+  const box=$('cards');box.innerHTML='';
+  L.cards.forEach((c,i)=>{
+    const b=document.createElement('button');
+    b.className='cardn '+c.cls+(L.slots.includes(i)?' gone':'')+(L.sel===i?' sel':'');
+    b.innerHTML=c.t;dragCard(b,i);box.appendChild(b);
+  });
+}
+function drawSlots(){
+  document.querySelectorAll('#eq .eslot').forEach(sl=>{
+    const i=+sl.dataset.i,c=L.slots[i];
+    sl.innerHTML=c==null?'':L.cards[c].t;
+    sl.className='eslot slot'+(sl.dataset.k==='o'?' opslot':'')+(c!=null?' fill':'')+(L.sel!=null&&c==null?' sel':'');
+  });
+}
+function place(ci,si){
+  if(L.phase!=='ask')return;
+  const sl=document.querySelector(`#eq .eslot[data-i="${si}"]`),isOp=sl&&sl.dataset.k==='o';
+  if(!!L.cards[ci].op!==isOp){
+    say(isOp?'まん中の □ には <b>×</b> か <b>÷</b> の カードを 入れよう':'そこには 数の カードを 入れよう','try');
+    L.sel=null;drawCards();drawSlots();return;
+  }
+  const old=L.slots.indexOf(ci);if(old>=0)L.slots[old]=null;
+  L.slots[si]=ci;L.sel=null;drawCards();drawSlots();
+  if(L.slots.every(s=>s!=null)) say('できたら 金の「答え」を おそう');
+}
+function resetCards(){L.slots=L.slots.map(()=>null);L.sel=null;drawCards();drawSlots();}
+let justDropped=0,drag=null;
+function killGhost(){document.querySelectorAll('.ghost').forEach(g=>g.remove());drag=null;}
+function nearSlot(x,y){
+  let best=null,bd=1e9;
+  document.querySelectorAll('.slot').forEach(sl=>{
+    if(!sl.offsetParent)return;
+    const r=sl.getBoundingClientRect();
+    const dx=Math.max(r.left-x,0,x-r.right),dy=Math.max(r.top-y,0,y-r.bottom),d=Math.hypot(dx,dy);
+    if(d<bd){bd=d;best=sl;}
+  });
+  return best&&bd<=Math.max(40,best.getBoundingClientRect().width*0.6)?best:null;
+}
+function dragCard(el,ci){
+  el.addEventListener('pointerdown',e=>{
+    if(L.phase!=='ask')return;
+    killGhost();
+    drag={ci,el,sx:e.clientX,sy:e.clientY,x:e.clientX,y:e.clientY,ghost:null};
+    try{el.setPointerCapture(e.pointerId);}catch(_){}
+  });
+}
+addEventListener('pointermove',e=>{
+  if(!drag)return;
+  drag.x=e.clientX;drag.y=e.clientY;
+  if(!drag.ghost&&Math.hypot(e.clientX-drag.sx,e.clientY-drag.sy)>8){
+    drag.ghost=drag.el.cloneNode(true);drag.ghost.classList.add('ghost');document.body.appendChild(drag.ghost);
+  }
+  if(drag.ghost){drag.ghost.style.left=e.clientX+'px';drag.ghost.style.top=e.clientY+'px';}
+},true);
+function finishDrag(x,y){
+  if(!drag)return;
+  const {ci,sx,sy}=drag,moved=Math.hypot(x-sx,y-sy)>8;
+  killGhost();
+  if(moved){const sl=nearSlot(x,y);if(sl){place(ci,+sl.dataset.i);justDropped=Date.now();}}
+  else{L.sel=L.sel===ci?null:ci;drawCards();drawSlots();}
+}
+addEventListener('pointerup',e=>finishDrag(e.clientX,e.clientY),true);
+addEventListener('mouseup',e=>finishDrag(e.clientX,e.clientY),true);
+addEventListener('pointerdown',()=>{if(drag)finishDrag(drag.x,drag.y);},true);
+addEventListener('pointercancel',killGhost,true);
+addEventListener('blur',killGhost);
+document.addEventListener('visibilitychange',killGhost);
+
+/* ===== 画面の 切りかえ ===== */
+function draw(){
+  if(MODE==='s1') draw1(); else if(MODE==='s2') draw2(); else if(MODE==='s3') draw3(); else draw4();
+}
+function show(m){
+  MODE=m;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.dataset.m===m));
+  ({s1:s1start,s2:s2start,s3:s3start,s4:s4start})[m]();
+}
+document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>show(t.dataset.m)));
+show('s1');
+</script>
+</body>
+</html>
