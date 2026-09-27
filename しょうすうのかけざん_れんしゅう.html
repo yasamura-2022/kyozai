@@ -163,6 +163,10 @@
   .ht .v.m{background:var(--michi-s)} .ht .v.t{background:var(--toki-s)} .ht .v.h{background:var(--haya-s);color:var(--haya)}
   .ht .ar{font-size:.72em;text-align:center;white-space:nowrap}
 
+  /* ステップ１〜３の 問題文は 割合の アプリと 同じ 大きさ（2026-09-27 指示） */
+  .main:not(.m4) .prob{font-size:clamp(18px,calc(.85vw + 1.9vh),28px);border-color:#d6c49a;padding:8px 14px}
+  .main:not(.m4) .prob .no{font-size:.62em}
+
   /* ステップ４：式だけ（数直線を 出さない） */
   .main.m4{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr);grid-template-areas:"work"}
   .main.m4 .stage{display:none}
@@ -385,7 +389,7 @@ function drawLine(){
     const {a,b,n}=G.split;
     for(let k=1;k<=shown;k++){
       const last=k===n;
-      if(k%5&&!last) continue;
+      if(k%10&&!last) continue;       /* 10・20・30 と さいごだけ（5・15 は いらない。2026-09-27 指摘） */
       if(!last&&n-k<3) continue;       /* さいごの 丸と くっつく ときは 出さない */
       const x=X(a+(b-a)*(k-0.5)/n);
       const t=last?(G.endN==null?'？':G.endN):k;
