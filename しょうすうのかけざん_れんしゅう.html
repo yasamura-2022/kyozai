@@ -154,14 +154,9 @@
   .btn.hint{background:#fff;color:var(--haya);border:3px solid var(--haya);box-shadow:0 4px 0 #cdbbe6;flex:.7}
   .btn.hint.on{background:var(--haya-s)}
 
-  /* ヒントの 表（ことばで 説明しない。1 と いくつ の ならびだけ） */
-  .hintbox{background:var(--card);border:2px dashed var(--haya);border-radius:14px;padding:6px 10px;display:flex;justify-content:center}
-  .ht{display:grid;grid-template-columns:auto auto auto auto;align-items:center;column-gap:10px;row-gap:6px;font-weight:800;
-    font-size:clamp(15px,calc(.7vw + 1.6vh),26px);font-variant-numeric:tabular-nums}
-  .ht .lb{font-size:.72em;text-align:right;white-space:nowrap}
-  .ht .v{min-width:3.2em;text-align:center;border-radius:10px;padding:2px 8px;white-space:nowrap}
-  .ht .v.m{background:var(--michi-s)} .ht .v.t{background:var(--toki-s)} .ht .v.h{background:var(--haya-s);color:var(--haya)}
-  .ht .ar{font-size:.72em;text-align:center;white-space:nowrap}
+  /* ヒント＝小さい 数直線 2本 */
+  .hintbox{background:var(--card);border:2px dashed var(--haya);border-radius:14px;padding:4px 10px;display:flex;justify-content:center}
+  .hintbox svg{width:100%;max-width:560px;display:block}
 
   /* ステップ１〜３の 問題文は 割合の アプリと 同じ 大きさ（2026-09-27 指示） */
   .main:not(.m4) .prob{font-size:clamp(18px,calc(.85vw + 1.9vh),28px);border-color:#d6c49a;padding:8px 14px}
@@ -190,6 +185,7 @@
     .actions{min-height:46px}
     .sum{padding:5px 8px}
     .hintbox{padding:3px 8px}
+    .hintbox svg{max-width:470px}
     .main.m4 .prob{font-size:clamp(15px,calc(.7vw + 1.7vh),24px);padding:6px 12px}
     .main.m4 .shiki{padding:8px}
   }
@@ -714,10 +710,21 @@ function s4start(){
   buildHint(q,false);
   if(S.hint4) $('hint').classList.remove('hidden');
 }
+/* ヒント＝ステップ１〜３と 同じ 数直線 2本を 小さく かいた もの（2026-09-27：表の 形では「何を 言って いるか 分からない」と 言われた）。
+   上＝求める 量（1 に あたる ところに 金額や 重さ、かける数の ところに ？）、下＝1 と かける数 */
 function buildHint(q,done){
-  $('hint').innerHTML=`<div class="ht">
-    <span class="lb m">${q.rq}</span><span class="v h">${q.B}${q.bu}</span><span class="ar m">× ${done?q.p:'？'}→</span><span class="v m">${done?fmt(mul(q.B,q.p))+q.bu:'？'}</span>
-    <span class="lb t">${q.rp}</span><span class="v t">${q.one}</span><span class="ar t">× ${q.p}→</span><span class="v t">${q.p}${pu4(q)}</span></div>`;
+  const mx=Math.max(1.25,q.p*1.2),x0=96,x1=620,X=m=>x0+(x1-x0)*m/mx,yA=50,yB=94;
+  const T=(x,y,s,c,a='middle')=>`<text x="${x}" y="${y}" font-size="19" font-weight="800" fill="${c}" text-anchor="${a}" dominant-baseline="central">${s}</text>`;
+  const L=(x1_,y1,x2,y2,a)=>`<line x1="${x1_}" y1="${y1}" x2="${x2}" y2="${y2}" ${a}/>`;
+  let g='';
+  [1,q.p].forEach(m=>g+=L(X(m),yA,X(m),yB,'stroke="#b9a67c" stroke-width="2" stroke-dasharray="5 5"'));
+  g+=`<rect x="${X(0)}" y="${yA-6}" width="${X(1)-X(0)}" height="12" rx="3" fill="${CH}" opacity=".35"/>`;
+  g+=L(X(0),yA,x1,yA,`stroke="${CM}" stroke-width="4" stroke-linecap="round"`)+L(X(0),yB,x1,yB,`stroke="${CT}" stroke-width="4" stroke-linecap="round"`);
+  [0,1,q.p].forEach(m=>{g+=L(X(m),yA-8,X(m),yA+8,`stroke="${CM}" stroke-width="2.5"`)+L(X(m),yB-8,X(m),yB+8,`stroke="${CT}" stroke-width="2.5"`);});
+  g+=T(x0-14,yA,q.rq,CM,'end')+T(x0-14,yB,q.rp,CT,'end');
+  g+=T(X(1),yA-22,`${q.B}${q.bu}`,CH)+T(X(q.p),yA-22,done?`${fmt(mul(q.B,q.p))}${q.bu}`:'？',CG);
+  g+=T(X(0),yB+22,'0',CT)+T(X(1),yB+22,q.one,CT)+T(X(q.p),yB+22,`${q.p}${pu4(q)}`,CG);
+  $('hint').innerHTML=`<svg viewBox="0 0 640 130">${g}</svg>`;
 }
 function s4buttons(){
   actions([['sub','カードを もどす',resetCards],['hint'+(S.hint4?' on':''),'ヒント',b=>{
