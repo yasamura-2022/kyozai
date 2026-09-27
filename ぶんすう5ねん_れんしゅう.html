@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>分数（5年）</title>
+<style>
+  :root{
+    --ink:#2b2118;
+    --paper:#fdf6e3;
+    --card:#fffdf7;
+    --line:#e7d9b8;
+    --gold:#c9a227;
+    --gold-d:#8f7417;
+    --ok:#5a8a4c;
+    --blue:#2f6fa8;          /* 同じ 問題の 中で 進む */
+    --nu:#c0661f;            /* 分子＝何こ分（ぬった ます） */
+    --de:#2f8f8a;            /* 分母＝1 を いくつに 分けたか（切った 線） */
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:'Hiragino Maru Gothic ProN','BIZ UDPGothic','Yu Gothic',sans-serif;
+    background:
+      radial-gradient(circle at 12% 8%,#dff0ee 0,transparent 38%),
+      radial-gradient(circle at 88% 92%,#fbe6cf 0,transparent 45%),
+      var(--paper);
+    color:var(--ink);
+    position:fixed;inset:0;width:100%;
+    height:var(--fh,100dvh);
+    padding:6px 8px 10px;
+    overflow:hidden;overscroll-behavior:none;touch-action:manipulation;
+    display:flex;flex-direction:column;align-items:center;
+    -webkit-user-select:none;user-select:none;
+  }
+  button{font-family:inherit;touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;cursor:pointer}
+  .app{width:100%;max-width:1100px;height:100%;display:flex;flex-direction:column;gap:6px;min-height:0}
+  .hidden{display:none !important}
+
+  header{text-align:center;flex-shrink:0}
+  h1{font-size:clamp(18px,calc(1.2vw + 1.5vh),28px);letter-spacing:.08em;color:var(--de)}
+
+  /* ===== 分数の 字：分子＝だいだい、分母＝青みどり（絵の ます・線と 同じ 色） ===== */
+  .fr{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;line-height:1.02;margin:0 .1em;
+    font-variant-numeric:tabular-nums;font-weight:800}
+  .fr>span{padding:0 .14em}
+  .fr .nu{color:var(--nu)}
+  .fr .de{color:var(--de);border-top:.09em solid var(--ink)}
+  .cn{color:var(--nu)} .cd{color:var(--de)} .cg{color:var(--gold-d)}
+
+  /* ===== タブ ===== */
+  .tabs{display:flex;gap:5px;flex-shrink:0}
+  .tab{flex:1;border:2px solid var(--line);border-radius:14px;background:var(--card);
+    padding:6px 3px;color:#8a7a5f;font-weight:800;
+    font-size:clamp(11px,calc(.8vw + .65vh),16px);display:flex;flex-direction:column;align-items:center;gap:1px;
+    line-height:1.15;word-break:keep-all}
+  .tab .step{font-size:11px;font-weight:700;opacity:.7}
+  .tab.on{color:var(--ink);border-color:var(--gold);box-shadow:0 3px 0 #a5811a}
+  .tab.on .step{color:var(--gold);opacity:1}
+
+  /* ===== ならび：よこ長＝左に 絵、右に はたらく ところ／たて長＝上に 絵 ===== */
+  .main{flex:1;min-height:0;display:grid;gap:8px;
+    grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) auto;grid-template-areas:"stage" "work"}
+  @media (orientation:landscape){
+    .main{grid-template-columns:minmax(0,1.4fr) minmax(330px,1fr);grid-template-rows:minmax(0,1fr);grid-template-areas:"stage work"}
+    .work{justify-content:center}
+  }
+  .stage{grid-area:stage;min-height:0;border-radius:18px;border:3px solid #c9e3df;
+    background:linear-gradient(#fdfefd,#f1f7f5);position:relative;overflow:hidden;padding:6px;
+    contain:size}      /* 絵の 大きさで 行を おし広げない */
+  .stage > svg{width:100%;height:100%;display:block}
+  .stage.tapped{animation:tapped .25s}
+  @keyframes tapped{50%{background:#fff6cf}}
+  .work{grid-area:work;display:flex;flex-direction:column;gap:8px;min-height:0}
+  @media (orientation:portrait){ .work{min-height:clamp(300px,48vh,600px)} }
+
+  .prob{display:flex;align-items:center;gap:10px;background:var(--card);border:2px solid #d6c49a;border-radius:14px;padding:8px 14px;
+    font-weight:800;font-size:clamp(17px,calc(.8vw + 1.8vh),27px);word-break:keep-all;flex-wrap:wrap;justify-content:center;line-height:1.5}
+  .prob .no{color:#8a7a5f;font-size:.62em}
+  .say{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:8px 12px;
+    font-weight:800;color:#5d5040;line-height:1.55;text-align:center;word-break:keep-all;
+    min-height:calc(3.2em + 20px);display:flex;align-items:center;justify-content:center;
+    font-size:clamp(16px,calc(.8vw + 1.5vh),24px)}
+  .say.ok{color:var(--ok);border-color:var(--ok);background:#f2f9ee}
+  .say.try{color:#b3566f;border-color:#d9748f;background:#fbe3ea}
+
+  /* まとめ */
+  .sum{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:8px 10px;text-align:center;
+    font-weight:800;font-variant-numeric:tabular-nums;display:flex;flex-direction:column;align-items:center;gap:4px;
+    font-size:clamp(16px,calc(.8vw + 1.6vh),25px);line-height:1.45;word-break:keep-all}
+  .sum .f{font-size:1.1em}
+  .sum .small{font-size:.74em;color:#8a7a5f;line-height:1.4}
+  .sum .eq{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;line-height:1}
+  .sum .op{font-size:.62em;color:var(--gold-d)}   /* ＝ の 上に「×2」「÷2」 */
+
+  .choices{display:flex;gap:10px;justify-content:center}
+  .choice{flex:1;max-width:230px;border:3px solid var(--line);border-radius:16px;background:#fff;font-weight:800;color:var(--ink);
+    padding:7px 4px;font-size:clamp(17px,calc(.8vw + 2vh),28px);box-shadow:0 4px 0 #d8c79f;word-break:keep-all;line-height:1.25}
+  .choice:active{transform:translateY(2px)}
+  .choice:disabled{opacity:.35;box-shadow:none}
+  .choice.good{border-color:var(--ok);background:#eaf5e4}
+  .choice.good:disabled{opacity:1;box-shadow:none}
+  .choices.off{visibility:hidden}
+  .choices.need{outline:3px dashed var(--gold);outline-offset:4px;border-radius:18px}
+
+  /* ためす 数の ボタン */
+  .numsw{display:flex;flex-direction:column;gap:4px;align-items:center}
+  .numsw .lab{font-weight:800;color:#8a7a5f;font-size:clamp(14px,calc(.55vw + 1.2vh),19px)}
+  .nums{display:grid;gap:6px;width:100%}
+  .num{border:3px solid var(--line);border-radius:12px;background:#fff;font-weight:800;color:var(--ink);
+    height:clamp(38px,calc(1vw + 4.4vh),60px);font-size:clamp(18px,calc(.8vw + 2vh),28px);box-shadow:0 3px 0 #d8c79f;
+    font-variant-numeric:tabular-nums;display:flex;align-items:center;justify-content:center;line-height:1}
+  .num:active{transform:translateY(2px)}
+  .num.ok{border-color:var(--de);background:#e2f3f1;color:var(--de);box-shadow:0 3px 0 #1f6763}
+  .num.no{border-color:#e3cdb3;background:#f5efe6;color:#b8a78c;box-shadow:none}
+  .num.now{outline:3px solid var(--gold);outline-offset:1px}
+  .num:disabled{cursor:default}
+
+  /* ボタン：青＝同じ 問題の 中で 進む／金＝答え合わせ／みどり＝次の 問題／茶＝もどす */
+  .actions{display:flex;gap:8px;flex-shrink:0;margin-top:auto;min-height:54px}
+  .btn{flex:1;border:none;border-radius:14px;padding:13px 4px;font-weight:800;color:#fff;
+    font-size:clamp(15px,calc(.7vw + 1.6vh),23px);transition:transform .08s;word-break:keep-all}
+  .btn:active{transform:translateY(2px)}
+  .btn.play{background:var(--blue);box-shadow:0 4px 0 #214f7a}
+  .btn.show{background:var(--gold);box-shadow:0 4px 0 #a5811a}
+  .btn.next{background:var(--ok);box-shadow:0 4px 0 #446838}
+  .btn.sub{background:#a99a7c;box-shadow:0 4px 0 #85795f;flex:.6}
+  .btn:disabled{opacity:.45;box-shadow:none}
+
+  @media (max-height:640px){
+    header{display:none}
+    .tab{padding:4px 3px}
+    .tab .step{display:none}
+    .work{gap:5px}
+    .prob{padding:4px 10px;font-size:clamp(15px,calc(.7vw + 1.7vh),23px)}
+    .say{padding:5px 10px;min-height:calc(3.2em + 10px);font-size:16px}
+    .choice{padding:4px 2px}
+    .btn{padding:10px 4px}
+    .actions{min-height:46px}
+    .sum{padding:5px 8px;font-size:16px}
+    .nums{gap:4px}
+    .num{height:clamp(34px,6.4vh,48px)}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header><h1>分数（5年）</h1></header>
+
+  <div class="tabs">
+    <button class="tab on" data-m="s1"><span class="step">ステップ１</span>1を 分ける</button>
+    <button class="tab" data-m="s2"><span class="step">ステップ２</span>わり算と 分数</button>
+    <button class="tab" data-m="s3"><span class="step">ステップ３</span>小数と 分数</button>
+    <button class="tab" data-m="s4"><span class="step">ステップ４</span>同じ 大きさ</button>
+    <button class="tab" data-m="s5"><span class="step">ステップ５</span>そろえて 比べる</button>
+    <button class="tab" data-m="s6"><span class="step">ステップ６</span>たし算 ひき算</button>
+  </div>
+
+  <div class="main" id="main">
+    <div class="stage" id="stage"><svg id="pic"></svg></div>
+    <div class="work">
+      <div class="prob" id="prob"></div>
+      <div class="say" id="say"></div>
+      <div class="choices off" id="choices"></div>
+      <div class="numsw hidden" id="numsw"><div class="lab" id="numlab"></div><div class="nums" id="nums"></div></div>
+      <div class="sum hidden" id="sum"></div>
+      <div class="actions" id="actions"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =====================================================================
+   分数（算数5年 A(4) 分数の意味と表し方／A(5) 分数の加法，減法）
+   解説（算数編 p.243-247＝~/Downloads/算数.pdf の 249〜253ページ目）：
+   ・分数の意味「③ １を３等分したもの（単位分数である）の二つ分の大きさを表す」
+     「⑤ 整数の除法『２÷３』の結果（商）を表す」→ どの ステップも「1/□ の 何こ分」で 考える。
+     この アプリの 土台＝ステップ１（1m を 分けて、1こ分 の 何こ分）。
+     「1 を いくつかに 分けた 何こ分」が 分からない 子の ための ステップ。
+   ・ア(ｲ)「a÷b の商を a/b という分数で表すと，どのようなときでも除法の結果を一つの数で表す」
+     「６÷３＝２…のように商が整数…になる場合も分数で表すことができる」→ ステップ２
+   ・ア(ｱ)「0.13 は，0.01 の 13 個分，すなわち 1/100 の 13 個分」「２＝4/2＝6/3」
+     「1/4 は１÷４とみて，0.25」「1/3 は 0.333…となり，有限小数では表すことができない」→ ステップ３
+   ・ア(ｳ)「分子及び分母に同じ数を乗除してできる分数は，元の分数と同じ大きさ」
+     「約分の指導に際しても，数直線や図などを活用する」→ ステップ４
+   ・エ／イ(ｱ)「分母の異なる分数を共通な分母に揃えれば，単位分数の個数に着目して数の大小を判断」
+     「通分の指導に当たっては，形式的に操作するだけでなく，その意味をよく理解し」→ ステップ５
+   ・A(5)「形式的に通分をして計算するのではなく，通分することによって単位分数の個数に着目」
+     「あらかじめ結果の大きさについて見積もったり，得られた結果の妥当性を検討したり」→ ステップ６
+   【色】分子＝何こ分＝ぬった ます＝だいだい／分母＝いくつに 分けたか＝切った 線＝青みどり／
+        1こ分（単位分数）＝金の わく。分数の 字も この 色で 書く＝絵と 式が つながる
+   【答え】数を 打たせない。3択と、ためす 数の ボタンと、ますを ぬる ことだけ。見せてから 聞く
+   ===================================================================== */
+const $=id=>document.getElementById(id);
+let MODE='s1';
+
+function setFH(){
+  const v=(window.visualViewport&&window.visualViewport.height)||window.innerHeight;
+  document.documentElement.style.setProperty('--fh',v+'px');
+}
+setFH();
+addEventListener('resize',()=>{setFH();draw();});
+if(window.visualViewport) visualViewport.addEventListener('resize',setFH);
+addEventListener('orientationchange',()=>setTimeout(()=>{setFH();draw();},250));   /* 向きを かえた あと 高さが 古い ままに ならない ように */
+
+const CN='#c0661f',CNS='#f6c79a',CD='#2f8f8a',CI='#6f5d3d',GOLD='#c9a227',CG='#8f7417',
+      CB='#7a52b3',CBS='#d9ccf0',PINK='#d9748f',PINKS='#fbe3ea',GRAY='#f1ebdd';
+const easeIO=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+const lerp=(a,b,t)=>a+(b-a)*t;
+const gcd=(a,b)=>b?gcd(b,a%b):a;
+const lcm=(a,b)=>a/gcd(a,b)*b;
+const S={busy:false,idx:{s1:0,s2:0,s3:0,s4:0,s5:0,s6:0}};
+function anim(ms,f,done,ease=easeIO){
+  S.busy=true;const t0=performance.now();
+  const step=now=>{const t=Math.min(1,(now-t0)/ms);f(ease(t));
+    if(t<1)requestAnimationFrame(step);else{S.busy=false;done&&done();}};
+  requestAnimationFrame(step);
+}
+function later(ms,f){S.busy=true;setTimeout(()=>{S.busy=false;f();},ms);}
+const fr=(n,d)=>`<span class="fr"><span class="nu">${n}</span><span class="de">${d}</span></span>`;
+const frm=(n,d)=>`<span style="white-space:nowrap">${fr(n,d)} m</span>`;   /* 分数と m の 間で 行が 切れない ように */
+
+/* ===== 絵の わく：よこ 1000。たては 画面の 形に あわせる ===== */
+const W=1000;let H=560,FS=26;
+function frame(svg){
+  const r=$('stage').getBoundingClientRect();
+  const w=Math.max(r.width-12,100),h=Math.max(r.height-12,100);
+  H=Math.max(420,Math.min(900,W*h/w));
+  const sc=Math.min(w/W,h/H)||1;
+  FS=Math.max(26,19/sc,Math.min(40,H/22));
+  svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+}
+function tx(x,y,s,col,o={}){
+  const fs=FS*(o.k||1);
+  return `<text x="${x}" y="${y}" font-size="${fs}" fill="${col}" font-weight="800" text-anchor="${o.anc||'middle'}"
+    dominant-baseline="central" paint-order="stroke" stroke="${o.bg||'#fff'}" stroke-width="${fs*0.28}" stroke-linejoin="round">${s}</text>`;
+}
+const fracW=(n,d,k=1)=>Math.max(String(n).length,String(d).length)*FS*k*0.62+FS*k*0.5;
+function frac(x,y,n,d,k=1,o={}){
+  const F=FS*k,w=fracW(n,d,k);
+  return tx(x,y-F*0.62,n,o.nc||CN,{k,bg:o.bg})+tx(x,y+F*0.64,d,o.dc||CD,{k,bg:o.bg})+
+    `<line x1="${x-w/2}" y1="${y}" x2="${x+w/2}" y2="${y}" stroke="${o.bc||CI}" stroke-width="${Math.max(3,F*0.09)}" stroke-linecap="round"/>`;
+}
+const rect=(x,y,w,h,a)=>`<rect x="${x}" y="${y}" width="${Math.max(0,w)}" height="${Math.max(0,h)}" ${a}/>`;
+const vline=(x,y1,y2,col,w,a='')=>`<line x1="${x}" y1="${y1}" x2="${x}" y2="${y2}" stroke="${col}" stroke-width="${w}" ${a}/>`;
+/* 1 の テープ：n こに 切る。fill(i) で ますの 色 */
+function tape(x,y,w,h,n,fill,o={}){
+  let s='';const m=Math.max(1,n),pw=w/m;
+  for(let i=0;i<m;i++){
+    const g=o.g0!=null?`data-g="${o.g0+i}" style="cursor:pointer"`:'';
+    s+=rect(x+i*pw,y,pw,h,`fill="${n?fill(i):'#fff'}" ${g}`);
+  }
+  for(let i=1;i<n;i++) s+=vline(x+i*pw,y,y+h,o.lc||CD,o.lw||3.5,`opacity="${o.op??1}"`);
+  s+=rect(x,y,w,h,`fill="none" stroke="${CI}" stroke-width="4" rx="3"`);
+  return s;
+}
+function bracket(x,w,y,lab){
+  return `<path d="M${x+2} ${y+10}V${y}H${x+w-2}V${y+10}" fill="none" stroke="${CI}" stroke-width="3"/>`+tx(x+w/2,y-FS*0.6,lab,CI,{k:.85});
+}
+
+/* ===== 共通の 画面部品 ===== */
+function say(h,cls){const e=$('say');e.className='say'+(cls?' '+cls:'');e.innerHTML=`<span>${h}</span>`;}
+function prob(h){$('prob').innerHTML=h;}
+function head(list,txt){prob(`<span class="no">問題 ${S.idx[MODE]+1} / ${list.length}</span><span>${txt}</span>`);}
+let stageTap=null;
+function actions(list){
+  const a=$('actions');a.innerHTML='';stageTap=null;
+  list.forEach(([c,t,f,dis])=>{
+    const b=document.createElement('button');b.className='btn '+c;b.innerHTML=t;b.disabled=!!dis;
+    b.addEventListener('click',()=>{if(!S.busy)f(b);});a.appendChild(b);
+  });
+}
+/* 正かいは list[0]。shift で ならぶ 位置を ずらす。onPick には もとの 番号が 来る */
+function choices(list,onPick,shift=0){
+  const box=$('choices');box.innerHTML='';box.classList.toggle('off',!list);box.classList.toggle('need',!!list);
+  if(!list)return;
+  actions([['next','↑ 答えを えらぼう',()=>{},true]]);
+  const n=list.length;
+  for(let d=0;d<n;d++){
+    const o=(d+shift)%n;
+    const b=document.createElement('button');b.className='choice';b.innerHTML=list[o];b.dataset.o=o;
+    b.addEventListener('click',()=>{if(!S.busy)onPick(o,b);});box.appendChild(b);
+  }
+}
+function goodChoice(i=0){$('choices').classList.remove('need');[...$('choices').children].forEach(b=>{b.disabled=true;b.classList.toggle('good',+b.dataset.o===i);});actions([]);}
+function sum(h){const e=$('sum');e.classList.toggle('hidden',!h);e.innerHTML=h||'';}
+function hideAll(){sum('');choices(null);$('numsw').classList.add('hidden');actions([]);}
+/* 3つの 答えの こうほ（正かいが 先頭）。同じ 数が 2つ 出ないように する */
+function opts(ans,cands){
+  const r=[ans];for(const v of cands)if(v>0&&!r.includes(v)&&r.length<3)r.push(v);
+  let x=ans+1;while(r.length<3){if(!r.includes(x))r.push(x);x++;}return r;
+}
+$('stage').addEventListener('click',()=>{
+  if(S.busy||!stageTap)return;
+  $('stage').classList.remove('tapped');void $('stage').offsetWidth;$('stage').classList.add('tapped');
+  stageTap();
+});
+function blue(t,f){actions([['play',t,f]]);stageTap=f;}
+function nextBtn(list,load,last){
+  const i=S.idx[MODE];
+  if(i+1<list.length) actions([['next','次の 問題 →',()=>{S.idx[MODE]++;load();}]]);
+  else actions([['next',last?last[0]:'はじめの 問題へ →',()=>{if(last)last[1]();else{S.idx[MODE]=0;load();}}]]);
+}
+/* ためす 数の ボタン */
+function nums(list,lab,onTap){
+  $('numsw').classList.remove('hidden');$('numlab').innerHTML=lab;
+  const box=$('nums');box.innerHTML='';
+  box.style.gridTemplateColumns=`repeat(${Math.min(list.length,9)},1fr)`;
+  list.forEach(v=>{
+    const b=document.createElement('button');b.className='num';b.textContent=v;b.dataset.v=v;
+    b.addEventListener('click',()=>{if(!S.busy&&!b.disabled)onTap(v);});box.appendChild(b);
+  });
+}
+function numMark(v,cls){
+  document.querySelectorAll('#nums .num').forEach(b=>{
+    b.classList.remove('now');
+    if(+b.dataset.v===v){b.classList.remove('ok','no');b.classList.add(cls,'now');}
+  });
+}
+function numsReset(){document.querySelectorAll('#nums .num').forEach(b=>{b.disabled=false;b.classList.remove('now','ok','no');});}
+function numsOff(){document.querySelectorAll('#nums .num').forEach(b=>{b.disabled=true;b.classList.remove('now');});}
+
+function draw(){({s1:draw1,s2:draw2,s3:draw3,s4:draw4,s5:draw5,s6:draw6})[MODE]();}
+
+/* =====================================================================
+   ステップ１：1を 分ける（この アプリの 土台）
+   1m の テープを いつも 2本 出す（1m より 長い 分数も、1m の 中だけ 数える ことも 見える）。
+   「読む」＝ 色の ところを 分数に：① 1m を いくつに 分けた？ → 1こ分（金の わく）を 見せる → ② その 何こ分？
+   「つくる」＝ 分数を テープに：① 1m を いくつに 分ける？（数の ボタン）→ ② ますを ぬる → 金「こたえ」
+   まちがいは 数えた ものを 言い当てて 返す（色の ますの 数／2本 ぜんぶの 数／分けた 数）
+   ===================================================================== */
+const P1=[{t:'r',n:4,k:3},{t:'r',n:5,k:2},{t:'m',n:6,k:5},{t:'r',n:3,k:5},
+          {t:'m',n:4,k:7},{t:'r',n:8,k:8},{t:'r',n:6,k:1},{t:'m',n:5,k:8}];
+let G1={};
+function geo1(){
+  const gap=26,U=Math.min(430,(W-80-gap)/2),x0=(W-2*U-gap)/2,th=Math.min(120,H*0.17),ty=Math.max(FS*2.4,H*0.19);
+  return {gap,U,x0,th,ty};
+}
+const shaded1=g=>G1.p.t==='r'?g<G1.p.k:G1.paint.has(g);
+function draw1(){
+  const svg=$('pic');frame(svg);const {gap,U,x0,th,ty}=geo1();const p=G1.p,c=G1.cut;let s='';
+  for(let j=0;j<2;j++){
+    const x=x0+j*(U+gap);
+    s+=bracket(x,U,ty-14,'1m');
+    s+=tape(x,ty,U,th,c,i=>shaded1(j*c+i)?CNS:'#fff',{op:G1.ct,g0:G1.st==='paint'?j*c:null});
+  }
+  if(G1.shown&&c){
+    const pw=U/c;let cnt=0;
+    for(let g=0;g<2*c&&cnt<G1.shown;g++){
+      if(!shaded1(g))continue;cnt++;
+      const j=Math.floor(g/c),i=g%c;
+      s+=tx(x0+j*(U+gap)+i*pw+pw/2,ty+th/2,cnt,CN,{k:Math.min(1,pw/40),bg:CNS});
+    }
+  }
+  if(G1.dn) s+=tx(x0+U/2,ty+th+FS*0.8,`1m を ${p.n}つに 分けた`,CD,{k:.8});
+  if(G1.unit){
+    const pw=U/p.n,uy=ty+th+FS*1.7,uh=Math.min(th*0.62,FS*2.2),fw=fracW(1,p.n,.9);
+    s+=rect(x0,uy,pw,uh,`fill="${CNS}" stroke="${GOLD}" stroke-width="5" rx="3"`);
+    s+=frac(x0+pw+14+fw/2,uy+uh/2,1,p.n,.9)+tx(x0+pw+20+fw,uy+uh/2,'m　が 1こ分',CI,{k:.8,anc:'start'});
+  }
+  const ry=H-FS*1.75;
+  const nu=G1.kn?p.k:(G1.st==='paint'&&G1.paint.size?G1.paint.size:'?'),de=G1.dn?p.n:'?',fw=fracW(nu,de,1.2);
+  s+=tx(W/2-fw/2-14,ry,p.t==='r'?'色の ところ ＝':'ぬった ところ ＝',CI,{anc:'end',k:.9});
+  s+=frac(W/2,ry,nu,de,1.2)+tx(W/2+fw/2+12,ry,'m',CI,{anc:'start'});
+  svg.innerHTML=s;
+}
+$('pic').addEventListener('click',e=>{
+  const r=e.target.closest('[data-g]');if(!r||S.busy)return;
+  if(MODE==='s1'&&G1.st==='paint'){
+    e.stopPropagation();
+    const g=+r.dataset.g;G1.paint.has(g)?G1.paint.delete(g):G1.paint.add(g);draw1();
+  }
+});
+function s1start(){S.idx.s1=0;load1();}
+function load1(){
+  const p=P1[S.idx.s1];
+  G1={p,cut:p.t==='r'?p.n:0,ct:1,st:'',paint:new Set(),shown:0,dn:0,kn:0,unit:false};
+  hideAll();draw1();
+  if(p.t==='r'){head(P1,'色の ところは 何m？');ask1n();}
+  else{
+    head(P1,`${frm(p.k,p.n)} を つくろう`);
+    say(`分母の <span class="cd">${p.n}</span> は「1m を いくつに 分けるか」。<br>1m を いくつに 分ける？`);
+    nums([2,3,4,5,6,7,8,9,10],'1m を いくつに 分ける？',cut1);
+  }
+}
+function ask1n(){
+  const p=G1.p,L=opts(p.n,[p.k,2*p.n]);
+  say('まず、1m を いくつに 分けて いる？<br>1本の 中の ますを 数えよう');
+  choices(L.map(v=>v+'つ'),(o,b)=>{
+    const v=L[o];
+    if(o){b.disabled=true;
+      if(v===p.k) say('それは 色の ますの 数。1本の 中の ますを ぜんぶ 数えよう','try');
+      else if(v===2*p.n) say('それは 2本 ぜんぶの ますの 数。1m（1本）の 中だけ 数えよう','try');
+      else say('1本の 中の ますを 1つずつ 数えよう','try');
+      return;}
+    goodChoice(0);G1.dn=1;G1.unit=true;draw1();later(600,ask1k);
+  },S.idx.s1%3);
+}
+function ask1k(){
+  const p=G1.p,L=opts(p.k,[p.n,p.n-p.k,p.k+1]);
+  say(`1m を ${p.n}つに 分けた 1こ分は ${frm(1,p.n)}。<br>色の ところは ${frm(1,p.n)} の 何こ分？`);
+  choices(L.map(v=>v+'こ分'),(o,b)=>{
+    const v=L[o];
+    if(o){b.disabled=true;
+      if(v===p.n) say('それは 1m を 分けた 数。色の ますだけ 数えよう','try');
+      else if(v===p.n-p.k) say('それは 色の ない ますの 数だよ','try');
+      else say('色の ますを 1つずつ 数えよう。2本目も 見てね','try');
+      return;}
+    goodChoice(0);count1();
+  },(S.idx.s1+1)%3);
+}
+function cut1(v){
+  const p=G1.p;G1.cut=v;G1.paint.clear();
+  anim(450,t=>{G1.ct=t;draw1();},()=>{
+    if(v!==p.n){numMark(v,'no');say(`1m を ${v}つに 分けたね。<br>分母の ${p.n} は「1m を いくつに 分けるか」だよ。もう一回`,'try');return;}
+    numMark(v,'ok');$('numsw').classList.add('hidden');
+    G1.dn=1;G1.unit=true;G1.st='paint';draw1();
+    say(`1こ分が ${frm(1,p.n)}。分子の <span class="cn">${p.k}</span> は その 何こ分か。<br>ますを おして ${p.k}こ ぬろう`);
+    actions([['sub','けす',()=>{G1.paint.clear();draw1();}],['show','こたえ',check1]]);
+  });
+}
+function check1(){
+  const p=G1.p,c=G1.paint.size;
+  if(!c){say('まだ ますを ぬって いないよ');return;}
+  if(c!==p.k){say(`ぬったのは ${frm(1,p.n)} の ${c}こ分で ${frm(c,p.n)}。<br>${frm(p.k,p.n)} は ${p.k}こ分だよ`,'try');return;}
+  /* テープの 長さとして 読める ように、左の はしから つづけて ぬらせる（2本目に とびとびに ぬると 1m より 長く 見える） */
+  if([...G1.paint].some(g=>g>=p.k)){
+    say(p.k<=p.n?`${p.k}こ で ${frm(p.k,p.n)}。1m より 短いので、<br>1本目の 左の はしから つづけて ぬろう`:'1本目を ぜんぶ ぬってから、2本目に つづけよう','try');return;}
+  G1.st='done';actions([]);count1();
+}
+function count1(){
+  const k=G1.p.k;
+  anim(Math.min(2400,k*280),t=>{G1.shown=Math.max(1,Math.ceil(t*k));draw1();},()=>{G1.kn=1;G1.st='done';draw1();done1();},t=>t);
+}
+function done1(){
+  const {n,k}=G1.p;
+  if(k<n) say(`よくできました！ ${frm(1,n)} の ${k}こ分で ${frm(k,n)}`,'ok');
+  else if(k===n) say(`よくできました！ ${frm(n,n)} は 1m と 同じ 長さ`,'ok');
+  else say(`よくできました！ ${frm(k,n)}。1m より 長いね`,'ok');
+  sum(`<div class="f">${fr(1,n)} の ${k}こ分 ＝ ${fr(k,n)}${k===n?' ＝ 1':''}</div>`);
+  nextBtn(P1,load1,['まとめを 見る →',summary1]);
+}
+function summary1(){
+  hideAll();prob('<span>まとめ</span>');
+  say(`${fr('<span>分子</span>','<span>分母</span>')}<br>1 を 分母の 数に 分けた 1こ分の、分子の 数 こ分`,'ok');
+  sum(`<div><span class="cd">分母</span>　1 を いくつに 分けたか</div><div><span class="cn">分子</span>　その 1こ分の 何こ分か</div>`+
+      `<div class="small">1m より 長くても、1m の 中の ますを 数えて 分母に する</div>`);
+  actions([['sub','はじめから',s1start]]);
+}
+
+/* =====================================================================
+   ステップ２：わり算と 分数（商分数）
+   a m の リボンを b人で 分ける。どの 1m も b つに 分けて、あ さんは 1m ごとに 1こずつ もらう。
+   → あ さんの 分は 1/b m の a こ分 ＝ a/b m。集めて 1m の 目もりと くらべる。
+   さいごに 式を ならべて きまり（わられる数が 分子、わる数が 分母）
+   ===================================================================== */
+const P2=[{a:2,b:3},{a:3,b:4},{a:2,b:5},{a:4,b:3},{a:6,b:3}];
+const RQ2=[[7,9],[5,8],[9,4]];
+const PPL=['あ','い','う','え','お'];
+let G2={};
+function geo2(){
+  const a=G2.p.a,gap=18,U=Math.min(300,(W-80-(a-1)*gap)/a),x0=(W-(a*U+(a-1)*gap))/2,
+        th=Math.min(120,H*0.16),G=Math.max(FS*3,H*0.14),tot=FS*1.7+th+G+th*0.8+14+FS*1.5,
+        ty=Math.max(FS*2.3,(H-tot)/2+FS*1.7),ry=ty+th+G;
+  return {gap,U,x0,ty,th,ry};
+}
+function draw2(){
+  const svg=$('pic');frame(svg);
+  if(G2.rule){drawRule2(svg);return;}
+  const {a,b}=G2.p,{gap,U,x0,ty,th,ry}=geo2();let s='';const pw=U/b,rh=th*0.8;
+  for(let j=0;j<a;j++){
+    const x=x0+j*(U+gap);
+    s+=bracket(x,U,ty-14,'1m');
+    s+=tape(x,ty,U,th,G2.cut?b:0,i=>i===0?(G2.gather>0?'#fff':CNS):GRAY,{op:G2.ct});
+    if(G2.cut&&G2.ct>0.5){
+      for(let i=G2.gather>0?1:0;i<b;i++) s+=tx(x+i*pw+pw/2,ty+th/2,PPL[i],i?'#9a8a6c':CN,{k:Math.min(.85,pw/42),bg:i?GRAY:CNS});
+      if(G2.gather>0) s+=rect(x+2,ty+2,pw-4,th-4,`fill="none" stroke="${CN}" stroke-width="2" stroke-dasharray="6 5"`);
+    }
+  }
+  if(G2.gather>0){
+    const t=G2.gather;
+    /* 1m の 目もり（上の テープと 同じ 長さ） */
+    const ly=ry+rh+14,m=Math.max(1,Math.ceil(a/b));
+    s+=`<g opacity="${t}"><line x1="${x0}" y1="${ly}" x2="${x0+m*U}" y2="${ly}" stroke="${CI}" stroke-width="3"/>`;
+    for(let i=0;i<=m;i++){s+=vline(x0+i*U,ly-8,ly+8,CI,3);s+=tx(x0+i*U,ly+FS*0.9,i?i+'m':'0',CI,{k:.8});}
+    s+=tx(x0,ry-FS*0.75,'あ さんの 1人分',CN,{anc:'start',k:.85})+'</g>';
+    for(let j=0;j<a;j++){
+      const fx=x0+j*(U+gap),tx0=x0+j*pw;
+      s+=rect(lerp(fx,tx0,t),lerp(ty,ry,t),pw,lerp(th,rh,t),`fill="${CNS}" stroke="${CI}" stroke-width="3"`);
+    }
+    if(G2.done){
+      const ex=x0+a*pw,fw=fracW(a,b);
+      s+=rect(x0,ry,a*pw,rh,`fill="none" stroke="${GOLD}" stroke-width="5" rx="3"`);
+      let lx=ex+18+fw/2;if(lx+fw/2+40>W){lx=Math.max(x0+fw/2,W-40-fw/2);}
+      const ly2=lx===ex+18+fw/2?ry+rh/2:ry-FS*2;
+      s+=frac(lx,ly2,a,b)+tx(lx+fw/2+10,ly2,'m',CI,{anc:'start'});
+    }
+  }
+  svg.innerHTML=s;
+}
+function drawRule2(svg){
+  const rows=G2.rows,n=rows.length,rowH=Math.min(FS*2.7,(H-40)/Math.max(n,1)),k=rowH/(FS*2.7),cx=W/2;let s='';
+  const y0=(H-rowH*n)/2+rowH/2;
+  rows.forEach(([a,b],i)=>{
+    const y=y0+i*rowH;
+    s+=tx(cx-190*k,y,a,CN,{k:1.1*k})+tx(cx-120*k,y,'÷',CI,{k:1.1*k})+tx(cx-50*k,y,b,CD,{k:1.1*k})+tx(cx+20*k,y,'＝',CI,{k:1.1*k});
+    s+=frac(cx+100*k,y,a,b,k);
+    if(a%b===0) s+=tx(cx+160*k,y,`＝ ${a/b}`,CI,{k:1.1*k,anc:'start'});
+  });
+  svg.innerHTML=s;
+}
+function s2start(){S.idx.s2=0;load2();}
+function load2(){
+  const p=P2[S.idx.s2];G2={p,cut:0,ct:0,gather:0,done:false,rule:false};hideAll();draw2();
+  head(P2,`${p.a}m の リボンを ${p.b}人で 同じ 長さずつ 分ける。1人分は 何m？`);
+  say('式は どれ？');
+  choices([`${p.a} ÷ ${p.b}`,`${p.b} ÷ ${p.a}`,`${p.a} × ${p.b}`],(o,b)=>{
+    if(o===1){b.disabled=true;say(`÷ の 前は 分ける 長さ（${p.a}m）だよ`,'try');return;}
+    if(o===2){b.disabled=true;say('同じ 長さずつ 分けるので わり算だよ','try');return;}
+    goodChoice(0);sum(`<div class="f">${p.a} ÷ ${p.b} ＝ ？</div>`);
+    if(p.a%p.b) say(`${p.a} ÷ ${p.b} は わりきれない。<br>1m ずつ ${p.b}人で 分けて みよう`);
+    else say(`${p.a} ÷ ${p.b} ＝ ${p.a/p.b} だね。<br>分数でも 表せるかな？ 1m ずつ 分けて みよう`);
+    blue('1m ずつ 分ける ▶',cut2);
+  },S.idx.s2%3);
+}
+function cut2(){
+  const {a,b}=G2.p;actions([]);G2.cut=1;
+  anim(600,t=>{G2.ct=t;draw2();},()=>{
+    say(`どの 1m も ${b}つに 分けた。1こ分は ${frm(1,b)}。<br>あ さんの 分（だいだい）は ${frm(1,b)} の 何こ分？`);
+    const L=opts(a,[b,1,a+1]);
+    choices(L.map(v=>v+'こ分'),(o,btn)=>{
+      const v=L[o];
+      if(o){btn.disabled=true;
+        if(v===b) say(`${b} は 分ける 人数。だいだいの ますを 数えよう`,'try');
+        else if(v===1) say('だいだいは 1m ごとに 1こ。ぜんぶで いくつ？','try');
+        else say('だいだいの ますを 1つずつ 数えよう','try');
+        return;}
+      goodChoice(0);
+      say(`あ さんは 1m ごとに 1こずつ。ぜんぶで ${a}こ。<br>集めて 長さを 見よう`);
+      blue('あ さんの 分を 集める ▶',gather2);
+    },S.idx.s2%3);
+  });
+}
+function gather2(){
+  const {a,b}=G2.p;actions([]);
+  anim(1100,t=>{G2.gather=t;draw2();},()=>{
+    G2.done=true;draw2();
+    let m=`よくできました！ 1人分は ${frm(1,b)} の ${a}こ分で ${frm(a,b)}`;
+    if(a%b===0) m=`よくできました！ ${frm(a,b)} ＝ ${a/b}m。<br>わりきれる ときも 分数で 表せる`;
+    else if(a>b) m+='。<br>1m より 長いね';
+    say(m,'ok');
+    sum(`<div class="f">${a} ÷ ${b} ＝ ${fr(a,b)}${a%b?'':` ＝ ${a/b}`}</div>`);
+    nextBtn(P2,load2,['きまりを 見つける →',rule2]);
+  });
+}
+function rule2(){
+  G2={p:P2[0],rule:true,rows:P2.map(p=>[p.a,p.b]),q:0};hideAll();draw2();
+  prob('<span>式を ならべて きまりを 見つけよう</span>');
+  askRule2();
+}
+function askRule2(){
+  const [x,y]=RQ2[G2.q];
+  say(`左の 式を 見よう。<br>${x} ÷ ${y} を 分数で 表すと？`);
+  choices([fr(x,y),fr(y,x),fr(1,y)],(o,b)=>{
+    if(o===1){b.disabled=true;say('わられる数（÷ の 前）が 分子だよ。左の 式の 色を 見よう','try');return;}
+    if(o===2){b.disabled=true;say(`分子は わられる数の ${x} だよ`,'try');return;}
+    goodChoice(0);G2.rows.push([x,y]);draw2();
+    if(G2.q+1<RQ2.length){say(`すごい！ ${x} ÷ ${y} ＝ ${fr(x,y)}`,'ok');blue('もう 1問 ▶',()=>{G2.q++;askRule2();});return;}
+    say('すごい！ わられる数が 分子、わる数が 分母','ok');
+    sum(`<div class="f"><span class="cn">▲</span> ÷ <span class="cd">●</span> ＝ ${fr('▲','●')}</div><div class="small">わりきれない わり算の 答えも、分数なら 1つの 数で 表せる</div>`);
+    actions([['sub','はじめから',s2start]]);
+  },G2.q%3);
+}
+
+/* =====================================================================
+   ステップ３：小数と 分数（整数も）
+   数直線を 2本（上＝小数・整数、下＝分数）。同じ 点を 両方で 読む。
+   0.7 ＝ 0.1 の 7こ分 ＝ 1/10 の 7こ分 ＝ 7/10（「何こ分」で つなぐ）。
+   2 ＝ 1/3 の 6こ分。3/4 ＝ 3 ÷ 4 ＝ 0.75。1/3 は 小数で ぴったり 表せない
+   ===================================================================== */
+const P3=[{t:'d',v:7,max:1},{t:'d',v:3,max:1},{t:'d',v:13,max:2},{t:'i',i:2,d:3,max:2},{t:'f',n:3,d:4,max:1},{t:'f',n:1,d:3,max:1}];
+let G3={};
+function geo3(){const xL=150,xR=W-70,yB=Math.min(H*0.66,H-FS*4.1),yT=Math.min(H*0.36,yB-FS*3.2);return {xL,xR,len:xR-xL,yT,yB};}
+function val3(){const p=G3.p;return p.t==='d'?p.v/10:p.t==='i'?p.i:p.n/p.d;}
+const dec1=v=>(v/10).toFixed(1);
+function draw3(){
+  const svg=$('pic');frame(svg);const p=G3.p,{xL,xR,len,yT,yB}=geo3();let s='';
+  const X=v=>xL+v/p.max*len,v=val3(),px=X(v);
+  /* 上：小数（または 整数） */
+  s+=`<line x1="${xL}" y1="${yT}" x2="${xR}" y2="${yT}" stroke="${CI}" stroke-width="4"/>`;
+  s+=tx(xL-24,yT,p.t==='i'?'整数':'小数',CI,{k:.72,anc:'end'});
+  if(p.t==='i'){for(let i=0;i<=p.max;i++) s+=vline(X(i),yT-16,yT+16,CI,4);}
+  else for(let i=0;i<=p.max*10;i++){const h=i%10?(i%5?9:14):18;s+=vline(X(i/10),yT-h,yT+h,CI,i%10?2.5:4);}
+  for(let i=0;i<=p.max;i++) s+=tx(X(i),yT-FS*1.05,i,CI,{k:.9});
+  if(p.t!=='i') s+=tx(X(0.1),yT-FS*0.95,'0.1',CI,{k:.62});
+  /* 上の 数えた あと（0.1 の 何こ分） */
+  for(let i=0;i<G3.jt;i++){
+    const a=X(i/10),b=X((i+1)/10);
+    s+=`<path d="M${a} ${yT+4} Q${(a+b)/2} ${yT+34} ${b} ${yT+4}" fill="none" stroke="${CN}" stroke-width="2.5"/>`;
+    s+=tx((a+b)/2,yT+FS*1.25,i+1,CN,{k:Math.min(.62,(b-a)/40)});
+  }
+  /* 下：分数 */
+  if(G3.bot){
+    const d=p.t==='d'?10:p.d;
+    s+=`<line x1="${xL}" y1="${yB}" x2="${xR}" y2="${yB}" stroke="${CI}" stroke-width="4"/>`;
+    s+=tx(xL-24,yB,'分数',CI,{k:.72,anc:'end'});
+    for(let i=0;i<=p.max*d;i++){const big=i%d===0;s+=vline(X(i/d),yB-(big?18:12),yB+(big?18:12),big?CI:CD,big?4:3);}
+    for(let i=0;i<=p.max;i++) s+=vline(X(i),yT+20,yB-20,'#cbbd9b',2,'stroke-dasharray="4 6"');
+    s+=frac(X(1/d),yB+FS*1.7,1,d,.75);
+    for(let i=0;i<G3.jb;i++){
+      const a=X(i/d),b=X((i+1)/d);
+      s+=`<path d="M${a} ${yB-4} Q${(a+b)/2} ${yB-36} ${b} ${yB-4}" fill="none" stroke="${CN}" stroke-width="2.5"/>`;
+      s+=tx((a+b)/2,yB-FS*1.3,i+1,CN,{k:Math.min(.7,(b-a)/40)});
+    }
+  }
+  /* 点 */
+  s+=vline(px,yT,G3.bot?yB:yT+30,GOLD,3,'stroke-dasharray="6 5"');
+  s+=`<circle cx="${px}" cy="${yT}" r="11" fill="${GOLD}" stroke="#fff" stroke-width="3"/>`;
+  if(G3.bot) s+=`<circle cx="${px}" cy="${yB}" r="11" fill="${GOLD}" stroke="#fff" stroke-width="3"/>`;
+  if(G3.topLab) s+=tx(px,yT-FS*2.1,G3.topLab,CG,{k:1.05});
+  if(G3.botLab) s+=frac(px,yB+FS*2.6,G3.botLab[0],G3.botLab[1],1);
+  svg.innerHTML=s;
+}
+function s3start(){S.idx.s3=0;load3();}
+function load3(){
+  const p=P3[S.idx.s3];G3={p,bot:p.t==='f',jt:0,jb:0,topLab:'',botLab:null};hideAll();
+  if(p.t==='d'){
+    G3.topLab=dec1(p.v);draw3();
+    head(P3,`${dec1(p.v)} を 分数で 表そう`);
+    say(`${dec1(p.v)} は 0.1 の 何こ分？`);
+    const L=[p.v,p.v*10,p.v===7?3:p.v+2];
+    choices(L.map(v=>v+'こ分'),(o,b)=>{
+      if(o===1){b.disabled=true;say('0.1 が 10こで 1。上の 目もりを 数えよう','try');return;}
+      if(o){b.disabled=true;say('0 から 点まで、小さい 目もりを 数えよう','try');return;}
+      goodChoice(0);anim(Math.min(2200,p.v*170),t=>{G3.jt=Math.ceil(t*p.v);draw3();},()=>{
+        say(`0.1 は 1 を 10こに 分けた 1こ分。<br>分数で 書くと ${fr(1,10)}`);
+        blue('下に 分数の 目もりを かく ▶',()=>{actions([]);G3.bot=true;draw3();ask3d();});
+      },t=>t);
+    },S.idx.s3%3);
+  }else if(p.t==='i'){
+    draw3();
+    head(P3,`${p.i} を 分母が ${p.d} の 分数で 表そう`);
+    say(`分母が ${p.d} だから、1 を ${p.d}つに 分けた 目もりを かこう`);
+    blue(`1 を ${p.d}つに 分ける ▶`,()=>{actions([]);G3.bot=true;draw3();ask3i();});
+  }else{
+    draw3();
+    head(P3,`${fr(p.n,p.d)} を 小数で 表そう`);
+    const lo=Math.floor(p.n/p.d*10),L=[[lo,lo+1],[p.n,p.n+1],[lo+1,lo+2]];
+    say(`下の 点は ${fr(p.n,p.d)}。上の 数直線では どこと どこの 間？`);
+    choices(L.map(([a,b])=>`${dec1(a)} と ${dec1(b)}`),(o,b)=>{
+      if(o){b.disabled=true;say('金の 点から 上に 点線を たどろう','try');return;}
+      goodChoice(0);
+      say(`${fr(p.n,p.d)} は ${p.n} ÷ ${p.d} の 答え（ステップ２）。<br>計算して ぴったりの 小数を 出そう`);
+      blue(`${p.n} ÷ ${p.d} を 計算する ▶`,()=>{
+        actions([]);
+        if(p.n===3&&p.d===4){
+          G3.topLab='0.75';draw3();
+          say(`よくできました！ ${fr(3,4)} ＝ 0.75`,'ok');sum(`<div class="f">${fr(3,4)} ＝ 3 ÷ 4 ＝ 0.75</div>`);
+        }else{
+          G3.topLab='0.333…';draw3();
+          say(`1 ÷ 3 は いつまでも わりきれない。小数では ぴったり 表せない。<br>分数なら ${fr(1,3)} で ぴったり`,'ok');
+          sum(`<div class="f">${fr(1,3)} ＝ 1 ÷ 3 ＝ 0.3333…</div><div class="small">3 が いつまでも つづく</div>`);
+        }
+        nextBtn(P3,load3,['まとめを 見る →',summary3]);
+      });
+    },S.idx.s3%3);
+  }
+}
+function summary3(){
+  hideAll();prob('<span>まとめ</span>');
+  say('小数も 整数も 分数で 表せる。<br>分数は わり算で 小数に できる','ok');
+  sum(`<div>0.7 ＝ ${fr(1,10)} の 7こ分 ＝ ${fr(7,10)}</div><div>2 ＝ ${fr(1,3)} の 6こ分 ＝ ${fr(6,3)}</div>`+
+      `<div>${fr(3,4)} ＝ 3 ÷ 4 ＝ 0.75</div><div class="small">${fr(1,3)} の ように、小数では ぴったり 表せない 分数も ある</div>`);
+  actions([['sub','はじめから',s3start]]);
+}
+function ask3d(){
+  const p=G3.p;
+  say(`${dec1(p.v)} は ${fr(1,10)} の ${p.v}こ分。<br>分数で 表すと？`);
+  choices([fr(p.v,10),fr(p.v,100),fr(10,p.v)],(o,b)=>{
+    if(o===1){b.disabled=true;say('1 を 100に 分けては いないよ。目もりは 10こで 1','try');return;}
+    if(o===2){b.disabled=true;say('分母は 1 を いくつに 分けたか。分子が 何こ分','try');return;}
+    goodChoice(0);G3.botLab=[p.v,10];draw3();
+    say(`よくできました！ ${dec1(p.v)} ＝ ${fr(p.v,10)}${p.v>10?'<br>1 より 大きいので、分子が 分母より 大きい':''}`,'ok');
+    sum(`<div class="f">${dec1(p.v)} ＝ ${fr(1,10)} の ${p.v}こ分 ＝ ${fr(p.v,10)}</div>`);
+    nextBtn(P3,load3);
+  },(S.idx.s3+1)%3);
+}
+function ask3i(){
+  const p=G3.p,ans=p.i*p.d;
+  say(`${p.i} は ${fr(1,p.d)} の 何こ分？`);
+  choices([ans,p.i,p.d].map(v=>v+'こ分'),(o,b)=>{
+    if(o===1){b.disabled=true;say(`${p.i} は 1 が ${p.i}こ分。${fr(1,p.d)} の 目もりを 数えよう`,'try');return;}
+    if(o===2){b.disabled=true;say(`${p.d}こ分 で 1。${p.i} まで 数えよう`,'try');return;}
+    goodChoice(0);
+    anim(ans*220,t=>{G3.jb=Math.ceil(t*ans);draw3();},()=>{
+      G3.botLab=[ans,p.d];draw3();
+      say(`よくできました！ ${p.i} ＝ ${fr(ans,p.d)}`,'ok');
+      sum(`<div class="f">${p.i} ＝ ${fr(ans,p.d)}</div><div class="small">ほかにも ${p.i} ＝ ${fr(p.i,1)} ＝ ${fr(p.i*2,2)} ＝ ${fr(p.i*4,4)} … と 表せる</div>`);
+      nextBtn(P3,load3);
+    },t=>t);
+  },S.idx.s3%3);
+}
+
+/* =====================================================================
+   ステップ４：同じ 大きさの 分数（約分）
+   「切る」：1こ分を 2つ（3つ）に 切ると、分母も 分子も ×2 に なるが、色の 長さは 同じ（金の 点線）
+   「まとめる」：となりの ますを □こずつ まとめる。1 の 中で あまる／色と 色なしが まざる ときは まとめられない
+   （ピンクで 見せる）＝分母と 分子の 公約数（整数の 性質の つづき）。これ以上 まとめられないまで → 約分
+   ===================================================================== */
+const P4=[{t:'up',n:2,k:1,m:[2,3]},{t:'up',n:3,k:2,m:[2,4]},{t:'down',n:8,k:6},{t:'down',n:12,k:8},{t:'down',n:15,k:10}];
+let G4={};
+function geo4(){const x0=180,TW=W-230,slot=(H-24)/4,th=Math.min(92,slot*0.6);return {x0,TW,slot,th};}
+function draw4(){
+  const svg=$('pic');frame(svg);const {x0,TW,slot,th}=geo4();let s='';const R=G4.rows;
+  R.forEach((r,ri)=>{
+    const y=12+ri*slot+(slot-th)/2,last=ri===R.length-1;
+    s+=tape(x0,y,TW,th,r.n,i=>i<r.k?CNS:'#fff',{op:last?G4.ct:1});
+    s+=frac(90,y+th/2,r.kn?r.k:'?',r.dn?r.n:'?',Math.min(1,th/(FS*2.3)));
+    if(last&&G4.try){
+      const g=G4.try,pw=TW/r.n,full=Math.floor(r.n/g);
+      for(let q=0;q<full;q++){
+        const bad=r.n%g===0&&r.k%g!==0&&q===Math.floor(r.k/g);
+        s+=rect(x0+q*g*pw+3,y-6,g*pw-6,th+12,`fill="none" stroke="${bad?PINK:GOLD}" stroke-width="${bad?6:4}" rx="8" ${bad?'stroke-dasharray="10 6"':''}`);
+      }
+      if(r.n%g) s+=rect(x0+full*g*pw+3,y-5,(r.n-full*g)*pw-6,th+10,`fill="${PINKS}" fill-opacity=".35" stroke="${PINK}" stroke-width="6" stroke-dasharray="10 6" rx="8"`);
+    }
+  });
+  /* 色の はしを 金の 点線で つなぐ＝長さは 同じ */
+  if(R.length>1){
+    const r0=R[0],ex=x0+TW*r0.k/r0.n,yA=12+(slot-th)/2-10,yB=12+(R.length-1)*slot+(slot+th)/2+10;
+    s+=vline(ex,yA,yB,GOLD,4,'stroke-dasharray="9 6"');
+  }
+  svg.innerHTML=s;
+}
+function chain4(){
+  const R=G4.rows;let h=`${fr(R[0].k,R[0].n)}`;
+  for(let i=1;i<R.length;i++){const r=R[i];h+=` <span class="eq"><span class="op">${r.op||'&nbsp;'}</span>＝</span> ${r.kn?fr(r.k,r.n):fr('?','?')}`;}
+  return `<div class="f">${h}</div>`;
+}
+function s4start(){S.idx.s4=0;load4();}
+function load4(){
+  const p=P4[S.idx.s4];G4={p,rows:[{n:p.n,k:p.k,kn:1,dn:1}],mi:0,try:0,ct:1};hideAll();draw4();
+  if(p.t==='up'){
+    head(P4,`${fr(p.k,p.n)} と 同じ 大きさの 分数を 見つけよう`);
+    up4();
+  }else{
+    head(P4,`${fr(p.k,p.n)} を 分母の 小さい 分数に しよう`);
+    say('となりの ますを 何こずつ まとめる？<br>下の 数を おして ためそう');
+    nums([2,3,4,5,6],'何こずつ まとめる？',try4);
+  }
+}
+function up4(){
+  const p=G4.p,m=p.m[G4.mi];
+  say(`どの 1こ分も ${m}つに 切って みよう`);
+  blue(`1こ分を ${m}つに 切る ▶`,()=>{
+    actions([]);const r0=G4.rows[0];
+    G4.rows.push({n:r0.n*m,k:r0.k*m,kn:0,dn:0,op:''});G4.ct=0;
+    anim(600,t=>{G4.ct=t;draw4();},()=>ask4n(m));
+  });
+}
+function ask4n(m){
+  const r0=G4.rows[0],r=G4.rows[G4.rows.length-1];
+  say('1 を いくつに 分けた ことに なった？<br>下の テープの ますを 見よう');
+  choices(opts(r.n,[r0.n+m,r0.n]).map(v=>v+'つ'),(o,b)=>{
+    if(o){b.disabled=true;say(`1こが ${m}こに なったよ。${r0.n}こ が ${m}つずつ`,'try');return;}
+    goodChoice(0);r.dn=1;draw4();
+    say(`色の ところは ${fr(1,r.n)} の 何こ分？`);
+    later(500,()=>choices(opts(r.k,[r0.k+m,r0.k]).map(v=>v+'こ分'),(o,b)=>{
+      if(o){b.disabled=true;say(`色の ますを 数えよう。${r0.k}こ が ${m}つずつに なったよ`,'try');return;}
+      goodChoice(0);r.kn=1;r.op=`×${m}`;draw4();
+      say(`すごい！ 色の 長さは 同じ（金の 点線）。<br>${fr(r0.k,r0.n)} ＝ ${fr(r.k,r.n)}　分母も 分子も ×${m}`,'ok');
+      sum(chain4()+`<div class="small">分母と 分子に 同じ 数を かけても、大きさは 同じ</div>`);
+      if(G4.mi+1<G4.p.m.length) blue('ほかの 切り方も ためす ▶',()=>{G4.mi++;G4.rows.length=1;draw4();sum('');up4();});
+      else nextBtn(P4,load4);
+    },(S.idx.s4+1)%3));
+  },S.idx.s4%3);
+}
+function try4(g){
+  const r=G4.rows[G4.rows.length-1];G4.try=g;draw4();
+  if(r.n%g){numMark(g,'no');say(`${r.n}こを ${g}こずつ だと あまる（ピンク）。<br>1 が ぴったり 分けられないので、まとめられない`,'try');return;}
+  if(r.k%g){numMark(g,'no');say(`色の ${r.k}こを ${g}こずつ だと、色と 色なしが まざる（ピンク）。<br>まとめられない`,'try');return;}
+  numMark(g,'ok');numsOff();
+  later(700,()=>{
+    G4.try=0;G4.rows.push({n:r.n/g,k:r.k/g,kn:1,dn:1,op:`÷${g}`});G4.ct=0;
+    anim(500,t=>{G4.ct=t;draw4();},()=>{
+      const nr=G4.rows[G4.rows.length-1];sum(chain4());
+      if(gcd(nr.n,nr.k)>1){
+        say(`${fr(r.k,r.n)} ＝ ${fr(nr.k,nr.n)}。分母も 分子も ÷${g}<br>まだ まとめられるかな？`);numsReset();
+      }else{
+        numsOff();const r0=G4.rows[0];
+        say(`すごい！ もう まとめられない。<br>分母の 小さい 分数に する ことを 約分 と いう`,'ok');
+        sum(chain4()+`<div class="small">分母と 分子を 同じ 数で わっても、大きさは 同じ</div>`);
+        nextBtn(P4,load4,['まとめを 見る →',summary4]);
+      }
+    });
+  });
+}
+function summary4(){
+  hideAll();prob('<span>まとめ</span>');
+  G4={p:P4[0],rows:[{n:2,k:1,kn:1,dn:1},{n:4,k:2,kn:1,dn:1},{n:6,k:3,kn:1,dn:1},{n:8,k:4,kn:1,dn:1}],try:0,ct:1};draw4();
+  say('色の 長さが 同じ＝同じ 大きさの 分数','ok');
+  sum(`<div class="f">${fr(1,2)} ＝ ${fr(2,4)} ＝ ${fr(3,6)} ＝ ${fr(4,8)}</div><div class="small">分母と 分子に 同じ 数を かけても、同じ 数で わっても 大きさは 同じ</div>`);
+  actions([['sub','はじめから',s4start]]);
+}
+
+/* =====================================================================
+   ステップ５：そろえて 比べる（通分）
+   2/3 と 3/4 は 1こ分（1/3 と 1/4）の 大きさが ちがうので、2こ と 3こ では 比べられない。
+   → 分母を □ に そろえる。□ の 目もり（点線）が もとの 切れ目と 合わないと、色の はしが ますの とちゅう（ピンク）
+   → 合えば 1/□ の 何こ分 で 比べられる。分母の こうほには わざと 「たした 数」を まぜる
+   ===================================================================== */
+const P5=[{a:[2,3],b:[3,4],c:[7,12,6]},{a:[3,5],b:[1,2],c:[7,8,10]},{a:[5,6],b:[3,4],c:[10,24,12]},
+          {a:[3,8],b:[1,3],c:[11,12,24]},{a:[4,9],b:[1,2],c:[11,18,9]}];
+let G5={};
+function geo5(){const x0=180,TW=W-230,th=Math.min(92,H*0.15),yA=Math.max(FS*1.2,H*0.14),yB=yA+th+Math.max(FS*3.4,H*0.24);return {x0,TW,th,yA,yB};}
+function row5(s,[k,n],y,known){
+  const {x0,TW,th}=geo5(),v=G5.v,cells=v||n,sh=v?k*v/n:k;
+  s+=tape(x0,y,TW,th,cells,i=>i<sh?CNS:'#fff',{op:v?G5.ct:1,lw:v&&v>12?2.5:3.5});
+  s+=frac(90,y+th/2,k,n,Math.min(1,th/(FS*2.3)));
+  if(known) s+=frac(x0+TW*k/n,y+th+FS*1.65,k*v/n,v,.85,{bg:'#f7fbfa'});
+  return s;
+}
+function draw5(){
+  const svg=$('pic');frame(svg);const p=G5.p,{x0,TW,th,yA,yB}=geo5();let s='';
+  s=row5(s,p.a,yA,G5.ka);s=row5(s,p.b,yB,G5.kb);
+  if(G5.try){
+    const v=G5.try;
+    for(let j=1;j<v;j++){const x=x0+TW*j/v;s+=vline(x,yA-8,yA+th+8,PINK,2.5,'stroke-dasharray="5 5"')+vline(x,yB-8,yB+th+8,PINK,2.5,'stroke-dasharray="5 5"');}
+    [[p.a,yA],[p.b,yB]].forEach(([[k,n],y])=>{
+      if(v%n) s+=`<circle cx="${x0+TW*k/n}" cy="${y+th/2}" r="${th*0.42}" fill="none" stroke="${PINK}" stroke-width="5"/>`;
+    });
+  }
+  svg.innerHTML=s;
+}
+function s5start(){S.idx.s5=0;load5();}
+function load5(){
+  const p=P5[S.idx.s5];G5={p,v:0,try:0,ct:1,ka:0,kb:0};hideAll();draw5();
+  head(P5,`${fr(...p.a)} と ${fr(...p.b)}、大きいのは どっち？`);
+  say(`1こ分の 大きさが ${fr(1,p.a[1])} と ${fr(1,p.b[1])} で ちがう。<br>同じ 大きさの ますに そろえよう`);
+  nums(p.c,'分母を いくつに そろえる？',try5);
+}
+function try5(v){
+  const p=G5.p,na=p.a[1],nb=p.b[1];G5.try=v;draw5();
+  if(v%na||v%nb){
+    numMark(v,'no');
+    const bad=v%na?na:nb;
+    say(`${v}つに 分ける 線（点線）が、${bad}つに 分けた 線と 合わない。<br>色の はしが ますの とちゅう（ピンク）に なる`,'try');return;
+  }
+  numMark(v,'ok');numsOff();G5.try=0;G5.v=v;G5.ct=0;
+  anim(600,t=>{G5.ct=t;draw5();},()=>{$('numsw').classList.add('hidden');askK5('a');});
+}
+function askK5(w){
+  const p=G5.p,v=G5.v,[k,n]=p[w],ans=k*v/n;
+  say(`どちらも ${fr(1,v)} の ますに そろった！<br>${fr(k,n)} は ${fr(1,v)} の 何こ分？`);
+  choices(opts(ans,[k,ans+n,ans-1]).map(x=>x+'こ分'),(o,b)=>{
+    if(o){b.disabled=true;say(`${w==='a'?'上':'下'}の テープの 色の ますを 数えよう`,'try');return;}
+    goodChoice(0);G5[w==='a'?'ka':'kb']=1;draw5();
+    later(500,()=>w==='a'?askK5('b'):cmp5());
+  },(S.idx.s5+(w==='a'?0:1))%3);
+}
+function cmp5(){
+  const p=G5.p,v=G5.v,A=p.a[0]*v/p.a[1],B=p.b[0]*v/p.b[1],big=A>B?0:1;
+  say(`${fr(1,v)} が ${A}こ と ${B}こ。<br>大きいのは どっち？`);
+  const L=[fr(...(big?p.b:p.a)),fr(...(big?p.a:p.b))];
+  choices(L,(o,b)=>{
+    if(o){b.disabled=true;say(`${fr(1,v)} の こ数を くらべよう。${Math.max(A,B)}こ の ほうが 大きい`,'try');return;}
+    goodChoice(0);
+    const l=lcm(p.a[1],p.b[1]);
+    say(`すごい！ ${fr(...(big?p.b:p.a))} の ほうが 大きい。<br>分母を そろえる ことを 通分 と いう`,'ok');
+    sum(`<div class="f">${fr(...p.a)} ＝ ${fr(A,v)}　${fr(...p.b)} ＝ ${fr(B,v)}</div>`+
+        `<div class="f">${fr(A,v)} ${A>B?'＞':'＜'} ${fr(B,v)}</div>`+
+        (v!==l?`<div class="small">${l} でも そろうよ。分母が 小さい ほうが 数えやすい</div>`:''));
+    nextBtn(P5,load5,['まとめを 見る →',summary5]);
+  },S.idx.s5%2);
+}
+function summary5(){
+  hideAll();prob('<span>まとめ</span>');
+  say('分母が ちがう 分数は、分母を そろえて（通分して）<br>1こ分の 何こ分か で 比べる','ok');
+  sum(`<div class="small">そろえる 分母は、2つの 分母の どちらでも わりきれる 数（公倍数）。<br>いちばん 小さい 公倍数に すると 数えやすい</div>`);
+  actions([['sub','はじめから',s5start]]);
+}
+
+/* =====================================================================
+   ステップ６：たし算 ひき算（異分母）
+   テープを 数直線の 上に つなぐ（たし算）／とる ところを しま模様に（ひき算）。
+   ① 見積もり：答えは 1 より 大きい？ 小さい？（たし算）
+   ② 1こ分の 大きさが ちがうので そのままでは たせない → 分母を そろえる（ステップ５と 同じ）
+   ③ 答えは 1/□ の 何こ分？ → 約分 できれば 約分。1問目は「分母どうし・分子どうし」の 2/5 が おかしい ことも 見せる
+   ===================================================================== */
+const P6=[{op:'+',a:[1,2],b:[1,3],c:[5,6,8]},{op:'+',a:[1,4],b:[2,3],c:[7,8,12]},{op:'-',a:[3,4],b:[1,6],c:[10,12,24]},
+          {op:'+',a:[1,6],b:[1,3],c:[9,6,18]},{op:'-',a:[5,6],b:[1,2],c:[8,6,12]},{op:'+',a:[3,4],b:[1,2],c:[6,4,8]}];
+let G6={};
+const fv=([k,n])=>k/n;
+function geo6(){
+  const p=G6.p,M=p.op==='+'&&fv(p.a)+fv(p.b)>1?2:1,xL=70,len=W-140,U=len/M,
+        th=Math.min(120,H*0.17),ty=Math.max(FS*(p.op==='-'?3.9:2.4),H*0.46-th/2-FS*1.2),ly=ty+th+FS*0.9;
+  return {M,xL,len,U,ty,th,ly};
+}
+function cells6(s,from,to,n,fill,op){
+  /* from から 1/n の ますを ならべる（from が 1/n の 目もりに のって いなくても よい） */
+  const {xL,U,ty,th}=geo6(),cnt=Math.round((to-from)*n);
+  for(let i=0;i<cnt;i++) s+=rect(xL+U*(from+i/n),ty,U/n,th,`fill="${fill}"`);
+  for(let i=1;i<cnt;i++) s+=vline(xL+U*(from+i/n),ty,ty+th,CD,n>12?2.5:3.5,`opacity="${op}"`);
+  return s+rect(xL+U*from,ty,U*(to-from),th,`fill="none" stroke="${CI}" stroke-width="4"`);
+}
+function draw6(){
+  const svg=$('pic');frame(svg);const p=G6.p,{M,xL,len,U,ty,th,ly}=geo6(),v=G6.v;let s='';
+  s+=`<defs><pattern id="st6" width="14" height="14" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="14" height="14" fill="#fff"/><line x1="0" y1="0" x2="0" y2="14" stroke="${PINK}" stroke-width="5"/></pattern></defs>`;
+  const a=fv(p.a),b=fv(p.b),op=v?G6.ct:1;
+  if(p.op==='+'){
+    s=cells6(s,0,a,v||p.a[1],CNS,op);s=cells6(s,a,a+b,v||p.b[1],CBS,op);
+    s+=frac(xL+U*a/2,ty-FS*1.5,...p.a,.8);s+=frac(xL+U*(a+b/2),ty-FS*1.5,...p.b,.8,{nc:CB});
+  }else{
+    if(v){s=cells6(s,0,a-b,v,CNS,op);s=cells6(s,a-b,a,v,'url(#st6)',op);}
+    else{s=cells6(s,0,a,p.a[1],CNS,1);s=cells6(s,a-b,a,p.b[1],'url(#st6)',1);}
+    /* ひく 前の 数は 上の かっこ、とる 数は しま模様の すぐ 上 */
+    const by=ty-FS*1.9;
+    s+=`<path d="M${xL} ${by+10}V${by}H${xL+U*a}V${by+10}" fill="none" stroke="${CI}" stroke-width="3"/>`;
+    s+=frac(xL+U*a/2,ty-FS*2.75,...p.a,.75);
+    const xc=xL+U*(a-b/2),fw=fracW(p.b[0],p.b[1],.62);
+    s+=tx(xc-4,ty-FS*0.85,'とる',PINK,{k:.65,anc:'end'})+frac(xc+fw/2+6,ty-FS*0.85,...p.b,.62,{nc:PINK});
+  }
+  /* 数直線 */
+  s+=`<line x1="${xL}" y1="${ly}" x2="${xL+len}" y2="${ly}" stroke="${CI}" stroke-width="3"/>`;
+  for(let i=0;i<=M;i++){s+=vline(xL+U*i,ly-10,ly+10,CI,4);s+=tx(xL+U*i,ly+FS*0.95,i,CI,{k:.9});}
+  s+=vline(xL+U,ty-FS*0.3,ly,CI,3,'stroke-dasharray="7 6"');
+  if(G6.try){
+    const t=G6.try,end=p.op==='+'?a+b:a;
+    for(let j=1;j<t*end;j++) s+=vline(xL+U*j/t,ty-8,ty+th+8,PINK,2.5,'stroke-dasharray="5 5"');
+    const bs=p.op==='+'?[[a,p.a[1]],[a+b,p.b[1]]]:[[a-b,p.b[1]],[a,p.a[1]]];
+    bs.forEach(([x,n])=>{if(t%n) s+=`<circle cx="${xL+U*x}" cy="${ty+th/2}" r="${th*0.42}" fill="none" stroke="${PINK}" stroke-width="5"/>`;});
+  }
+  if(G6.R){
+    const res=p.op==='+'?a+b:a-b,by=ly+FS*2.1;
+    s+=`<path d="M${xL} ${by-10}V${by}H${xL+U*res}V${by-10}" fill="none" stroke="${GOLD}" stroke-width="4"/>`;
+    s+=tx(xL+U*res/2-fracW(G6.R,v,.85)/2-10,by+FS*1.35,'答え',CG,{k:.8,anc:'end'})+frac(xL+U*res/2,by+FS*1.35,G6.R,v,.85);
+  }
+  svg.innerHTML=s;
+}
+function s6start(){S.idx.s6=0;load6();}
+function load6(){
+  const p=P6[S.idx.s6];G6={p,v:0,try:0,ct:1,R:0};hideAll();draw6();
+  const opw=p.op==='+'?'＋':'−';
+  head(P6,`${fr(...p.a)} ${opw} ${fr(...p.b)} を 計算しよう`);
+  if(p.op==='+'){
+    const ans=fv(p.a)+fv(p.b)>1?1:0;
+    say('計算の 前に 見積もろう。<br>答えは 1 より 大きい？ 小さい？ 絵で 見よう');
+    const L=ans?['1 より 大きい','1 より 小さい']:['1 より 小さい','1 より 大きい'];
+    choices(L,(o,b)=>{
+      if(o){b.disabled=true;say('テープの 右の はしと、1 の 点線を くらべよう','try');return;}
+      goodChoice(0);later(500,common6);
+    },S.idx.s6%2);
+  }else common6();
+}
+function common6(){
+  const p=G6.p;
+  say(`${fr(1,p.a[1])} と ${fr(1,p.b[1])} は 1こ分の 大きさが ちがう。<br>このままでは ${p.op==='+'?'たせない':'ひけない'}。ますを そろえよう`);
+  nums(p.c,'分母を いくつに そろえる？',try6);
+}
+function try6(v){
+  const p=G6.p,na=p.a[1],nb=p.b[1];G6.try=v;draw6();
+  if(v%na||v%nb){
+    numMark(v,'no');const bad=v%na?na:nb;
+    say(`${v}つに 分ける 線（点線）が、${bad}つに 分けた 線と 合わない（ピンク）。<br>もう一回`,'try');return;
+  }
+  numMark(v,'ok');numsOff();G6.try=0;G6.v=v;G6.ct=0;
+  anim(600,t=>{G6.ct=t;draw6();},()=>{$('numsw').classList.add('hidden');ask6();});
+}
+function ask6(){
+  const p=G6.p,v=G6.v,A=p.a[0]*v/p.a[1],B=p.b[0]*v/p.b[1],R=p.op==='+'?A+B:A-B;
+  const naive=p.op==='+'?p.a[0]+p.b[0]:p.a[0]-p.b[0];
+  say(p.op==='+'?`${fr(1,v)} の ますに そろった！<br>2つ 合わせて ${fr(1,v)} の 何こ分？`:`${fr(1,v)} の ますに そろった！<br>のこりの だいだいは ${fr(1,v)} の 何こ分？`);
+  choices(opts(R,[naive,A,R+1]).map(x=>x+'こ分'),(o,b)=>{
+    const x=opts(R,[naive,A,R+1])[o];
+    if(o){b.disabled=true;
+      if(x===naive) say('もとの 分子を 計算したのでは ないよ。そろえた ますを 数えよう','try');
+      else if(x===A) say(p.op==='+'?'それは だいだいだけ。むらさきも 合わせよう':'それは とる 前の 数。しまもようの ますを とろう','try');
+      else say('ますを 1つずつ 数えよう','try');
+      return;}
+    goodChoice(0);G6.R=R;draw6();
+    const opw=p.op==='+'?'＋':'−';
+    let eq=`${fr(...p.a)} ${opw} ${fr(...p.b)} ＝ ${fr(A,v)} ${opw} ${fr(B,v)} ＝ ${fr(R,v)}`;
+    const g=gcd(R,v);
+    if(g>1){
+      say(`${fr(R,v)} は 約分 できるね。<br>分母の いちばん 小さい 分数に すると？`);
+      later(500,()=>choices([fr(R/g,v/g),fr(R/g,v),fr(R,v/g)],(o2,b2)=>{
+        if(o2){b2.disabled=true;say('分母と 分子を 同じ 数で わろう','try');return;}
+        goodChoice(0);eq+=` ＝ ${fr(R/g,v/g)}`;fin6(eq);
+      },S.idx.s6%3));
+    }else fin6(eq);
+  },S.idx.s6%3);
+}
+function fin6(eq){
+  const p=G6.p,v=G6.v,R=G6.R;
+  let m=`よくできました！ ${fr(1,v)} の ${R}こ分`;
+  if(R>v) m+='。1 より 大きいね';
+  say(m,'ok');
+  let h=`<div class="f">${eq}</div>`;
+  if(S.idx.s6===0) h+=`<div class="small">分母どうし・分子どうしを たすと ${fr(2,5)}。でも ${fr(2,5)} は ${fr(1,2)} より 小さい。おかしいね</div>`;
+  sum(h);
+  nextBtn(P6,load6,['まとめを 見る →',summary6]);
+}
+function summary6(){
+  hideAll();prob('<span>まとめ</span>');
+  say('分母が ちがう 分数は、通分して 1こ分を そろえると<br>たしたり ひいたり できる','ok');
+  sum(`<div class="f">${fr(1,2)} ＋ ${fr(1,3)} ＝ ${fr(3,6)} ＋ ${fr(2,6)} ＝ ${fr(5,6)}</div><div class="small">${fr(1,6)} が 3こ と 2こ で 5こ</div>`);
+  actions([['sub','はじめから',s6start]]);
+}
+
+/* ===== タブ ===== */
+const START={s1:s1start,s2:s2start,s3:s3start,s4:s4start,s5:s5start,s6:s6start};
+document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{
+  if(S.busy)return;
+  MODE=b.dataset.m;document.body.dataset.m=MODE;
+  document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x===b));
+  START[MODE]();
+}));
+
+document.body.dataset.m=MODE;
+s1start();
+</script>
+</body>
+</html>
