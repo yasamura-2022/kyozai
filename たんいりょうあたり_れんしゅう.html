@@ -1,0 +1,1030 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>単位量あたりの 大きさ</title>
+<style>
+  :root{
+    --ink:#2b2118;
+    --paper:#fdf6e3;
+    --card:#fffdf7;
+    --line:#e7d9b8;
+    --gold:#c9a227;
+    --gold-d:#8f7417;
+    --ok:#5a8a4c;
+    --flash:#ffe14d;
+    --blue:#2f6fa8;          /* 同じ 問題の 中で 進む */
+    --kazu:#2f8f8a;          /* わられる 量（人数・ねだん など）＝上の 数直線 */
+    --kazu-s:#e2f3f1;
+    --ata:#c0661f;           /* 「あたり」を つける 量（面積・長さ など）＝下の 数直線 */
+    --ata-s:#fbeedb;
+    --one:#7a52b3;           /* 1あたりの 大きさ（1つ分） */
+    --one-s:#efe7fa;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:'Hiragino Maru Gothic ProN','BIZ UDPGothic','Yu Gothic',sans-serif;
+    background:
+      radial-gradient(circle at 12% 8%,#e9e1f6 0,transparent 38%),
+      radial-gradient(circle at 88% 92%,#fbe6cf 0,transparent 45%),
+      var(--paper);
+    color:var(--ink);
+    position:fixed;inset:0;width:100%;
+    height:var(--fh,100dvh);
+    padding:6px 8px 10px;
+    overflow:hidden;overscroll-behavior:none;touch-action:manipulation;
+    display:flex;flex-direction:column;align-items:center;
+    -webkit-user-select:none;user-select:none;
+  }
+  button{font-family:inherit;touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;cursor:pointer}
+  .app{width:100%;max-width:1100px;height:100%;display:flex;flex-direction:column;gap:6px;min-height:0}
+  .hidden{display:none !important}
+
+  header{text-align:center;flex-shrink:0}
+  h1{font-size:clamp(18px,calc(1.2vw + 1.5vh),28px);letter-spacing:.08em;color:var(--one)}
+
+  /* ===== タブ ===== */
+  .tabs{display:flex;gap:6px;flex-shrink:0}
+  .tab{flex:1;border:2px solid var(--line);border-radius:14px;background:var(--card);
+    padding:7px 4px;color:#8a7a5f;font-weight:800;
+    font-size:clamp(12px,calc(.9vw + .7vh),17px);display:flex;flex-direction:column;align-items:center;gap:1px;
+    line-height:1.15;word-break:keep-all}
+  .tab .step{font-size:11px;font-weight:700;opacity:.7}
+  .tab.on{color:var(--ink);border-color:var(--gold);box-shadow:0 3px 0 #a5811a}
+  .tab.on .step{color:var(--gold);opacity:1}
+  ruby rt{font-size:.5em}
+
+  /* ===== ならび：よこ長＝左に 絵、右に はたらく ところ／たて長＝上に 絵 ===== */
+  .main{flex:1;min-height:0;display:grid;gap:8px;
+    grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) auto;grid-template-areas:"stage" "work"}
+  @media (orientation:landscape){
+    .main{grid-template-columns:minmax(0,1.4fr) minmax(330px,1fr);grid-template-rows:minmax(0,1fr);grid-template-areas:"stage work"}
+    .work{justify-content:center}
+  }
+  .stage{grid-area:stage;min-height:0;border-radius:18px;border:3px solid #d6c9ea;
+    background:linear-gradient(#fdfcff,#f3eff9);position:relative;overflow:hidden;padding:6px;
+    display:flex;flex-direction:column;gap:4px;
+    contain:size}      /* 絵の 大きさで 行を おし広げない */
+  .stage > svg{width:100%;flex:1;min-height:0;display:block}
+  .stage.tapped{animation:tapped .25s}
+  @keyframes tapped{50%{background:#fff6cf}}
+  .work{grid-area:work;display:flex;flex-direction:column;gap:8px;min-height:0}
+  /* たて長：下の らんの 高さを 先に とって おく（進むたびに 絵の 大きさが 変わらない ように） */
+  @media (orientation:portrait){ .work{min-height:clamp(300px,45vh,560px)} }
+
+  /* 絵の 上の 表（読ませる 表は canvas / svg に かかない） */
+  .tbl{border-collapse:separate;border-spacing:3px;width:100%;flex-shrink:0;font-weight:800;
+    font-size:clamp(14px,calc(.6vw + 1.5vh),24px);font-variant-numeric:tabular-nums;text-align:center}
+  .tbl th{background:#f6efdf;border-radius:8px;padding:3px 4px;color:#6f5d3d;font-size:.82em;line-height:1.2;word-break:keep-all}
+  .tbl td{background:#fff;border:2px solid var(--line);border-radius:8px;padding:2px 4px;line-height:1.25;white-space:nowrap}
+  .tbl td.nm{background:#f6efdf;border-color:transparent}
+  .tbl tr.cur td{border-color:var(--gold);background:#fff8dc}
+  .tbl tr.cur td.nm{background:var(--gold);color:#fff}
+  .tbl td.q{color:#b9a67c}
+  .tbl td.best{background:#eaf5e4;border-color:var(--ok)}
+  .tbl.big{font-size:clamp(16px,calc(.8vw + 1.8vh),30px);border-spacing:5px}
+  .tbl.big td,.tbl.big th{padding:6px 6px}
+
+  .prob{display:flex;align-items:center;gap:10px;background:var(--card);border:2px solid var(--line);border-radius:14px;padding:6px 12px;
+    font-weight:800;font-size:clamp(14px,calc(.6vw + 1.3vh),21px);word-break:keep-all;flex-wrap:wrap;justify-content:center;line-height:1.45}
+  .prob .no{color:#8a7a5f;font-size:.82em}
+  .say{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:8px 12px;
+    font-weight:800;color:#5d5040;line-height:1.5;text-align:center;word-break:keep-all;
+    min-height:calc(3em + 20px);display:flex;align-items:center;justify-content:center;
+    font-size:clamp(14px,calc(.7vw + 1.25vh),21px)}
+  .say.ok{color:var(--ok);border-color:var(--ok);background:#f2f9ee}
+  .say.try{color:#b3566f;border-color:#d9748f;background:#fbe3ea}
+  .k{color:var(--kazu)} .a{color:var(--ata)} .h{color:var(--one)}
+
+  /* しき */
+  .shiki{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:8px;
+    display:flex;flex-direction:column;align-items:center;gap:8px}
+  .eq{display:flex;align-items:flex-start;justify-content:center;gap:5px;font-weight:800;flex-wrap:nowrap;
+    font-size:clamp(20px,calc(1vw + 2.5vh),40px);line-height:1;font-variant-numeric:tabular-nums}
+  .eq .op{padding-top:.28em;white-space:nowrap}
+  .eq .lead{padding-top:.28em;white-space:nowrap;font-size:.72em;color:var(--one)}
+  .eq .u{padding-top:.42em;font-size:.6em;white-space:nowrap}
+  .slotw{display:flex;flex-direction:column;align-items:center;gap:4px}
+  .slot,.resbox{min-width:1.7em;height:1.5em;padding:0 .15em;border:3px dashed #cbb98f;border-radius:12px;background:#fff;
+    display:flex;align-items:center;justify-content:center;white-space:nowrap}
+  .slot.opslot{min-width:1.3em}
+  .slot.sel{border-color:var(--blue);background:#eaf1f8}
+  .slot.fill{border-style:solid;border-color:#9a8763}
+  .slot.gk{border:3px solid var(--kazu);background:var(--kazu-s);color:var(--kazu)}
+  .slot.ga{border:3px solid var(--ata);background:var(--ata-s);color:var(--ata)}
+  .slot.gh{border:3px solid var(--one);background:var(--one-s);color:var(--one)}
+  .slot.go{border:3px solid #9a8763;background:#fff}
+  .resbox{border-color:transparent;background:transparent;color:#8a7a5f}
+  .resbox.good{border:3px solid var(--gold);background:#fff4c9;color:var(--ink)}
+  .slot small,.resbox small{font-size:.5em}
+  .what{font-size:clamp(11px,calc(.5vw + .95vh),16px);color:#8a7a5f;white-space:nowrap;min-height:1.2em}
+  .what.k{color:var(--kazu)} .what.a{color:var(--ata)} .what.h{color:var(--one)}
+  .cards{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;min-height:clamp(48px,calc(2vw + 4.6vh),70px)}
+  .cardn{min-width:clamp(56px,calc(2.6vw + 5vh),84px);height:clamp(46px,calc(2vw + 4.4vh),68px);border-radius:14px;padding:0 8px;
+    background:#fff;border:3px solid #9a8763;box-shadow:0 4px 0 #85795f;
+    font-weight:800;font-size:clamp(20px,calc(1vw + 2.3vh),34px);color:var(--ink);touch-action:none;white-space:nowrap}
+  .cardn small{font-size:.55em}
+  .cardn.ck{border-color:var(--kazu);box-shadow:0 4px 0 #1f6763}
+  .cardn.ca{border-color:var(--ata);box-shadow:0 4px 0 #8c4a14}
+  .cardn.ch{border-color:var(--one);box-shadow:0 4px 0 #563a80}
+  .cardn.co{min-width:clamp(48px,calc(2vw + 4.4vh),68px);font-size:clamp(24px,calc(1.2vw + 2.8vh),40px)}
+  .cardn.sel{background:var(--flash);transform:translateY(-3px)}
+  .cardn.gone{visibility:hidden}
+  .ghost{position:fixed;z-index:50;pointer-events:none;opacity:.9;transform:translate(-50%,-50%) scale(1.08)}
+
+  /* まとめ */
+  .sum{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:8px 10px;text-align:center;
+    font-weight:800;font-variant-numeric:tabular-nums;display:flex;flex-direction:column;align-items:center;gap:4px;
+    font-size:clamp(15px,calc(.7vw + 1.5vh),24px);line-height:1.35;word-break:keep-all}
+  .sum .f{font-size:1.08em}
+  .sum .small{font-size:.8em;color:#8a7a5f}
+
+  .choices{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+  .choice{flex:1;max-width:210px;min-width:0;border:3px solid var(--line);border-radius:16px;background:#fff;font-weight:800;color:var(--ink);
+    padding:8px 4px;font-size:clamp(17px,calc(.8vw + 2vh),28px);box-shadow:0 4px 0 #d8c79f;word-break:keep-all;line-height:1.2}
+  .choices.four .choice{flex:1 1 40%;max-width:none;font-size:clamp(15px,calc(.7vw + 1.7vh),24px)}
+  .choice:active{transform:translateY(2px)}
+  .choice:disabled{opacity:.35;box-shadow:none}
+  .choice.good{border-color:var(--ok);background:#eaf5e4}
+  .choice.good:disabled,.choice.pick:disabled{opacity:1;box-shadow:none}
+  .choice.pick{border-color:var(--blue);background:#eaf1f8}
+  .choices.off{visibility:hidden}
+  .choices.need{outline:3px dashed var(--gold);outline-offset:4px;border-radius:18px}
+
+  /* ボタン：青＝同じ 問題の 中で 進む／金＝答え合わせ／みどり＝次の 問題／茶＝もどす */
+  .actions{display:flex;gap:8px;flex-shrink:0;margin-top:auto;min-height:54px}
+  .btn{flex:1;border:none;border-radius:14px;padding:13px 4px;font-weight:800;color:#fff;
+    font-size:clamp(15px,calc(.7vw + 1.6vh),23px);transition:transform .08s;word-break:keep-all}
+  .btn:active{transform:translateY(2px)}
+  .btn.play{background:var(--blue);box-shadow:0 4px 0 #214f7a}
+  .btn.show{background:var(--gold);box-shadow:0 4px 0 #a5811a}
+  .btn.next{background:var(--ok);box-shadow:0 4px 0 #446838}
+  .btn.sub{background:#a99a7c;box-shadow:0 4px 0 #85795f;flex:.6}
+  .btn:disabled{opacity:.45;box-shadow:none}
+
+  @media (max-height:640px){
+    header{display:none}
+    .tab{padding:5px 4px}
+    .tab .step{display:none}
+    .work{gap:5px}
+    .prob{padding:4px 10px}
+    .say{padding:5px 10px;min-height:calc(3em + 10px);font-size:14px}
+    .shiki{padding:5px;gap:5px}
+    .choice{padding:4px 2px}
+    .btn{padding:10px 4px}
+    .actions{min-height:46px}
+    .sum{padding:5px 8px}
+    .tbl{font-size:13px}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header><h1>単位量あたりの 大きさ</h1></header>
+
+  <div class="tabs">
+    <button class="tab on" data-m="s1"><span class="step">ステップ１</span>こみぐあいを 比べる</button>
+    <button class="tab" data-m="s2"><span class="step">ステップ２</span>1あたりで 比べる</button>
+    <button class="tab" data-m="s3"><span class="step">ステップ３</span><span>人口<ruby>密<rt>みつ</rt></ruby>度を 求める</span></button>
+    <button class="tab" data-m="s4"><span class="step">ステップ４</span>ねだんや 量を 比べる</button>
+    <button class="tab" data-m="s5"><span class="step">ステップ５</span>1あたりから 求める</button>
+  </div>
+
+  <div class="main" id="main">
+    <div class="stage" id="stage"><table class="tbl hidden" id="tbl"></table><svg id="pic"></svg></div>
+    <div class="work">
+      <div class="prob" id="prob"></div>
+      <div class="say" id="say"></div>
+      <div class="choices off" id="choices"></div>
+      <div class="shiki hidden" id="shiki">
+        <div class="eq" id="eq"></div>
+        <div class="cards" id="cards"></div>
+      </div>
+      <div class="sum hidden" id="sum"></div>
+      <div class="actions" id="actions"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =====================================================================
+   単位量あたりの 大きさ（算数5年 C(2) 異種の二つの量の割合）
+   解説（算数編 p.264-266＝~/Downloads/算数.pdf の 270〜272ページ目）：
+   ・「混み具合のように，一つの量，例えば人数だけに着目したのでは比べることができない」
+     「運動場の面積と…人数とを組み合わせなければ決められない」
+   ・「その一方を揃えてほかの量で比較する」「人数を２倍，３倍…にしたとき，面積も２倍，３倍…すれば
+     混み具合が変わらない」「10㎡の部屋に７人…15㎡の部屋に 10 人…30㎡に揃えると 21 人と 20 人」
+     → ステップ１（へやを ならべて そろえる）
+   ・「三つ以上のものを比べたり，いつでも比べられるようにしたりするためには，単位量当たりの大きさを
+     用いて比べるとより能率的」→ ステップ２（3つの へやを 1m²あたりで 比べる）
+   ・「人口の疎密を比べるのに１㎢当たりの人口，すなわち人口密度」→ ステップ３
+   ・「米の収量を比較するのに，１a当たりの収量で比べたり」→ ステップ４（ねだん・米・ガソリン）
+   ・「平均の考えなども前提にしている」→ へやの 人・町の 人は まんべんなく いると する（絵で そう かく）
+   【速さ・割合と 分けて ある】
+   ・速さ（同じ C(2)）は はやさ_れんしゅう.html。ここには 入れない
+   ・割合（C(3)＝同じ 種類の 2つの 量）の「もとにする量／くらべる量」「関係図」「倍」は 使わない。
+     ここは ちがう 種類の 2つの 量（人と m²、円と m）なので、図は 速さと 同じ「数直線 2本」
+     （啓林館の 図の 系統：異種の 2量＝数直線 2本）。ことばは「1m²あたり」「1mあたり」だけ
+   【色】上の 数直線（わられる 量）＝青みどり／下の 数直線（「あたり」を つける 量）＝だいだい／
+        1あたりの 大きさ＝むらさき。量の 名前では なく 役わりで 色を きめる
+   【答え】数の 答えは 入力させない。子どもが するのは 数と ×・÷ の カードを □ に 入れる ことだけ
+   ===================================================================== */
+const $=id=>document.getElementById(id);
+let MODE='s1';
+
+function setFH(){
+  const v=(window.visualViewport&&window.visualViewport.height)||window.innerHeight;
+  document.documentElement.style.setProperty('--fh',v+'px');
+}
+setFH();
+addEventListener('resize',()=>{setFH();draw();});
+if(window.visualViewport) visualViewport.addEventListener('resize',setFH);
+
+const CK='#2f8f8a',CA='#c0661f',CH='#7a52b3',CI='#6f5d3d',GOLD='#c9a227';
+const easeIO=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+const S={busy:false,idx:{s1:0,s2:0,s3:0,s4:0,s5:0}};
+function anim(ms,f,done,ease=easeIO){
+  S.busy=true;const t0=performance.now();
+  const step=now=>{const t=Math.min(1,(now-t0)/ms);f(ease(t));
+    if(t<1)requestAnimationFrame(step);else{S.busy=false;done&&done();}};
+  requestAnimationFrame(step);
+}
+const fmt=x=>{const r=Math.round(x*1000)/1000;return String(r);};
+const MITSU='人口<ruby>密<rt>みつ</rt></ruby>度';
+
+/* ===== 絵の わく：よこ 1000。たては 画面の 形に あわせる ===== */
+const W=1000;let H=560,FS=26;
+function frame(svg,need){
+  const r=svg.getBoundingClientRect();
+  const w=Math.max(r.width,100),h=Math.max(r.height,100);
+  H=Math.max(380,Math.min(1000,W*h/w));
+  const sc=Math.min(w/W,h/H)||1;
+  FS=Math.max(24,19/sc);            /* 画面で 19px 以上 */
+  if(need&&need(FS)>H) H=need(FS);
+  svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+}
+function tx(x,y,s,col,o={}){
+  const fs=FS*(o.k||1);
+  return `<text x="${x}" y="${y}" font-size="${fs}" fill="${col}" font-weight="800" text-anchor="${o.anc||'middle'}"
+    dominant-baseline="central" paint-order="stroke" stroke="${o.bg||'#fff'}" stroke-width="${fs*0.3}" stroke-linejoin="round">${s}</text>`;
+}
+const line=(x1,y1,x2,y2,a)=>`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" ${a}/>`;
+const emo=(x,y,e,size)=>`<text x="${x}" y="${y}" font-size="${size}" text-anchor="middle" dominant-baseline="central">${e}</text>`;
+
+/* ===== 共通の 画面部品 ===== */
+function say(h,cls){const e=$('say');e.className='say'+(cls?' '+cls:'');e.innerHTML=`<span>${h}</span>`;}
+function prob(h){$('prob').innerHTML=h;}
+function actions(list){
+  killGhost();
+  const a=$('actions');a.innerHTML='';
+  list.forEach(([c,t,f,dis])=>{
+    const b=document.createElement('button');b.className='btn '+c;b.innerHTML=t;b.disabled=!!dis;
+    b.addEventListener('click',()=>{if(!S.busy)f();});a.appendChild(b);
+  });
+}
+function choices(list,onPick,cls){
+  const box=$('choices');box.innerHTML='';box.className='choices'+(list?'':' off')+(cls?' '+cls:'');
+  if(!list)return;
+  list.forEach((c,i)=>{
+    const b=document.createElement('button');b.className='choice';b.innerHTML=c;
+    b.addEventListener('click',()=>{if(!S.busy)onPick(i,b);});box.appendChild(b);
+  });
+}
+function lockChoices(good){[...$('choices').children].forEach((b,j)=>{b.disabled=true;b.classList.toggle('good',j===good);});$('choices').classList.remove('need');}
+function hideAll(){
+  $('shiki').classList.add('hidden');$('sum').classList.add('hidden');choices(null);
+}
+function showSum(h){const e=$('sum');e.classList.remove('hidden');e.innerHTML=h;}
+function table(h,big){const t=$('tbl');t.classList.toggle('hidden',!h);t.classList.toggle('big',!!big);t.innerHTML=h||'';}
+function picShow(on){$('pic').style.display=on?'':'none';$('stage').style.justifyContent=on?'':'center';}
+/* 絵を おしても 青い ボタンと 同じに すすむ（宣伝しない にげ道） */
+let stageTap=null;
+$('stage').addEventListener('click',()=>{
+  if(S.busy||!stageTap)return;
+  $('stage').classList.remove('tapped');void $('stage').offsetWidth;$('stage').classList.add('tapped');
+  stageTap();
+});
+function draw(){
+  if(MODE==='s1') drawRooms();
+  else if(MODE==='s3') drawMap();
+  else drawLine();
+}
+
+/* =====================================================================
+   ステップ１：こみぐあいを 比べる
+   ① 数を 見て 予想（まるつけ しない）→ ② 比べる
+   1問＝面積が 同じ／2問＝人数が 同じ → そのまま 比べられる
+   3問＝解説の 例（10m² 7人 と 15m² 10人）→ へやを ならべて 30m² に そろえる
+   4問＝人数を 12人に そろえる
+   同じ へやを ならべるので、人の 場所も そのまま くりかえす（こみぐあいが 変わらない ことが 見える）
+   ===================================================================== */
+const P1=[
+  {type:'a',A:{w:5,h:2,p:8},B:{w:5,h:2,p:6}},
+  {type:'p',A:{w:5,h:2,p:6},B:{w:4,h:2,p:6}},
+  {type:'x',by:'a',A:{w:5,h:2,p:7,m:3},B:{w:5,h:3,p:10,m:2}},
+  {type:'x',by:'p',A:{w:3,h:2,p:4,m:3},B:{w:4,h:2,p:6,m:2}}
+];
+const R={phase:'pred',pred:null,hl:null,cp:0};
+const Q1=()=>P1[S.idx.s1];
+const dens=r=>r.p/(r.w*r.h);
+const area=r=>r.w*r.h;
+function roomTxt(r){return `<b class="a">${area(r)}m²</b> に <b class="k">${r.p}人</b>`;}
+function s1start(){
+  const q=Q1();
+  Object.assign(R,{phase:'pred',pred:null,hl:null,cp:0});
+  hideAll();table(null);picShow(true);stageTap=null;
+  prob(`<span class="no">問題 ${S.idx.s1+1} / ${P1.length}</span><span>どちらの へやが こんで いる？</span>`);
+  say(`Aの へやは ${roomTxt(q.A)}、Bの へやは ${roomTxt(q.B)}。<br>どちらが こんで いるかな？ 予想しよう`);
+  choices(['Aの へや','Bの へや'],i=>{
+    if(R.phase!=='pred')return;
+    R.pred=i;R.phase='ready';
+    [...$('choices').children].forEach((b,j)=>{b.classList.toggle('pick',j===i);b.disabled=j!==i;});
+    say(`予想は ${'AB'[i]}の へや。<br>比べて みよう`);
+    actions([['play','比べる ▶',cmp1]]);stageTap=cmp1;
+  });
+  actions([['play','比べる ▶',()=>{},true]]);
+  draw();
+}
+function crowd(q){return dens(q.A)>dens(q.B)?0:1;}
+function cmp1(){
+  if(R.phase!=='ready')return;
+  const q=Q1(),c=crowd(q),F=[q.A,q.B][c],L=[q.A,q.B][1-c],nm='AB'[c];
+  const pr=R.pred===c?'予想 どおり！':'予想と ちがったね。';
+  stageTap=null;choices(null);
+  if(q.type==='a'){
+    R.hl='a';R.phase='end';draw();
+    say(`どちらも <b class="a">${area(q.A)}m²</b>。人数は ${nm}が <b class="k">${F.p}人</b>、もう一方は <b class="k">${L.p}人</b>。<br>${pr} <b>${nm}の へや</b>の ほうが こんで いる`,'ok');
+    showSum(`<span class="f">面積が 同じ → <span class="k">人数</span>が 多い ほうが こんで いる</span>`);
+    actions([['sub','もう一度',s1start],['next','次の 問題 →',next1]]);
+  }else if(q.type==='p'){
+    R.hl='p';R.phase='end';draw();
+    say(`どちらも <b class="k">${q.A.p}人</b>。面積は ${nm}が <b class="a">${area(F)}m²</b>、もう一方は <b class="a">${area(L)}m²</b>。<br>${pr} せまい <b>${nm}の へや</b>の ほうが こんで いる`,'ok');
+    showSum(`<span class="f">人数が 同じ → <span class="a">面積</span>が せまい ほうが こんで いる</span>`);
+    actions([['sub','もう一度',s1start],['next','次の 問題 →',next1]]);
+  }else{
+    R.phase='both';draw();
+    const more=q.A.p>q.B.p?'A':'B';
+    say(`人数は ${more}の ほうが 多い。でも 面積も ${area(q.A)>area(q.B)?'A':'B'}の ほうが 広い…<br><b class="k">人数</b>も <b class="a">面積</b>も ちがうと、このままでは 比べにくいね`);
+    const lab=q.by==='a'?`面積を ${area(q.A)*q.A.m}m² に そろえる ▶`:`人数を ${q.A.p*q.A.m}人に そろえる ▶`;
+    actions([['play',lab,align1]]);stageTap=align1;
+  }
+}
+/* 同じ へやを ならべて そろえる */
+function align1(){
+  if(R.phase!=='both')return;
+  const q=Q1();R.phase='align';stageTap=null;
+  actions([['play','へやを ならべて いるよ…',()=>{},true]]);
+  anim(1800,t=>{R.cp=t;draw();},()=>{
+    R.phase='ask';R.hl=q.by;draw();
+    const A=q.A,B=q.B;
+    const aTxt=`<b class="a">${area(A)*A.m}m²</b> に <b class="k">${A.p*A.m}人</b>`,bTxt=`<b class="a">${area(B)*B.m}m²</b> に <b class="k">${B.p*B.m}人</b>`;
+    say(`同じ へやを ならべても、こみぐあいは 変わらないね。<br>A は ${aTxt}、B は ${bTxt}。こんで いるのは？`);
+    choices(['Aの へや','Bの へや'],pick1);
+    actions([['play',q.by==='a'?'面積を そろえる ▶':'人数を そろえる ▶',()=>{},true]]);
+  },t=>t);
+}
+function pick1(i,btn){
+  const q=Q1(),c=crowd(q),F=[q.A,q.B][c],nm='AB'[c];
+  if(i!==c){
+    btn.disabled=true;
+    say(q.by==='a'?`面積は どちらも 同じに なったよ。<br>人数が 多い ほうが こんで いるね`:`人数は どちらも 同じに なったよ。<br>面積が せまい ほうが こんで いるね`,'try');return;
+  }
+  lockChoices(c);
+  const pr=R.pred===c?'予想 どおり！':'予想と ちがったね。';
+  R.phase='end';
+  const few=q.A.p<q.B.p?'A':'B';
+  say(`よくできました！ ${pr}<br><b>${nm}の へや</b>の ほうが こんで いる`+(nm===few?`（人数は ${nm}の ほうが 少なかったのに！）`:''),'ok');
+  const last=S.idx.s1===P1.length-1;
+  showSum((q.by==='a'?`<span class="f"><span class="a">面積</span>を そろえる → <span class="k">人数</span>が 多い ほうが こむ</span>`
+                      :`<span class="f"><span class="k">人数</span>を そろえる → <span class="a">面積</span>が せまい ほうが こむ</span>`)
+    +`<span class="small">どちらかの 量を そろえると 比べられる</span>`
+    +(last?`<span class="small">そろえる 数を さがすのは たいへん…　ステップ２では <b class="h">1m²</b> に そろえるよ</span>`:''));
+  actions([['sub','もう一度',s1start],['next','次の 問題 →',next1]]);
+}
+function next1(){S.idx.s1=(S.idx.s1+1)%P1.length;s1start();}
+
+/* へやの 中の 人の 場所：まんべんなく ならべる（平均の 考え）。少しだけ ずらして 人らしく */
+function kidPts(p,w,h){
+  const nc=Math.max(1,Math.round(Math.sqrt(p*w/h))),nr=Math.ceil(p/nc),pts=[];
+  for(let r=0;r<nr;r++){
+    const cnt=r<nr-1?nc:p-nc*(nr-1);
+    for(let c=0;c<cnt;c++){
+      const j=(r*7+c*13)%5/5-.4;
+      pts.push([(c+.5)/cnt+j*0.12/cnt,(r+.5)/nr+(((c+r)%2)?.06:-.06)/nr]);
+    }
+  }
+  return pts;
+}
+function drawRooms(){
+  const svg=$('pic');frame(svg,f=>f*12);
+  const q=Q1(),rs=[q.A,q.B],cx=[W*0.25,W*0.75],colW=W*0.42;
+  const mult=r=>q.type==='x'?r.m:1;
+  const maxC=Math.max(q.A.w,q.B.w),maxR=Math.max(q.A.h*mult(q.A),q.B.h*mult(q.B));
+  const top=FS*3.9,avail=H-top-FS*1.2;
+  const cs=Math.min(colW/maxC,avail/maxR,FS*4.2);
+  const y0=top+Math.max(0,(avail-maxR*cs)/2)*0.5;   /* あいた ところは 上下に 分ける */
+  let g='';
+  rs.forEach((r,k)=>{
+    const m=mult(r),gx=cx[k]-r.w*cs/2,rw=r.w*cs,rh=r.h*cs;
+    const shown=q.type==='x'?1+R.cp*(m-1):1;
+    const full=q.type==='x'&&R.cp>=1;
+    /* 名前と 数 */
+    g+=tx(cx[k],y0-FS*2.9,`${'AB'[k]}の へや`,CI,{k:1.05});
+    const aV=full?area(r)*m:area(r),pV=full?r.p*m:r.p;
+    const hlA=R.hl==='a',hlP=R.hl==='p';
+    const ya=y0-FS*1.45;
+    if(hlA) g+=`<rect x="${cx[k]-FS*3.6}" y="${ya-FS*0.72}" width="${FS*3.3}" height="${FS*1.44}" rx="10" fill="#fff4c9" stroke="${GOLD}" stroke-width="3"/>`;
+    if(hlP) g+=`<rect x="${cx[k]+FS*0.3}" y="${ya-FS*0.72}" width="${FS*3.3}" height="${FS*1.44}" rx="10" fill="#fff4c9" stroke="${GOLD}" stroke-width="3"/>`;
+    g+=tx(cx[k]-FS*1.95,ya,`${aV}m²`,CA,{k:1});
+    g+=tx(cx[k]+FS*1.95,ya,`${pV}人`,CK,{k:1});
+    /* へや（くりかえし） */
+    for(let c=0;c<m;c++){
+      const al=c===0?1:Math.max(0,Math.min(1,shown-c));
+      if(al<=0)continue;
+      const ry=y0+c*rh-(1-al)*cs*0.4;
+      g+=`<g opacity="${al}">`;
+      g+=`<rect x="${gx}" y="${ry}" width="${rw}" height="${rh}" fill="#fffaf0" stroke="${CI}" stroke-width="3"/>`;
+      for(let i=1;i<r.w;i++) g+=line(gx+i*cs,ry,gx+i*cs,ry+rh,'stroke="#ecc9a3" stroke-width="1.5"');
+      for(let j=1;j<r.h;j++) g+=line(gx,ry+j*cs,gx+rw,ry+j*cs,'stroke="#ecc9a3" stroke-width="1.5"');
+      const es=Math.min(cs*0.62,rw/Math.sqrt(r.p)*0.7);
+      kidPts(r.p,r.w,r.h).forEach(([u,v])=>{g+=emo(gx+u*rw,ry+v*rh,'🧒',es);});
+      g+=`</g>`;
+      if(c>0&&al>0.5) g+=line(gx-8,ry,gx+rw+8,ry,`stroke="${CH}" stroke-width="4" stroke-dasharray="10 7"`);
+    }
+    if(full) g+=tx(gx+rw/2,y0+rh*m+FS*0.7,`同じ へやが ${m}つ分`,CH,{k:.8});
+    else if(q.type!=='x'||R.cp===0) g+=tx(gx+rw/2,y0+rh+FS*0.62,'1ます＝1m²',CA,{k:.75});
+  });
+  svg.innerHTML=g;
+}
+
+/* =====================================================================
+   ステップ２〜５：数直線 2本
+   上＝わられる 量（K：人数・ねだん など）  下＝「あたり」を つける 量（N：面積・長さ など）
+   kind u＝1あたりを 求める（K ÷ N）
+        t＝全体を 求める（1あたり × N）
+        n＝いくつ分を 求める（K ÷ 1あたり）
+   下を 1ずつ 区切ると 上も 同じ 大きさずつ 区切れる。その 1つ分（むらさき）が 1あたりの 大きさ
+   ===================================================================== */
+/* ステップ２：3つの へや。1問目＝1m²あたりの 人数、2問目＝同じ へやを 1人あたりの 面積で */
+const ROOMS=[{n:'A',a:10,p:16},{n:'B',a:8,p:10},{n:'C',a:6,p:12}];
+const P2=[
+  {goal:'p',rows:ROOMS},
+  {goal:'a',rows:ROOMS}
+];
+/* ステップ３：人口密度（町は 作った もの。本当の 数では ない）。5問目は 4つを 比べる */
+const P3=[
+  {n:'A市',pop:42000,km:60,txt:'A市の 人口は <b class="k">42000人</b>、面積は <b class="a">60km²</b> です。'},
+  {n:'B町',pop:9000,km:25,txt:'面積 <b class="a">25km²</b> の B町に、<b class="k">9000人</b> が 住んで います。'},
+  {n:'C村',pop:2400,km:80,txt:'C村の 面積は <b class="a">80km²</b>、人口は <b class="k">2400人</b> です。'},
+  {n:'D市',pop:96000,km:150,txt:'<b class="k">96000人</b> が 住む D市。面積は <b class="a">150km²</b> です。'},
+  {cmp:true}
+];
+/* ステップ４：2つを 比べる。Aは カードで 式を つくる、Bは 同じように 画面が 計算する。数の じゅんは まぜる */
+const P4=[
+  {e:'🎀',kn:'ねだん',ku:'円',nn:'長さ',nu:'m',un:'1mあたりの ねだん',item:'リボン',better:'min',ask:'安いのは どっち？',
+   rows:[{n:'A',K:240,N:3},{n:'B',K:350,N:5}],
+   txt:'Aの リボンは <b class="a">3m</b> で <b class="k">240円</b>、Bの リボンは <b class="k">350円</b> で <b class="a">5m</b>。'},
+  {e:'🌾',kn:'米',ku:'kg',nn:'面積',nu:'a',un:'1aあたりに とれた 米',item:'田',better:'max',hi:'多い',ask:'よく とれたのは どっち？',
+   rows:[{n:'A',K:480,N:8},{n:'B',K:660,N:12}],
+   txt:'Aの 田は <b class="a">8a</b> から <b class="k">480kg</b>、Bの 田は <b class="a">12a</b> から <b class="k">660kg</b> の 米が とれました。'},
+  {e:'🚗',kn:'道のり',ku:'km',nn:'ガソリン',nu:'L',un:'1Lあたりに 走る 道のり',item:'車',better:'max',hi:'長い',ask:'ガソリンが 少なくて すむのは？',
+   rows:[{n:'A',K:450,N:30},{n:'B',K:560,N:40}],
+   txt:'Aの 車は ガソリン <b class="a">30L</b> で <b class="k">450km</b>、Bの 車は <b class="k">560km</b> を <b class="a">40L</b> で 走りました。'},
+  {e:'🧃',kn:'ねだん',ku:'円',nn:'かさ',nu:'L',un:'1Lあたりの ねだん',item:'ジュース',better:'min',ask:'安いのは どっち？',
+   rows:[{n:'A',K:300,N:2},{n:'B',K:420,N:3}],
+   txt:'Aの ジュースは <b class="k">300円</b> で <b class="a">2L</b>、Bの ジュースは <b class="a">3L</b> で <b class="k">420円</b>。'}
+];
+/* ステップ５：1あたりの 大きさから 全体・いくつ分を 求める。× と ÷ を まぜる */
+const P5=[
+  {kind:'t',e:'🎀',U:80,N:6,ku:'円',nu:'m',kn:'ねだん',nn:'長さ',txt:'<b class="h">1mあたり 80円</b> の リボンを <b class="a">6m</b> 買うと、何円？'},
+  {kind:'n',e:'🎀',U:80,K:480,ku:'円',nu:'m',kn:'ねだん',nn:'長さ',txt:'<b class="h">1mあたり 80円</b> の リボンを <b class="k">480円</b> 分 買うと、何m？'},
+  {kind:'t',e:'🥔',U:3,N:12,ku:'kg',nu:'m²',kn:'重さ',nn:'面積',txt:'<b class="a">12m²</b> の 畑から、<b class="h">1m²あたり 3kg</b> の じゃがいもが とれました。全部で 何kg？'},
+  {kind:'n',e:'🚗',U:15,K:180,ku:'km',nu:'L',kn:'道のり',nn:'ガソリン',txt:'ガソリン <b class="h">1Lあたり 15km</b> 走る 車で、<b class="k">180km</b> 走ります。ガソリンは 何L いる？'},
+  {kind:'t',e:'🌾',U:60,N:7,ku:'kg',nu:'a',kn:'米',nn:'面積',txt:'<b class="a">7a</b> の 田から、<b class="h">1aあたり 60kg</b> の 米が とれます。全部で 何kg？'},
+  {kind:'n',e:'🌱',U:4,K:56,ku:'本',nu:'m²',kn:'なえ',nn:'面積',txt:'<b class="k">56本</b> の なえを、<b class="h">1m²あたり 4本</b> ずつ 植えます。何m² の 畑が いる？'},
+  {kind:'t',e:'🖌️',U:2.5,N:4,ku:'m²',nu:'dL',kn:'かべ',nn:'ペンキ',txt:'<b class="h">1dLあたり 2.5m²</b> の かべを ぬれる ペンキが <b class="a">4dL</b> あります。何m² ぬれる？'},
+  {kind:'n',e:'🧃',U:150,K:750,ku:'円',nu:'L',kn:'ねだん',nn:'かさ',txt:'<b class="k">750円</b> で、<b class="h">1Lあたり 150円</b> の ジュースを 買います。何L 買える？'}
+];
+const LIST={s2:P2,s3:P3,s4:P4,s5:P5};
+const PB=()=>LIST[MODE][S.idx[MODE]];
+
+/* いま 数直線に かく 1本ぶんの 問題（3つの 量を そろえる） */
+let ROW=0;
+function lineQ(){
+  const b=PB();let o;
+  if(MODE==='s2'){
+    const r=b.rows[ROW];
+    o=b.goal==='p'?{kind:'u',K:r.p,N:r.a,ku:'人',nu:'m²',kn:'人数',nn:'面積',un:'1m²あたりの 人数',e:''}
+                  :{kind:'u',K:r.a,N:r.p,ku:'m²',nu:'人',kn:'面積',nn:'人数',un:'1人あたりの 面積',e:''};
+    o.who=r.n+'の へや';
+  }else if(MODE==='s3'){
+    o={kind:'u',K:b.pop,N:b.km,ku:'人',nu:'km²',kn:'人口',nn:'面積',un:MITSU};
+  }else if(MODE==='s4'){
+    const r=b.rows[ROW];
+    o={kind:'u',K:r.K,N:r.N,ku:b.ku,nu:b.nu,kn:b.kn,nn:b.nn,un:b.un,e:b.e,who:r.n+'の '+b.item};
+  }else o=Object.assign({},b);
+  if(o.kind==='u') o.U=o.K/o.N;
+  if(o.kind==='t') o.K=o.U*o.N;
+  if(o.kind==='n') o.N=o.K/o.U;
+  if(!o.un) o.un=`1${o.nu}あたりの ${o.kn}`;
+  return o;
+}
+const G={p:0,seg:false,solved:false};
+const L={phase:'look',slots:[],sel:null,cards:[]};
+const DONE={};   /* ステップ２・４：求めた 1あたりの 大きさ（表に 出す） */
+
+function lineStart(){
+  const b=PB(),list=LIST[MODE];
+  ROW=0;for(const k in DONE)delete DONE[k];
+  if(MODE==='s2'&&b.goal==='a') ROOMS.forEach(r=>DONE['p'+r.n]=r.p/r.a);   /* 1問目で 求めた 列は のこす */
+  hideAll();stageTap=null;
+  const head=MODE==='s2'?(b.goal==='p'?`3つの へや。<b class="h">1m²あたりの 人数</b>で 比べよう`:`同じ 3つの へやを、<b class="h">1人あたりの 面積</b>で 比べよう`)
+            :MODE==='s3'?(b.cmp?`4つの 市町村。いちばん こみあって いるのは？`:b.txt+`<b class="h">${MITSU}</b>は？`)
+            :MODE==='s4'?b.txt+`<b class="h">${b.un}</b>で 比べよう`:b.txt;
+  prob(`<span class="no">問題 ${S.idx[MODE]+1} / ${list.length}</span><span>${head}</span>`);
+  if(MODE==='s3'&&b.cmp){cmp3();return;}
+  rowStart();
+}
+function rowStart(){
+  const q=lineQ();
+  Object.assign(G,{p:0,seg:q.kind!=='u',solved:false});
+  Object.assign(L,{phase:'look',slots:[],sel:null,cards:[]});
+  $('shiki').classList.add('hidden');$('sum').classList.add('hidden');choices(null);
+  drawTable();picShow(true);
+  const who=q.who?`<b>${q.who}</b>：`:'';
+  let first,btn;
+  if(MODE==='s3'){
+    first=`町の 人が まんべんなく 住んで いると すると…<br>面積を <b class="a">1km²</b>ずつ 区切って みよう`;btn='1km²ずつ 区切る ▶';
+  }else if(q.kind==='u'){
+    first=`${who}${q.kn} <b class="k">${fmt(q.K)}${q.ku}</b>、${q.nn} <b class="a">${fmt(q.N)}${q.nu}</b>。<br>${q.nn}を <b class="a">1${q.nu}</b>ずつ 区切って みよう`;btn=`1${q.nu}ずつ 区切る ▶`;
+  }else if(q.kind==='t'){
+    first=`<b class="h">1${q.nu}あたり ${fmt(q.U)}${q.ku}</b>。<br>${fmt(q.N)}${q.nu} だと どうなるかな`;btn=`1${q.nu}ずつ 区切る ▶`;
+  }else{
+    first=`<b class="h">1${q.nu}あたり ${fmt(q.U)}${q.ku}</b>。<br>${fmt(q.K)}${q.ku} を ${fmt(q.U)}${q.ku}ずつ 区切って みよう`;btn=`${fmt(q.U)}${q.ku}ずつ 区切る ▶`;
+  }
+  say(first);
+  actions([['play',btn,advance]]);stageTap=advance;
+  draw();
+}
+function advance(){
+  if(L.phase!=='look'||S.busy)return;
+  const q=lineQ();stageTap=null;
+  actions([['play','区切って いるよ…',()=>{},true]]);
+  anim(Math.min(3600,Math.max(1600,q.N*300)),t=>{G.p=t;draw();},ask,t=>t);
+}
+/* ===== 式 ===== */
+function eqTokens(){ return MODE==='s5'?['s','o','s']:['s','÷','s']; }   /* 「人口密度 ＝」を 前に つけると はみ出すので、答えの 下に 名前を 出す */
+function makeCards(q){
+  const c=[];
+  const cK={t:`${fmt(q.K)}<small>${q.ku}</small>`,r:'K',cls:'ck'};
+  const cN={t:`${fmt(q.N)}<small>${q.nu}</small>`,r:'N',cls:'ca'};
+  const cU={t:`${fmt(q.U)}<small>${q.ku}</small>`,r:'U',cls:'ch'};
+  if(q.kind==='u') c.push(cK,cN);
+  if(q.kind==='t') c.push(cU,cN);
+  if(q.kind==='n') c.push(cK,cU);
+  if((S.idx[MODE]+ROW)%2) c.reverse();    /* カードの ならびで 式が きまらない ように */
+  if(MODE==='s5') c.push({t:'×',r:'x',op:1,cls:'co'},{t:'÷',r:'/',op:1,cls:'co'});
+  return c;
+}
+function ask(){
+  const q=lineQ();
+  L.phase='ask';L.cards=makeCards(q);
+  L.slots=eqTokens().filter(x=>x==='s'||x==='o').map(()=>null);L.sel=null;
+  if(q.kind==='u') G.seg=true;
+  const what=q.kind==='u'?`<b class="a">1${q.nu}</b>あたり 何${q.ku} かな？`
+            :q.kind==='t'?`${fmt(q.N)}${q.nu}で 何${q.ku} かな？`:`${fmt(q.K)}${q.ku} に なるのは 何${q.nu} かな？`;
+  say(what+'<br><small>カードを □ に 入れて 式を つくろう</small>');
+  buildEq();
+  $('shiki').classList.remove('hidden');
+  actions([['sub','カードを もどす',resetCards],['show','答え',check]]);
+  draw();
+}
+function buildEq(){
+  const q=lineQ(),eq=$('eq');let si=0,h='';
+  eqTokens().forEach(tok=>{
+    if(tok==='lead') h+=`<span class="lead">${MITSU} ＝</span>`;
+    else if(tok==='s'||tok==='o'){h+=`<div class="slotw"><div class="slot${tok==='o'?' opslot':''}" data-i="${si}" data-k="${tok}"></div><div class="what" id="what${si}"></div></div>`;si++;}
+    else h+=`<span class="op">${tok}</span>`;
+  });
+  const u=q.kind==='n'?q.nu:q.ku;
+  h+=`<span class="op">＝</span><div class="slotw"><div class="resbox" id="res">？</div><div class="what" id="whatR"></div></div><span class="u">${u}</span>`;
+  eq.innerHTML=h;
+  eq.querySelectorAll('.slot').forEach(sl=>sl.addEventListener('click',()=>{
+    if(L.phase!=='ask'||Date.now()-justDropped<350)return;
+    const i=+sl.dataset.i;
+    if(L.sel!=null){place(L.sel,i);return;}
+    if(L.slots[i]!=null){L.slots[i]=null;drawCards();drawSlots();}   /* 入って いる ますを おすと もどる */
+  }));
+  drawCards();drawSlots();
+}
+function drawCards(){
+  const box=$('cards');box.innerHTML='';
+  L.cards.forEach((c,i)=>{
+    const b=document.createElement('button');
+    b.className='cardn '+c.cls+(L.slots.includes(i)?' gone':'')+(L.sel===i?' sel':'');
+    b.innerHTML=c.t;dragCard(b,i);box.appendChild(b);
+  });
+}
+function drawSlots(){
+  document.querySelectorAll('#eq .slot').forEach(sl=>{
+    const i=+sl.dataset.i,c=L.slots[i];
+    sl.innerHTML=c==null?'':L.cards[c].t;
+    sl.className='slot'+(sl.dataset.k==='o'?' opslot':'')+(c!=null?' fill':'')+(L.sel!=null&&c==null?' sel':'');
+  });
+}
+function place(ci,si){
+  if(L.phase!=='ask')return;
+  const sl=document.querySelector(`#eq .slot[data-i="${si}"]`),isOp=sl&&sl.dataset.k==='o';
+  if(!!L.cards[ci].op!==isOp){
+    say(isOp?'まん中の □ には <b>×</b> か <b>÷</b> の カードを 入れよう':'そこには 数の カードを 入れよう','try');
+    L.sel=null;drawCards();drawSlots();return;
+  }
+  const old=L.slots.indexOf(ci);if(old>=0)L.slots[old]=null;
+  L.slots[si]=ci;L.sel=null;drawCards();drawSlots();
+  if(L.slots.every(s=>s!=null)) say('できたら 金の「答え」を おそう');
+}
+function resetCards(){L.slots=L.slots.map(()=>null);L.sel=null;drawCards();drawSlots();}
+
+/* ===== カードの ドラッグ（速さ・面積と 同じ しくみ。影は いつも 1まい・かならず 消す） ===== */
+let justDropped=0,drag=null;
+function killGhost(){document.querySelectorAll('.ghost').forEach(g=>g.remove());drag=null;}
+function nearSlot(x,y){
+  let best=null,bd=1e9;
+  document.querySelectorAll('#eq .slot').forEach(sl=>{
+    const r=sl.getBoundingClientRect();
+    const dx=Math.max(r.left-x,0,x-r.right),dy=Math.max(r.top-y,0,y-r.bottom),d=Math.hypot(dx,dy);
+    if(d<bd){bd=d;best=sl;}
+  });
+  return best&&bd<=Math.max(40,best.getBoundingClientRect().width*0.8)?best:null;
+}
+function dragCard(el,ci){
+  el.addEventListener('pointerdown',e=>{
+    if(L.phase!=='ask')return;
+    killGhost();
+    drag={ci,el,sx:e.clientX,sy:e.clientY,x:e.clientX,y:e.clientY,ghost:null};
+    try{el.setPointerCapture(e.pointerId);}catch(_){}
+  });
+}
+addEventListener('pointermove',e=>{
+  if(!drag)return;
+  drag.x=e.clientX;drag.y=e.clientY;
+  if(!drag.ghost&&Math.hypot(e.clientX-drag.sx,e.clientY-drag.sy)>8){
+    drag.ghost=drag.el.cloneNode(true);drag.ghost.classList.add('ghost');document.body.appendChild(drag.ghost);
+  }
+  if(drag.ghost){drag.ghost.style.left=e.clientX+'px';drag.ghost.style.top=e.clientY+'px';}
+},true);
+function finishDrag(x,y){
+  if(!drag)return;
+  const {ci,sx,sy}=drag,moved=Math.hypot(x-sx,y-sy)>8;
+  killGhost();
+  if(moved){
+    const sl=nearSlot(x,y);
+    if(sl){place(ci,+sl.dataset.i);justDropped=Date.now();}
+  }else{
+    L.sel=L.sel===ci?null:ci;drawCards();drawSlots();   /* タップ：えらんで から □ を おすと 入る */
+  }
+}
+addEventListener('pointerup',e=>finishDrag(e.clientX,e.clientY),true);
+addEventListener('mouseup',e=>finishDrag(e.clientX,e.clientY),true);
+addEventListener('pointerdown',()=>{if(drag)finishDrag(drag.x,drag.y);},true);
+addEventListener('pointercancel',killGhost,true);
+addEventListener('blur',killGhost);
+document.addEventListener('visibilitychange',killGhost);
+
+/* ===== 答え合わせ（×で 終わらせない。わけを 言って まちがえた カードだけ もどす） ===== */
+function check(){
+  if(L.phase!=='ask'||S.busy)return;
+  if(L.slots.some(s=>s==null)){say('まだ とちゅうだよ。□ を ぜんぶ うめよう','try');return;}
+  const q=lineQ();
+  const r=L.slots.map(s=>L.cards[s].r);
+  const back=idx=>{idx.forEach(i=>L.slots[i]=null);drawCards();drawSlots();};
+  const five=MODE==='s5',nums=five?[r[0],r[2]]:[r[0],r[1]],op=five?r[1]:'/',numIdx=five?[0,2]:[0,1];
+  if(q.kind==='t'){
+    if(op!=='x'){say(`1${q.nu}で <b class="h">${fmt(q.U)}${q.ku}</b>。${fmt(q.N)}${q.nu} だと、<b class="h">${fmt(q.U)}${q.ku}</b> が <b class="a">${fmt(q.N)}こ分</b> だね`,'try');back([1]);return;}
+  }else{
+    if(op!=='/'){
+      say(q.kind==='u'?`<b class="k">${fmt(q.K)}${q.ku}</b> を <b class="a">${fmt(q.N)}</b>こに 分けた 1つ分を 求めるよ`
+                      :`<b class="k">${fmt(q.K)}${q.ku}</b> の 中に <b class="h">${fmt(q.U)}${q.ku}</b> が いくつ分 あるかな`,'try');
+      back([1]);return;
+    }
+    if(nums[0]!=='K'){
+      say(q.kind==='u'?`「<b class="a">1${q.nu}</b>あたり」だから、<b class="a">${q.nn}（${fmt(q.N)}${q.nu}）</b>で わるよ。<br>÷ の 前は <b class="k">${q.kn}（${fmt(q.K)}${q.ku}）</b>`
+                      :`÷ の 前は <b class="k">${q.kn}（${fmt(q.K)}${q.ku}）</b>だよ。<br>${fmt(q.U)}${q.ku}ずつ 区切るね`,'try');
+      back(numIdx);return;
+    }
+  }
+  /* 正かい（かけ算は どちらの じゅんでも よい） */
+  L.phase='done';G.solved=true;G.seg=true;
+  const ans=q.kind==='u'?q.U:q.kind==='t'?q.K:q.N;
+  $('res').textContent=fmt(ans);$('res').className='resbox good';
+  const nameOf={K:[q.kn,'gk','k'],N:[q.nn,'ga','a'],U:[`1${q.nu}あたり`,'gh','h']};
+  document.querySelectorAll('#eq .slot').forEach((sl,i)=>{
+    const role=r[i];
+    if(role==='x'||role==='/'){sl.className='slot opslot go';return;}
+    const [w,c,wc]=nameOf[role];sl.className='slot '+c;
+    $('what'+i).textContent=w;$('what'+i).className='what '+wc;
+  });
+  const [wr,,wrc]=nameOf[q.kind==='u'?'U':q.kind==='t'?'K':'N'];
+  if(MODE==='s3') $('whatR').innerHTML=MITSU; else $('whatR').textContent=wr;$('whatR').className='what '+wrc;
+  $('cards').innerHTML='';
+  G.p=1;
+  const rev=q.kind==='t'&&r[0]==='N';
+  if(MODE==='s2'){DONE[PB().goal+PB().rows[ROW].n]=q.U;afterRow2(q);return;}
+  if(MODE==='s4'){DONE[ROW]=q.U;afterRowA4(q);return;}
+  draw();
+  let msg,sum;
+  if(MODE==='s3'){
+    msg=`よくできました！ 1km² あたり <b class="h">${fmt(q.U)}人</b>`;
+    sum=`<span class="f">${MITSU} ＝ <span class="k">人口</span> ÷ <span class="a">面積（km²）</span></span>
+         <span class="small">1km²あたりの 人口。${fmt(q.N)}こ分の 1km² に ${fmt(q.U)}人ずつ</span>`;
+  }else{
+    msg=q.kind==='t'?`よくできました！ <b class="k">${fmt(q.K)}${q.ku}</b>`:`よくできました！ <b class="a">${fmt(q.N)}${q.nu}</b>`;
+    if(rev) msg+=`<br><small>ふつうは <span class="h">1${q.nu}あたりの 大きさ</span> × <span class="a">${q.nn}</span> の 順に 書くよ</small>`;
+    sum=q.kind==='t'?`<span class="f"><span class="k">${q.kn}</span> ＝ <span class="h">1${q.nu}あたりの 大きさ</span> × <span class="a">${q.nn}</span></span>
+         <span class="small">1${q.nu}の ${fmt(q.U)}${q.ku} が ${fmt(q.N)}こ分</span>`
+        :`<span class="f"><span class="a">${q.nn}</span> ＝ <span class="k">${q.kn}</span> ÷ <span class="h">1${q.nu}あたりの 大きさ</span></span>
+         <span class="small">${fmt(q.K)}${q.ku} の 中に ${fmt(q.U)}${q.ku} が ${fmt(q.N)}こ分</span>`;
+  }
+  say(msg,'ok');showSum(sum);
+  actions([['sub','もう一度',lineStart],['next','次の 問題 →',nextLine]]);
+}
+function nextLine(){const l=LIST[MODE];S.idx[MODE]=(S.idx[MODE]+1)%l.length;lineStart();}
+
+/* ===== ステップ２：1つの へやが おわったら 次の へや → 3つ そろったら 比べる ===== */
+function afterRow2(q){
+  const b=PB();draw();drawTable();
+  if(ROW<b.rows.length-1){
+    say(`よくできました！ <b>${q.who}</b>は ${q.un} <b class="h">${fmt(q.U)}${q.ku}</b>`,'ok');
+    const nx=b.rows[ROW+1].n;
+    const go=()=>{ROW++;rowStart();};
+    actions([['play',`${nx}の へやを しらべる ▶`,go]]);stageTap=go;
+    return;
+  }
+  L.phase='cmp';
+  const U=b.rows.map(r=>DONE[b.goal+r.n]);
+  const best=b.goal==='p'?U.indexOf(Math.max(...U)):U.indexOf(Math.min(...U));
+  say(`<b>${q.who}</b>は <b class="h">${fmt(q.U)}${q.ku}</b>。3つ そろったよ。<br><b>いちばん こんで いる へやは？</b>`);
+  $('shiki').classList.add('hidden');
+  choices(b.rows.map(r=>`${r.n}の へや`),(i,btn)=>{
+    if(i!==best){
+      btn.disabled=true;
+      say(b.goal==='p'?`1m²あたりの 人数が <b>多い</b> ほど、せまい ところに 人が たくさん いるよ`
+                      :`1人あたりの 面積が <b>せまい</b> ほど、こんで いるよ`,'try');return;
+    }
+    lockChoices(best);
+    const nm=b.rows[best].n;
+    say(b.goal==='p'?`よくできました！ 1m²あたりの 人数が いちばん 多い <b>${nm}の へや</b>`
+                    :`よくできました！ 1人あたりの 面積が いちばん せまい <b>${nm}の へや</b>。<br>1m²あたりの 人数で 比べたときと 同じだね`,'ok');
+    showSum(b.goal==='p'?`<span class="f"><span class="h">1m²あたりの 人数</span> ＝ <span class="k">人数</span> ÷ <span class="a">面積</span></span>
+                           <span class="small">多い ほど こんで いる。3つでも すぐ 比べられるね</span>`
+                        :`<span class="f"><span class="h">1人あたりの 面積</span> ＝ <span class="k">面積</span> ÷ <span class="a">人数</span></span>
+                           <span class="small">1人あたりの 面積は <b>せまい</b> ほど こむ。1m²あたりの 人数は <b>多い</b> ほど こむ</span>`);
+    actions([['sub','もう一度',lineStart],['next','次の 問題 →',nextLine]]);
+    drawTable(best);
+  });
+  $('choices').classList.add('need');
+  actions([['sub','もう一度',lineStart],['next','↑ へやを えらぼう',()=>{},true]]);
+}
+/* ===== ステップ４：Aの あと、Bは 画面が 同じ 式で 計算する → 比べる ===== */
+function afterRowA4(q){
+  const b=PB();draw();drawTable();
+  say(`よくできました！ <b>${q.who}</b>は <b class="h">1${q.nu}あたり ${fmt(q.U)}${q.ku}</b>`,'ok');
+  const go=()=>{
+    if(S.busy)return;stageTap=null;
+    ROW=1;const qb=lineQ();
+    Object.assign(G,{p:0,seg:true,solved:false});
+    $('shiki').classList.add('hidden');
+    actions([['play','計算して いるよ…',()=>{},true]]);
+    say(`<b>${qb.who}</b>も 同じように…<br><b class="k">${fmt(qb.K)}</b> ÷ <b class="a">${fmt(qb.N)}</b> ＝ ？`);
+    drawTable();
+    anim(1600,t=>{G.p=t;draw();},()=>{
+      G.solved=true;DONE[1]=qb.U;draw();drawTable();
+      const U=[DONE[0],DONE[1]],best=b.better==='min'?(U[0]<U[1]?0:1):(U[0]>U[1]?0:1);
+      L.phase='cmp';
+      say(`<b>${qb.who}</b>は <b class="k">${fmt(qb.K)}</b> ÷ <b class="a">${fmt(qb.N)}</b> ＝ <b class="h">${fmt(qb.U)}${qb.ku}</b>。<br><b>${b.ask}</b>`);
+      choices(b.rows.map(r=>`${r.n}の ${b.item}`),(i,btn)=>{
+        if(i!==best){btn.disabled=true;say(`<b class="h">${b.un}</b>を 表で 見くらべよう`,'try');return;}
+        lockChoices(best);
+        const w=b.better==='min'?'安い':(b.hi||'大きい');
+        say(`よくできました！ <b class="h">${b.un}</b>が ${w} <b>${b.rows[best].n}の ${b.item}</b>`,'ok');
+        showSum(`<span class="f"><span class="h">${b.un}</span> ＝ <span class="k">${b.kn}</span> ÷ <span class="a">${b.nn}</span></span>
+                 <span class="small">「1${b.nu}あたり」に そろえると 比べられる</span>`);
+        actions([['sub','もう一度',lineStart],['next','次の 問題 →',nextLine]]);
+        drawTable(best);
+      });
+      $('choices').classList.add('need');
+      actions([['sub','もう一度',lineStart],['next','↑ えらぼう',()=>{},true]]);
+    },t=>t);
+  };
+  actions([['play','Bも 同じように 計算する ▶',go]]);stageTap=go;
+}
+/* ===== ステップ３の 5問目：4つを 比べる ===== */
+function cmp3(){
+  const towns=P3.filter(t=>!t.cmp);
+  const d=towns.map(t=>t.pop/t.km),best=d.indexOf(Math.max(...d));
+  picShow(false);
+  const tbl=best2=>`<tr><th></th><th class="k">人口</th><th class="a">面積</th><th class="h">${MITSU}</th></tr>`+
+    towns.map((t,i)=>`<tr><td class="nm">${t.n}</td><td>${t.pop}人</td><td>${t.km}km²</td><td class="${i===best2?'best':''}">${fmt(d[i])}人</td></tr>`).join('');
+  table(tbl(-1),true);
+  L.phase='cmp';
+  say(`1〜4問目で 求めた ${MITSU}を 表に したよ。<br><b>いちばん こみあって いるのは？</b>`);
+  choices(towns.map(t=>t.n),(i,btn)=>{
+    if(i!==best){
+      btn.disabled=true;
+      say(i===towns.indexOf(towns.reduce((a,b)=>a.pop>b.pop?a:b))?`人口が いちばん 多いのは その 市だけど、面積も 広いね。<br><b class="h">${MITSU}</b>で 比べよう`
+                     :`<b class="h">${MITSU}</b>（1km²あたりの 人口）を 見くらべよう`,'try');return;
+    }
+    lockChoices(best);table(tbl(best),true);
+    say(`よくできました！ ${MITSU}が いちばん 大きい <b>${towns[best].n}</b>。<br>人口が いちばん 多いのは D市だけど、D市は 面積も 広いね`,'ok');
+    showSum(`<span class="f"><span class="h">${MITSU}</span>が 大きい ほど こみあって いる</span>
+             <span class="small">人口だけ・面積だけでは 比べられない。1km²あたりに そろえて 比べる</span>`);
+    actions([['sub','もう一度',lineStart],['next','次の 問題 →',nextLine]]);
+  },'four');
+  $('choices').classList.add('need');
+  actions([['sub','もう一度',lineStart],['next','↑ えらぼう',()=>{},true]]);
+}
+
+/* ===== 絵の 上の 表（ステップ２・４） ===== */
+function drawTable(best){
+  if(MODE==='s2'){
+    const b=PB(),goal=b.goal;
+    const hA=goal==='p'?'a':'k',hP=goal==='p'?'k':'a';
+    let h=`<tr><th></th><th class="${hA}">面積</th><th class="${hP}">人数</th><th class="${goal==='p'?'h':''}">1m²あたりの 人数</th>`+(goal==='a'?`<th class="h">1人あたりの 面積</th>`:'')+`</tr>`;
+    b.rows.forEach((r,i)=>{
+      const cur=L.phase!=='cmp'&&i===ROW&&best==null;
+      const vp=DONE['p'+r.n],va=DONE['a'+r.n];
+      const bp=goal==='p'&&best===i,ba=goal==='a'&&best===i;
+      h+=`<tr class="${cur?'cur':''}"><td class="nm">${r.n}</td><td>${r.a}m²</td><td>${r.p}人</td>`+
+         `<td class="${vp==null?'q':''} ${bp?'best':''}">${vp==null?'？':fmt(vp)+'人'}</td>`+
+         (goal==='a'?`<td class="${va==null?'q':''} ${ba?'best':''}">${va==null?'？':fmt(va)+'m²'}</td>`:'')+`</tr>`;
+    });
+    table(h);
+  }else if(MODE==='s4'){
+    const b=PB();
+    let h=`<tr><th></th><th class="a">${b.nn}</th><th class="k">${b.kn}</th><th class="h">${b.un}</th></tr>`;
+    b.rows.forEach((r,i)=>{
+      const v=DONE[i],cur=L.phase!=='cmp'&&i===ROW&&best==null;
+      h+=`<tr class="${cur?'cur':''}"><td class="nm">${r.n}</td><td>${r.N}${b.nu}</td><td>${r.K}${b.ku}</td><td class="${v==null?'q':''} ${best===i?'best':''}">${v==null?'？':fmt(v)+b.ku}</td></tr>`;
+    });
+    table(h);
+  }else table(null);
+}
+
+/* ===== 数直線の 絵 ===== */
+function drawLine(){
+  const q=lineQ(),n=q.N,many=n>12;
+  const svg=$('pic');frame(svg,f=>many?f*16:f*11);
+  const nameLen=Math.max(q.kn.length,q.nn.length);
+  const x0=FS*(nameLen*1.0+0.9)+12,x1=W-FS*3.9,X=f=>x0+(x1-x0)*f;   /* 右の はしに 全体の 数を 書く ぶん あける */
+  const gp=many?FS*1.9:Math.max(FS*1.9,Math.min(H*0.14,FS*3)),mid=many?Math.min(H*0.36,H-FS*10.5):H*0.56,yA=mid-gp,yB=mid+gp;
+  let g='';
+  const cutsShown=Math.min(n,Math.floor(G.p*n+1e-6));
+  for(let k=1;k<n;k++){
+    if(k>cutsShown) break;
+    const x=X(k/n);
+    g+=line(x,yA-10,x,yB+10,`stroke="#b9a67c" stroke-width="${many?1.2:2}" stroke-dasharray="${many?'3 5':'6 6'}"`);
+  }
+  /* 1つ分（むらさき）＝1あたりの 大きさ */
+  if(G.seg){
+    const xb=X(1/n);
+    g+=`<rect x="${X(0)}" y="${yA-FS*0.34}" width="${xb-X(0)}" height="${FS*0.68}" rx="5" fill="${CH}" opacity=".85"/>`;
+    g+=`<rect x="${X(0)}" y="${yB-FS*0.34}" width="${xb-X(0)}" height="${FS*0.68}" rx="5" fill="${CA}" opacity=".35"/>`;
+    const vl=q.kind==='u'&&!G.solved?`？${q.ku}`:`${fmt(q.U)}${q.ku}`;
+    if(many){
+      /* 区切りが 多いと 1つ分が せまいので、下に 虫めがねの わくを 出して 大きく 見せる */
+      const K=3,ix0=X(0),ix1=Math.min(X(1),X(0)+FS*20),iw=(ix1-ix0)/(K+0.6);
+      const it=yB+FS*2.3,iA=it+FS*1.9,iB=iA+FS*2.2,ib=iB+FS*1.5;
+      g+=`<path d="M${X(0)} ${yB+8} L${ix0} ${it} M${X(K/n)} ${yB+8} L${ix0+iw*K} ${it}" stroke="#b9a67c" stroke-width="2" stroke-dasharray="4 5" fill="none"/>`;
+      g+=`<rect x="${ix0-FS*0.4}" y="${it}" width="${ix1-ix0+FS*0.8}" height="${ib-it}" rx="14" fill="#fff" stroke="#b9a67c" stroke-width="2.5"/>`;
+      g+=`<rect x="${ix0}" y="${iA-FS*0.34}" width="${iw}" height="${FS*0.68}" rx="5" fill="${CH}" opacity=".85"/>`;
+      g+=`<rect x="${ix0}" y="${iB-FS*0.34}" width="${iw}" height="${FS*0.68}" rx="5" fill="${CA}" opacity=".35"/>`;
+      g+=line(ix0,iA,ix1,iA,`stroke="${CK}" stroke-width="4"`)+line(ix0,iB,ix1,iB,`stroke="${CA}" stroke-width="4"`);
+      for(let k=0;k<=K;k++){
+        const x=ix0+iw*k;
+        if(k) g+=line(x,iA-10,x,iB+10,'stroke="#b9a67c" stroke-width="2" stroke-dasharray="6 6"');
+        g+=line(x,iA-10,x,iA+10,`stroke="${CK}" stroke-width="2.5"`)+line(x,iB-10,x,iB+10,`stroke="${CA}" stroke-width="2.5"`);
+        if(k) g+=tx(x,iB+FS*0.85,`${k}${q.nu}`,CA,{k:.8});
+      }
+      g+=tx(ix0,iB+FS*0.85,'0',CA,{k:.8});
+      g+=tx(ix0+iw/2,iA-FS*0.85,vl,CH,{k:.9});
+      g+=tx(ix1-FS*0.2,(iA+iB)/2,'…',CI,{anc:'end'});
+    }else{
+      g+=tx((X(0)+xb)/2,yA-FS*1.05,vl,CH,{k:.95});
+      g+=tx(xb,yB+FS*1.05,`1${q.nu}`,CA,{k:.95});
+    }
+  }
+  /* 上の 数直線 */
+  g+=line(X(0),yA,X(1),yA,`stroke="${CK}" stroke-width="5" stroke-linecap="round"`);
+  g+=line(X(0),yA-12,X(0),yA+12,`stroke="${CK}" stroke-width="3"`)+line(X(1),yA-12,X(1),yA+12,`stroke="${CK}" stroke-width="3"`);
+  g+=tx(x0-22,yA,q.kn,CK,{anc:'end'});
+  g+=tx(X(0),yA+FS*0.95,'0',CK,{k:.85});
+  const kEnd=q.kind==='t'&&!G.solved?`？${q.ku}`:`${fmt(q.K)}${q.ku}`;
+  g+=tx(X(1)+FS*0.45,yA,kEnd,CK,{anc:'start'});
+  /* 下の 数直線 */
+  g+=line(X(0),yB,X(1),yB,`stroke="${CA}" stroke-width="5" stroke-linecap="round"`);
+  g+=line(X(0),yB-12,X(0),yB+12,`stroke="${CA}" stroke-width="3"`)+line(X(1),yB-12,X(1),yB+12,`stroke="${CA}" stroke-width="3"`);
+  g+=tx(x0-22,yB,q.nn,CA,{anc:'end'});
+  g+=tx(X(0),yB+FS*0.95,'0',CA,{k:.85});
+  const nEnd=q.kind==='n'&&!G.solved?`？${q.nu}`:`${fmt(q.N)}${q.nu}`;
+  g+=tx(X(1)+FS*0.45,yB,nEnd,CA,{anc:'start'});
+  if(!many){
+    for(let k=1;k<n;k++){
+      if(k>cutsShown) break;
+      const x=X(k/n);
+      if(k>1||!G.seg){
+        if(q.kind!=='n'||G.solved) g+=tx(x,yB+FS*1.05,`${k}${n>6?'':q.nu}`,CA,{k:.8});
+        if(G.solved) g+=tx(x,yA-FS*1.05,fmt(q.U*k),CK,{k:.8});
+      }
+    }
+    /* いくつ分（まん中の 数） */
+    for(let k=1;k<=cutsShown;k++){
+      const x=(X((k-1)/n)+X(k/n))/2;
+      g+=`<circle cx="${x}" cy="${mid}" r="${FS*0.52}" fill="#fff" stroke="#b9a67c" stroke-width="2"/>`;
+      g+=tx(x,mid,k,CI,{k:.72});
+    }
+    /* 1つ分ごとの もの（リボン・米 など） */
+    if(q.e) for(let k=1;k<=cutsShown;k++){
+      const x=(X((k-1)/n)+X(k/n))/2;
+      g+=emo(x,yA-FS*2.35,q.e,Math.min(FS*1.3,(x1-x0)/n*0.8));
+    }
+  }else if(cutsShown>=n){
+    g+=tx((X(0)+X(1))/2,mid,q.kind==='n'&&!G.solved?'区切ったよ':`${fmt(n)}こに 区切ったよ`,CI,{k:.8});   /* いくつ分を 求める ときは 数を 言わない（答えに なる） */
+  }
+  svg.innerHTML=g;
+}
+
+/* ===== ステップ３：町の 地図（1km²の ます）。人は まんべんなく 住んで いると する ===== */
+function blob(a){
+  const c=Math.ceil(Math.sqrt(a*1.5))+1,r=Math.ceil(a/c);
+  const on=[...Array(r)].map(()=>Array(c).fill(true));
+  let extra=c*r-a;
+  const ptr=[[0,0,1],[r-1,c-1,-1],[0,c-1,-1],[r-1,0,1]];   /* 4つの かどから 1つずつ けずる */
+  const cnt=[0,0,0,0];let k=0;
+  while(extra>0){
+    const [y,x0,dx]=ptr[k%4],x=x0+dx*cnt[k%4];
+    if(x>=0&&x<c&&on[y][x]){on[y][x]=false;extra--;}
+    cnt[k%4]++;k++;
+  }
+  return {c,r,on};
+}
+function drawMap(){
+  const b=PB();if(b.cmp)return;
+  const q=lineQ(),svg=$('pic');frame(svg,f=>f*11);
+  const m=blob(b.km);
+  const top=FS*2.4,bot=FS*3.2;
+  const cs=Math.min(W*0.86/m.c,(H-top-bot)/m.r);
+  const mw=m.c*cs,mh=m.r*cs,ox=(W-mw)/2,oy=top+(H-top-bot-mh)/2;
+  let g='';
+  g+=tx(W/2,FS*1.1,`${b.n}　<tspan fill="${CK}">人口 ${b.pop}人</tspan>　<tspan fill="${CA}">面積 ${b.km}km²</tspan>`,CI,{k:1});
+  /* 中の ます（まん中に いちばん 近い ます） */
+  let hc=null,hd=1e9;
+  for(let y=0;y<m.r;y++)for(let x=0;x<m.c;x++) if(m.on[y][x]){const d=Math.hypot(x+.5-m.c/2,y+.5-m.r/2);if(d<hd){hd=d;hc=[x,y];}}
+  const cellsShown=Math.floor(G.p*b.km+1e-6);let idx=0;
+  for(let y=0;y<m.r;y++)for(let x=0;x<m.c;x++){
+    if(!m.on[y][x])continue;
+    const px=ox+x*cs,py=oy+y*cs;
+    const cut=idx<cellsShown||G.p>=1;idx++;
+    const isH=hc[0]===x&&hc[1]===y&&G.seg;
+    g+=`<rect x="${px}" y="${py}" width="${cs}" height="${cs}" fill="${isH?'#fff4c9':(G.solved?'#efe7fa':'#e6f1dc')}" stroke="${cut?'#d59a63':'#e6f1dc'}" stroke-width="${cut?1.5:0}"/>`;
+    /* まんべんなく 住む 人（点） */
+    if(cut) [[.28,.3],[.72,.4],[.45,.74]].forEach(([u,v])=>g+=`<circle cx="${px+u*cs}" cy="${py+v*cs}" r="${Math.max(2,cs*0.07)}" fill="${CK}" opacity=".7"/>`);
+  }
+  /* 町の まわり（外の 線） */
+  for(let y=0;y<m.r;y++)for(let x=0;x<m.c;x++){
+    if(!m.on[y][x])continue;
+    const px=ox+x*cs,py=oy+y*cs,o=(yy,xx)=>yy>=0&&yy<m.r&&xx>=0&&xx<m.c&&m.on[yy][xx];
+    const st=`stroke="${CI}" stroke-width="3" stroke-linecap="round"`;
+    if(!o(y-1,x)) g+=line(px,py,px+cs,py,st);
+    if(!o(y+1,x)) g+=line(px,py+cs,px+cs,py+cs,st);
+    if(!o(y,x-1)) g+=line(px,py,px,py+cs,st);
+    if(!o(y,x+1)) g+=line(px+cs,py,px+cs,py+cs,st);
+  }
+  if(G.seg){
+    const px=ox+hc[0]*cs,py=oy+hc[1]*cs;
+    g+=`<rect x="${px}" y="${py}" width="${cs}" height="${cs}" fill="none" stroke="${GOLD}" stroke-width="4"/>`;
+    /* 下に ふきだし */
+    const by=oy+mh+FS*1.55,bx=W/2;
+    g+=line(px+cs/2,py+cs,bx,by-FS*0.7,`stroke="${GOLD}" stroke-width="3"`);
+    const v=G.solved?`${fmt(q.U)}人`:'？人';
+    g+=`<rect x="${bx-FS*6}" y="${by-FS*0.75}" width="${FS*12}" height="${FS*1.5}" rx="12" fill="#fff" stroke="${GOLD}" stroke-width="3"/>`;
+    g+=tx(bx,by,`<tspan fill="${CA}">1km²</tspan> に <tspan fill="${CH}">${v}</tspan>`,CI,{k:.95});
+  }else if(G.p>=1){
+    g+=tx(W/2,oy+mh+FS*1.2,`${b.km}この 1km² に 区切ったよ`,CI,{k:.8});
+  }
+  svg.innerHTML=g;
+}
+
+/* ===== タブ ===== */
+document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{
+  if(S.busy)return;
+  MODE=b.dataset.m;
+  document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x===b));
+  if(MODE==='s1') s1start(); else lineStart();
+}));
+
+s1start();
+</script>
+</body>
+</html>
