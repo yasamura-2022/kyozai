@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>整数の 性質</title>
+<style>
+  :root{
+    --ink:#2b2118;
+    --paper:#fdf6e3;
+    --card:#fffdf7;
+    --line:#e7d9b8;
+    --gold:#c9a227;
+    --gold-d:#8f7417;
+    --ok:#5a8a4c;
+    --flash:#ffe14d;
+    --blue:#2f6fa8;          /* 同じ 問題の 中で 進む */
+    --a:#2f8f8a;             /* 偶数／1つ目の 数の 倍数／わりきれた（約数） */
+    --a-s:#e2f3f1;
+    --amari:#c0661f;         /* 奇数（あまり 1）／あまり（あまりのあるわり算と 同じ だいだい） */
+    --amari-s:#fbeedb;
+    --b:#7a52b3;             /* 2つ目の 数の 倍数 */
+    --b-s:#efe7fa;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:'Hiragino Maru Gothic ProN','BIZ UDPGothic','Yu Gothic',sans-serif;
+    background:
+      radial-gradient(circle at 12% 8%,#dff0ee 0,transparent 38%),
+      radial-gradient(circle at 88% 92%,#fbe6cf 0,transparent 45%),
+      var(--paper);
+    color:var(--ink);
+    position:fixed;inset:0;width:100%;
+    height:var(--fh,100dvh);
+    padding:6px 8px 10px;
+    overflow:hidden;overscroll-behavior:none;touch-action:manipulation;
+    display:flex;flex-direction:column;align-items:center;
+    -webkit-user-select:none;user-select:none;
+  }
+  button{font-family:inherit;touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;cursor:pointer}
+  .app{width:100%;max-width:1100px;height:100%;display:flex;flex-direction:column;gap:6px;min-height:0}
+  .hidden{display:none !important}
+  rt{font-size:.5em;font-weight:700}
+
+  header{text-align:center;flex-shrink:0}
+  h1{font-size:clamp(18px,calc(1.2vw + 1.5vh),28px);letter-spacing:.08em;color:var(--a)}
+
+  /* ===== タブ ===== */
+  .tabs{display:flex;gap:6px;flex-shrink:0}
+  .tab{flex:1;border:2px solid var(--line);border-radius:14px;background:var(--card);
+    padding:7px 4px;color:#8a7a5f;font-weight:800;
+    font-size:clamp(12px,calc(.9vw + .7vh),17px);display:flex;flex-direction:column;align-items:center;gap:1px;
+    line-height:1.15;word-break:keep-all}
+  .tab .step{font-size:11px;font-weight:700;opacity:.7}
+  .tab.on{color:var(--ink);border-color:var(--gold);box-shadow:0 3px 0 #a5811a}
+  .tab.on .step{color:var(--gold);opacity:1}
+
+  /* ===== ならび：よこ長＝左に 絵、右に はたらく ところ／たて長＝上に 絵 ===== */
+  .main{flex:1;min-height:0;display:grid;gap:8px;
+    grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) auto;grid-template-areas:"stage" "work"}
+  @media (orientation:landscape){
+    .main{grid-template-columns:minmax(0,1.4fr) minmax(330px,1fr);grid-template-rows:minmax(0,1fr);grid-template-areas:"stage work"}
+    .work{justify-content:center}
+  }
+  .stage{grid-area:stage;min-height:0;border-radius:18px;border:3px solid #c9e3df;
+    background:linear-gradient(#fdfefd,#f1f7f5);position:relative;overflow:hidden;padding:6px;
+    contain:size}      /* 絵の 大きさで 行を おし広げない */
+  .stage > svg{width:100%;height:100%;display:block}
+  .stage.tapped{animation:tapped .25s}
+  @keyframes tapped{50%{background:#fff6cf}}
+  .work{grid-area:work;display:flex;flex-direction:column;gap:8px;min-height:0}
+  @media (orientation:portrait){ .work{min-height:clamp(300px,50vh,620px)} }
+
+  .prob{display:flex;align-items:center;gap:10px;background:var(--card);border:2px solid #d6c49a;border-radius:14px;padding:8px 14px;
+    font-weight:800;font-size:clamp(17px,calc(.8vw + 1.8vh),27px);word-break:keep-all;flex-wrap:wrap;justify-content:center;line-height:1.5}
+  .prob .no{color:#8a7a5f;font-size:.62em}
+  .say{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:8px 12px;
+    font-weight:800;color:#5d5040;line-height:1.5;text-align:center;word-break:keep-all;
+    min-height:calc(3em + 20px);display:flex;align-items:center;justify-content:center;
+    font-size:clamp(14px,calc(.7vw + 1.25vh),21px)}
+  .say.ok{color:var(--ok);border-color:var(--ok);background:#f2f9ee}
+  .say.try{color:#b3566f;border-color:#d9748f;background:#fbe3ea}
+  .ca{color:var(--a)} .cr{color:var(--amari)} .cb{color:var(--b)} .cg{color:var(--gold-d)}
+
+  /* まとめ */
+  .sum{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:8px 10px;text-align:center;
+    font-weight:800;font-variant-numeric:tabular-nums;display:flex;flex-direction:column;align-items:center;gap:4px;
+    font-size:clamp(15px,calc(.7vw + 1.45vh),23px);line-height:1.4;word-break:keep-all}
+  .sum .f{font-size:1.12em}
+  .sum .small{font-size:.8em;color:#8a7a5f}
+  .sum .gd{background:#fff0b3;border:2px solid var(--gold);border-radius:8px;padding:0 .2em;color:var(--ink)}
+  .sum .pairs{display:flex;gap:.8em;flex-wrap:wrap;justify-content:center}
+
+  .choices{display:flex;gap:10px;justify-content:center}
+  .choices.col{flex-direction:column;align-items:stretch}
+  .choices.col .choice{max-width:none}
+  .choice{flex:1;max-width:230px;border:3px solid var(--line);border-radius:16px;background:#fff;font-weight:800;color:var(--ink);
+    padding:8px 4px;font-size:clamp(17px,calc(.8vw + 2vh),28px);box-shadow:0 4px 0 #d8c79f;word-break:keep-all;line-height:1.25}
+  .choice:active{transform:translateY(2px)}
+  .choice:disabled{opacity:.35;box-shadow:none}
+  .choice.good{border-color:var(--ok);background:#eaf5e4}
+  .choice.good:disabled{opacity:1;box-shadow:none}
+  .choices.off{visibility:hidden}
+  .choices.col .choice{font-size:clamp(15px,calc(.7vw + 1.6vh),23px);padding:6px 8px}
+
+  /* ためす 数の ボタン（ステップ４・５） */
+  .numsw{display:flex;flex-direction:column;gap:4px;align-items:center}
+  .numsw .lab{font-weight:800;color:#8a7a5f;font-size:clamp(13px,calc(.5vw + 1.1vh),18px)}
+  .nums{display:grid;gap:6px;width:100%}
+  .num{border:3px solid var(--line);border-radius:12px;background:#fff;font-weight:800;color:var(--ink);
+    height:clamp(36px,calc(1vw + 4.2vh),58px);font-size:clamp(18px,calc(.8vw + 2vh),28px);box-shadow:0 3px 0 #d8c79f;
+    font-variant-numeric:tabular-nums;display:flex;align-items:center;justify-content:center;line-height:1}
+  .num:active{transform:translateY(2px)}
+  .num.ok{border-color:var(--a);background:var(--a-s);color:var(--a);box-shadow:0 3px 0 #1f6763}
+  .num.no{border-color:#e3cdb3;background:#f5efe6;color:#b8a78c;box-shadow:none}
+  .num.now{outline:3px solid var(--gold);outline-offset:1px}
+  .num:disabled{cursor:default}
+
+  /* ボタン：青＝同じ 問題の 中で 進む／金＝答え合わせ／みどり＝次の 問題／茶＝もどす */
+  .actions{display:flex;gap:8px;flex-shrink:0;margin-top:auto;min-height:54px}
+  .btn{flex:1;border:none;border-radius:14px;padding:13px 4px;font-weight:800;color:#fff;
+    font-size:clamp(15px,calc(.7vw + 1.6vh),23px);transition:transform .08s;word-break:keep-all}
+  .btn:active{transform:translateY(2px)}
+  .btn.play{background:var(--blue);box-shadow:0 4px 0 #214f7a}
+  .btn.show{background:var(--gold);box-shadow:0 4px 0 #a5811a}
+  .btn.next{background:var(--ok);box-shadow:0 4px 0 #446838}
+  .btn.sub{background:#a99a7c;box-shadow:0 4px 0 #85795f;flex:.6}
+  .btn:disabled{opacity:.45;box-shadow:none}
+
+  @media (max-height:640px){
+    header{display:none}
+    .tab{padding:5px 4px}
+    .tab .step{display:none}
+    .work{gap:5px}
+    .prob{padding:4px 10px;font-size:clamp(15px,calc(.7vw + 1.7vh),23px)}
+    .say{padding:5px 10px;min-height:calc(3em + 10px);font-size:14px}
+    .choice{padding:4px 2px}
+    .btn{padding:10px 4px}
+    .actions{min-height:46px}
+    .sum{padding:5px 8px;font-size:15px}
+    .nums{gap:4px}
+    .num{height:clamp(32px,6vh,46px)}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header><h1>整数の 性質</h1></header>
+
+  <div class="tabs">
+    <button class="tab on" data-m="s1"><span class="step">ステップ１</span>2つに 分ける</button>
+    <button class="tab" data-m="s2"><span class="step">ステップ２</span>倍数を さがす</button>
+    <button class="tab" data-m="s3"><span class="step">ステップ３</span>公倍数を さがす</button>
+    <button class="tab" data-m="s4"><span class="step">ステップ４</span>約数を さがす</button>
+    <button class="tab" data-m="s5"><span class="step">ステップ５</span>公約数を さがす</button>
+  </div>
+
+  <div class="main" id="main">
+    <div class="stage" id="stage"><svg id="pic"></svg></div>
+    <div class="work">
+      <div class="prob" id="prob"></div>
+      <div class="say" id="say"></div>
+      <div class="choices off" id="choices"></div>
+      <div class="numsw hidden" id="numsw"><div class="lab" id="numlab"></div><div class="nums" id="nums"></div></div>
+      <div class="sum hidden" id="sum"></div>
+      <div class="actions" id="actions"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =====================================================================
+   整数の 性質（算数5年 A(1) 整数の性質）
+   解説（算数編 p.234-236＝~/Downloads/算数.pdf の 240〜242ページ目）：
+   ・ア(ｱ)「整数は，観点を決めると偶数と奇数に類別される」「２で割ったときに余りが０になる整数を
+     偶数…余りが１になる整数を奇数」「『一の位の数字に着目すればよい。』という記数法に着目する
+     理解にとどまらないように配慮」→ ステップ１（2こずつ 組に して あまりを 見る。
+     答えの あとに かならず「7 ÷ 2 ＝ 3 あまり 1」「7 ＝ 2 × 3 ＋ 1」を 出す）
+     イ(ｱ)「『２で割って１余る数』とも…『２をかけて作った数＋１』とも」→ ステップ１の まとめ
+     「学級の児童を二つのグループに分けようとするとき，出席番号を２で割って」→ ステップ１の まとめ
+   ・ア(ｲ)「３に整数をかけてできる数を３の倍数…（このとき０は倍数に含めていない）」
+     イ(ｱ)「九九の学習での『８の段』で表される範囲を超えて，無限に続いていくことを見いだす」
+     → ステップ２（数表を ぬって、表の 外の 数も 倍数か 考える）
+   ・「８と 12 の公倍数は｛24，48，72，…｝…最小公倍数は…24」
+     内容の取扱い(1)「最大公約数や最小公倍数を形式的に求めることに偏ることなく，
+     具体的な場面に即して取り扱う」→ ステップ３（ブロックを ならべて はしが そろう ところ）
+   ・「12 を割り切ることができる整数を 12 の約数」「約数や倍数の全体をそれぞれ一つの集合として」
+     → ステップ４（□こずつ 組に して あまりが 出ない 数を ぜんぶ さがす）
+   ・「８の約数は｛１，２，４，８｝…12 の約数は…８と 12 の公約数は｛１，２，４｝…最大公約数は…４」
+     → ステップ５（たて 8cm よこ 12cm に 正方形を しきつめる）
+   ・入れて いない もの：素数・素因数分解（中学1年）、約分・通分（分数の 単元）、
+     最小公倍数・最大公約数の 形式的な 求め方（すだれ算 など）
+   【答え】答えの 数は 入力させない。2択・3択と、ためす 数の ボタンだけ
+   【色】偶数＝青みどり／奇数・あまり＝だいだい（あまりのあるわり算と 同じ）／
+        1つ目の 数の 倍数＝青みどり、2つ目＝むらさき、公倍数・公約数＝金
+   ===================================================================== */
+const $=id=>document.getElementById(id);
+let MODE='s1';
+
+function setFH(){
+  const v=(window.visualViewport&&window.visualViewport.height)||window.innerHeight;
+  document.documentElement.style.setProperty('--fh',v+'px');
+}
+setFH();
+addEventListener('resize',()=>{setFH();draw();});
+if(window.visualViewport) visualViewport.addEventListener('resize',setFH);
+
+const CA='#2f8f8a',CAS='#a9d9d4',CAL='#d5eeeb',CR='#c0661f',CRS='#f6c79a',CB='#7a52b3',CBS='#cdbbe6',CBL='#e6dcf5',
+      CI='#6f5d3d',CG='#8f7417',GOLD='#c9a227';
+const GU='<ruby>偶数<rt>ぐうすう</rt></ruby>',KI='<ruby>奇数<rt>きすう</rt></ruby>';
+const easeIO=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+const lerp=(a,b,t)=>a+(b-a)*t;
+const S={busy:false,idx:{s1:0,s2:0,s3:0,s4:0,s5:0}};
+function anim(ms,f,done,ease=easeIO){
+  S.busy=true;const t0=performance.now();
+  const step=now=>{const t=Math.min(1,(now-t0)/ms);f(ease(t));
+    if(t<1)requestAnimationFrame(step);else{S.busy=false;done&&done();}};
+  requestAnimationFrame(step);
+}
+const gcd=(a,b)=>b?gcd(b,a%b):a;
+const lcm=(a,b)=>a/gcd(a,b)*b;
+const divs=n=>{const r=[];for(let d=1;d<=n;d++)if(n%d===0)r.push(d);return r;};
+
+/* ===== 絵の わく：よこ 1000。たては 画面の 形に あわせる ===== */
+const W=1000;let H=560,FS=26;
+function frame(svg){
+  const r=$('stage').getBoundingClientRect();
+  const w=Math.max(r.width-12,100),h=Math.max(r.height-12,100);
+  H=Math.max(420,Math.min(1000,W*h/w));
+  const sc=Math.min(w/W,h/H)||1;
+  FS=Math.max(26,19/sc,Math.min(40,H/22));
+  svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+}
+function tx(x,y,s,col,o={}){
+  const fs=FS*(o.k||1);
+  return `<text x="${x}" y="${y}" font-size="${fs}" fill="${col}" font-weight="800" text-anchor="${o.anc||'middle'}"
+    dominant-baseline="central" paint-order="stroke" stroke="${o.bg||'#fff'}" stroke-width="${fs*0.3}" stroke-linejoin="round">${s}</text>`;
+}
+const rect=(x,y,w,h,a)=>`<rect x="${x}" y="${y}" width="${Math.max(0,w)}" height="${Math.max(0,h)}" ${a}/>`;
+
+/* ===== 共通の 画面部品 ===== */
+function say(h,cls){const e=$('say');e.className='say'+(cls?' '+cls:'');e.innerHTML=`<span>${h}</span>`;}
+function prob(h){$('prob').innerHTML=h;}
+function head(list,txt){prob(`<span class="no">問題 ${S.idx[MODE]+1} / ${list.length}</span><span>${txt}</span>`);}
+function actions(list){
+  const a=$('actions');a.innerHTML='';stageTap=null;
+  list.forEach(([c,t,f,dis])=>{
+    const b=document.createElement('button');b.className='btn '+c;b.innerHTML=t;b.disabled=!!dis;
+    b.addEventListener('click',()=>{if(!S.busy)f(b);});a.appendChild(b);
+  });
+}
+/* shift＝正解の 位置を 問題ごとに ずらす。onPick には もとの 番号が 来る */
+function choices(list,onPick,shift=0,col=false){
+  const box=$('choices');box.innerHTML='';box.classList.toggle('off',!list);box.classList.toggle('col',!!col);
+  if(!list)return;
+  const n=list.length;
+  for(let d=0;d<n;d++){
+    const o=(d+shift)%n;
+    const b=document.createElement('button');b.className='choice';b.innerHTML=list[o];b.dataset.o=o;
+    b.addEventListener('click',()=>{if(!S.busy)onPick(o,b);});box.appendChild(b);
+  }
+}
+function goodChoice(i){[...$('choices').children].forEach(b=>{b.disabled=true;b.classList.toggle('good',+b.dataset.o===i);});}
+function sum(h){const e=$('sum');e.classList.toggle('hidden',!h);e.innerHTML=h||'';}
+function hideAll(){sum('');choices(null);$('numsw').classList.add('hidden');}
+/* 絵を おしても 青い ボタンと 同じに すすむ（宣伝しない にげ道） */
+let stageTap=null;
+$('stage').addEventListener('click',()=>{
+  if(S.busy||!stageTap)return;
+  $('stage').classList.remove('tapped');void $('stage').offsetWidth;$('stage').classList.add('tapped');
+  stageTap();
+});
+function blue(t,f){actions([['play',t,f]]);stageTap=f;}
+function nextBtn(list,load,last){
+  const i=S.idx[MODE];
+  if(i+1<list.length) actions([['next','次の 問題 →',()=>{S.idx[MODE]++;load();}]]);
+  else actions([['next',last?last[0]:'はじめの 問題へ →',()=>{if(last)last[1]();else{S.idx[MODE]=0;load();}}]]);
+}
+/* ためす 数の ボタン */
+function nums(n,lab,onTap){
+  $('numsw').classList.remove('hidden');$('numlab').innerHTML=lab;
+  const box=$('nums');box.innerHTML='';
+  box.style.gridTemplateColumns=`repeat(${n>18?8:n>12?7:6},1fr)`;
+  for(let v=1;v<=n;v++){
+    const b=document.createElement('button');b.className='num';b.textContent=v;b.dataset.v=v;
+    b.addEventListener('click',()=>{if(!S.busy&&!b.disabled)onTap(v);});box.appendChild(b);
+  }
+}
+function numMark(v,cls){
+  document.querySelectorAll('#nums .num').forEach(b=>{
+    b.classList.remove('now');
+    if(+b.dataset.v===v){b.classList.remove('ok','no');b.classList.add(cls,'now');}
+  });
+}
+function numsOff(){document.querySelectorAll('#nums .num').forEach(b=>{b.disabled=true;b.classList.remove('now');});}
+
+function draw(){({s1:draw1,s2:draw2,s3:draw3,s4:draw4,s5:draw5})[MODE]();}
+
+/* =====================================================================
+   ステップ１：2つに 分ける（偶数・奇数）
+   n こを 2こずつ 組に する → あまりが 0 なら 偶数、1 なら 奇数。
+   はじめの 2問（6・7）は 見せて 名前を 教える。あとは 見てから 2択。
+   答えの あとに かならず わり算と「2 × □ ＋ 1」の 形を 出す（一の位だけで 決めない ため）
+   ===================================================================== */
+const P1=[{n:6,show:1},{n:7,show:1},{n:12},{n:15},{n:21},{n:28},{n:34},{n:43},{n:50},{n:0}];
+let G1={n:6,t:0,done:false,table:false};
+function draw1(){
+  const svg=$('pic');frame(svg);let s='';
+  if(G1.table){
+    /* まとめ：0〜39 の 数表を 偶数・奇数で ぬる */
+    const c=Math.min((W-60)/10,(H-FS*1.5-30)/4),x0=(W-c*10)/2,y0=(H-c*4)/2+FS*0.4;
+    for(let v=0;v<40;v++){
+      const x=x0+(v%10)*c,y=y0+Math.floor(v/10)*c,ev=v%2===0;
+      s+=rect(x+3,y+3,c-6,c-6,`rx="10" fill="${ev?CAL:'#fde3c8'}" stroke="${ev?CA:CR}" stroke-width="3"`);
+      s+=tx(x+c/2,y+c/2,v,ev?CA:CR,{k:Math.min(1.2,c/60),bg:ev?CAL:'#fde3c8'});
+    }
+    s+=tx(W/2,y0-FS*0.9,'0 から 39 まで','#8a7a5f',{k:.9});
+    svg.innerHTML=s;return;
+  }
+  const n=G1.n,t=G1.t;
+  s+=tx(W/2,FS*1.2,`${n} こ`,CI,{k:1.5});
+  if(n===0){
+    s+=tx(W/2,H/2,'なにも ない','#a99a7c',{k:1.1});
+    s+=tx(W/2,H/2+FS*1.6,'組も あまりも ない','#a99a7c',{k:.9});
+    svg.innerHTML=s;return;
+  }
+  const top=FS*2.6,avail=H-top-FS*2.4;
+  const r0=Math.ceil(n/10),c0=Math.min(100,(W-80)/10,avail/r0);
+  /* 組（たて 2こ）は 1行に 10組まで。こえたら 下の 行へ おりかえす */
+  const cols=Math.ceil(n/2),per=Math.min(cols,10),lines=Math.ceil(cols/10),gapL=0.45;
+  const c1=Math.min(130,(W-60)/per,avail/(lines*2+(lines-1)*gapL+0.3));
+  const bx0=(W-c0*Math.min(n,10))/2,ax0=(W-c1*per)/2,ay=top+(avail-c1*(lines*2+(lines-1)*gapL))/2;
+  const px=p=>ax0+(p%10)*c1,py=p=>ay+Math.floor(p/10)*c1*(2+gapL);
+  const rad=lerp(c0,c1,t)*0.36;
+  if(G1.done){
+    for(let p=0;p<Math.floor(n/2);p++)
+      s+=rect(px(p)+c1*0.06,py(p)+c1*0.04,c1*0.88,c1*1.92,`rx="${c1*0.44}" fill="${CAL}" stroke="${CA}" stroke-width="3"`);
+  }
+  for(let i=0;i<n;i++){
+    const bxp=bx0+(i%10)*c0+c0/2,byp=top+Math.floor(i/10)*c0+c0/2+(avail-r0*c0)/2;
+    const p=Math.floor(i/2),axp=px(p)+c1/2,ayp=py(p)+(i%2)*c1+c1/2;
+    const left=n%2===1&&i===n-1;
+    const fill=G1.done?(left?CRS:CAS):'#e3c58f',st=G1.done?(left?CR:CA):'#a88a55';
+    s+=`<circle cx="${lerp(bxp,axp,t)}" cy="${lerp(byp,ayp,t)}" r="${rad}" fill="${fill}" stroke="${st}" stroke-width="3"/>`;
+  }
+  if(G1.done){
+    const yb=py(cols-1)+c1*2+FS*1.1,q=Math.floor(n/2);
+    if(n%2===1){
+      s+=tx(px(cols-1)+c1/2,py(cols-1)+c1*1.5,'あまり 1',CR,{k:.85});
+      s+=tx(W/2,yb,`2こずつ ${q}組 と あまり 1`,CR);
+    }else s+=tx(W/2,yb,`2こずつ ${q}組　あまり なし`,CA);
+  }
+  svg.innerHTML=s;
+}
+function s1start(){S.idx.s1=0;load1();}
+function load1(){
+  const p=P1[S.idx.s1];G1={n:p.n,t:0,done:false,table:false};hideAll();draw1();
+  if(p.n===0){
+    head(P1,`<b>0</b> は ${GU}？ ${KI}？`);
+    say('0 ÷ 2 を 考えよう。あまりは いくつ？');
+    choices([GU,KI],pick1,1);return;
+  }
+  head(P1,p.show?`<b>${p.n}</b> こを 2つに 分ける`:`<b>${p.n}</b> は ${GU}？ ${KI}？`);
+  say(`${p.n} こを 2こずつ 組に して みよう`);
+  blue('2こずつ 組に する ▶',pair1);
+}
+function pair1(){
+  actions([]);
+  anim(1000,t=>{G1.t=t;draw1();},()=>{G1.done=true;draw1();after1();});
+}
+function eq1(n){
+  const q=Math.floor(n/2),r=n%2;
+  return `<div class="f">${n} ÷ 2 ＝ ${q} あまり <span class="${r?'cr':'ca'}">${r}</span></div>`+
+         `<div class="f">${n} ＝ 2 × ${q}${r?' <span class="cr">＋ 1</span>':''}</div>`;
+}
+function after1(){
+  const p=P1[S.idx.s1],n=p.n;
+  if(p.show){
+    if(n%2===0) say(`2で わると あまり 0。こういう 数を <span class="ca">${GU}</span> と いうよ`,'ok');
+    else say(`2で わると あまり 1。こういう 数を <span class="cr">${KI}</span> と いうよ`,'ok');
+    sum(eq1(n));nextBtn(P1,load1);return;
+  }
+  say(`<b>${n}</b> は ${GU}？ ${KI}？　組に ならない のこりを 見よう`);
+  choices([GU,KI],pick1,S.idx.s1%2);
+}
+function pick1(o,b){
+  const n=P1[S.idx.s1].n,ans=n%2;
+  if(o!==ans){
+    b.disabled=true;
+    if(n===0) say('0 ÷ 2 ＝ 0 あまり 0。あまりは 0 だね','try');
+    else say(ans?'組に ならない 1こ（だいだい）が あるね。もう一回':'組に ならない のこりは ある？ もう一回','try');
+    return;
+  }
+  goodChoice(ans);
+  if(n===0) say(`すごい！ 0 も 2で わると あまり 0。0 は <span class="ca">${GU}</span>`,'ok');
+  else say(`すごい！ ${n} は ${ans?`<span class="cr">${KI}</span>`:`<span class="ca">${GU}</span>`}`,'ok');
+  sum(n===0?'<div class="f">0 ÷ 2 ＝ 0 あまり <span class="ca">0</span></div>':eq1(n));
+  nextBtn(P1,load1,['まとめを 見る →',summary1]);
+}
+function summary1(){
+  G1.table=true;draw1();hideAll();choices(null);
+  prob('<span>まとめ</span>');
+  say(`整数は かならず ${GU} か ${KI} の どちらかに 分かれる`,'ok');
+  sum(`<div><span class="ca">${GU}</span>　2で わりきれる 数　＝ 2 × □</div>`+
+      `<div><span class="cr">${KI}</span>　2で わると 1 あまる 数　＝ 2 × □ <span class="cr">＋ 1</span></div>`+
+      `<div class="small">出席番号を 2で わると、クラスの みんなが どちらかの チームに 入れる</div>`);
+  actions([['sub','はじめから',s1start]]);
+}
+
+/* =====================================================================
+   ステップ２：倍数を さがす
+   1〜60 の 数表に n × 1、n × 2 … を ぬる。4つ ぬったら のこりは まとめて。
+   1問目だけ「60で おわり？」（九九を こえて どこまでも つづく）。
+   そのあと 表の 外の 数が 倍数か どうかを 2問（わりきれるか で きめる）
+   ===================================================================== */
+const P2=[{n:3,q:[[75,1],[80,0]]},{n:4,q:[[90,0],[100,1]]},{n:6,q:[[96,1],[100,0]]},{n:7,q:[[95,0],[84,1]]},{n:8,q:[[90,0],[120,1]]}];
+let G2={n:3,k:0,line:'',lineCol:CI};
+function draw2(){
+  const svg=$('pic');frame(svg);let s='';
+  const n=G2.n,c=Math.min((W-40)/10,(H-FS*3)/6),x0=(W-c*10)/2,y0=(H-FS*3-c*6)/2+6;
+  for(let v=1;v<=60;v++){
+    const x=x0+((v-1)%10)*c,y=y0+Math.floor((v-1)/10)*c;
+    const on=v%n===0&&v<=n*G2.k,last=on&&v===n*G2.k&&!G2.full;
+    s+=rect(x+3,y+3,c-6,c-6,`rx="9" fill="${on?CA:'#fff'}" stroke="${last?GOLD:on?CA:'#e3d6b8'}" stroke-width="${last?6:2}"`);
+    s+=tx(x+c/2,y+c/2,v,on?'#fff':'#9a8a6a',{k:Math.min(1,c/64),bg:on?CA:'#fff'});
+  }
+  if(G2.line) s+=tx(W/2,y0+c*6+FS*1.4,G2.line,G2.lineCol,{k:1.15});
+  svg.innerHTML=s;
+}
+function s2start(){S.idx.s2=0;load2();}
+function load2(){
+  const p=P2[S.idx.s2];G2={n:p.n,k:0,line:'',lineCol:CI,full:false};hideAll();draw2();
+  head(P2,`<b>${p.n}</b> の 倍数を さがそう`);
+  if(S.idx.s2===0) say(`${p.n} に 1、2、3 … と 整数を かけて できる 数を <span class="ca">${p.n} の 倍数</span> と いうよ`);
+  else say(`${p.n} × 1、${p.n} × 2 … と ぬって いこう`);
+  blue(`${p.n} × 1 ▶`,step2);
+}
+function step2(){
+  const n=G2.n;G2.k++;G2.line=`${n} × ${G2.k} ＝ ${n*G2.k}`;draw2();
+  if(G2.k<4) blue(`${n} × ${G2.k+1} ▶`,step2);
+  else blue('60まで ぬる ▶',fill2);
+}
+function fill2(){
+  const n=G2.n,k0=G2.k,k1=Math.floor(60/n);actions([]);
+  anim(Math.max(400,(k1-k0)*130),t=>{G2.k=Math.round(lerp(k0,k1,t));G2.line=`${n} × ${G2.k} ＝ ${n*G2.k}`;draw2();},()=>{
+    G2.full=true;draw2();
+    if(S.idx.s2===0) askCont2(); else judge2(0);
+  },t=>t);
+}
+function askCont2(){
+  const n=G2.n;
+  say(`${n} の 倍数を 60 まで ぬったよ。${n} の 倍数は 60 で おわり？`);
+  choices(['60 で おわり','まだ つづく'],(o,b)=>{
+    if(o!==1){b.disabled=true;say(`${n} × 21 は いくつ？ 表の 外に ならないかな`,'try');return;}
+    goodChoice(1);
+    say(`すごい！ ${n} × 21 ＝ ${n*21}、${n} × 22 ＝ ${n*22} ……　九九を こえて どこまでも つづく`,'ok');
+    blue('表の 外の 数を 考える ▶',()=>judge2(0));
+  },1);
+}
+function judge2(j){
+  const p=P2[S.idx.s2],n=p.n,[x,yes]=p.q[j];
+  G2.line=`${x} は？`;G2.lineCol=CI;draw2();sum('');
+  say(`<b>${x}</b> は ${n} の 倍数？`);
+  choices(['はい','いいえ'],(o,b)=>{
+    const ans=yes?0:1;
+    if(o!==ans){b.disabled=true;say(`${x} ÷ ${n} を 計算して、わりきれるか 見て みよう`,'try');return;}
+    goodChoice(ans);
+    if(yes){
+      G2.line=`${n} × ${x/n} ＝ ${x}`;G2.lineCol=CA;
+      say(`すごい！ ${x} ÷ ${n} ＝ ${x/n}　わりきれるから ${x} は ${n} の 倍数`,'ok');
+    }else{
+      G2.line=`${x} ÷ ${n} ＝ ${Math.floor(x/n)} あまり ${x%n}`;G2.lineCol=CR;
+      say(`すごい！ ${x} ÷ ${n} ＝ ${Math.floor(x/n)} あまり ${x%n}　わりきれないから 倍数では ない`,'ok');
+    }
+    draw2();
+    if(j===0) blue('もう 1問 ▶',()=>judge2(1));
+    else{sum(`<div><span class="ca">${n} の 倍数</span>　＝ ${n} × 整数 ＝ ${n} で わりきれる 数</div>`);nextBtn(P2,load2);}
+  },j);
+}
+
+/* =====================================================================
+   ステップ３：公倍数を さがす（具体的な 場面＝ブロックを ならべる）
+   a cm と b cm の ブロックを それぞれ まっすぐ ならべて、はしが そろう ところを 見る。
+   まちがいの こうほは「a ＋ b」と「a × b」（または そろわない 数）
+   1問目だけ「そろう ところの きまり」＝公倍数は 最小公倍数の 倍数
+   ===================================================================== */
+const P3=[{a:4,b:6,w:[10,24]},{a:3,b:5,w:[8,30]},{a:4,b:8,w:[12,32]},{a:6,b:9,w:[15,54]},{a:8,b:12,w:[20,96]},{a:6,b:8,w:[14,48]}];
+let G3={};
+function draw3(){
+  const svg=$('pic');frame(svg);let s='';
+  const {a,b,max,nA,nB,show,L}=G3;
+  const x0=150,x1=W-40,u=(x1-x0)/max;
+  const hh=Math.min(100,H*0.15),yA=(H-(hh*2+FS*7.6))/2+FS*2.9,yB=yA+hh+FS*2.8,yAx=yB+hh+FS*2.4;
+  /* 公倍数の 金の 線（答えの あと） */
+  if(show) for(let v=L;v<=max;v+=L){
+    const x=x0+v*u;
+    s+=`<line x1="${x}" y1="${yA-FS*1.9}" x2="${x}" y2="${yAx}" stroke="${GOLD}" stroke-width="5" stroke-dasharray="10 7"/>`;
+    s+=tx(x,yA-FS*2.5,`${v}cm`,CG,{k:1.05,anc:x>x1-40?'end':'middle'});
+  }
+  const row=(y,len,cnt,c1,c2,st)=>{
+    let r='';const full=Math.floor(cnt),part=cnt-full;
+    for(let i=0;i<Math.ceil(cnt)&&i*len<max;i++){
+      const off=i<full?0:(1-part)*60;
+      r+=rect(x0+i*len*u+1.5,y-off,len*u-3,hh,`rx="7" fill="${i%2?c2:c1}" stroke="${st}" stroke-width="3" opacity="${i<full?1:part}"`);
+    }
+    return r;
+  };
+  s+=row(yA,a,nA,CAS,CAL,CA)+row(yB,b,nB,CBS,CBL,CB);
+  s+=tx(x0-18,yA+hh/2,`${a}cm`,CA,{anc:'end',k:1.05});
+  s+=tx(x0-18,yB+hh/2,`${b}cm`,CB,{anc:'end',k:1.05});
+  /* はしの 数（上の ブロックは 上に、下の ブロックは 下に） */
+  const kf=u*a<FS*1.6?.72:.8;
+  for(let i=1;i<=Math.floor(nA)&&i*a<=max;i++) s+=tx(x0+i*a*u,yA-FS*0.7,i*a,CA,{k:kf});
+  for(let i=1;i<=Math.floor(nB)&&i*b<=max;i++) s+=tx(x0+i*b*u,yB+hh+FS*0.75,i*b,CB,{k:.8});
+  /* 目もり */
+  s+=`<line x1="${x0}" y1="${yAx}" x2="${x1}" y2="${yAx}" stroke="${CI}" stroke-width="3"/>`;
+  for(let v=0;v<=max;v++){
+    const x=x0+v*u,big=v%(max>40?10:5)===0;
+    s+=`<line x1="${x}" y1="${yAx}" x2="${x}" y2="${yAx+(big?16:8)}" stroke="${CI}" stroke-width="${big?3:1.5}"/>`;
+    if(big) s+=tx(x,yAx+16+FS*0.6,v,CI,{k:.72});
+  }
+  s+=tx(x1,yAx+16+FS*1.5,'cm',CI,{k:.7,anc:'end'});
+  svg.innerHTML=s;
+}
+function s3start(){S.idx.s3=0;load3();}
+function load3(){
+  const p=P3[S.idx.s3],L=lcm(p.a,p.b);
+  let max=L*(S.idx.s3===0?3:2);while(max<24)max+=L;
+  G3={a:p.a,b:p.b,L,max,nA:0,nB:0,show:false};hideAll();draw3();
+  head(P3,`${p.a}cm と ${p.b}cm の ブロック`);
+  say(`${p.a}cm と ${p.b}cm の ブロックを それぞれ まっすぐ ならべる。はしが そろう ところは どこ？`);
+  blue(`${p.a}cm を ならべる ▶`,()=>lay3('nA',p.a,()=>blue(`${p.b}cm を ならべる ▶`,()=>lay3('nB',p.b,ask3))));
+}
+function lay3(key,len,done){
+  const cnt=Math.floor(G3.max/len);actions([]);
+  anim(cnt*170,t=>{G3[key]=t*cnt;draw3();},()=>{G3[key]=cnt;draw3();done();},t=>t);
+}
+function ask3(){
+  const p=P3[S.idx.s3],L=G3.L;
+  say('はじめて 上と 下の はしが そろうのは 何cmの ところ？');
+  choices([L,...p.w].map(v=>`${v}cm`),(o,b)=>{
+    if(o!==0){
+      const w=p.w[o-1];b.disabled=true;
+      if(w%p.a===0&&w%p.b===0) say(`${w}cm でも そろうけど、もっと 手前で そろって いるよ`,'try');
+      else say(`${w}cm の ところは、上と 下の はしが どちらも ある？ もう一回`,'try');
+      return;
+    }
+    goodChoice(0);G3.show=true;draw3();
+    if(S.idx.s3===0) say(`すごい！ ${p.a} の 倍数でも ${p.b} の 倍数でも ある 数を <span class="cg">公倍数</span>、いちばん 小さい ${L} を <span class="cg">最小公倍数</span> と いうよ`,'ok');
+    else say(`すごい！ ${p.a} と ${p.b} の 最小公倍数は <span class="cg">${L}</span>`,'ok');
+    sum(list3());
+    if(S.idx.s3===0) blue('そろう ところの きまり ▶',rule3);
+    else nextBtn(P3,load3);
+  },S.idx.s3%3);
+}
+function list3(){
+  const {a,b,L,max}=G3;
+  const ml=n=>{const r=[];for(let v=n;v<=max;v+=n)r.push(v%L===0?`<span class="gd">${v}</span>`:v);return r.join('、')+' …';};
+  const cm=[];for(let v=L;v<=max;v+=L)cm.push(v);
+  return `<div><span class="ca">${a} の 倍数</span>　${ml(a)}</div><div><span class="cb">${b} の 倍数</span>　${ml(b)}</div>`+
+         `<div><span class="cg">公倍数</span>　${cm.join('、')} …　<span class="small">いちばん 小さい ${L}＝最小公倍数</span></div>`;
+}
+function rule3(){
+  const L=G3.L,cm=[];for(let v=L;v<=G3.max;v+=L)cm.push(v+'cm');
+  say(`そろう ところは ${cm.join('、')}。どんな きまりが ある？`);
+  choices([`${L}cmずつ ふえる`,'10cmずつ ふえる','6cmずつ ふえる'],(o,b)=>{
+    if(o!==0){b.disabled=true;say('金の 線と 線の あいだは 何cm？ もう一回','try');return;}
+    goodChoice(0);
+    say(`すごい！ 公倍数は 最小公倍数 ${L} の 倍数に なって いる（${L} × 1、${L} × 2、${L} × 3 …）`,'ok');
+    nextBtn(P3,load3);
+  },2,true);
+}
+
+/* =====================================================================
+   ステップ４：約数を さがす
+   n こを □こずつ 組に する。あまりが 出なければ □ は n の 約数。
+   ためす 数は 1〜n の ボタン。ぜんぶ 見つけたら 次へ。
+   組の 数（12 ÷ 3 ＝ 4 の 4）も 約数に なる ことを ことばで さそう
+   ===================================================================== */
+const P4=[12,18,16,24,15,7];
+let G4={n:12,w:null,t:1,from:null,found:new Set()};
+function layout4(n,w){
+  /* 長い ほうを よこに する（1こずつ でも 24こずつ でも 絵が 小さく ならない） */
+  const top=FS*0.6,bot=FS*2.6,aw=W-80,ah=H-top-bot;
+  let cols,rows,pos=[];
+  if(w==null){cols=Math.min(n,8);rows=Math.ceil(n/8);}
+  else{const g=Math.ceil(n/w);if(w>=g){cols=w;rows=g;}else{cols=g;rows=w;}}
+  const c=Math.min(140,aw/cols,ah/rows),x0=(W-c*cols)/2,y0=top+(ah-c*rows)/2;
+  for(let i=0;i<n;i++){
+    let col,row;
+    if(w==null){col=i%8;row=Math.floor(i/8);}
+    else{const g=Math.floor(i/w),j=i%w,hz=w>=Math.ceil(n/w);col=hz?j:g;row=hz?g:j;}
+    pos.push([x0+col*c+c/2,y0+row*c+c/2]);
+  }
+  return {pos,c,x0,y0,cols,rows};
+}
+function draw4(){
+  const svg=$('pic');frame(svg);let s='';
+  const {n,w,t}=G4,L=layout4(n,w),F=G4.from||L;
+  const c=lerp(F.c,L.c,t);
+  if(w!=null&&t>=1){
+    const g=Math.ceil(n/w),hz=w>=g;
+    for(let k=0;k<g;k++){
+      const cnt=Math.min(w,n-k*w),full=cnt===w;
+      const x=hz?L.x0:L.x0+k*L.c,y=hz?L.y0+k*L.c:L.y0;
+      const ww=hz?cnt*L.c:L.c,hh=hz?L.c:cnt*L.c;
+      s+=rect(x+2,y+2,ww-4,hh-4,`rx="${L.c*0.25}" fill="${full?CAL:'#fde3c8'}" stroke="${full?CA:CR}" stroke-width="3"`);
+    }
+  }
+  for(let i=0;i<n;i++){
+    const [x,y]=[lerp(F.pos[i][0],L.pos[i][0],t),lerp(F.pos[i][1],L.pos[i][1],t)];
+    let fill='#e3c58f',st='#a88a55';
+    if(w!=null&&t>=1){const left=Math.floor(i/w)*w+w>n;fill=left?CRS:CAS;st=left?CR:CA;}
+    s+=rect(x-c*0.36,y-c*0.36,c*0.72,c*0.72,`rx="${c*0.16}" fill="${fill}" stroke="${st}" stroke-width="3"`);
+  }
+  if(w!=null&&t>=1){
+    const q=Math.floor(n/w),r=n%w;
+    s+=tx(W/2,H-FS*1.2,r?`${w}こずつ ${q}組 と あまり ${r}`:`${w}こずつ ${q}組　あまり なし`,r?CR:CA);
+  }else if(w==null) s+=tx(W/2,H-FS*1.2,`${n} こ`,CI);
+  svg.innerHTML=s;
+}
+function s4start(){S.idx.s4=0;load4();}
+function load4(){
+  const n=P4[S.idx.s4];G4={n,w:null,t:1,from:null,found:new Set(),first:true};hideAll();draw4();
+  head(P4,`<b>${n}</b> の 約数を さがそう`);
+  if(S.idx.s4===0) say(`${n} こを 同じ 数ずつ 組に する。あまりが 出ないのは 何こずつ の とき？ 下の 数を おして ためそう`);
+  else say(`${n} こを 何こずつ に すると あまりが 出ない？ 下の 数を おして ためそう`);
+  nums(n,'何こずつ 組に する？',try4);
+  actions([]);sum4();
+}
+function sum4(){
+  const n=G4.n,f=[...G4.found].sort((x,y)=>x-y),rest=divs(n).length-f.length;
+  sum(`<div><span class="ca">${n} の 約数</span>　${f.length?f.join('、'):'―'}${rest?`　<span class="small">あと ${rest}こ</span>`:''}</div>`);
+}
+function try4(w){
+  const n=G4.n,L=layout4(n,G4.w),F={pos:L.pos,c:L.c};
+  G4.from=F;G4.w=w;G4.t=0;
+  anim(650,t=>{G4.t=t;draw4();},()=>{
+    G4.t=1;draw4();
+    const q=Math.floor(n/w),r=n%w;
+    if(r){numMark(w,'no');say(`${n} ÷ ${w} ＝ ${q} あまり ${r}。あまりが 出たね`);return;}
+    const was=G4.found.size;G4.found.add(w);numMark(w,'ok');sum4();
+    if(G4.found.size===divs(n).length){done4();return;}
+    let h=`${n} ÷ ${w} ＝ ${q}　あまり なし。<span class="ca">${w}</span> は ${n} の 約数`;
+    if(S.idx.s4===0&&was===0&&G4.first){h+=`<br><span class="small">（${n} を わりきる 数を ${n} の 約数 と いうよ）</span>`;G4.first=false;}
+    else if(!G4.found.has(q)) h+=`<br>${q}組 できたね。${q}こずつ でも ためそう`;
+    say(h,'ok');
+  });
+}
+function done4(){
+  const n=G4.n,d=divs(n),pairs=[];
+  for(const x of d){const y=n/x;if(x<=y)pairs.push(`${x} × ${y}`);}
+  numsOff();
+  say(d.length===2?`すごい！ ぜんぶ 見つけた。${n} の 約数は 1 と ${n} だけ`:`すごい！ ${n} の 約数を ぜんぶ 見つけた`,'ok');
+  sum(`<div><span class="ca">${n} の 約数</span>　${d.join('、')}</div>`+
+      `<div class="pairs small">${pairs.map(p=>`<span>${p} ＝ ${n}</span>`).join('')}</div>`+
+      (S.idx.s4===0?`<div class="small">1 と ${n} は いつも 約数。かけて ${n} に なる 2つの 数は 組に なる</div>`:''));
+  nextBtn(P4,load4);
+}
+
+/* =====================================================================
+   ステップ５：公約数を さがす（具体的な 場面＝長方形に 正方形を しきつめる）
+   たて a cm よこ b cm の 長方形に、1辺 s cm の 正方形を すきまなく しきつめる。
+   しきつめられる s ＝ a の 約数でも b の 約数でも ある 数（公約数）。
+   ぜんぶ 見つけたら、しきつめられない 正方形を 見せて「なぜ？」（見てから 聞く）
+   ===================================================================== */
+const P5=[{a:8,b:12,s:3},{a:6,b:9,s:2},{a:12,b:18,s:4},{a:10,b:15,s:2},{a:6,b:12,s:4},{a:12,b:16,s:3}];
+let G5={};
+function draw5(){
+  const svg=$('pic');frame(svg);let s='';
+  const {a,b,sz,k}=G5;
+  const u=Math.min((W-230)/b,(H-FS*4.2)/a),x0=(W-u*b)/2+40,y0=FS*2.2+(H-FS*4.2-u*a)/2;
+  s+=rect(x0,y0,b*u,a*u,`fill="#fff"`);
+  /* 1cm の 目もり（うすく） */
+  for(let i=1;i<b;i++) s+=`<line x1="${x0+i*u}" y1="${y0}" x2="${x0+i*u}" y2="${y0+a*u}" stroke="#eadfc6" stroke-width="1.5"/>`;
+  for(let j=1;j<a;j++) s+=`<line x1="${x0}" y1="${y0+j*u}" x2="${x0+b*u}" y2="${y0+j*u}" stroke="#eadfc6" stroke-width="1.5"/>`;
+  if(sz){
+    const cols=Math.floor(b/sz),rows=Math.floor(a/sz),tot=cols*rows,show=Math.min(tot,Math.round(k*tot));
+    for(let q=0;q<show;q++){
+      const r=Math.floor(q/cols),c=q%cols;
+      s+=rect(x0+c*sz*u+2,y0+r*sz*u+2,sz*u-4,sz*u-4,`rx="6" fill="${(r+c)%2?CAL:CAS}" stroke="${CA}" stroke-width="3"`);
+    }
+    if(k>=1){
+      const rb=b%sz,ra=a%sz;
+      if(rb) s+=rect(x0+cols*sz*u,y0,rb*u,a*u,`fill="#fde3c8" stroke="${CR}" stroke-width="3" stroke-dasharray="8 5"`);
+      if(ra) s+=rect(x0,y0+rows*sz*u,cols*sz*u,ra*u,`fill="#fde3c8" stroke="${CR}" stroke-width="3" stroke-dasharray="8 5"`);
+      if(rb){
+        s+=tx(x0+cols*sz*u+rb*u/2,y0+a*u/2-FS*0.45,`${rb}cm`,CR,{k:.72,bg:'#fde3c8'});
+        s+=tx(x0+cols*sz*u+rb*u/2,y0+a*u/2+FS*0.45,'あまる',CR,{k:.72,bg:'#fde3c8'});
+      }
+      if(ra) s+=tx(x0+cols*sz*u/2,y0+rows*sz*u+ra*u/2,`${ra}cm あまる`,CR,{k:.8,bg:'#fde3c8'});
+    }
+    s+=tx(x0+sz*u/2,y0+sz*u/2,`${sz}cm`,CA,{k:Math.min(.9,sz*u/80),bg:CAS});
+  }
+  s+=rect(x0,y0,b*u,a*u,`fill="none" stroke="${CI}" stroke-width="4"`);
+  s+=tx(x0+b*u/2,y0-FS*0.9,`よこ ${b}cm`,CI);
+  s+=tx(x0-16,y0+a*u/2-FS*0.6,'たて',CI,{anc:'end'});
+  s+=tx(x0-16,y0+a*u/2+FS*0.6,`${a}cm`,CI,{anc:'end'});
+  svg.innerHTML=s;
+}
+function s5start(){S.idx.s5=0;load5();}
+function load5(){
+  const p=P5[S.idx.s5];G5={a:p.a,b:p.b,sz:null,k:0,found:new Set()};hideAll();draw5();
+  head(P5,`たて ${p.a}cm よこ ${p.b}cm の 長方形`);
+  say('同じ 大きさの 正方形を すきまなく しきつめたい。1辺 何cm なら ぴったり？ 下の 数を おして ためそう');
+  nums(Math.min(p.a,p.b),'正方形の 1辺は 何cm？',try5);
+  actions([]);sum5();
+}
+function sum5(){
+  const f=[...G5.found].sort((x,y)=>x-y),rest=divs(gcd(G5.a,G5.b)).length-f.length;
+  sum(`<div>しきつめられた　${f.length?f.map(v=>v+'cm').join('、'):'―'}${rest?`　<span class="small">あと ${rest}こ</span>`:''}</div>`);
+}
+function try5(sz){
+  const {a,b}=G5;G5.sz=sz;G5.k=0;
+  anim(600,t=>{G5.k=t;draw5();},()=>{
+    G5.k=1;draw5();
+    const ok=a%sz===0&&b%sz===0;
+    if(!ok){
+      numMark(sz,'no');
+      const w=[];if(a%sz)w.push(`たてに ${a%sz}cm`);if(b%sz)w.push(`よこに ${b%sz}cm`);
+      say(`${sz}cm では ${w.join('、')} あまる`);return;
+    }
+    G5.found.add(sz);numMark(sz,'ok');sum5();
+    if(G5.found.size===divs(gcd(a,b)).length){done5();return;}
+    say(`${sz}cm の 正方形で ぴったり しきつめられた！ たて ${a/sz}こ、よこ ${b/sz}こ`,'ok');
+  },t=>t);
+}
+function commonList(){
+  const {a,b}=G5,cd=divs(gcd(a,b));
+  const dl=n=>divs(n).map(v=>cd.includes(v)?`<span class="gd">${v}</span>`:v).join('、');
+  return `<div>${a} の 約数　${dl(a)}</div><div>${b} の 約数　${dl(b)}</div>`+
+         `<div><span class="cg">公約数</span>　${cd.join('、')}　<span class="small">いちばん 大きい ${cd[cd.length-1]}＝最大公約数</span></div>`;
+}
+function done5(){
+  const {a,b}=G5,g=gcd(a,b);numsOff();
+  if(S.idx.s5===0) say(`すごい！ ${a} の 約数でも ${b} の 約数でも ある 数を <span class="cg">公約数</span>、いちばん 大きい ${g} を <span class="cg">最大公約数</span> と いうよ`,'ok');
+  else say(`すごい！ ぜんぶ 見つけた。いちばん 大きい 正方形は 1辺 <span class="cg">${g}cm</span>（最大公約数）`,'ok');
+  sum(commonList());
+  blue('しきつめられない わけ ▶',why5);
+}
+function why5(){
+  const p=P5[S.idx.s5],{a,b}=G5,sz=p.s;
+  G5.sz=sz;G5.k=1;draw5();$('numsw').classList.add('hidden');
+  say(`${sz}cm の 正方形は しきつめられない。なぜ？`);
+  const tate=a%sz!==0;
+  const right=tate?`たての ${a}cm が ${sz} で わりきれない`:`よこの ${b}cm が ${sz} で わりきれない`;
+  const other=tate?`よこの ${b}cm が ${sz} で わりきれない`:`たての ${a}cm が ${sz} で わりきれない`;
+  const g=gcd(a,b);
+  choices([right,other,'正方形が 大きすぎる'],(o,btn)=>{
+    if(o===1){btn.disabled=true;say(tate?`${b} ÷ ${sz} ＝ ${b/sz}　よこは わりきれるよ`:`${a} ÷ ${sz} ＝ ${a/sz}　たては わりきれるよ`,'try');return;}
+    if(o===2){btn.disabled=true;say(`${g}cm の 正方形は しきつめられたね。大きさの せいでは ないよ`,'try');return;}
+    goodChoice(0);
+    say(`すごい！ ${sz} は ${tate?b:a} の 約数だけど、${tate?a:b} の 約数では ない。どちらの 約数でも ある 数（公約数）なら しきつめられる`,'ok');
+    nextBtn(P5,load5);
+  },S.idx.s5%3,true);
+}
+
+/* ===== タブ ===== */
+const START={s1:s1start,s2:s2start,s3:s3start,s4:s4start,s5:s5start};
+document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{
+  if(S.busy)return;
+  MODE=b.dataset.m;
+  document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x===b));
+  START[MODE]();
+}));
+
+s1start();
+</script>
+</body>
+</html>
