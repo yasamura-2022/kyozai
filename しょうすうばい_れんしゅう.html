@@ -74,6 +74,9 @@
   .prob{display:flex;align-items:center;gap:10px;background:var(--card);border:2px solid var(--line);border-radius:14px;padding:6px 12px;
     font-weight:800;font-size:clamp(14px,calc(.6vw + 1.3vh),21px);word-break:keep-all;flex-wrap:wrap;justify-content:center;line-height:1.5}
   .prob .no{color:#8a7a5f;font-size:.8em}
+  /* 文を 読んで 考える ステップ（２〜５）は 問題文を 大きく（「割合と百分率」と そろえた。2026-09-27） */
+  .main.bigprob .prob{font-size:clamp(18px,calc(.85vw + 1.9vh),28px);border-color:#d6c49a;padding:8px 14px}
+  .main.bigprob .prob .no{font-size:.62em}
   .prob u{text-decoration:none;background:linear-gradient(transparent 55%,#ffe14d 55%)}
   .say{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:7px 12px;
     font-weight:800;color:#5d5040;line-height:1.5;text-align:center;word-break:keep-all;
@@ -192,6 +195,7 @@
     .sum{padding:4px 8px}
     .zb{padding:2px 4px}
   }
+  @media (max-height:640px){ .main.bigprob .prob{padding:3px 10px;line-height:1.38} }
 </style>
 </head>
 <body>
@@ -898,6 +902,7 @@ function drawChain(){
 function draw(){ if(MODE==='s5') drawChain(); else drawFig(); }
 function show(m){
   MODE=m;
+  $('main').classList.toggle('bigprob',m!=='s1');
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.dataset.m===m));
   lineStart();
 }
