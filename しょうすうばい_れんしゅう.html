@@ -456,7 +456,7 @@ function checkName(){
   prob(`<span class="no">問題 ${S.idx[MODE]+1} / ${LIST[MODE].length}</span><span>${rtxt(q.txt,true)}</span>`);
   $('shiki').classList.add('hidden');
   renderZu();
-  say(`よくできました！ <b class="mo">${q.A}</b> が もとにする量（<b class="wa">1</b>）。<br><small>図に なったよ。図を 見て 式を つくろう</small>`,'ok');
+  say(`よくできました！ <b class="mo">${q.A}</b> が もとにする量（<b class="wa">1</b>）。<br><small>図を 見て 式を つくろう</small>`,'ok');
   growFig(()=>{actions([['play','式を つくる ▶',ask]]);stageTap=ask;});
 }
 function growFig(done){
