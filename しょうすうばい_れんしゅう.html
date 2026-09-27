@@ -713,7 +713,7 @@ const M1={st:0,t:1};
 function s1steps(q){
   const whole=Math.floor(q.p+1e-9),frac=Math.round((q.p-whole)*10);
   const s=[{f:1,b:`${q.A}で 測る ▶`}];
-  if(frac) s.push({f:2,b:'10等分して 測る ▶'});
+  if(frac) s.push({f:2,b:whole?`のこりを ${q.A.replace('の リボン','')}の 0.1で 測る ▶`:`${q.A.replace('の リボン','')}の 0.1で 測る ▶`});
   s.push({f:3,b:'数直線に 表す ▶'});
   return s;
 }
@@ -739,18 +739,20 @@ function s1go(){
   if(!s)return;
   stageTap=null;actions([['play',s.b,()=>{},true]]);
   M1.st=s.f;
-  anim(s.f===3?600:1200,t=>{M1.t=t;draw();},()=>{
+  anim(s.f===3?600:s.f===2?Math.max(1500,frac*550):1200,t=>{M1.t=t;draw();},()=>{
     M1.i++;
-    if(s.f===1) say(whole===0?`<b class="mo">${q.A}</b> より 短いね。<b class="mo">1つ分</b>に たりない`
-      :frac?`<b class="mo">${q.A}</b> の <b class="mo">${whole}つ分</b> と、少し のこる`:`<b class="mo">${q.A}</b> の ちょうど <b class="mo">${whole}つ分</b>`);
-    if(s.f===2) say(`<b class="mo">${q.A}</b> を 10等分した 1つ分は <b class="wa">0.1</b>。<br>${whole?'のこり':'この リボン'}は <b class="wa">0.1</b> の <b class="wa">${frac}こ分</b>`);
+    const u=q.a/10,rest=fmt(q.b-whole*q.a);
+    if(s.f===1) say(whole===0?`<b class="ku">${q.B}（${fmt(q.b)}m）</b> は <b class="mo">${q.A}</b> より 短いね。<br>1つ分に たりないから、<b class="mo">${q.A}</b> を 10等分した <b class="wa">0.1（${fmt(u)}m）</b>で 測ろう`
+      :frac?`<b class="mo">${q.A}</b> の <b class="mo">${whole}つ分</b> と、<b class="ku">のこり ${rest}m</b>。<br>のこりは ${q.A}より 短いから、${q.A}を 10等分した <b class="wa">0.1（${fmt(u)}m）</b>で 測ろう`
+      :`<b class="mo">${q.A}</b> の ちょうど <b class="mo">${whole}つ分</b>`);
+    if(s.f===2) say(`${whole?'のこり':q.B} <b class="ku">${rest}m</b> の 中に、<b class="wa">${fmt(u)}m（0.1）</b> が <b class="wa">${frac}こ</b> 入った。<br><small>${rest} ÷ ${fmt(u)} ＝ ${frac}　→　0.1 が ${frac}こ で ${fmt(frac/10)}</small>`);
     if(s.f===3) say(`<b class="ku">${q.B}</b> は <b class="mo">${q.A}</b> の 何倍かな？<br>式で たしかめよう`);
     s1btn();
   },t=>t);
 }
 /* テープの 上に「1つ分」と「0.1」の 目もりを かく */
 function measure(q,px,yA,yB,th){
-  const whole=Math.floor(q.p+1e-9),frac=Math.round((q.p-whole)*10);
+  const whole=Math.floor(q.p+1e-9),frac=Math.round((q.p-whole)*10),u=q.a/10;
   let g='';
   if(M1.st>=1){
     const n=M1.st===1?whole*M1.t:whole;
@@ -760,17 +762,27 @@ function measure(q,px,yA,yB,th){
       g+=`<rect x="${xa}" y="${yB-th/2-5}" width="${xb-xa}" height="${th+10}" rx="6" fill="none" stroke="${CMO}" stroke-width="3.5" stroke-dasharray="9 5"/>`;
       if(k>=1) g+=tx((xa+xb)/2,yB+th/2+FS*0.7,`${i+1}つ分`,CMO,{k:.75});
     }
+    /* のこりの 長さを テープの 上に（1つ分に たりない ところ） */
+    if(frac&&(M1.st>1||M1.t>=1)){
+      const xa=px(whole),xb=px(q.p),yt=yB-th/2-FS*0.35;
+      g+=`<path d="M${xa+3},${yt+6} L${xa+3},${yt} L${xb-3},${yt} L${xb-3},${yt+6}" fill="none" stroke="${CKU}" stroke-width="2.5"/>`;
+      g+=tx((xa+xb)/2,yt-FS*0.55,whole?`のこり ${fmt(q.b-whole*q.a)}m`:`${fmt(q.b)}m`,CKU,{k:.75});
+    }
   }
   if(M1.st>=2&&frac){
+    /* アを 10等分。1こ分（0.1＝2m）に 色を つけて、のこりの ところへ 1こずつ 運ぶ */
     for(let j=1;j<10;j++){const x=px(j/10);g+=line(x,yA-th/2,x,yA+th/2,`stroke="${CMO}" stroke-width="1.6" opacity=".7"`);}
-    g+=tx(px(0.05),yA-th/2-FS*0.55,'0.1',CWA,{k:.75});
+    g+=`<rect x="${px(0)+2}" y="${yA-th/2+3}" width="${px(0.1)-px(0)-4}" height="${th-6}" rx="3" fill="${CWA}" opacity=".45"/>`;
+    g+=tx(px(0),yA-th/2-FS*0.6,`0.1 ＝ ${fmt(u)}m`,CWA,{k:.8,anc:'start'});
     const m=M1.st===2?frac*M1.t:frac;
     for(let j=0;j<frac;j++){
       if(j>=m)break;
-      const xa=px(whole+j/10),xb=px(whole+(j+1)/10);
-      g+=`<rect x="${xa+2}" y="${yB-th/2+3}" width="${xb-xa-4}" height="${th-6}" rx="3" fill="${CWA}" opacity=".28"/>`;
+      const k=Math.min(1,m-j);
+      const tx0=px(0),ty0=yA,tx1=px(whole+j/10),ty1=yB;
+      const x=tx0+(tx1-tx0)*k,y=ty0+(ty1-ty0)*k,cw=px(0.1)-px(0);
+      g+=`<rect x="${x+2}" y="${y-th/2+3}" width="${cw-4}" height="${th-6}" rx="3" fill="${CWA}" opacity="${k<1?.7:.32}" stroke="${k<1?CWA:'none'}" stroke-width="2"/>`;
     }
-    if(M1.st>2||M1.t>=1) g+=tx((px(whole)+px(q.p))/2,yB+th/2+FS*0.7,`0.1が ${frac}こ`,CWA,{k:.75});
+    if(M1.st>2||M1.t>=1) g+=tx((px(whole)+px(q.p))/2,yB+th/2+FS*0.7,`${fmt(u)}m（0.1）が ${frac}こ`,CWA,{k:.75});
   }
   return g;
 }
