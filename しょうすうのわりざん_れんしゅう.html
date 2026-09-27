@@ -754,63 +754,65 @@ function drawCut(){
   g+=tx((X(0)+X(q.T))/2,yT+FS*0.75,`リボン ${q.T}m`,CI,{k:.8});
   svg.innerHTML=g;FS=FS0;
 }
-/* 流れ：切って 見せる → 何本 とれた？（3択。あまりの きれはしを 1本と 数える まちがいを 拾う）
-   → 番号と あまりの 長さを 画面が 出す → 式を カードで → 答え（○ あまり ○）と たしかめは 画面が 出す
-   （2026-09-27 指摘＝「あまりの 計算より 何本 取れるかを 答える 方が いい」。あまりの 長さは 聞かない） */
+/* 流れ：式を カードで → 計算（10倍 して 整数の わり算。画面が 出す）→ 何本 とれる？（3択）→ 切って 確かめる
+   （2026-09-27 指摘＝「式と 計算が あっての 答え」。前は 先に 切って 見せて、本数を 数えてから 式だった。もどさないこと）
+   3択の 4本＝あまりの きれはしも 1本と 数える まちがい、5本＝長さの 数 */
 function s4start(){
   const q=Q4();
   Object.assign(C4,{cut:0,sample:true,num:false,left:false,rem:false});
   hideAll();L.phase='look';
   head(P4,q.dfirst?`リボンを <b class="h">${q.d}m</b>ずつ 切ります。リボンは <b class="t">${q.T}m</b> あります。何本 とれるかな？`
                   :`<b class="t">${q.T}m</b>の リボンを <b class="h">${q.d}m</b>ずつ 切ります。何本 とれるかな？`);
-  say(`点線が 1本の 大きさ<br>${q.d}m ずつ 切って みよう`);
-  blue(`${q.d}mずつ 切る ▶`,s4cut);
   draw();
-}
-function s4cut(){
-  const q=Q4(),n=cutN(q),r=cutR(q);
-  wait(`${q.d}mずつ 切る ▶`);
-  anim(Math.min(3600,n*480),t=>{C4.cut=Math.min(n,Math.floor(t*n+1e-6));draw();},()=>{
-    C4.cut=n;C4.left=true;draw();
-    say(`<b class="h">${q.d}m</b> の リボンは 何本 とれた？`);
-    actions([]);stageTap=null;
-    const ops=[n,n+1,q.T];
-    choices(ops.map(v=>`${fmt(v)}本`),(i,b)=>{
-      if(i===1){b.disabled=true;say(r>0?`のこりの きれはしは ${q.d}m より みじかい<br>1本には ならないね`:`むらさきの リボンを 1本ずつ 数えよう`,'try');return;}
-      if(i===2){b.disabled=true;say(`${q.T} は リボンの 長さ<br>むらさきの リボンを 1本ずつ 数えよう`,'try');return;}
-      goodChoice(0);
-      C4.num=true;C4.rem=r>0;draw();
-      say((r>0?`よくできました！ <b>${n}本</b> とれて、<b>${fmt(r)}m</b> あまる`:`よくできました！ ちょうど <b>${n}本</b>`)+
-          `<br>何本 とれるかを 求める 式を つくろう`,'ok');
-      choices(null);
-      const cT={t:`${q.T}<small>m</small>`,r:'T',cls:'ct'},cD={t:`${q.d}<small>m</small>`,r:'D',cls:'ch'};
-      L.cards=[...(q.dfirst?[cD,cT]:[cT,cD]),{t:'×',r:'x',op:1,cls:'co'},{t:'÷',r:'/',op:1,cls:'co'}];
-      startEq('');
-    },S.idx.s4+1);
-  });
+  const cT={t:`${q.T}<small>m</small>`,r:'T',cls:'ct'},cD={t:`${q.d}<small>m</small>`,r:'D',cls:'ch'};
+  L.cards=[...(q.dfirst?[cD,cT]:[cT,cD]),{t:'×',r:'x',op:1,cls:'co'},{t:'÷',r:'/',op:1,cls:'co'}];
+  startEq('');
+  say(`点線が 1本の 大きさ<br>何本 とれるかを 求める 式を つくろう`);
 }
 function s4check(r,back){
-  const q=Q4(),n=cutN(q),rm=cutR(q);
+  const q=Q4();
   if(r[1]!=='/'){say(`${q.d}m が いくつ分 とれるかを 求めるよ<br>3年で ならった「○こずつ 分ける」と 同じ`,'try');back([1]);return;}
   if(r[0]!=='T'){say(`÷ の 前は 切る 前の 長さ（<b class="t">${q.T}m</b>）`,'try');back([0,2]);return;}
   L.phase='done';
   colorSlots(r,{T:['ぜんぶの 長さ','gt','t'],D:['1本の 長さ','gh','h']});
   $('cards').innerHTML='';
-  $('res').className='resbox good';
-  if(rm>0){
-    $('res').innerHTML=`${n}<small> あまり </small>${fmt(rm)}`;
-    say(`よくできました！<br><b>${q.T} ÷ ${q.d} ＝ ${n} あまり ${fmt(rm)}</b>`,'ok');
-    SL=[`<span>${n}本 とれて、${fmt(rm)}m あまる</span>`,
-        `<span>たしかめ　${q.d} × ${n} ＋ ${fmt(rm)} ＝ ${q.T}</span>`,
-        `<span class="small">あまりの ${fmt(rm)}m は、1本の 長さ ${q.d}m より 小さい</span>`];
-  }else{
-    $('res').textContent=n;
-    say(`よくできました！<br><b>${q.T} ÷ ${q.d} ＝ ${n}</b>`,'ok');
-    SL=[`<span>${n}本 とれる。${q.T}m は ${q.d}m の ${n}倍 とも いえる</span>`,
-        `<span class="small">何本 とれるか も、何倍か も 同じ わり算<br>たしかめ　${q.d} × ${n} ＝ ${q.T}</span>`];
-  }
+  say(`式は <b>${q.T} ÷ ${q.d}</b><br>計算して みよう`);
+  blue('計算する ▶',s4calc);
+}
+function s4calc(){
+  const q=Q4(),n=cutN(q),rm=cutR(q),T10=Math.round(q.T*10),d10=Math.round(q.d*10),r10=Math.round(rm*10);
+  SL=[`<span>わられる数も わる数も 10倍 → <span class="t">${T10}</span> ÷ <span class="h">${d10}</span> ＝ ${n}${r10?` あまり ${r10}`:''}</span>`];
+  if(r10) SL.push(`<span class="small">あまりの ${r10} は 0.1m が ${r10}こ → ${fmt(rm)}m</span>`);
+  SL.push(`<span class="f">${q.T} ÷ ${q.d} ＝ ${n}${r10?` あまり ${fmt(rm)}`:''}</span>`);
   sumShow();
-  actions([['sub','もう一度',s4start],['next','次の 問題 →',next4]]);
+  $('res').innerHTML=r10?`${n}<small> あまり </small>${fmt(rm)}`:`${n}`;$('res').className='resbox good';
+  say(`計算の 答えから 考えよう<br><b class="h">${q.d}m</b> の リボンは 何本 とれる？`);
+  actions([]);stageTap=null;
+  choices([n,n+1,q.T].map(v=>`${fmt(v)}本`),(i,b)=>{
+    if(i===1){b.disabled=true;say(r10?`あまりの ${fmt(rm)}m は ${q.d}m より みじかい<br>1本には ならないね`:`計算の 答えを 見よう`,'try');return;}
+    if(i===2){b.disabled=true;say(`${q.T} は リボンの 長さ<br>計算の 答えを 見よう`,'try');return;}
+    goodChoice(0);
+    say(`よくできました！ <b>${n}本</b> とれる`+(r10?`（${fmt(rm)}m あまる）`:'')+`<br>切って 確かめよう`,'ok');
+    blue(`${q.d}mずつ 切る ▶`,s4cut);
+  },S.idx.s4+1);
+}
+function s4cut(){
+  const q=Q4(),n=cutN(q),rm=cutR(q);
+  choices(null);wait(`${q.d}mずつ 切る ▶`);
+  anim(Math.min(3600,n*480),t=>{C4.cut=Math.min(n,Math.floor(t*n+1e-6));draw();},()=>{
+    C4.cut=n;C4.left=true;C4.num=true;C4.rem=rm>0;draw();
+    if(rm>0){
+      say(`よくできました！ 本当に <b>${n}本</b> とれて、<b>${fmt(rm)}m</b> あまった`,'ok');
+      SL.push(`<span>たしかめ　${q.d} × ${n} ＋ ${fmt(rm)} ＝ ${q.T}</span>`,
+              `<span class="small">あまりの ${fmt(rm)}m は、1本の 長さ ${q.d}m より 小さい</span>`);
+    }else{
+      say(`よくできました！ 本当に ちょうど <b>${n}本</b> とれた`,'ok');
+      SL.push(`<span>たしかめ　${q.d} × ${n} ＝ ${q.T}</span>`,
+              `<span class="small">${q.T}m は ${q.d}m の ${n}倍 とも いえる。何本 とれるか も、何倍か も 同じ わり算</span>`);
+    }
+    sumShow();
+    actions([['sub','もう一度',s4start],['next','次の 問題 →',next4]]);
+  });
 }
 function next4(){S.idx.s4=(S.idx.s4+1)%P4.length;s4start();}
 
