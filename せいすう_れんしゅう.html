@@ -467,7 +467,7 @@ function askCont2(){
 }
 function judge2(j){
   const p=P2[S.idx.s2],n=p.n,[x,yes]=p.q[j];
-  G2.line=`${x} は？`;G2.lineCol=CI;draw2();sum('');
+  G2.line=`${x} は？`;G2.lineCol=CI;draw2();sum('');actions([]);
   say(`<b>${x}</b> は ${n} の 倍数？`);
   choices(['はい','いいえ'],(o,b)=>{
     const ans=yes?0:1;
@@ -569,7 +569,7 @@ function list3(){
          `<div><span class="cg">公倍数</span>　${cm.join('、')} …　<span class="small">いちばん 小さい ${L}＝最小公倍数</span></div>`;
 }
 function rule3(){
-  const L=G3.L,cm=[];for(let v=L;v<=G3.max;v+=L)cm.push(v+'cm');
+  const L=G3.L,cm=[];for(let v=L;v<=G3.max;v+=L)cm.push(v+'cm');actions([]);
   say(`そろう ところは ${cm.join('、')}。どんな きまりが ある？`);
   choices([`${L}cmずつ ふえる`,'10cmずつ ふえる','6cmずつ ふえる'],(o,b)=>{
     if(o!==0){b.disabled=true;say('金の 線と 線の あいだは 何cm？ もう一回','try');return;}
@@ -750,7 +750,8 @@ function done5(){
 }
 function why5(){
   const p=P5[S.idx.s5],{a,b}=G5,sz=p.s;
-  G5.sz=sz;G5.k=1;draw5();$('numsw').classList.add('hidden');
+  /* 青ボタンは 消す（のこすと また 押して 同じ 画面に もどり「進まない」と 見える。2026-09-27） */
+  G5.sz=sz;G5.k=1;draw5();$('numsw').classList.add('hidden');actions([]);
   say(`${sz}cm の 正方形は しきつめられない。なぜ？`);
   const tate=a%sz!==0;
   const right=tate?`たての ${a}cm が ${sz} で わりきれない`:`よこの ${b}cm が ${sz} で わりきれない`;
