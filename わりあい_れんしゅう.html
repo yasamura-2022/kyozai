@@ -74,6 +74,9 @@
   .prob{display:flex;align-items:center;gap:10px;background:var(--card);border:2px solid var(--line);border-radius:14px;padding:6px 12px;
     font-weight:800;font-size:clamp(14px,calc(.6vw + 1.3vh),21px);word-break:keep-all;flex-wrap:wrap;justify-content:center;line-height:1.5}
   .prob .no{color:#8a7a5f;font-size:.8em}
+  /* ステップ２・３は 文を 読んで 考える ところなので 問題文を 大きく（2026-09-27 指摘＝探してしまった） */
+  .main.bigprob .prob{font-size:clamp(18px,calc(.85vw + 1.9vh),28px);border-color:#d6c49a;padding:8px 14px}
+  .main.bigprob .prob .no{font-size:.62em}
   .prob u{text-decoration:none;background:linear-gradient(transparent 55%,#ffe14d 55%)}
   .say{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:7px 12px;
     font-weight:800;color:#5d5040;line-height:1.5;text-align:center;word-break:keep-all;
@@ -943,6 +946,7 @@ function draw(){
 }
 function show(m){
   MODE=m;
+  $('main').classList.toggle('bigprob',m==='s2'||m==='s3');
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.dataset.m===m));
   if(m==='s1') s1start(); else lineStart();
 }
