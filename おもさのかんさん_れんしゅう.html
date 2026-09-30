@@ -184,7 +184,10 @@
   .key.enter{background:var(--gold);color:#fff;box-shadow:0 3px 0 #a5811a}
   .key.next{background:var(--ok);color:#fff;box-shadow:0 3px 0 #446838}
 
-  .drill-main{flex:1;min-height:0;display:flex;flex-direction:column;gap:6px}
+  /* ボタンを 画面の いちばん下に おかない（iPadで 指が とどきにくい）。
+     式の すぐ下に テンキー、あまった ところは 画面の 下に のこす */
+  .drill-main{flex:0 0 auto;min-height:0;display:flex;flex-direction:column;gap:6px}
+  .drill-main .stage{min-height:calc(var(--fh,100vh) * 0.2)}
 
   .tabs,.picker,.score,.actions,.ops{flex-shrink:0}
   .hidden{display:none !important}
@@ -213,7 +216,7 @@
     #viewDrill,#viewMix,#viewCalc{gap:5px}
     .drill-main{flex-direction:row;gap:10px;align-items:stretch}
     .drill-main .stage{flex:1 1 60%;min-width:0;padding:10px 14px}
-    .drill-main .pad{flex:0 0 auto;width:min(40%,300px);align-content:center}
+    .drill-main .pad{flex:0 0 auto;width:min(40%,300px);align-content:start}
     .eq{font-size:calc(clamp(22px, calc(var(--fh,100vh) * 0.055), 42px) * var(--shrink,1))}
     .key{font-size:calc(clamp(15px, calc(var(--fh,100vh) * 0.042), 23px) * var(--shrink,1));padding:calc(clamp(4px, calc(var(--fh,100vh) * 0.018), 13px) * var(--shrink,1)) 2px;white-space:nowrap}
     .tab{padding:6px;font-size:13px}
@@ -243,7 +246,7 @@
 
   <!-- はっけんビュー -->
   <div id="viewFind">
-    <div class="stage" style="flex:1 1 auto;display:flex;flex-direction:column;justify-content:center;min-height:120px">
+    <div class="stage" style="flex:0 0 auto;display:flex;flex-direction:column;justify-content:center;min-height:calc(var(--fh,100vh) * 0.3)">
       <div class="ladder" id="fLadder"></div>
       <div class="table" id="fTable"></div>
     </div>
@@ -261,7 +264,7 @@
       <div class="box streak"><div class="n" id="sStreak">0/10</div><div class="t">スタンプまで</div></div>
     </div>
     <div class="drill-main">
-      <div class="stage" id="dStage" style="flex:1;display:flex;flex-direction:column;justify-content:center">
+      <div class="stage" id="dStage" style="flex:0 0 auto;display:flex;flex-direction:column;justify-content:center">
         <div class="eq" id="dEq"></div><div class="verdict" id="dVerdict"></div>
       </div>
       <div class="pad" id="pad"></div>
@@ -276,7 +279,7 @@
       <div class="box streak"><div class="n" id="mStreak">0/10</div><div class="t">スタンプまで</div></div>
     </div>
     <div class="drill-main">
-      <div class="stage" id="mStage" style="flex:1;display:flex;flex-direction:column;justify-content:center">
+      <div class="stage" id="mStage" style="flex:0 0 auto;display:flex;flex-direction:column;justify-content:center">
         <div class="eq mix" id="mEq"></div>
         <div class="tapnote" id="mNote"></div>
         <div class="verdict" id="mVerdict"></div>
@@ -298,7 +301,7 @@
       <div class="box streak"><div class="n" id="cStreak">0/10</div><div class="t">スタンプまで</div></div>
     </div>
     <div class="drill-main">
-      <div class="stage" id="cStage" style="flex:1;display:flex;flex-direction:column;justify-content:center">
+      <div class="stage" id="cStage" style="flex:0 0 auto;display:flex;flex-direction:column;justify-content:center">
         <div class="calc" id="cEq"></div>
         <div class="tapnote" id="cNote"></div>
         <div class="verdict" id="cVerdict"></div>
