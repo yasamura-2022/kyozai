@@ -359,7 +359,9 @@ function alignBrackets(){
 }
 function stats(){
   const d=state.data[state.meter], m=state.meter, mes=i=>d.slice(i*m,(i+1)*m), full=a=>a.every(Boolean), eq=(a,b)=>a.join()===b.join();
-  return { rep:full(mes(0))&&full(mes(1))&&eq(mes(0),mes(1)), chg:full(d)&&(!eq(mes(2),mes(0))||!eq(mes(3),mes(0))) };
+  // 変化は 3小節目だけで 見る（教科書「3小節目でリズムが変わっているよ」）。
+  // 4小節目は 3/4・2/4 で 休符が はじめから 入っていて いつも 1小節目と ちがうので 見ない
+  return { rep:full(mes(0))&&full(mes(1))&&eq(mes(0),mes(1)), chg:full(d)&&!eq(mes(2),mes(0)) };
 }
 function renderSlots(){
   const d=state.data[state.meter];
