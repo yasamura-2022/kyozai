@@ -54,32 +54,20 @@
   .snd{flex:none;border:2px solid var(--line);background:var(--card);border-radius:12px;
     padding:6px 8px;font-weight:800;font-size:clamp(11px,calc(.5vw + .8vh),15px);color:#8a7a5f}
 
-  /* ===== レベル ＋ スタンプ ===== */
+  /* ===== レベル ===== */
   .bar{display:flex;gap:8px;flex-shrink:0;align-items:stretch}
-  .levels{display:flex;gap:5px;flex:1.25;min-width:0}
+  .levels{display:flex;gap:5px;flex:1;min-width:0}
   .lv{flex:1;border:2px solid var(--line);background:var(--card);border-radius:12px;
     padding:4px 3px;font-weight:800;line-height:1.15;word-break:keep-all;
     font-size:clamp(11px,calc(.55vw + .9vh),16px);color:#7a6a50;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px}
   .lv small{font-size:.78em;font-weight:700;opacity:.75}
   .lv.on{border-color:var(--accent);background:var(--accent-s);color:#4d3880;box-shadow:inset 0 0 0 1px var(--accent)}
-  .lv .med{font-size:.8em}
-  .stamps{flex:1;background:var(--card);border:2px solid var(--line);border-radius:12px;
-    display:flex;align-items:center;gap:4px;padding:3px 8px;min-width:0}
-  .stamps .lab{font-size:clamp(10px,calc(.4vw + .8vh),14px);font-weight:800;color:#8a7a5f;white-space:nowrap}
-  .slots{flex:1;display:flex;gap:3px;justify-content:space-between;min-width:0}
-  .slot{flex:1;max-width:36px;aspect-ratio:1;border-radius:50%;border:2px dashed #e2d3b0;
-    display:flex;align-items:center;justify-content:center;font-size:clamp(13px,calc(.6vw + 1.2vh),22px);line-height:1}
-  .slot.got{border:2px solid #f1c9a8;background:#fff3e6}
-  .slot.pop{animation:pop .55s cubic-bezier(.3,1.6,.5,1)}
-  @keyframes pop{0%{transform:scale(0) rotate(-40deg)}100%{transform:scale(1) rotate(0)}}
-  .medals{font-weight:800;font-size:clamp(12px,calc(.5vw + 1vh),17px);white-space:nowrap}
 
   /* ===== まん中 ===== */
   #main{flex:1;min-height:0;display:grid;gap:8px;
     grid-template-columns:minmax(0,1fr) minmax(300px,1fr)}
   @media (orientation:portrait){
     #main{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) auto}
-    .bar{flex-direction:column;gap:5px}
     .keys{max-height:clamp(96px,16vh,170px)}
   }
   .clockCard{position:relative;background:var(--card);border:3px solid var(--line);border-radius:22px;
@@ -149,17 +137,6 @@
     font-size:clamp(13px,calc(.5vw + 1.2vh),19px)}
   .btn.ghost.on{border-color:var(--min);color:var(--min);background:var(--min-s)}
 
-  /* おいわい */
-  #party{position:fixed;inset:0;background:rgba(43,33,24,.45);display:flex;align-items:center;justify-content:center;z-index:20}
-  #party .card{background:var(--card);border-radius:26px;padding:22px 28px;text-align:center;
-    border:4px solid var(--gold);max-width:90vw;animation:pop .6s cubic-bezier(.3,1.6,.5,1)}
-  #party .medal{font-size:clamp(70px,14vh,130px);line-height:1}
-  #party h2{font-size:clamp(24px,calc(1vw + 3vh),42px);margin:6px 0}
-  #party p{font-weight:800;font-size:clamp(15px,calc(.6vw + 1.5vh),22px);color:#5b4a3a;margin-bottom:14px}
-  #party .btn{width:100%;max-width:320px}
-  .conf{position:fixed;top:-20px;width:12px;height:16px;border-radius:3px;z-index:21;pointer-events:none;
-    animation:fall linear forwards}
-  @keyframes fall{to{transform:translateY(110vh) rotate(720deg)}}
 
   @media (max-height:620px){
     .tab{padding:5px 4px}
@@ -181,11 +158,6 @@
 
   <div class="bar">
     <div class="levels" id="levels"></div>
-    <div class="stamps">
-      <span class="lab">スタンプ</span>
-      <div class="slots" id="slots"></div>
-      <span class="medals" id="medals"></span>
-    </div>
   </div>
 
   <div id="main">
@@ -225,14 +197,6 @@
   </div>
 </div>
 
-<div id="party" class="hidden">
-  <div class="card">
-    <div class="medal">🏅</div>
-    <h2>すごい！ 10もん できた！</h2>
-    <p id="partyP"></p>
-    <button class="btn next" id="partyBtn">つづける →</button>
-  </div>
-</div>
 
 <script>
 /* ---------- 画面の 高さ（iPad の Safari 用） ---------- */
@@ -249,7 +213,6 @@ const LEVELS=[
   {name:'1ぷんごと',        sub:'めもりを よむ',    step:1},
   {name:'もうすぐ つぎの じ', sub:'40ぷん〜59ふん',  step:1},
 ];
-const STAMP=['🐶','🐱','🐰','🐻','🐼','🐸','🐵','🐯','🐨','🐧'];
 
 /* ---------- ほぞん（localStorage / sessionStorage / window.name の 3か所） ---------- */
 const KEY='tokei2';
@@ -262,10 +225,8 @@ const store={
     return out.filter(Boolean);
   },
   get(){
-    const d={stamps:{},medals:{},sound:true};
+    const d={sound:true};
     for(const s of this.read()){
-      for(const k in s.stamps||{}) d.stamps[k]=Math.max(d.stamps[k]||0,s.stamps[k]);
-      for(const k in s.medals||{}) d.medals[k]=Math.max(d.medals[k]||0,s.medals[k]);
       if(s.sound===false) d.sound=false;
     }
     return d;
@@ -427,56 +388,22 @@ function tone(f,t0,d,v){
 const sGood=()=>{tone(784,0,.25);tone(1047,.13,.4)};
 const sTry=()=>{tone(440,0,.25,.08);tone(392,.15,.3,.08)};
 const sTick=()=>tone(1500,0,.04,.05);
-const sParty=()=>{[523,659,784,1047].forEach((f,i)=>tone(f,i*.12,.35))};
 function paintSnd(){$('snd').textContent=SAVE.sound?'🔈 おと あり':'🔇 おと なし'}
 $('snd').onclick=()=>{SAVE.sound=!SAVE.sound;store.set(SAVE);paintSnd()};
 
 /* ============================================================
-   レベル と スタンプ
+   レベル
    ============================================================ */
-const skey=()=>S.tab+S.lv[S.tab];
 function paintLevels(){
   const box=$('levels');box.innerHTML='';
   LEVELS.forEach((L,i)=>{
     const b=document.createElement('button');
     b.className='lv'+(S.lv[S.tab]===i?' on':'');
-    const md=SAVE.medals[S.tab+i]||0;
-    b.innerHTML=`${L.name}<small>${L.sub}${md?` <span class="med">🏅${md>1?'×'+md:''}</span>`:''}</small>`;
-    b.onclick=()=>{if(S.lv[S.tab]===i)return;S.lv[S.tab]=i;paintLevels();paintStamps();newProblem()};
+    b.innerHTML=`${L.name}<small>${L.sub}</small>`;
+    b.onclick=()=>{if(S.lv[S.tab]===i)return;S.lv[S.tab]=i;paintLevels();newProblem()};
     box.appendChild(b);
   });
 }
-function paintStamps(popIdx){
-  const n=SAVE.stamps[skey()]||0, box=$('slots');box.innerHTML='';
-  for(let i=0;i<10;i++){
-    const d=document.createElement('div');
-    d.className='slot'+(i<n?' got':'')+(i===popIdx?' pop':'');
-    d.textContent=i<n?STAMP[i]:'';
-    box.appendChild(d);
-  }
-  const md=Object.values(SAVE.medals).reduce((a,b)=>a+b,0);
-  $('medals').textContent=md?'🏅×'+md:'';
-}
-function addStamp(){
-  const k=skey();const n=(SAVE.stamps[k]||0)+1;
-  if(n>=10){
-    SAVE.stamps[k]=10;paintStamps(9);
-    SAVE.stamps[k]=0;SAVE.medals[k]=(SAVE.medals[k]||0)+1;store.set(SAVE);
-    setTimeout(party,700);
-  }else{SAVE.stamps[k]=n;store.set(SAVE);paintStamps(n-1)}
-}
-function party(){
-  $('partyP').textContent=`「${LEVELS[S.lv[S.tab]].name}」の メダルを もらったよ！`;
-  $('party').classList.remove('hidden');sParty();
-  const cs=['#e0742a','#2c4a7a','#8a6fbf','#c9a227','#5a8a4c','#d9748f'];
-  for(let i=0;i<60;i++){
-    const c=document.createElement('div');c.className='conf';
-    c.style.left=Math.random()*100+'vw';c.style.background=cs[i%cs.length];
-    c.style.animationDuration=(1.8+Math.random()*1.6)+'s';c.style.animationDelay=(Math.random()*.6)+'s';
-    document.body.appendChild(c);setTimeout(()=>c.remove(),4200);
-  }
-}
-$('partyBtn').onclick=()=>{$('party').classList.add('hidden');paintLevels();paintStamps();newProblem()};
 
 function msg(id,html,cls){const m=$(id);m.innerHTML=html;m.className='msgbox'+(cls?' '+cls:'');m.id=id;m.style.display='block'}
 const PRAISE=['よくできました！','すごい！','ぴったり！','そのとおり！'];
@@ -538,7 +465,6 @@ function judgeRead(){
     R.done=true;R.wedge=false;paintRead();paintHint();bounce();sGood();
     const half=S.lv.read===0&&tm===30?`（${th}じ30ぷん）`:'';
     msg('msg1',`${praise()}<br><span class="big">${say(R.t)}</span>${half}`,'good');
-    addStamp();
     return;
   }
   // まちがえた ところを ことばで
@@ -598,7 +524,6 @@ $('act2').onclick=()=>{
   if(cur===tg){
     P.done=true;P.wedge=false;paintSet();paintHint();bounce();sGood();
     msg('msg2',`${praise()}<br><span class="big">${say(P.t)}</span> の とけいが できたね`,'good');
-    addStamp();
     return;
   }
   sTry();P.miss=true;
@@ -691,7 +616,7 @@ function showTab(tab){
   G.hKnob.setAttribute('opacity',tab==='set'?.25:0);
   G.mKnob.setAttribute('opacity',tab==='set'?.22:0);
   svg.style.cursor=tab==='set'?'grab':'default';
-  paintLevels();paintStamps();
+  paintLevels();
   if(tab==='read'){
     if(S.read.t===0&&S.read.shown===0)newProblem();
     else{svg.classList.add('noanim');setHands(S.read.shown);paintRead();paintHint()}
@@ -704,7 +629,6 @@ document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{if(b.dataset.tab!==S
 
 /* PC の キーボード */
 addEventListener('keydown',e=>{
-  if(!$('party').classList.contains('hidden')){if(e.key==='Enter')$('partyBtn').click();return}
   if(S.tab==='read'){
     if(/^[0-9]$/.test(e.key))typeDigit(+e.key);
     else if(e.key==='Backspace')delDigit();
