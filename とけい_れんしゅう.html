@@ -133,9 +133,11 @@
   .btn.play{background:var(--blue)}
   .btn.show{background:var(--gold)}
   .btn.next{background:var(--ok)}
-  .btn.ghost{flex:none;width:auto;padding:0 14px;background:#fff;color:#8a7a5f;border:2px solid var(--line);box-shadow:0 3px 0 #e2d3b0;
-    font-size:clamp(13px,calc(.5vw + 1.2vh),19px)}
-  .btn.ghost.on{border-color:var(--min);color:var(--min);background:var(--min-s)}
+  /* ヒント（時計の わくの 右上） */
+  .hintBtn{position:absolute;right:8px;top:8px;border:2px solid var(--line);background:#fff;color:#8a7a5f;border-radius:14px;
+    font-weight:900;font-size:clamp(14px,calc(.5vw + 1.3vh),20px);padding:6px 12px;min-height:44px;box-shadow:0 3px 0 #e2d3b0;z-index:2}
+  .hintBtn:active{transform:translateY(2px);box-shadow:0 1px 0 #e2d3b0}
+  .hintBtn.on{border-color:var(--min);color:var(--min);background:var(--min-s)}
 
 
   @media (max-height:620px){
@@ -165,6 +167,7 @@
       <svg id="clock" viewBox="-200 -200 400 400"></svg>
       <div class="dragTip hidden" id="dragTip">はりを ゆびで うごかせるよ</div>
       <div class="toast" id="toast"></div>
+      <button class="hintBtn" id="hint">💡 ヒント</button>
     </div>
 
     <!-- とけいを よむ -->
@@ -177,7 +180,6 @@
       <div id="msg1" class="msgbox"></div>
       <div class="keys" id="keys"></div>
       <div class="acts">
-        <button class="btn ghost" id="hint1">ヒント</button>
         <button class="btn" id="act1"></button>
       </div>
     </div>
@@ -190,7 +192,6 @@
       </div>
       <div id="msg2" class="msgbox"></div>
       <div class="acts">
-        <button class="btn ghost" id="hint2">ヒント</button>
         <button class="btn" id="act2"></button>
       </div>
     </div>
@@ -366,8 +367,7 @@ function paintHint(){
     G.wedge.setAttribute('d',sector(a0,a0+30,40,135));G.wedge.setAttribute('opacity',1);
     G.nums[h].setAttribute('fill','#c25a14');G.nums[h%12+1].setAttribute('fill','#c25a14');
   }else G.wedge.setAttribute('opacity',0);
-  $('hint1').classList.toggle('on',S.hint.read);
-  $('hint2').classList.toggle('on',S.hint.set);
+  $('hint').classList.toggle('on',S.hint[S.tab]);
 }
 
 /* ============================================================
@@ -492,7 +492,7 @@ function judgeRead(){
   msg('msg1','もう一回！ '+why,'try');
   if(!S.redo.read.some(r=>r.t===R.t)) S.redo.read.push({t:R.t,lv:S.lv.read,due:S.count+3});
 }
-$('hint1').onclick=()=>{S.hint.read=!S.hint.read;paintHint()};
+$('hint').onclick=()=>{S.hint[S.tab]=!S.hint[S.tab];paintHint()};
 
 /* ============================================================
    はりを あわせる
@@ -545,7 +545,6 @@ $('act2').onclick=()=>{
   msg('msg2','もう一回！ '+why,'try');
   if(!S.redo.set.some(r=>r.t===P.t)) S.redo.set.push({t:P.t,lv:S.lv.set,due:S.count+3});
 };
-$('hint2').onclick=()=>{S.hint.set=!S.hint.set;paintHint()};
 
 /* ゆびで はりを うごかす */
 let drag=null;
