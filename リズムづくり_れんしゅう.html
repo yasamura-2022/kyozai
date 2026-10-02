@@ -141,6 +141,34 @@ select{font:inherit; font-size:.9rem; padding:5px 8px; border-radius:10px; borde
 .dlg .btns{display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap}
 .dlg .msg{font-weight:700; color:var(--blue); min-height:1.2em}
 canvas#rc{position:fixed; left:-9999px; top:0}
+/* せまい 画面（Googleサイトの わくの 中など）：まわりを つめて、そのぶん 音符を 大きく する */
+@media (max-width:900px){
+  header h1{font-size:1rem}
+  .meter-btn{padding:3px 8px 3px 6px; font-size:.8rem; gap:4px}
+  .tempo input{width:96px}
+  .play{padding:8px 14px}
+  .rec{padding:8px 12px}
+  .controls{gap:6px}
+  .spacer{display:none}
+  .rec{margin-left:auto}
+}
+@media (max-width:760px){
+  .tempo input{width:76px}
+  select{padding:5px 4px}
+  .tool{gap:4px; font-size:1rem; white-space:nowrap}
+  .tool .disc{width:40px; height:40px}
+}
+@media (max-height:700px){
+  header{padding:5px 12px}
+  main{gap:6px; padding:6px 10px}
+  .panel{padding:6px 10px}
+  .brk{margin-top:4px}
+  .chiprow{margin-top:5px}
+  .chip{padding:1px 12px}
+  .tool{padding:3px 6px}
+  .tool .disc{width:42px; height:42px}
+  .play,.rec{padding-top:6px; padding-bottom:6px}
+}
 @media (prefers-reduced-motion:reduce){*{transition:none!important; animation:none!important}}
 </style>
 </head>
@@ -277,23 +305,22 @@ function onTap(el,fn){
 function appHeight(){ return Math.round((window.visualViewport&&window.visualViewport.height)||window.innerHeight); }
 function fit(){
   const app=$("app"); app.style.height=appHeight()+"px";
-  const H=appHeight();
-  const panel=$("scorePanel");
-  const fixed=$("hdr").offsetHeight+$("inputPanel").offsetHeight+$("ctrlPanel").offsetHeight+16+24+20;
-  const availH=H-fixed;
-  const W=panel.clientWidth-24;
-  const total=state.meter*4;
-  const extra=118; // 音符以外（文字・点・かっこ・ラベル）の高さ
-  let best={rows:1,d:0};
-  for(const rows of [1,2]){
-    const perRow=total/rows;
-    const wd=(W-44-(rows===1?20:12))/perRow-10;
-    const hd=availH/rows-extra-(rows-1)*4;
-    const d=Math.floor(Math.min(wd,hd,76));
-    if(d>best.d+6) best={rows,d};
+  // 1だん／2だんの それぞれで、じっさいに 置いてみて 入る いちばん 大きい 音符を さがす。
+  // （前は 高さを 見つもりで 計算していて、768×600 などで 2だんに できず 音符が 30px まで 小さくなっていた）
+  const root=document.documentElement, sc=$("score"), panel=$("scorePanel");
+  const availH=panel.clientHeight-16-16; // パネルの 上下の よはく と ▼ のぶん
+  function fits(d){
+    root.style.setProperty("--d",d+"px");
+    if(sc.offsetHeight>availH) return false;
+    const s=slotEls[0]; return !s||s.clientWidth>=d+6;
   }
-  document.documentElement.style.setProperty("--d",Math.max(30,best.d)+"px");
-  $("score").classList.toggle("two",best.rows===2);
+  let best={rows:1,d:30};
+  for(const rows of [1,2]){
+    sc.classList.toggle("two",rows===2); alignBrackets();
+    for(let d=76; d>=30; d-=2){ if(fits(d)){ if(d>best.d) best={rows,d}; break; } }
+  }
+  sc.classList.toggle("two",best.rows===2);
+  root.style.setProperty("--d",best.d+"px");
   alignBrackets();
 }
 window.addEventListener("resize",fit);
