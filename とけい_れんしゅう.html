@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>とけいの よみかた</title>
+<title>時計の よみかた</title>
 <style>
   :root{
     --ink:#2b2118;
@@ -15,9 +15,9 @@
     --ok:#5a8a4c;
     --blue:#2f6fa8;          /* 同じ もんだいの 中で すすむ */
     --sub:#a99a7c;
-    --hour:#e0742a;          /* みじかい はり＝「じ」 */
+    --hour:#e0742a;          /* みじかい はり＝「時」 */
     --hour-s:#fde3cf;
-    --min:#2c4a7a;           /* ながい はり＝「ふん」 */
+    --min:#2c4a7a;           /* ながい はり＝「分」 */
     --min-s:#dde6f4;
     --accent:#8a6fbf;        /* このアプリの 色 */
     --accent-s:#ece5f7;
@@ -150,9 +150,9 @@
 <body>
 <div class="app">
   <div class="top">
-    <h1><svg class="ico" viewBox="-20 -20 40 40"><circle r="17" fill="#fff" stroke="#8a6fbf" stroke-width="4"/><line y2="-10" stroke="#2c4a7a" stroke-width="3" stroke-linecap="round"/><line x2="7" y2="3" stroke="#e0742a" stroke-width="4" stroke-linecap="round"/></svg>とけい</h1>
+    <h1><svg class="ico" viewBox="-20 -20 40 40"><circle r="17" fill="#fff" stroke="#8a6fbf" stroke-width="4"/><line y2="-10" stroke="#2c4a7a" stroke-width="3" stroke-linecap="round"/><line x2="7" y2="3" stroke="#e0742a" stroke-width="4" stroke-linecap="round"/></svg>時計</h1>
     <div class="tabs">
-      <button class="tab on" data-tab="read">とけいを よむ</button>
+      <button class="tab on" data-tab="read">時計を よむ</button>
       <button class="tab" data-tab="set">はりを あわせる</button>
     </div>
     <button class="snd" id="snd">🔈 おと あり</button>
@@ -172,10 +172,10 @@
 
     <!-- とけいを よむ -->
     <div class="panel" id="pRead">
-      <div class="q">とけいは なんじ なんぷん？</div>
+      <div class="q">時計は なん時 なん分？</div>
       <div class="ansRow">
-        <div class="box h" id="bH" data-f="h"></div><span class="unit h">じ</span>
-        <div class="box m" id="bM" data-f="m"></div><span class="unit m" id="uM">ふん</span>
+        <div class="box h" id="bH" data-f="h"></div><span class="unit h">時</span>
+        <div class="box m" id="bM" data-f="m"></div><span class="unit m" id="uM">分</span>
       </div>
       <div id="msg1" class="msgbox"></div>
       <div class="keys" id="keys"></div>
@@ -209,10 +209,10 @@ const mod=(a,n)=>((a%n)+n)%n;
 
 /* ---------- レベル（はじめから ぜんぶ えらべる。鍵を かけない） ---------- */
 const LEVELS=[
-  {name:'なんじ・なんじはん', sub:'ちょうど と はん', step:30},
-  {name:'5ふんごと',        sub:'5・10・15…',     step:5},
-  {name:'1ぷんごと',        sub:'めもりを よむ',    step:1},
-  {name:'もうすぐ つぎの じ', sub:'40ぷん〜59ふん',  step:1},
+  {name:'なん時・なん時はん', sub:'ちょうど と はん', step:30},
+  {name:'5分ごと',        sub:'5・10・15…',     step:5},
+  {name:'1分ごと',        sub:'めもりを よむ',    step:1},
+  {name:'もうすぐ つぎの 時', sub:'40分〜59分',  step:1},
 ];
 
 /* ---------- ほぞん（localStorage / sessionStorage / window.name の 3か所） ---------- */
@@ -253,12 +253,12 @@ const S={
 };
 
 /* ---------- ことば ---------- */
-function fun(m){return [0,1,3,4,6,8].includes(m%10)?'ぷん':'ふん'}
+function fun(m){return '分'}
 function hOf(t){return mod(Math.floor(mod(t,720)/60)-1,12)+1}   // 1〜12
 function mOf(t){return mod(t,60)}
 function say(t,big){
   const h=hOf(t),m=Math.round(mOf(t));
-  const hs=`<span class="h">${h}じ</span>`;
+  const hs=`<span class="h">${h}時</span>`;
   if(m===0) return hs;
   const ms=`<span class="m">${m}${fun(m)}</span>`;
   if(m===30&&S.lv[S.tab]===0) return hs+`<span class="m">はん</span>`;
@@ -438,23 +438,23 @@ function paintRead(){
   $('bH').textContent=R.h;$('bM').textContent=R.m;
   $('bH').classList.toggle('focus',!R.done&&R.f==='h');
   $('bM').classList.toggle('focus',!R.done&&R.f==='m');
-  $('uM').textContent=R.m!==''?fun(+R.m):'ふん';
+  $('uM').textContent='分';
   const a=$('act1');
   if(R.done){a.className='btn next';a.textContent='つぎの もんだい →'}
-  else if(R.f==='h'){a.className='btn play';a.textContent='「ふん」へ ▶'}
+  else if(R.f==='h'){a.className='btn play';a.textContent='「分」へ ▶'}
   else{a.className='btn show';a.textContent='こたえ'}
 }
 $('act1').onclick=()=>{
   const R=S.read;
   if(R.done){newProblem();return}
   if(R.f==='h'){
-    if(R.h===''){msg('msg1','<span class="h">みじかい はり</span>を 見て、なんじかを 入れよう','try');return}
+    if(R.h===''){msg('msg1','<span class="h">みじかい はり</span>を 見て、なん時かを 入れよう','try');return}
     R.f='m';paintRead();
-    msg('msg1','つぎは <span class="m">ながい はり</span>。なんぷんかな？');return;
+    msg('msg1','つぎは <span class="m">ながい はり</span>。なん分かな？');return;
   }
   if(R.h===''||R.m===''){
     R.f=R.h===''?'h':'m';paintRead();
-    msg('msg1','まだ とちゅうだよ。'+(R.h===''?'<span class="h">「じ」</span>':'<span class="m">「ふん」</span>')+'を 入れよう','try');return;
+    msg('msg1','まだ とちゅうだよ。'+(R.h===''?'<span class="h">「時」</span>':'<span class="m">「分」</span>')+'を 入れよう','try');return;
   }
   judgeRead();
 };
@@ -463,7 +463,7 @@ function judgeRead(){
   const hOk=h===th, mOk=m===tm;
   if(hOk&&mOk){
     R.done=true;R.wedge=false;paintRead();paintHint();bounce();sGood();
-    const half=S.lv.read===0&&tm===30?`（${th}じ30ぷん）`:'';
+    const half=S.lv.read===0&&tm===30?`（${th}時30分）`:'';
     msg('msg1',`${praise()}<br><span class="big">${say(R.t)}</span>${half}`,'good');
     return;
   }
@@ -474,14 +474,14 @@ function judgeRead(){
     why=`<span class="h">みじかい はり</span>は まだ <span class="h">${h}</span>に とどいて いないよ。<span class="h">${th}</span>と <span class="h">${h}</span>の あいだ`;
     R.wedge=true;
   }else if(!hOk&&tm>0&&tm%5===0&&h===tm/5){
-    why=`それは <span class="m">ながい はり</span>だよ。「じ」は <span class="h">みじかい はり</span>を 見よう`;
+    why=`それは <span class="m">ながい はり</span>だよ。「時」は <span class="h">みじかい はり</span>を 見よう`;
   }else if(hOk&&!mOk&&tm%5===0&&m===tm/5){
-    why=`<span class="m">ながい はり</span>が ${m}の ところは <span class="m">${tm}${fun(tm)}</span>。1つ すすむと 5ふんだよ`;
+    why=`<span class="m">ながい はり</span>が ${m}の ところは <span class="m">${tm}${fun(tm)}</span>。1つ すすむと 5分だよ`;
   }else if(!hOk&&mOk){
-    why=`<span class="m">ふん</span>は あってるよ！ <span class="h">みじかい はり</span>を もう一回 見よう`;
+    why=`<span class="m">分</span>は あってるよ！ <span class="h">みじかい はり</span>を もう一回 見よう`;
     R.wedge=true;
   }else if(hOk&&!mOk){
-    why=`<span class="h">じ</span>は あってるよ！ <span class="m">ながい はり</span>を もう一回 見よう`;
+    why=`<span class="h">時</span>は あってるよ！ <span class="m">ながい はり</span>を もう一回 見よう`;
   }else{
     why='もう一回！ はりを よく 見て みよう';
   }
@@ -508,7 +508,7 @@ function moveSet(t,anim){
 let hourToasts=0;
 function hourToast(fwd){
   if(hourToasts>=6)return; hourToasts++;
-  toast(fwd?'<b>ながい はり</b>が 1しゅう ＝ <b>60ぷん</b><br>みじかい はりは 1つ すすむ':'ながい はりが 1しゅう もどった<br>みじかい はりも 1つ もどる',2200);
+  toast(fwd?'<b>ながい はり</b>が 1しゅう ＝ <b>60分</b><br>みじかい はりは 1つ すすむ':'ながい はりが 1しゅう もどった<br>みじかい はりも 1つ もどる',2200);
 }
 function paintSet(){
   const P=S.set;
@@ -595,7 +595,7 @@ function newProblem(){
     Object.assign(R,{t,shown,h:'',m:'',f:'h',done:false,miss:false,wedge:false});
     svg.classList.remove('noanim');setHands(shown);
     paintRead();paintHint();
-    msg('msg1',S.lv.read===0?'<span class="h">みじかい はり</span>で「じ」、<span class="m">ながい はり</span>で「ふん」。はんは 30ぷんだよ':'<span class="h">みじかい はり</span>で「じ」、<span class="m">ながい はり</span>で「ふん」を よもう');
+    msg('msg1',S.lv.read===0?'<span class="h">みじかい はり</span>で「時」、<span class="m">ながい はり</span>で「分」。はんは 30分だよ':'<span class="h">みじかい はり</span>で「時」、<span class="m">ながい はり</span>で「分」を よもう');
   }else{
     const P=S.set;
     const t=pick('set');
