@@ -523,7 +523,7 @@ $('act2').onclick=()=>{
   const cur=mod(Math.round(P.cur),720), tg=mod(P.t,720);
   if(cur===tg){
     P.done=true;P.wedge=false;paintSet();paintHint();bounce();sGood();
-    msg('msg2',`${praise()}<br><span class="big">${say(P.t)}</span> の とけいが できたね`,'good');
+    msg('msg2',`${praise()}<br><span class="big">${say(P.t)}</span> に あわせられたね`,'good');
     return;
   }
   sTry();P.miss=true;
